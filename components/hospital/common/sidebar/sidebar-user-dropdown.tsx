@@ -62,10 +62,10 @@ export default function SidebarUserDropdown({
             <DropdownMenuItem asChild onClick={() => setIsSheetOpen?.(false)}>
               <Link
                 href={`/hospital/${hosId}/admin/staff`}
-                className="hidden cursor-pointer items-center gap-2 2xl:flex"
+                className="cursor-pointer items-center gap-2"
               >
                 <CrownIcon size={18} />
-                <span>관리자</span>
+                관리자
               </Link>
             </DropdownMenuItem>
           )}
@@ -73,10 +73,10 @@ export default function SidebarUserDropdown({
           <DropdownMenuItem asChild onClick={() => setIsSheetOpen?.(false)}>
             <Link
               href={`/hospital/${hosId}/my-page`}
-              className="flex cursor-pointer items-center gap-2"
+              className="cursor-pointer items-center gap-2"
             >
               <UserIcon size={18} />
-              <span>사용자 계정</span>
+              사용자 계정
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>

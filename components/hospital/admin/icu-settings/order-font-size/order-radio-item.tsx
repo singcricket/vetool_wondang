@@ -19,10 +19,7 @@ export default function OrderRadioItem({ title, desc, value }: Props) {
     <div className="flex items-center space-x-4 py-2">
       <RadioGroupItem value={value} id={title} className="peer" />
 
-      <Label
-        htmlFor={title}
-        className={cn('w-[480px] cursor-pointer border bg-primary/20')}
-      >
+      <Label htmlFor={title} className={cn('w-[480px] cursor-pointer border')}>
         <div className="flex h-11 items-center justify-between px-2">
           <div className="flex items-center gap-2">
             <OrderTypeColorDot
@@ -30,7 +27,7 @@ export default function OrderRadioItem({ title, desc, value }: Props) {
               orderType={'injection'}
             />
             <span
-              className="truncate font-semibold"
+              className="truncate font-semibold leading-tight"
               style={{ fontSize: title }}
             >
               Metronidazole 10mg/kg IV CRI for 30min

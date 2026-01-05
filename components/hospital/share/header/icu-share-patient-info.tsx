@@ -2,6 +2,7 @@
 
 import { calculateAge, convertPascalCased } from '@/lib/utils/utils'
 import { SelectedChartPatient } from '@/types/icu/chart'
+import { format } from 'date-fns'
 import { Cat, Dog } from 'lucide-react'
 
 export default function IcuSharePatientInfo({
@@ -28,9 +29,11 @@ export default function IcuSharePatientInfo({
       <span>·</span>
       <span>
         {weight === '' ? '체중 미입력' : `${weight}kg`}
-        <span className="hidden md:inline">
-          {weightMeasuredDate ? `(${weightMeasuredDate})` : ''}
-        </span>
+        {weightMeasuredDate && (
+          <span className="hidden font-mono text-sm md:inline">
+            {`(${format(weightMeasuredDate, 'yy.MM.dd')})`}
+          </span>
+        )}
       </span>
     </div>
   )

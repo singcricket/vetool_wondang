@@ -1,3 +1,4 @@
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import {
   Accordion,
   AccordionContent,
@@ -15,9 +16,9 @@ export default function TxLog({ logs }: { logs?: TxLog[] | null }) {
         <AccordionItem value="logs">
           <AccordionTrigger className="py-1">
             <div className="flex w-full items-center py-2">
-              <div className="w-2/5 text-center">결과</div>
-              <div className="w-1/5 pl-6 text-center">처치자</div>
-              <div className="w-2/5 pr-8 text-right">시간</div>
+              <div className="w-2/5 px-2 text-center">처치결과</div>
+              <div className="w-1/5 px-2 text-center">처치자</div>
+              <div className="w-2/5 pl-6 text-center">시간</div>
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-0">
@@ -30,16 +31,20 @@ export default function TxLog({ logs }: { logs?: TxLog[] | null }) {
                       key={index}
                     >
                       <TableCell
-                        className="w-2/5 truncate text-center"
+                        className="w-2/5 px-2 text-center"
                         title={log.result ?? ''}
                       >
-                        {log.result}
+                        <div className="truncate">{log.result}</div>
                       </TableCell>
-                      <TableCell className="w-1/5 text-center">
+                      <TableCell className="w-1/5 px-2 text-center">
                         {log.name}
                       </TableCell>
-                      <TableCell className="w-2/5 text-right tracking-tighter">
-                        {log.createdAt}
+                      <TableCell className="w-2/5 pr-8 text-right tracking-tighter">
+                        <FormattedMonoDate
+                          date={log.createdAt}
+                          withTime
+                          className="text-xs"
+                        />
                       </TableCell>
                     </TableRow>
                   ))}

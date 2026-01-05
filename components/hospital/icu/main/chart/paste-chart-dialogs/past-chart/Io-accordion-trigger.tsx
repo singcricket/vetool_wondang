@@ -18,9 +18,11 @@ import {
   getChartsByIoId,
   type PatientIo,
 } from '@/lib/services/icu/chart/get-icu-chart'
+import { format } from 'date-fns'
 import type { Dispatch, SetStateAction } from 'react'
 import { useState } from 'react'
 import ChartByIoRow from './chart-by-io-row'
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 
 type Props = {
   patientId: string
@@ -59,8 +61,12 @@ export default function IoAccordionTrigger({
             onClick={handleAccordionOpen}
             className="h-10 bg-muted p-0 [&[data-state=open]>svg]:text-white [&[data-state=open]]:bg-primary [&[data-state=open]]:text-primary-foreground"
           >
-            <div className="w-1/4 text-center">{patientIo.in_date}</div>
-            <div className="w-1/4 text-center">{patientIo.out_date}</div>
+            <FormattedMonoDate date={patientIo.in_date} className="w-1/4" />
+            {patientIo.out_date ? (
+              <FormattedMonoDate date={patientIo.out_date} className="w-1/4" />
+            ) : (
+              <div className="w-1/4 truncate px-6 text-center">-</div>
+            )}
             <div className="w-1/4 truncate px-6 text-center">
               {patientIo.icu_io_dx === '' ? '-' : patientIo.icu_io_dx}
             </div>

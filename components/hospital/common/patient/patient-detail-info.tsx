@@ -2,6 +2,7 @@ import SpeciesToIcon from '@/components/common/species-to-icon'
 import { Species } from '@/constants/hospital/register/signalments'
 import { calculateAge, cn, convertPascalCased } from '@/lib/utils/utils'
 import type { SelectedIcuChart } from '@/types/icu/chart'
+import { format } from 'date-fns'
 
 type Props = {
   species: SelectedIcuChart['patient']['species']
@@ -44,8 +45,8 @@ export default function PatientDetailInfo({
         {weight === '' ? '체중 미측정' : `${weight}kg`}
 
         {weightMeasuredDate && (
-          <span className="hidden md:inline">
-            {weightMeasuredDate ? `(${weightMeasuredDate})` : ''}
+          <span className="hidden font-mono text-sm md:inline">
+            {`(${format(weightMeasuredDate, 'yy.MM.dd')})`}
           </span>
         )}
       </span>

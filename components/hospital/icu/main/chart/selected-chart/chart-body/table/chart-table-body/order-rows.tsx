@@ -33,7 +33,6 @@ export default function OrderRows({
         isSorting={isSorting}
         species={species}
         orderWidth={orderwidth}
-        targetDate={targetDate}
       />
 
       <OrderRowCells hosId={hosId} order={order} species={species} />

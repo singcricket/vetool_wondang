@@ -1,23 +1,25 @@
+import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
-import { ko } from 'date-fns/locale'
+import { Label } from '@/components/ui/label'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { Button } from '@/components/ui/button'
-import { CalendarDays } from 'lucide-react'
-import { Label } from '@/components/ui/label'
+import { format } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { CalendarDaysIcon } from 'lucide-react'
 import { DateRange } from 'react-day-picker'
-import { formatDate } from 'date-fns'
+
+type Props = {
+  dateRange: DateRange | undefined
+  handleDateRangeChange: (range: DateRange | undefined) => void
+}
 
 export default function IoPatientsCalendar({
   dateRange,
   handleDateRangeChange,
-}: {
-  dateRange: DateRange | undefined
-  handleDateRangeChange: (range: DateRange | undefined) => void
-}) {
+}: Props) {
   return (
     <div className="flex flex-col space-y-2">
       <Label className="pl-4">날짜 선택</Label>
@@ -28,9 +30,9 @@ export default function IoPatientsCalendar({
             variant="ghost"
             className="justify-start text-left font-normal"
           >
-            <CalendarDays className="h-3 w-3" />
+            <CalendarDaysIcon className="h-3 w-3" />
             <span className="ml-2 text-sm">
-              {`${formatDate(dateRange?.from || new Date(), 'yyyy-MM-dd')} - ${formatDate(dateRange?.to || new Date(), 'yyyy-MM-dd')}`}
+              {`${format(dateRange?.from || new Date(), 'yyyy-MM-dd')} - ${format(dateRange?.to || new Date(), 'yyyy-MM-dd')}`}
             </span>
           </Button>
         </PopoverTrigger>
