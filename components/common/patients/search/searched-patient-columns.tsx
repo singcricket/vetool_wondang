@@ -8,6 +8,7 @@ import type { Patient } from '@/types'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Dispatch, SetStateAction } from 'react'
 import type { DebouncedState } from 'use-debounce'
+import FormattedMonoDate from '../../formatted-mono-date'
 
 type Props = {
   isIcu: boolean
@@ -101,7 +102,7 @@ export const searchedPatientsColumns = ({
       header: () => '등록일',
       cell: ({ row }) => {
         const createdAt = row.original.created_at
-        return <>{createdAt.slice(0, 10)}</>
+        return <FormattedMonoDate date={createdAt} className="text-xs" />
       },
     },
   ]

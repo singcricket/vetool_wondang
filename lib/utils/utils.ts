@@ -5,7 +5,7 @@ import type {
 import type { OrderTimePendingQueue } from '@/lib/store/icu/icu-order'
 import type { Vet } from '@/types'
 import { type ClassValue, clsx } from 'clsx'
-import { formatDate } from 'date-fns'
+import { format } from 'date-fns'
 import { redirect } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 import type { VetoolUser } from '../services/auth/authorization'
@@ -86,13 +86,13 @@ export function calculateAge(dateString: string) {
     }
   }
   if (ageYears === 0 && ageMonths === 0) {
-    return '1개월'
+    return '1m'
   } else if (ageYears === 0) {
-    return `${ageMonths}개월`
+    return `${ageMonths}m`
   } else if (ageMonths === 0) {
-    return `${ageYears}년`
+    return `${ageYears}y`
   } else {
-    return `${ageYears}년 ${ageMonths}개월`
+    return `${ageYears}y${ageMonths}m`
   }
 }
 
@@ -116,9 +116,9 @@ export const getConsecutiveDays = (selectedDate: Date) => {
   )
 
   return {
-    dayBefore: formatDate(dayBefore, 'yyyy-MM-dd'),
-    seletctedDay: formatDate(normalizedSelectedDate, 'yyyy-MM-dd'),
-    dayAfter: formatDate(dayAfter, 'yyyy-MM-dd'),
+    dayBefore: format(dayBefore, 'yyyy-MM-dd'),
+    seletctedDay: format(normalizedSelectedDate, 'yyyy-MM-dd'),
+    dayAfter: format(dayAfter, 'yyyy-MM-dd'),
   }
 }
 

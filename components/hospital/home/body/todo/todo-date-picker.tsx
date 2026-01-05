@@ -1,3 +1,4 @@
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -5,7 +6,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { formatDate } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { CalendarDays } from 'lucide-react'
 import { type Dispatch, type SetStateAction, useState } from 'react'
@@ -26,14 +26,12 @@ export default function TodoDatePicker({
     setIsPopoverOpen(false)
   }
 
-  const formattedSelectedDate = formatDate(selectedDate, 'yyyy-MM-dd')
-
   return (
     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" className="text-md">
           <CalendarDays />
-          {formattedSelectedDate}
+          <FormattedMonoDate date={selectedDate} />
         </Button>
       </PopoverTrigger>
 

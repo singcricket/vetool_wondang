@@ -30,7 +30,7 @@ export default function AnnouncementsCarousel({
   }
 
   return (
-    <div className="h-10 min-w-[360px]">
+    <div className="h-10 min-w-[300px]">
       <Link
         href={`/announcements/${announcementTitlesData[currentIndex].announcement_id}`}
         target="_blank"

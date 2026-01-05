@@ -1,5 +1,6 @@
 'use client'
 
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -63,7 +64,10 @@ export default function OutDueDate({ inDate, outDueDate, icuIoId }: Props) {
           <LogOutIcon className="text-muted-foreground" size={16} />
 
           {outDueDateInput ? (
-            <span>{format(outDueDateInput, 'yyyy-MM-dd')}</span>
+            <div className="flex items-center gap-1">
+              <FormattedMonoDate date={outDueDateInput} className="text-sm" />
+              <span className="text-xs text-muted-foreground">(예정)</span>
+            </div>
           ) : (
             <span className="text-muted-foreground">퇴원 예정일</span>
           )}

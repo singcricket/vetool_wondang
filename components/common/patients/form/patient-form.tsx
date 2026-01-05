@@ -466,8 +466,7 @@ export default function PatientForm({
             <FormItem className="flex flex-col justify-end">
               <div className="flex items-center gap-2">
                 <FormLabel>
-                  품종
-                  <RequiredFieldDot />
+                  품종 <RequiredFieldDot />
                 </FormLabel>
                 <HelperTooltip side="right">
                   <div className="flex items-center">
@@ -610,8 +609,8 @@ export default function PatientForm({
               <FormLabel>
                 몸무게
                 {weightMeasuredDate && (
-                  <span className="ml-0.5 text-xs text-muted-foreground">
-                    ({weightMeasuredDate} 측정)
+                  <span className="ml-0.5 font-mono text-xs text-muted-foreground">
+                    ({format(weightMeasuredDate, 'yy.MM.dd')} 측정)
                   </span>
                 )}
               </FormLabel>

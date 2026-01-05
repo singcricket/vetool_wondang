@@ -3,19 +3,13 @@
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import type { Announcement } from '@/types/vetool'
-import { format } from 'date-fns'
-import { ko } from 'date-fns/locale'
-import {
-  CalendarIcon,
-  ChevronLeftIcon,
-  MessageCircleIcon,
-  TagIcon,
-} from 'lucide-react'
+import { ChevronLeftIcon, MessageCircleIcon, TagIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import FormattedMonoDate from '../common/formatted-mono-date'
 import { CATEGORY_MAP } from './annoucement-card'
 
 export default function SingleAnnouncement({
@@ -70,10 +64,7 @@ export default function SingleAnnouncement({
             </Badge>
           )}
           <div className="flex items-center gap-1.5 text-sm text-slate-500">
-            <CalendarIcon className="h-4 w-4" />
-            <time dateTime={created_at}>
-              {format(new Date(created_at), 'yyyy년 MM월 dd일', { locale: ko })}
-            </time>
+            <FormattedMonoDate date={created_at} />
           </div>
         </div>
 

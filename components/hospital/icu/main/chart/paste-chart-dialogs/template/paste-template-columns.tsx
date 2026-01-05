@@ -1,3 +1,4 @@
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import PreviewDialog from '@/components/hospital/common/preview/preview-dialog'
 import { Button } from '@/components/ui/button'
 import type { IcuTemplate } from '@/types'
@@ -77,7 +78,7 @@ export const pasteTemplateColumns = (
     },
     cell: ({ row }) => {
       const createdAt = row.original.created_at
-      return <span>{createdAt.slice(0, 10)}</span>
+      return <FormattedMonoDate date={createdAt} className="text-xs" />
     },
   },
 

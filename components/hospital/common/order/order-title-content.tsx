@@ -3,7 +3,6 @@ import type { OrderFontSize } from '@/components/hospital/admin/icu-settings/ord
 import OrderTypeColorDot from '@/components/hospital/common/order/order-type-color-dot'
 import type { IcuOrderColors } from '@/types/adimin'
 import type { SelectedIcuOrder } from '@/types/icu/chart'
-import { format } from 'date-fns'
 
 type Props = {
   orderType: SelectedIcuOrder['icu_chart_order_type']
@@ -16,7 +15,6 @@ type Props = {
     max: number
   }
   treatmentLength?: number
-  targetDate?: string
 }
 
 export default function OrderTitleContent({
@@ -27,12 +25,9 @@ export default function OrderTitleContent({
   orderFontSizeData,
   vitalRefRange,
   treatmentLength,
-  targetDate,
 }: Props) {
   const noFecalOrUrineResult =
     (orderName === '배변' || orderName === '배뇨') && treatmentLength === 0
-  const formattedTargetDate =
-    noFecalOrUrineResult && targetDate ? format(targetDate, 'MM월dd일') : null
 
   return (
     <div className="flex w-full items-center justify-between gap-2 truncate">
@@ -52,10 +47,10 @@ export default function OrderTitleContent({
 
           {noFecalOrUrineResult && (
             <HelperTooltip variant="warning">
-              {formattedTargetDate
+              {noFecalOrUrineResult
                 ? orderName === '배변'
-                  ? `${formattedTargetDate} 배변이 없습니다`
-                  : `${formattedTargetDate} 배뇨가 없습니다`
+                  ? `배변이 없습니다`
+                  : `배뇨가 없습니다`
                 : null}
             </HelperTooltip>
           )}

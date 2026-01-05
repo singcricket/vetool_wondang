@@ -1,5 +1,6 @@
 'use client'
 
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import PreviewDialog from '@/components/hospital/common/preview/preview-dialog'
 import DeleteTemplateDialog from '@/components/hospital/icu/main/template/delete-template-dialog'
 import { Button } from '@/components/ui/button'
@@ -56,7 +57,7 @@ export const templateColumns = (hosId: string): ColumnDef<IcuTemplate>[] => [
     cell: ({ row }) => {
       const createdAt = row.original.created_at
 
-      return <span>{createdAt.slice(0, 10)}</span>
+      return <FormattedMonoDate date={createdAt} className="text-xs" />
     },
   },
 
