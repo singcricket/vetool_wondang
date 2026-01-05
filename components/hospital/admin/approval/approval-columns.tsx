@@ -1,11 +1,13 @@
 'use client'
 
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import { ApprovalColumn } from '@/components/hospital/admin/approval/approval-column'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { formatTimestamp } from '@/lib/utils/utils'
 import type { User, UserApproval } from '@/types'
 import { ColumnDef } from '@tanstack/react-table'
+import { format } from 'date-fns'
+import { ko } from 'date-fns/locale'
 import { ArrowUpDown, Stethoscope, User as UserIcon } from 'lucide-react'
 
 export type ApprovalDataTable = Omit<
@@ -79,7 +81,9 @@ export const approvlaColumns: ColumnDef<ApprovalDataTable>[] = [
     cell: ({ row }) => {
       const created_at = row.original.created_at
 
-      return <span>{formatTimestamp(created_at)}</span>
+      return (
+        <FormattedMonoDate date={created_at} withTime className="text-xs" />
+      )
     },
   },
   {
@@ -98,7 +102,9 @@ export const approvlaColumns: ColumnDef<ApprovalDataTable>[] = [
     cell: ({ row }) => {
       const updatedAt = row.original.updated_at
 
-      return <span>{updatedAt ? formatTimestamp(updatedAt) : '미승인'} </span>
+      if (!updatedAt) return '미승인'
+
+      return <FormattedMonoDate date={updatedAt} withTime className="text-xs" />
     },
   },
 

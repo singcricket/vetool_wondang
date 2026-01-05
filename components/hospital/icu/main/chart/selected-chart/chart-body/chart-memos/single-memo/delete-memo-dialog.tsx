@@ -26,7 +26,7 @@ export default function DeleteMemoDialog({
 
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>해당 메모를 삭제하시겠습니까?</AlertDialogTitle>
+          <AlertDialogTitle>메모를 삭제하시겠습니까?</AlertDialogTitle>
           <AlertDialogDescription>
             <WarningMessage text="해당 작업은 되돌릴 수 없습니다" />
           </AlertDialogDescription>

@@ -52,7 +52,6 @@ export default function ChartTable({ chartData, targetDate, hosId }: Props) {
           setSortedOrders={setSortedOrders}
           sortedOrders={sortedOrders}
           onOrderMove={handleOrderMove}
-          targetDate={targetDate}
         />
       ) : (
         <ChartTableBody

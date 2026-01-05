@@ -1,7 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/utils'
 import { Announcements } from '@/types'
-import { format } from 'date-fns'
 import {
   BarChart4Icon,
   ChevronRightIcon,
@@ -17,6 +16,7 @@ import {
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { useMemo } from 'react'
+import FormattedMonoDate from '../common/formatted-mono-date'
 
 export const CATEGORY_MAP = [
   {
@@ -162,9 +162,7 @@ export default function AnnouncementCard({
           <div className="flex shrink-0 items-center justify-between gap-6 md:justify-end">
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                <time dateTime={announcement.created_at} className="font-mono">
-                  {format(new Date(announcement.created_at), 'yy.MM.dd')}
-                </time>
+                <FormattedMonoDate date={announcement.created_at} />
               </div>
             </div>
 

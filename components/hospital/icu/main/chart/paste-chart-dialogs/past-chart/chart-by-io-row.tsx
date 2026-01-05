@@ -3,6 +3,8 @@ import { TableCell, TableRow } from '@/components/ui/table'
 import type { ChartByIo } from '@/lib/services/icu/chart/get-icu-chart'
 import type { Dispatch, SetStateAction } from 'react'
 import ConfirmPastePastChartDialog from './confirm-past-past-chart-dialog'
+import { format } from 'date-fns'
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 
 type Props = {
   patientId: string
@@ -24,7 +26,7 @@ export default function ChartByIoRow({
       <TableCell className="w-1/4 py-0.5 text-center">{index} 일차</TableCell>
 
       <TableCell className="w-1/4 py-0.5 text-center">
-        {chart.target_date}
+        <FormattedMonoDate date={chart.target_date!} />
       </TableCell>
 
       <TableCell className="w-1/4 py-0.5 text-center">

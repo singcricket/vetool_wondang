@@ -1,3 +1,4 @@
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import ReadOnlyChartTable from '@/components/common/read-only-icu-chart/read-only-chart-table'
 import {
   DialogContent,
@@ -7,7 +8,6 @@ import {
 } from '@/components/ui/dialog'
 import type { SelectedIcuChart } from '@/types/icu/chart'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-import { format } from 'date-fns'
 import PatientDetailInfo from '../patient/patient-detail-info'
 
 type Props = {
@@ -28,9 +28,7 @@ export default function PreviewDialogContent({
           {isTemplate ? (
             '템플릿 미리보기'
           ) : (
-            <span className="font-mono">
-              {format(copiedChart.target_date!, 'yy.MM.dd')}
-            </span>
+            <FormattedMonoDate date={copiedChart.target_date!} />
           )}
         </DialogTitle>
         <VisuallyHidden>

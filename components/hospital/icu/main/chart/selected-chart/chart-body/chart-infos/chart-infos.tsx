@@ -36,8 +36,6 @@ export default function ChartInfos({
     urgency,
   } = chartData
 
-  const isPatientOut = out_date !== null
-
   return (
     <div className="grid grid-cols-6 gap-2">
       <div className="col-span-1">
@@ -45,7 +43,7 @@ export default function ChartInfos({
       </div>
 
       <div className="col-span-1">
-        {isPatientOut ? (
+        {out_date ? (
           <OutDate outDate={out_date} />
         ) : (
           <OutDueDate

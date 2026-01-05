@@ -1,8 +1,8 @@
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import NoResultSquirrel from '@/components/common/no-result-squirrel'
 import SingleTodo from '@/components/hospital/home/body/todo/single-todo'
 
 import type { ClientTodo } from '@/types/hospital/todo'
-import { formatDate } from 'date-fns'
 
 type Props = {
   date: Date
@@ -19,8 +19,6 @@ export default function TodoList({
   refetch,
   activeFilter,
 }: Props) {
-  const formattedDate = formatDate(date, 'yyyy-MM-dd')
-
   const filteredTodos = todos.filter((todo) => {
     if (activeFilter === 'all') return true
     if (activeFilter === 'done') return todo.is_done
@@ -30,7 +28,7 @@ export default function TodoList({
 
   return (
     <>
-      <span className="font-semibold">{formattedDate}</span>
+      <FormattedMonoDate date={date} />
 
       {filteredTodos.length === 0 ? (
         <NoResultSquirrel

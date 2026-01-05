@@ -14,7 +14,6 @@ type Props = {
   vitalRefRange?: VitalRefRange[]
   species?: string
   orderWidth: number
-  targetDate: string
 }
 
 export default function OrderRowTitle({
@@ -23,7 +22,6 @@ export default function OrderRowTitle({
   isSorting,
   species,
   orderWidth,
-  targetDate,
 }: Props) {
   const {
     icu_chart_order_comment,
@@ -116,7 +114,6 @@ export default function OrderRowTitle({
           orderColorsData={orderColorsData}
           orderFontSizeData={orderFontSizeData}
           vitalRefRange={rowVitalRefRange}
-          targetDate={targetDate}
         />
       </Button>
     </TableCell>

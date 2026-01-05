@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import { z } from 'zod'
 import InputSuffix from '../../input-suffix'
+import RequiredFieldDot from '../../requied-field-dot'
 
 type Props = {
   form: UseFormReturn<z.infer<typeof registerPatientFormSchema>>
@@ -37,7 +38,7 @@ export default function BirthDatePicker({ form, birth }: Props) {
   const updateBirthDate = useCallback(
     (date: Date) => {
       form.setValue('birth', date)
-      setDateInput(format(date, 'yyyy-MM-dd'))
+      setDateInput(format(date, 'yy.MM.dd'))
 
       const now = new Date()
       const years = differenceInYears(now, date)
@@ -99,7 +100,7 @@ export default function BirthDatePicker({ form, birth }: Props) {
       render={({ field }) => (
         <FormItem className="flex flex-col justify-end">
           <FormLabel>
-            생년월일 <span className="text-destructive">*</span>
+            나이(생년월일) <RequiredFieldDot />
           </FormLabel>
 
           <div className="flex flex-col items-center gap-2 sm:flex-row">
@@ -111,7 +112,7 @@ export default function BirthDatePicker({ form, birth }: Props) {
                 className="h-8 text-sm"
                 max={99}
               />
-              <InputSuffix text="살" />
+              <InputSuffix text="y" />
             </div>
 
             <div className="relative w-full">
@@ -121,7 +122,7 @@ export default function BirthDatePicker({ form, birth }: Props) {
                 onChange={handleMonthInputChange}
                 className="h-8 text-sm"
               />
-              <InputSuffix text="개월" />
+              <InputSuffix text="m" />
             </div>
 
             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>

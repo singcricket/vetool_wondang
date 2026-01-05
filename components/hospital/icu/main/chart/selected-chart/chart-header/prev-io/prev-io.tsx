@@ -1,5 +1,6 @@
 'use client'
 
+import FormattedMonoDate from '@/components/common/formatted-mono-date'
 import PulsingDot from '@/components/hospital/common/pulsing-dot'
 import {
   Select,
@@ -74,18 +75,14 @@ export default function PrevIo({ patientId, hosId, targetDate }: Props) {
               <SelectItem
                 key={history.in_date}
                 value={history.in_date}
-                className="cursor-pointer font-mono text-xs"
+                className="cursor-pointer text-xs"
               >
                 <div className="flex items-center gap-2">
-                  <div>{format(history.in_date, 'yy.MM.dd')}</div>
-                  <div>-</div>
+                  <FormattedMonoDate date={history.in_date} />-
                   {history.out_date ? (
-                    <div>{format(history.out_date, 'yy.MM.dd')}</div>
+                    <FormattedMonoDate date={history.out_date} />
                   ) : (
-                    <div className="relative flex items-center">
-                      입원 중
-                      <PulsingDot className="-right-4 top-1" />
-                    </div>
+                    <span>입원 중</span>
                   )}
                 </div>
               </SelectItem>
