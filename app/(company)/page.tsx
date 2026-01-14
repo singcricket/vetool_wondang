@@ -4,22 +4,28 @@ import HeroSection from '@/components/company/main/hero/hero-section'
 import StatsSection from '@/components/company/main/stats/stats-section'
 import TestinomialSection from '@/components/company/main/testimonial/testimonial-section'
 import { createClient } from '@/lib/supabase/server'
+import type { SupabaseClaims } from '@/types'
 import { redirect } from 'next/navigation'
 
 export default async function CompanyHomePage() {
   const supabase = await createClient()
 
-  const { data } = await supabase.auth.getClaims()
+  const { data, error } = await supabase.auth.getClaims()
 
-  const supabaseUser = data?.claims
+  if (error || !data) {
+    console.error(error)
+    redirect('/login')
+  }
+
+  const supabaseUser = data.claims as SupabaseClaims
 
   if (supabaseUser) {
     // 벳툴 users 테이블에서 해당 사용자 조회
     const { data: vetoolUser, error: vetoolUserError } = await supabase
       .from('users')
-      .select('user_id, hos_id')
-      .match({ user_id: supabaseUser.sub })
-      .maybeSingle() // 있을 수도 없을 수(첫로그인의경우)도 있으므로
+      .select('hos_id, user_id')
+      .eq('user_id', supabaseUser.sub)
+      .maybeSingle()
 
     // 조회 과정에서 에러 발생시 login 페이지 이동
     if (vetoolUserError) {
@@ -39,7 +45,7 @@ export default async function CompanyHomePage() {
           await supabase
             .from('user_approvals')
             .select()
-            .match({ user_id: vetoolUser.user_id })
+            .eq('user_id', vetoolUser.user_id)
             .maybeSingle()
 
         if (userApprovalDataError) {
@@ -64,11 +70,13 @@ export default async function CompanyHomePage() {
         name: supabaseUser.user_metadata.name,
         email: supabaseUser.user_metadata.email,
         avatar_url: supabaseUser.user_metadata.avatar_url,
-      })
+      } as any)
+
       if (insertUserError) {
         console.error(insertUserError)
         redirect('/login')
       }
+
       redirect('/on-boarding')
     }
   }

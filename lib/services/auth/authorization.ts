@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { User } from '@/types'
+import type { SupabaseClaims, User } from '@/types'
 import { redirect } from 'next/navigation'
 import { cache } from 'react'
 
@@ -20,17 +20,18 @@ export type VetoolUser = Pick<
 
 export const getVetoolUserData = cache(async () => {
   const supabase = await createClient()
-  const { data: supabaseUser, error: supabaseUserError } =
-    await supabase.auth.getClaims()
+  const { data, error: supabaseUserError } = await supabase.auth.getClaims()
 
   if (supabaseUserError) {
     console.error(supabaseUserError)
     redirect('/login')
   }
 
-  if (!supabaseUser) {
+  if (!data) {
     redirect('/login')
   }
+
+  const supabaseClaims = data.claims as SupabaseClaims
 
   const { data: vetoolUser, error: vetoolUserError } = await supabase
     .from('users')
@@ -47,7 +48,7 @@ export const getVetoolUserData = cache(async () => {
         is_admin
       `,
     )
-    .match({ user_id: supabaseUser.claims.sub })
+    .eq('user_id', supabaseClaims.sub)
     .single()
 
   if (vetoolUserError) {

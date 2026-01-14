@@ -36,7 +36,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-visually-hidden": "^1.2.4",
     "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.90.1",
+    "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-table": "^8.21.3",
     "@types/jspdf": "^2.0.0",
     "@vercel/analytics": "^1.6.1",
