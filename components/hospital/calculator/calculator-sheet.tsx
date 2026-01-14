@@ -46,7 +46,7 @@ export default function CalculatorSheet({ plan }: { plan: Plan }) {
   return (
     <Sheet open={isSheetOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button size="icon" className="mr-1 h-8 w-8 rounded-full 2xl:mr-0">
+        <Button size="icon" className="mr-1 h-8 w-8 2xl:mr-0">
           {isFetching ? <Spinner /> : <CalculatorIcon />}
         </Button>
       </SheetTrigger>

@@ -66,7 +66,7 @@ export default function UploadExcelDialog({ hosId }: { hosId: string }) {
           <DialogDescription className="flex flex-col gap-2">
             <span>메인차트에 등록된 환자들을 한 번에 등록하세요.</span>
             <a
-              href="/announcements/a1608149-ed2d-4e49-99ef-957927578f2f"
+              href="/announcements/85fedd32-bdc6-4b73-a031-817204279f60"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"

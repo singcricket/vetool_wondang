@@ -1,3 +1,4 @@
+import LargeLoaderCircle from '@/components/common/large-loader-circle'
 import MobileTitle from '@/components/common/mobile-title'
 import SearchPatientContainer from '@/components/common/patients/search/search-patient-containter'
 import { PawPrintIcon } from 'lucide-react'
@@ -9,7 +10,7 @@ export default async function HospitalPatientsPage(
   const { hos_id } = await props.params
 
   return (
-    <Suspense>
+    <Suspense fallback={<LargeLoaderCircle className="min-h-screen" />}>
       <MobileTitle icon={PawPrintIcon} title="환자목록" />
 
       <SearchPatientContainer

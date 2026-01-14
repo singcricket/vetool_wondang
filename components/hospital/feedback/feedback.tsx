@@ -16,11 +16,7 @@ export default function Feedback() {
   return (
     <Popover open={isPopverOpen} onOpenChange={setIsPopoverOpen}>
       <PopoverTrigger asChild>
-        <Button
-          size="icon"
-          className="h-8 w-8 rounded-full shadow-lg"
-          variant="outline"
-        >
+        <Button size="icon" className="h-8 w-8" variant="ghost">
           <MessageCircleIcon />
         </Button>
       </PopoverTrigger>
