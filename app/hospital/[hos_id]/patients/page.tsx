@@ -1,21 +1,23 @@
+import LargeLoaderCircle from '@/components/common/large-loader-circle'
 import MobileTitle from '@/components/common/mobile-title'
 import SearchPatientContainer from '@/components/common/patients/search/search-patient-containter'
 import { PawPrintIcon } from 'lucide-react'
+import { Suspense } from 'react'
 
-export default async function HospitalPatientsPage(props: {
-  params: Promise<{ hos_id: string }>
-}) {
-  const params = await props.params
+export default async function HospitalPatientsPage(
+  props: PageProps<'/hospital/[hos_id]/patients'>,
+) {
+  const { hos_id } = await props.params
 
   return (
-    <>
+    <Suspense fallback={<LargeLoaderCircle className="min-h-screen" />}>
       <MobileTitle icon={PawPrintIcon} title="환자목록" />
 
       <SearchPatientContainer
-        hosId={params.hos_id}
+        hosId={hos_id}
         isIcu={false}
         setIsIcuRegisterDialogOpen={undefined}
       />
-    </>
+    </Suspense>
   )
 }

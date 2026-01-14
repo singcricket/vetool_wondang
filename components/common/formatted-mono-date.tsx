@@ -14,8 +14,9 @@ export default function FormattedMonoDate({
 }: Props) {
   return (
     <time
-      dateTime={date.toString()}
+      dateTime={new Date(date).toISOString()}
       className={cn('pt-[1px] font-mono', className)}
+      suppressHydrationWarning
     >
       {format(new Date(date), withTime ? 'yy.MM.dd HH:mm' : 'yy.MM.dd')}
     </time>

@@ -84,7 +84,10 @@ export const searchedPatientsColumns = ({
         return (
           <div className="flex items-center justify-center gap-1">
             {calculateAge(birth)}
-            <span className="text-xs text-muted-foreground">({birth})</span>
+            <span className="text-xs text-muted-foreground">
+              (
+              <FormattedMonoDate date={birth} />)
+            </span>
           </div>
         )
       },

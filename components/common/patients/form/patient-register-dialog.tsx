@@ -22,7 +22,7 @@ export default function PatientRegisterDialog({ hosId }: { hosId: string }) {
       onOpenChange={setIsPatientRegisterDialogOpen}
     >
       <DialogTrigger asChild>
-        <Button size="default">환자 등록</Button>
+        <Button>환자 등록</Button>
       </DialogTrigger>
 
       <DialogContent
@@ -40,6 +40,13 @@ export default function PatientRegisterDialog({ hosId }: { hosId: string }) {
           mode="registerFromPatientRoute"
           hosId={hosId}
           setIsPatientRegisterDialogOpen={setIsPatientRegisterDialogOpen}
+          editingPatient={null}
+          weight={null}
+          weightMeasuredDate={null}
+          setIsPatientUpdateDialogOpen={null}
+          setIsConfirmDialogOpen={undefined}
+          icuChartId={null}
+          setIsEdited={undefined}
           registeringPatient={null}
           setRegisteringPatient={null}
           debouncedSearch={null}

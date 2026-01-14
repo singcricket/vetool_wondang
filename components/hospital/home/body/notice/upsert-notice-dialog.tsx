@@ -107,11 +107,7 @@ export default function UpsertNoticeDialog({
             />
           </Button>
         ) : (
-          <Button
-            variant="default"
-            size="icon"
-            className="h-6 w-6 rounded-full"
-          >
+          <Button variant="default" size="icon">
             <PlusIcon size={14} />
           </Button>
         )}
