@@ -130,7 +130,7 @@ export default function BirthDatePicker({ form, birth }: Props) {
                 <Button
                   variant="outline"
                   aria-label="Open calendar"
-                  className="h-8 w-32"
+                  className="h-8 w-28 shrink-0"
                 >
                   <CalendarIcon />
                   {dateInput}

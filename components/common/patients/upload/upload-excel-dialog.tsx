@@ -16,15 +16,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import usePatientFileUpload from '@/hooks/use-patient-file-upload'
 import { cn } from '@/lib/utils/utils'
 import { DialogClose } from '@radix-ui/react-dialog'
-import { ExternalLinkIcon, InfoIcon, LoaderCircleIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { ExternalLinkIcon, InfoIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import SubmitButton from '../../submit-button'
 
 export default function UploadExcelDialog({ hosId }: { hosId: string }) {
-  const { refresh } = useRouter()
-
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [uploadType, setUploadType] = useState('intoVet')
 
@@ -36,8 +33,8 @@ export default function UploadExcelDialog({ hosId }: { hosId: string }) {
     handleUpload,
   } = usePatientFileUpload(hosId, () => {
     setIsDialogOpen(false)
-    refresh()
     toast.success('환자 목록을 업로드하였습니다')
+    window.location.reload()
   })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,9 +55,7 @@ export default function UploadExcelDialog({ hosId }: { hosId: string }) {
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="default">
-          일괄 업로드
-        </Button>
+        <Button variant="outline">일괄 업로드</Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[480px]">
@@ -220,6 +215,7 @@ export default function UploadExcelDialog({ hosId }: { hosId: string }) {
           </DialogClose>
 
           <SubmitButton
+            onClick={() => handleUpload(uploadType)}
             isPending={isLoading}
             buttonText="업로드"
             disabled={!selectedFile || isLoading}

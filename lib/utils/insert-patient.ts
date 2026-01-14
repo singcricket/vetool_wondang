@@ -10,7 +10,11 @@ export const transformCsvData = (
   header: string[],
   uploadType: 'intoVet' | 'efriends',
 ) => {
-  // 먼저 hos_patient_id와 name의 인덱스와 값을 확인
+  // 헤더를 트림하여 매칭 정확도 높임
+  const trimmedHeader = header.map((h) =>
+    h?.toString().trim().replace(/\s+/g, ''),
+  )
+
   const hosPatientIdMapping = CSV_HEADER_MAPPING[uploadType].find(
     (mapping) => mapping.dbColumn === 'hos_patient_id',
   )
@@ -19,9 +23,13 @@ export const transformCsvData = (
   )
 
   const hosPatientIdIndex = hosPatientIdMapping
-    ? header.indexOf(hosPatientIdMapping.csvColumn)
+    ? trimmedHeader.indexOf(
+        hosPatientIdMapping.csvColumn.trim().replace(/\s+/g, ''),
+      )
     : -1
-  const nameIndex = nameMapping ? header.indexOf(nameMapping.csvColumn) : -1
+  const nameIndex = nameMapping
+    ? trimmedHeader.indexOf(nameMapping.csvColumn.trim().replace(/\s+/g, ''))
+    : -1
 
   // hos_patient_id 값이 없거나 빈 문자열인 경우 즉시 null 반환
   if (
@@ -47,7 +55,9 @@ export const transformCsvData = (
   const columnIndexes = CSV_HEADER_MAPPING[uploadType]
     .map((mapping) => ({
       ...mapping,
-      index: header.indexOf(mapping.csvColumn),
+      index: trimmedHeader.indexOf(
+        mapping.csvColumn.trim().replace(/\s+/g, ''),
+      ),
     }))
     .filter((mapping) => mapping.dbColumn && mapping.index !== -1)
 
@@ -84,7 +94,12 @@ export const transformCsvData = (
     }
   })
 
-  // 필수 필드에 대한 기본값 설정
+  // 필수 필드에 대한 기본값 설정 (DB Not-Null 제약 조건 준수)
+  transformedData.species = transformedData.species ?? 'Unknown'
+  transformedData.breed = transformedData.breed ?? 'MIXED'
+  transformedData.gender = transformedData.gender ?? 'un'
+  transformedData.birth =
+    transformedData.birth ?? new Date().toISOString().split('T')[0]
   transformedData.is_alive = transformedData.is_alive ?? true
 
   return transformedData
@@ -98,76 +113,105 @@ const transformIsAlive = (value: string): boolean => {
 }
 
 const transformGender = (value: string): string => {
+  if (!value) return 'un'
+
+  const normalizedValue = value.toString().trim().toLowerCase()
+
   const genderMap: Record<string, string> = {
-    Female: 'if',
-    Male: 'im',
-    'Castrated Male': 'cm',
-    'Spayed Female': 'sf',
-    'S.Female': 'sf',
-    'C.male': 'cm',
+    female: 'if',
+    male: 'im',
+    'castrated male': 'cm',
+    'spayed female': 'sf',
+    's.female': 'sf',
+    'c.male': 'cm',
+    암컷: 'if',
+    수컷: 'im',
+    '중성화 암컷': 'sf',
+    '중성화 수컷': 'cm',
+    fs: 'sf',
+    mn: 'cm',
+    f: 'if',
+    m: 'im',
   }
 
-  return genderMap[value] ?? 'un'
+  return genderMap[normalizedValue] ?? 'un'
 }
 
 const transformBirthDate = (value: string): string => {
-  const today = new Date().toISOString().split('T')[0]
+  if (!value) return new Date().toISOString().split('T')[0]
 
-  if (value.length === 8) {
-    const [year, month, day] = value.split('-').map((part) => Number(part))
+  const stringValue = value.toString().trim().replace(/\./g, '-')
+
+  // 1. 이미 YYYY-MM-DD 형식인 경우
+  if (/^\d{4}-\d{2}-\d{2}$/.test(stringValue)) {
+    return stringValue
+  }
+
+  // 2. YY-MM-DD (8자리) 형식인 경우
+  if (/^\d{2}-\d{2}-\d{2}$/.test(stringValue)) {
+    const [year, month, day] = stringValue.split('-').map(Number)
     const fullYear = year > 90 ? 1900 + year : 2000 + year
+    return `${fullYear}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+  }
 
-    const date = new Date(Date.UTC(fullYear, month - 1, day))
+  // 3. YYYYMMDD 형식인 경우
+  if (/^\d{8}$/.test(stringValue)) {
+    return `${stringValue.slice(0, 4)}-${stringValue.slice(4, 6)}-${stringValue.slice(6, 8)}`
+  }
 
-    // 유효한 날짜인지 확인
-    if (isNaN(date.getTime())) return today
-
+  const date = new Date(stringValue)
+  if (!isNaN(date.getTime())) {
     return date.toISOString().split('T')[0]
   }
 
-  const date = new Date(value)
-
-  // 유효한 날짜인지 확인
-  if (isNaN(date.getTime())) return today
-
-  return date.toISOString().split('T')[0]
+  return new Date().toISOString().split('T')[0]
 }
 
 const transformSpecies = (value: string) => {
-  // "'Feline"과 같이 데이터가 손상된 경우가 있음
-  if (value === 'Canine' || value === 'Feline') {
-    return value.toLocaleLowerCase()
+  if (!value) return 'Unknown'
+
+  const normalized = value.toString().trim().toLowerCase()
+
+  if (
+    normalized.includes('canine') ||
+    normalized.includes('강아지') ||
+    normalized.includes('개')
+  ) {
+    return 'canine'
+  }
+  if (normalized.includes('feline') || normalized.includes('고양이')) {
+    return 'feline'
   }
 
   return 'Unknown'
 }
 
 const transformBreed = (value: string) => {
-  if (!value) {
-    return null
+  if (!value || value.trim() === '') {
+    return 'MIXED'
   }
 
-  const engBreedName = value.split('(')[0].trim().toLowerCase()
-
-  // 추출된 영문명이 빈 문자열인 경우 원본값 반환
-  if (!engBreedName) {
-    return null
-  }
-
-  // 한글만 포함된 경우 원본값 반환
-  if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(engBreedName)) {
-    return null
-  }
+  const normalized = value.toString().trim()
+  const engPart = normalized.split('(')[0].trim().toLowerCase()
 
   // Korean Shorthaired -> Domestic Shorthaired 변환
-  if (engBreedName.includes('korean')) {
+  if (
+    engPart.includes('korean') ||
+    engPart.includes('코숏') ||
+    engPart.includes('코리안')
+  ) {
     return 'DOMESTIC SHORTHAIRED'
   }
 
   // breed 목록에서 매칭되는 eng value 찾기
   const matchedBreed = [...CANINE_BREEDS, ...FELINE_BREEDS]
-    .find((breed) => breed.eng.toLowerCase() === engBreedName)
+    .find(
+      (breed) =>
+        breed.eng.toLowerCase() === engPart ||
+        breed.kor.toLowerCase() === engPart ||
+        normalized.includes(breed.kor),
+    )
     ?.eng.toUpperCase()
 
-  return matchedBreed ?? null
+  return (matchedBreed ?? normalized.toUpperCase()) || 'MIXED'
 }
