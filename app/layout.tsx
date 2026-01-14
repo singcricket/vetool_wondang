@@ -5,11 +5,11 @@ import './globals.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL!),
-  title: '벳툴 | VETOOL',
+  title: 'VETOOL',
   description: '동물병원 전문차트 서비스',
   openGraph: {
-    siteName: '벳툴 | VETOOL',
-    title: '벳툴 | VETOOL',
+    siteName: 'VETOOL',
+    title: 'VETOOL',
     description: '동물병원 전문차트 서비스',
     url: process.env.NEXT_PUBLIC_APP_URL!,
     images: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   keywords: ['동물병원', '전문차트', '수의사', 'VETOOL'],
   twitter: {
     card: 'summary_large_image',
-    title: '벳툴 | VETOOL',
+    title: 'VETOOL',
     description: '동물병원 전문차트 서비스',
     images: [
       {

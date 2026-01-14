@@ -102,28 +102,35 @@ export default function usePatientFileUpload(
     if (!selectedFile) return
 
     setIsLoading(true)
+    try {
+      const csvData = await readFileContent(selectedFile)
+      const endpoint =
+        uploadType === 'intoVet'
+          ? '/api/patient/upload/intovet'
+          : '/api/patient/upload/efriends'
 
-    const csvData = await readFileContent(selectedFile)
-
-    if (uploadType === 'intoVet') {
-      await fetch(`/api/patient/upload/intovet`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: csvData, hos_id }),
       })
-    }
 
-    if (uploadType === 'efriends') {
-      await fetch(`/api/patient/upload/efriends`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: csvData, hos_id }),
-      })
-    }
+      const result = await response.json()
 
-    setIsLoading(false)
-    setSelectedFile(null)
-    onComplete()
+      if (!response.ok) {
+        throw new Error(result.error || '업로드 중 오류가 발생했습니다.')
+      }
+
+      setSelectedFile(null)
+      onComplete()
+    } catch (error) {
+      console.error('업로드 실패:', error)
+      setUploadStatus(
+        error instanceof Error ? `🚨 ${error.message}` : '🚨 업로드 실패',
+      )
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return {

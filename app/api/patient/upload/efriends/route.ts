@@ -9,11 +9,17 @@ import { NextResponse } from 'next/server'
 export async function POST(req: NextRequest) {
   try {
     const { data, hos_id } = await req.json()
-    const header = data[0] // 실제 헤더 행
+    // 헤더 행 탐색 (보토 1행이지만 가변적일 수 있음)
+    let headerIndex = 0
+    let header = data[headerIndex]
 
-    // null이 아닌 데이터만 필터링하고 유효성 검사 추가
+    if (!header || !header.some((h: any) => h?.toString().includes('보호자'))) {
+      headerIndex = 1
+      header = data[headerIndex]
+    }
+
     const patientData = data
-      .slice(1, -1)
+      .slice(headerIndex + 1)
       .map((row: string[]) => {
         const transformedRow = transformCsvData(row, header, 'efriends')
         if (transformedRow) {
@@ -22,10 +28,7 @@ export async function POST(req: NextRequest) {
         return null
       })
       .filter((row: any): row is NonNullable<typeof row> => {
-        if (!row || !row.hos_patient_id!) {
-          return false
-        }
-        return true
+        return !!(row && row.hos_patient_id && row.name)
       })
 
     const uniquePatientData: any = Array.from(

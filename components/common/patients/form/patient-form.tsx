@@ -290,10 +290,8 @@ export default function PatientForm({
     setIsSubmitting(false)
 
     setIsPatientRegisterDialogOpen!(false)
-
-    refresh()
-
     toast.success('환자를 등록했습니다')
+    window.location.reload()
   }
 
   const handleUpdate = async (
