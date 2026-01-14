@@ -10,16 +10,12 @@ import { redirect } from 'next/navigation'
 export default async function CompanyHomePage() {
   const supabase = await createClient()
 
-  const { data, error } = await supabase.auth.getClaims()
+  const { data } = await supabase.auth.getClaims()
 
-  if (error || !data) {
-    console.error(error)
-    redirect('/login')
-  }
+  // data가 있다는 것은 supabase 로그인 한 경우
+  if (data) {
+    const supabaseUser = data.claims as SupabaseClaims
 
-  const supabaseUser = data.claims as SupabaseClaims
-
-  if (supabaseUser) {
     // 벳툴 users 테이블에서 해당 사용자 조회
     const { data: vetoolUser, error: vetoolUserError } = await supabase
       .from('users')
@@ -70,7 +66,7 @@ export default async function CompanyHomePage() {
         name: supabaseUser.user_metadata.name,
         email: supabaseUser.user_metadata.email,
         avatar_url: supabaseUser.user_metadata.avatar_url,
-      } as any)
+      })
 
       if (insertUserError) {
         console.error(insertUserError)
@@ -81,6 +77,7 @@ export default async function CompanyHomePage() {
     }
   }
 
+  // 로그인 안한 경우 홈 내용을 표시함
   return (
     <div className="flex flex-col">
       <HeroSection />
