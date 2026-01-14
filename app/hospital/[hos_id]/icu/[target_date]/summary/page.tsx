@@ -4,7 +4,6 @@ import SummaryInfos from '@/components/hospital/icu/main/summary/summary-infos/s
 import SummaryTable from '@/components/hospital/icu/main/summary/table/summary-table'
 import { fetchSummaryData } from '@/lib/services/icu/summary/fetch-summary-data'
 import { DashboardIcon } from '@radix-ui/react-icons'
-
 import { Suspense } from 'react'
 
 export default async function SummaryPage(props: {
