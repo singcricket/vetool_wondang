@@ -1,9 +1,11 @@
+import MobileTitle from '@/components/common/mobile-title'
 import NoResultSquirrel from '@/components/common/no-result-squirrel'
 import SummaryInfos from '@/components/hospital/icu/main/summary/summary-infos/summary-infos'
 import SummaryTable from '@/components/hospital/icu/main/summary/table/summary-table'
 import { fetchSummaryData } from '@/lib/services/icu/summary/fetch-summary-data'
 import { DashboardIcon } from '@radix-ui/react-icons'
-import MobileTitle from '../../../../../../components/common/mobile-title'
+
+import { Suspense } from 'react'
 
 export default async function SummaryPage(props: {
   params: Promise<{
@@ -16,7 +18,7 @@ export default async function SummaryPage(props: {
     await fetchSummaryData(hos_id, target_date)
 
   return (
-    <>
+    <Suspense>
       <MobileTitle title="종합현황" icon={DashboardIcon} />
 
       {target_date_summary_data.length === 0 ? (
@@ -40,6 +42,6 @@ export default async function SummaryPage(props: {
           />
         </div>
       )}
-    </>
+    </Suspense>
   )
 }
