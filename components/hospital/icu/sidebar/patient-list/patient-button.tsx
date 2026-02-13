@@ -5,7 +5,12 @@ import { useSafeRefresh } from '@/hooks/use-safe-refresh'
 import type { IcuSidebarPatient } from '@/lib/services/icu/icu-layout'
 import { cn, convertPascalCased } from '@/lib/utils/utils'
 import type { Vet } from '@/types'
-import { StethoscopeIcon, UserIcon } from 'lucide-react'
+import {
+  ActivityIcon,
+  SirenIcon,
+  StethoscopeIcon,
+  UserIcon,
+} from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import UrgencyStarts from './urgency-stars'
 
@@ -22,7 +27,7 @@ export default function PatientButton({
   hosId,
   targetDate,
 }: Props) {
-  const { vets, patient, urgency } = icuIoData
+  const { vets, patient, urgency, cpcr } = icuIoData
 
   const safeRefresh = useSafeRefresh()
 
@@ -43,45 +48,53 @@ export default function PatientButton({
   return (
     <Button
       variant="outline"
-      size="sm"
       className={cn(
-        'relative w-full px-2 py-6 text-xs',
         selectedPatient && 'border border-black bg-muted shadow-md',
+        'relative flex h-auto w-full flex-col gap-0 px-1.5 py-1',
+        icuIoData.out_date && 'text-muted-foreground',
       )}
       onClick={handlePatientButtonClick}
     >
       {isPatientNew && (
-        <span className="pointer-events-none absolute -top-1.5 left-0 -rotate-12 select-none text-[10px] font-semibold tracking-tight text-primary">
+        <span className="pointer-events-none absolute -top-1.5 left-0 -rotate-12 select-none text-xs font-semibold tracking-tight text-primary">
           new
         </span>
       )}
-      <UrgencyStarts urgency={urgency} />
 
-      <div
-        className={cn(
-          'flex w-full flex-col justify-between gap-1',
-          icuIoData.out_date && 'text-muted-foreground',
-        )}
-      >
-        <div className="flex items-end justify-between gap-2">
-          <div className="flex items-center gap-1 text-sm">
-            <SpeciesToIcon species={patient.species as Species} size={16} />
-            {patient.name}
+      <div className="flex w-full items-start justify-between gap-2">
+        <div className="flex items-center gap-1 text-sm">
+          <span className="font-bold">{patient.name}</span>
+          <span className="text-xs font-light">{patient.hos_patient_id}</span>
+        </div>
+
+        <UrgencyStarts urgency={urgency} />
+      </div>
+
+      <div className="mt-1 flex w-full items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <UserIcon style={{ width: 16, height: 16 }} />
+          <div className="max-w-[60px] truncate">
+            {patient.owner_name || '미등록'}
           </div>
-          <div className="max-w-[96px] truncate">
+        </div>
+
+        <div className="flex items-center gap-1">
+          <StethoscopeIcon style={{ width: 15, height: 15 }} />
+          <div className="max-w-[60px] truncate">{vetName ?? '미지정'}</div>
+        </div>
+      </div>
+
+      <div className="mt-1 flex w-full items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <SpeciesToIcon species={patient.species as Species} size={16} />
+          <div className="max-w-[70px] truncate">
             {convertPascalCased(patient.breed)}
           </div>
         </div>
 
-        <div className="flex justify-between gap-2">
-          <div className="ml-0.5 flex items-center gap-0.5">
-            <StethoscopeIcon style={{ width: 12, height: 12 }} />
-            {vetName ?? '미지정'}
-          </div>
-          <div className="flex items-center gap-0.5 truncate">
-            <UserIcon style={{ width: 12, height: 12 }} />
-            <div className="truncate">{patient.owner_name || '미등록'}</div>
-          </div>
+        <div className="flex items-center gap-1">
+          <ActivityIcon style={{ width: 15, height: 15 }} />
+          <div>{cpcr.split(',')[0]}</div>
         </div>
       </div>
     </Button>

@@ -1,15 +1,15 @@
 import { Toaster } from '@/components/ui/sonner'
-import { Analytics } from '@vercel/analytics/next'
+
 import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL!),
-  title: 'VETOOL',
+  title: '신원당동물의료센터-VETOOL',
   description: '동물병원 전문차트 서비스',
   openGraph: {
-    siteName: 'VETOOL',
-    title: 'VETOOL',
+    siteName: '신원당동물의료센터-VETOOL',
+    title: '신원당동물의료센터-VETOOL',
     description: '동물병원 전문차트 서비스',
     url: process.env.NEXT_PUBLIC_APP_URL!,
     images: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   keywords: ['동물병원', '전문차트', '수의사', 'VETOOL'],
   twitter: {
     card: 'summary_large_image',
-    title: 'VETOOL',
+    title: '신원당동물의료센터-VETOOL',
     description: '동물병원 전문차트 서비스',
     images: [
       {
@@ -52,7 +52,7 @@ export default function RootLayout({
     <html lang="ko">
       <body className="antialiased">
         {children}
-        <Analytics />
+
         <Toaster richColors />
       </body>
     </html>

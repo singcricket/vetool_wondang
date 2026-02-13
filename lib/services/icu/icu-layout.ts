@@ -14,17 +14,24 @@ export type IcuSidebarPatient = Pick<
   | 'out_date'
   | 'out_due_date'
   | 'group_list'
+  | 'cpcr'
   | 'created_at'
 > & {
   patient: Pick<
     Patient,
-    'name' | 'breed' | 'species' | 'patient_id' | 'owner_name'
+    | 'name'
+    | 'breed'
+    | 'species'
+    | 'patient_id'
+    | 'owner_name'
+    | 'hos_patient_id'
   >
 } & {
   vets: Pick<IcuChart, 'main_vet' | 'sub_vet'>
 } & {
   urgency: IcuChart['urgency']
 }
+
 
 type IcuLayoutData = {
   icuSidebarPatients: IcuSidebarPatient[]
