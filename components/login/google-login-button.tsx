@@ -8,17 +8,16 @@ import { useFormStatus } from 'react-dom'
 import { Spinner } from '../ui/spinner'
 
 export default function GoogleLoginButton() {
-  let currentUrl
-  if (typeof window !== 'undefined') {
-    currentUrl = location.origin
-  }
+  const currentUrl = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : (process.env.NEXT_PUBLIC_APP_URL || 'https://vetool-wondang.vercel.app');
 
   const { pending } = useFormStatus()
 
   return (
     <>
       <input
-        type="text"
+        type="hidden"
         name="path"
         defaultValue={currentUrl ?? ''}
         className="hidden"
