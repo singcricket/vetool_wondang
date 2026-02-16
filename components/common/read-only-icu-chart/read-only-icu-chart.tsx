@@ -8,7 +8,7 @@ import ReadOnlyChartTable from './read-only-chart-table'
 
 type Props = {
   chartData: SelectedIcuChart
-  ref?: React.RefObject<HTMLDivElement | null>
+  ref?: React.Ref<HTMLDivElement>
   isExport?: boolean
 }
 
