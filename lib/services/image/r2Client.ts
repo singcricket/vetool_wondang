@@ -1,19 +1,15 @@
 import { S3Client } from '@aws-sdk/client-s3'
 
-if (
-  !process.env.R2_END_POINT ||
-  !process.env.R2_ACCESS_KEY ||
-  !process.env.R2_SECRET_KEY
-) {
-  throw new Error('R2 환경 변수가 설정되지 않았습니다.')
-}
+const endpoint = process.env.R2_END_POINT
+const accessKeyId = process.env.R2_ACCESS_KEY
+const secretAccessKey = process.env.R2_SECRET_KEY
 
 export const R2Client = new S3Client({
   region: 'auto',
-  endpoint: process.env.R2_END_POINT,
+  endpoint: endpoint || 'https://placeholder.endpoint', // 빌드 타임용 더미 주소
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY,
-    secretAccessKey: process.env.R2_SECRET_KEY,
+    accessKeyId: accessKeyId || 'placeholder',
+    secretAccessKey: secretAccessKey || 'placeholder',
   },
   forcePathStyle: true,
 })
