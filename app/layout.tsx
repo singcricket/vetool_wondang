@@ -3,7 +3,7 @@ import { Toaster } from '@/components/ui/sonner'
 import type { Metadata } from 'next'
 import './globals.css'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://vetool.co.kr'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://vetool-wondang-ppip.vercel.app'
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),

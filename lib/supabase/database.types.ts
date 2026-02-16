@@ -963,30 +963,6 @@ export type Database = {
         }
         Relationships: []
       }
-      keywords_old: {
-        Row: {
-          keyword: string | null
-          keyword_id: number
-          main_keyword: string | null
-          search_keyword: string | null
-          tags: string | null
-        }
-        Insert: {
-          keyword?: string | null
-          keyword_id?: number
-          main_keyword?: string | null
-          search_keyword?: string | null
-          tags?: string | null
-        }
-        Update: {
-          keyword?: string | null
-          keyword_id?: number
-          main_keyword?: string | null
-          search_keyword?: string | null
-          tags?: string | null
-        }
-        Relationships: []
-      }
       memos: {
         Row: {
           created_at: string
@@ -1542,8 +1518,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      discharge_patient: {
+        Args: {
+          icu_io_id_input: string
+          is_alive_input: boolean
+          keywords_input: string
+          patient_id_input: string
+        }
+        Returns: undefined
+      }
       fetch_checklist_sidebar_data: {
         Args: { due_date_input: string; hos_id_input: string }
+        Returns: Json
+      }
+      fetch_checklist_with_patient_with_weight: {
+        Args: { checklist_id_input: string }
         Returns: Json
       }
       fetch_icu_chart_data: {
@@ -1657,21 +1646,6 @@ export type Database = {
         Args: { hos_id_input: string; icu_chart_id_input: string }
         Returns: undefined
       }
-      register_icu: {
-        Args: {
-          age_in_days_input: number
-          group_list_input: Json
-          hos_id_input: string
-          icu_io_cc_input: string
-          icu_io_dx_input: string
-          in_date_input: string
-          main_vet_input: string
-          out_due_date_input: string
-          patient_id_input: string
-          sub_vet_input: string
-        }
-        Returns: undefined
-      }
       register_new_patient_in_icu: {
         Args: {
           age_in_days_input: number
@@ -1697,6 +1671,37 @@ export type Database = {
           species_input: string
         }
         Returns: string
+      }
+      search_icu_io: {
+        Args: {
+          p_age_max_days?: number
+          p_age_min_days?: number
+          p_breed?: string
+          p_cc?: string
+          p_dx?: string
+          p_gender?: string
+          p_hos_id: string
+          p_keyword?: string
+          p_owner_name?: string
+          p_patient?: string
+          p_sort_order?: string
+          p_species?: string
+          p_time_range_months?: number
+        }
+        Returns: {
+          age_in_days: number
+          breed: string
+          hos_patient_id: string
+          icu_io_cc: string
+          icu_io_dx: string
+          icu_io_id: string
+          icu_io_tags: string
+          in_date: string
+          out_date: string
+          owner_name: string
+          patient_name: string
+          species: string
+        }[]
       }
       search_patients: {
         Args: {
