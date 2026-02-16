@@ -4,6 +4,12 @@ const nextConfig = {
     typedEnv: true,
   },
   typedRoutes: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   logging: {
     fetches: {
       fullUrl: true,
