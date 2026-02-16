@@ -3,15 +3,17 @@ import { Toaster } from '@/components/ui/sonner'
 import type { Metadata } from 'next'
 import './globals.css'
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://vetool.co.kr'
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL!),
+  metadataBase: new URL(APP_URL),
   title: '신원당동물의료센터-VETOOL',
   description: '동물병원 전문차트 서비스',
   openGraph: {
     siteName: '신원당동물의료센터-VETOOL',
     title: '신원당동물의료센터-VETOOL',
     description: '동물병원 전문차트 서비스',
-    url: process.env.NEXT_PUBLIC_APP_URL!,
+    url: APP_URL,
     images: [
       {
         url: '/opengraph-image.png',
