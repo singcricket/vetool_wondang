@@ -31,7 +31,11 @@ export default function DesktopSidebarItem({
     (!pathname.split('/').at(3) && name === '병원 홈')
 
   const dynamicPath =
-    path === 'icu' ? `icu/${format(new Date(), 'yyyy-MM-dd')}/summary` : path
+    path === 'icu'
+      ? `icu/${format(new Date(), 'yyyy-MM-dd')}/summary`
+      : path === 'monitoring'
+        ? `monitoring/${format(new Date(), 'yyyy-MM-dd')}/monitoring-session`
+        : path
 
   return (
     <li key={name}>

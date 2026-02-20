@@ -1,4 +1,5 @@
 import {
+  Activity,
   BarChart4Icon,
   BuildingIcon,
   HeartPulseIcon,
@@ -27,6 +28,12 @@ export const HOS_SIDEBAR_MENUS = [
     path: 'icu',
     isReady: true,
     icon: <SyringeIcon />,
+  },
+  {
+    name: '모니터링',
+    path: 'monitoring',
+    isReady: true,
+    icon: <Activity />,
   },
   {
     name: '외과차트',

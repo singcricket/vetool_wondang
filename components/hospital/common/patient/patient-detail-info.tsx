@@ -14,6 +14,7 @@ type Props = {
   weightMeasuredDate: SelectedIcuChart['weight_measured_date']
   isAlive: SelectedIcuChart['patient']['is_alive']
   className?: string
+  hosPatientId?: string
 }
 
 export default function PatientDetailInfo({
@@ -26,13 +27,16 @@ export default function PatientDetailInfo({
   weightMeasuredDate,
   isAlive = true,
   className,
+  hosPatientId,
 }: Props) {
   return (
     <div className={cn('flex items-center gap-1 sm:gap-2', className)}>
       <SpeciesToIcon species={species as Species} />
-      <div>
-        <span>{name}</span>
+        <div className="flex items-center gap-1.5">
         {isAlive ? null : <span className="ml-1">🌈</span>}
+        <span>{name}</span>
+         <span className="text-sm">{hosPatientId}</span>
+        
       </div>
       ·
       <span className="w-12 truncate sm:w-auto">

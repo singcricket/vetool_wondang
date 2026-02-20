@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.1 (8cbcf98)"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -49,140 +49,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vetool_feedbacks"
             referencedColumns: ["feedback_id"]
-          },
-        ]
-      }
-      checklist: {
-        Row: {
-          age_in_days: number | null
-          checklist_group: string[] | null
-          checklist_id: string
-          checklist_protocol: Json | null
-          checklist_results: Json
-          checklist_set: Json
-          checklist_tag: string | null
-          checklist_timetable: Json | null
-          checklist_title: string
-          checklist_type: string
-          checklist_vet: Json | null
-          comment: string | null
-          created_at: string
-          due_date: string | null
-          end_date: string | null
-          end_time: string | null
-          hos_id: string
-          is_txing: boolean | null
-          patient_id: string | null
-          start_time: string | null
-          tx_memo_a: Json | null
-          tx_memo_b: Json | null
-        }
-        Insert: {
-          age_in_days?: number | null
-          checklist_group?: string[] | null
-          checklist_id?: string
-          checklist_protocol?: Json | null
-          checklist_results?: Json
-          checklist_set?: Json
-          checklist_tag?: string | null
-          checklist_timetable?: Json | null
-          checklist_title: string
-          checklist_type: string
-          checklist_vet?: Json | null
-          comment?: string | null
-          created_at?: string
-          due_date?: string | null
-          end_date?: string | null
-          end_time?: string | null
-          hos_id: string
-          is_txing?: boolean | null
-          patient_id?: string | null
-          start_time?: string | null
-          tx_memo_a?: Json | null
-          tx_memo_b?: Json | null
-        }
-        Update: {
-          age_in_days?: number | null
-          checklist_group?: string[] | null
-          checklist_id?: string
-          checklist_protocol?: Json | null
-          checklist_results?: Json
-          checklist_set?: Json
-          checklist_tag?: string | null
-          checklist_timetable?: Json | null
-          checklist_title?: string
-          checklist_type?: string
-          checklist_vet?: Json | null
-          comment?: string | null
-          created_at?: string
-          due_date?: string | null
-          end_date?: string | null
-          end_time?: string | null
-          hos_id?: string
-          is_txing?: boolean | null
-          patient_id?: string | null
-          start_time?: string | null
-          tx_memo_a?: Json | null
-          tx_memo_b?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "checklist_hos_id_fkey"
-            columns: ["hos_id"]
-            isOneToOne: false
-            referencedRelation: "hospitals"
-            referencedColumns: ["hos_id"]
-          },
-          {
-            foreignKeyName: "checklist_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["patient_id"]
-          },
-        ]
-      }
-      checklist_template: {
-        Row: {
-          checklist_set: Json | null
-          checklist_tag: string | null
-          checklist_template_id: string
-          checklist_title: string | null
-          checklist_type: string | null
-          created_at: string
-          hos_id: string | null
-          tx_memo_a: Json | null
-          tx_memo_b: Json | null
-        }
-        Insert: {
-          checklist_set?: Json | null
-          checklist_tag?: string | null
-          checklist_template_id?: string
-          checklist_title?: string | null
-          checklist_type?: string | null
-          created_at?: string
-          hos_id?: string | null
-          tx_memo_a?: Json | null
-          tx_memo_b?: Json | null
-        }
-        Update: {
-          checklist_set?: Json | null
-          checklist_tag?: string | null
-          checklist_template_id?: string
-          checklist_title?: string | null
-          checklist_type?: string | null
-          created_at?: string
-          hos_id?: string | null
-          tx_memo_a?: Json | null
-          tx_memo_b?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "checklist_template_hos_id_fkey"
-            columns: ["hos_id"]
-            isOneToOne: false
-            referencedRelation: "hospitals"
-            referencedColumns: ["hos_id"]
           },
         ]
       }
@@ -229,141 +95,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "diet_vetool_hos_id_fkey"
-            columns: ["hos_id"]
-            isOneToOne: false
-            referencedRelation: "hospitals"
-            referencedColumns: ["hos_id"]
-          },
-        ]
-      }
-      drug_doses: {
-        Row: {
-          bw_unit: string | null
-          created_at: string
-          cri_unit: string | null
-          default_dose: string | null
-          description: string | null
-          dose_id: string
-          dose_unit: string | null
-          drug_id: string | null
-          hos_id: string | null
-          max_dose: string | null
-          min_dose: string | null
-          route: string[] | null
-          species: string | null
-        }
-        Insert: {
-          bw_unit?: string | null
-          created_at?: string
-          cri_unit?: string | null
-          default_dose?: string | null
-          description?: string | null
-          dose_id?: string
-          dose_unit?: string | null
-          drug_id?: string | null
-          hos_id?: string | null
-          max_dose?: string | null
-          min_dose?: string | null
-          route?: string[] | null
-          species?: string | null
-        }
-        Update: {
-          bw_unit?: string | null
-          created_at?: string
-          cri_unit?: string | null
-          default_dose?: string | null
-          description?: string | null
-          dose_id?: string
-          dose_unit?: string | null
-          drug_id?: string | null
-          hos_id?: string | null
-          max_dose?: string | null
-          min_dose?: string | null
-          route?: string[] | null
-          species?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "drug_doses_drug_id_fkey"
-            columns: ["drug_id"]
-            isOneToOne: false
-            referencedRelation: "raw_drugs"
-            referencedColumns: ["raw_drug_id"]
-          },
-          {
-            foreignKeyName: "drug_doses_hos_id_fkey"
-            columns: ["hos_id"]
-            isOneToOne: false
-            referencedRelation: "hospitals"
-            referencedColumns: ["hos_id"]
-          },
-        ]
-      }
-      drug_products: {
-        Row: {
-          active: boolean | null
-          company: string | null
-          created_at: string
-          description: string | null
-          drug_id: string | null
-          drug_name: string | null
-          drug_products_id: string
-          hos_id: string | null
-          mass_vol: number | null
-          name: string
-          product_tag: string | null
-          standard: string | null
-          stock_plan: number | null
-          total_vol: number | null
-          type: string | null
-          unit: string | null
-        }
-        Insert: {
-          active?: boolean | null
-          company?: string | null
-          created_at?: string
-          description?: string | null
-          drug_id?: string | null
-          drug_name?: string | null
-          drug_products_id?: string
-          hos_id?: string | null
-          mass_vol?: number | null
-          name: string
-          product_tag?: string | null
-          standard?: string | null
-          stock_plan?: number | null
-          total_vol?: number | null
-          type?: string | null
-          unit?: string | null
-        }
-        Update: {
-          active?: boolean | null
-          company?: string | null
-          created_at?: string
-          description?: string | null
-          drug_id?: string | null
-          drug_name?: string | null
-          drug_products_id?: string
-          hos_id?: string | null
-          mass_vol?: number | null
-          name?: string
-          product_tag?: string | null
-          standard?: string | null
-          stock_plan?: number | null
-          total_vol?: number | null
-          type?: string | null
-          unit?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "drug_products_rows_drug_id_fkey"
-            columns: ["drug_id"]
-            isOneToOne: false
-            referencedRelation: "raw_drugs"
-            referencedColumns: ["raw_drug_id"]
-          },
-          {
-            foreignKeyName: "drug_products_rows_hos_id_fkey"
             columns: ["hos_id"]
             isOneToOne: false
             referencedRelation: "hospitals"
@@ -729,57 +460,6 @@ export type Database = {
           },
         ]
       }
-      icu_notification: {
-        Row: {
-          created_at: string
-          hos_id: string
-          icu_chart_id: string
-          notification_content: string | null
-          notification_id: string
-          notification_time: number
-          notification_title: string
-          patient_id: string
-          target_date: string
-        }
-        Insert: {
-          created_at?: string
-          hos_id: string
-          icu_chart_id: string
-          notification_content?: string | null
-          notification_id?: string
-          notification_time: number
-          notification_title: string
-          patient_id: string
-          target_date: string
-        }
-        Update: {
-          created_at?: string
-          hos_id?: string
-          icu_chart_id?: string
-          notification_content?: string | null
-          notification_id?: string
-          notification_time?: number
-          notification_title?: string
-          patient_id?: string
-          target_date?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "icu_notification_hos_id_fkey"
-            columns: ["hos_id"]
-            isOneToOne: false
-            referencedRelation: "hospitals"
-            referencedColumns: ["hos_id"]
-          },
-          {
-            foreignKeyName: "icu_notification_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["patient_id"]
-          },
-        ]
-      }
       icu_orders: {
         Row: {
           created_at: string
@@ -963,82 +643,94 @@ export type Database = {
         }
         Relationships: []
       }
-      memos: {
+      monitoring_sessions: {
         Row: {
-          created_at: string
-          done_date: string | null
-          done_ids: string[] | null
-          from_date: string | null
-          has_images: boolean | null
+          age_in_days: number | null
+          created_at: string | null
+          due_date: string | null
+          end_time: string | null
           hos_id: string
-          is_done: boolean | null
-          memo_color: string | null
-          memo_content: string
-          memo_id: number
-          memo_images: string[] | null
-          memo_title: string | null
+          interval_setting: number | null
+          is_template: boolean | null
+          memo_etc: string | null
+          memo_tx: Json | null
           patient_id: string | null
-          target_date: string | null
-          target_group: string[] | null
-          target_ids: string[] | null
-          user_id: string
+          planned_minutes: Json | null
+          planned_todo: Json | null
+          planned_vitals: Json | null
+          session_group: string | null
+          session_id: string
+          session_title: string | null
+          start_time: string | null
+          tags: string | null
+          updated_at: string | null
+          vet_main: string | null
+          vet_sub: Json | null
         }
         Insert: {
-          created_at?: string
-          done_date?: string | null
-          done_ids?: string[] | null
-          from_date?: string | null
-          has_images?: boolean | null
+          age_in_days?: number | null
+          created_at?: string | null
+          due_date?: string | null
+          end_time?: string | null
           hos_id: string
-          is_done?: boolean | null
-          memo_color?: string | null
-          memo_content: string
-          memo_id?: number
-          memo_images?: string[] | null
-          memo_title?: string | null
+          interval_setting?: number | null
+          is_template?: boolean | null
+          memo_etc?: string | null
+          memo_tx?: Json | null
           patient_id?: string | null
-          target_date?: string | null
-          target_group?: string[] | null
-          target_ids?: string[] | null
-          user_id: string
+          planned_minutes?: Json | null
+          planned_todo?: Json | null
+          planned_vitals?: Json | null
+          session_group?: string | null
+          session_id?: string
+          session_title?: string | null
+          start_time?: string | null
+          tags?: string | null
+          updated_at?: string | null
+          vet_main?: string | null
+          vet_sub?: Json | null
         }
         Update: {
-          created_at?: string
-          done_date?: string | null
-          done_ids?: string[] | null
-          from_date?: string | null
-          has_images?: boolean | null
+          age_in_days?: number | null
+          created_at?: string | null
+          due_date?: string | null
+          end_time?: string | null
           hos_id?: string
-          is_done?: boolean | null
-          memo_color?: string | null
-          memo_content?: string
-          memo_id?: number
-          memo_images?: string[] | null
-          memo_title?: string | null
+          interval_setting?: number | null
+          is_template?: boolean | null
+          memo_etc?: string | null
+          memo_tx?: Json | null
           patient_id?: string | null
-          target_date?: string | null
-          target_group?: string[] | null
-          target_ids?: string[] | null
-          user_id?: string
+          planned_minutes?: Json | null
+          planned_todo?: Json | null
+          planned_vitals?: Json | null
+          session_group?: string | null
+          session_id?: string
+          session_title?: string | null
+          start_time?: string | null
+          tags?: string | null
+          updated_at?: string | null
+          vet_main?: string | null
+          vet_sub?: Json | null
         }
         Relationships: [
           {
-            foreignKeyName: "memos_hos_id_fkey"
+            foreignKeyName: "monitoring_sessions_hos_id_fkey"
             columns: ["hos_id"]
             isOneToOne: false
             referencedRelation: "hospitals"
             referencedColumns: ["hos_id"]
           },
           {
-            foreignKeyName: "memos_patient_id_fkey"
+            foreignKeyName: "monitoring_sessions_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
             referencedColumns: ["patient_id"]
           },
           {
-            foreignKeyName: "memos_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "monitoring_sessions_vet_main_fkey"
+            columns: ["vet_main"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
@@ -1100,7 +792,7 @@ export type Database = {
           hos_owner_id: string
           owner_address: string | null
           owner_id: string
-          owner_level: Database["public"]["Enums"]["owner_level_enum"]
+          owner_level: string
           owner_memo: string | null
           owner_name: string
           owner_phone_number: string | null
@@ -1111,7 +803,7 @@ export type Database = {
           hos_owner_id: string
           owner_address?: string | null
           owner_id?: string
-          owner_level?: Database["public"]["Enums"]["owner_level_enum"]
+          owner_level?: string
           owner_memo?: string | null
           owner_name?: string
           owner_phone_number?: string | null
@@ -1122,7 +814,7 @@ export type Database = {
           hos_owner_id?: string
           owner_address?: string | null
           owner_id?: string
-          owner_level?: Database["public"]["Enums"]["owner_level_enum"]
+          owner_level?: string
           owner_memo?: string | null
           owner_name?: string
           owner_phone_number?: string | null
@@ -1372,41 +1064,6 @@ export type Database = {
           },
         ]
       }
-      vetool_errors: {
-        Row: {
-          created_at: string
-          description: string
-          error_json: Json
-          is_server: boolean
-          user_id: string
-          vetool_error_id: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          error_json: Json
-          is_server: boolean
-          user_id?: string
-          vetool_error_id?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          error_json?: Json
-          is_server?: boolean
-          user_id?: string
-          vetool_error_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vetool_errors_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       vetool_feedbacks: {
         Row: {
           created_at: string
@@ -1518,21 +1175,8 @@ export type Database = {
         }
         Returns: undefined
       }
-      discharge_patient: {
-        Args: {
-          icu_io_id_input: string
-          is_alive_input: boolean
-          keywords_input: string
-          patient_id_input: string
-        }
-        Returns: undefined
-      }
       fetch_checklist_sidebar_data: {
         Args: { due_date_input: string; hos_id_input: string }
-        Returns: Json
-      }
-      fetch_checklist_with_patient_with_weight: {
-        Args: { checklist_id_input: string }
         Returns: Json
       }
       fetch_icu_chart_data: {
@@ -1549,6 +1193,32 @@ export type Database = {
       }
       fetch_icu_tx_table_data: {
         Args: { hos_id_input: string; target_date_input: string }
+        Returns: Json
+      }
+      fetch_monitoring_sidebar_data: {
+        Args: { due_date_input: string; hos_id_input: string }
+        Returns: {
+          end_time: string
+          interval_setting: number
+          is_template: boolean
+          memo_etc: string
+          memo_tx: Json
+          patient: Json
+          planned_minutes: Json
+          planned_todo: Json
+          planned_vitals: Json
+          session_group: string
+          session_id: string
+          session_title: string
+          start_time: string
+          tags: string
+          updated_at: string
+          vet_main: string
+          vet_sub: Json
+        }[]
+      }
+      fetch_ms_with_patient_with_weight: {
+        Args: { session_id_input: string }
         Returns: Json
       }
       get_chartable_vitals_data: {
@@ -1646,6 +1316,21 @@ export type Database = {
         Args: { hos_id_input: string; icu_chart_id_input: string }
         Returns: undefined
       }
+      register_icu: {
+        Args: {
+          age_in_days_input: number
+          group_list_input: Json
+          hos_id_input: string
+          icu_io_cc_input: string
+          icu_io_dx_input: string
+          in_date_input: string
+          main_vet_input: string
+          out_due_date_input: string
+          patient_id_input: string
+          sub_vet_input: string
+        }
+        Returns: undefined
+      }
       register_new_patient_in_icu: {
         Args: {
           age_in_days_input: number
@@ -1672,43 +1357,12 @@ export type Database = {
         }
         Returns: string
       }
-      search_icu_io: {
-        Args: {
-          p_age_max_days?: number
-          p_age_min_days?: number
-          p_breed?: string
-          p_cc?: string
-          p_dx?: string
-          p_gender?: string
-          p_hos_id: string
-          p_keyword?: string
-          p_owner_name?: string
-          p_patient?: string
-          p_sort_order?: string
-          p_species?: string
-          p_time_range_months?: number
-        }
-        Returns: {
-          age_in_days: number
-          breed: string
-          hos_patient_id: string
-          icu_io_cc: string
-          icu_io_dx: string
-          icu_io_id: string
-          icu_io_tags: string
-          in_date: string
-          out_date: string
-          owner_name: string
-          patient_name: string
-          species: string
-        }[]
-      }
       search_patients: {
         Args: {
           hos_id_input: string
-          is_icu_input?: boolean
-          items_per_page_input?: number
-          page_number_input?: number
+          is_icu_input: boolean
+          items_per_page_input: number
+          page_number_input: number
           search_term_input: string
         }
         Returns: Json
@@ -1737,24 +1391,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_patient_from_checklist: {
-        Args: {
-          birth_input: string
-          breed_input: string
-          gender_input: string
-          hos_owner_id_input: string
-          hos_patient_id_input: string
-          is_weight_changed_input: boolean
-          memo_input: string
-          microchip_no_input: string
-          name_input: string
-          owner_name_input: string
-          patient_id_input: string
-          species_input: string
-          weight_input: string
-        }
-        Returns: undefined
-      }
       update_patient_from_icu_route: {
         Args: {
           birth_input: string
@@ -1772,6 +1408,24 @@ export type Database = {
           species_input: string
           weight_input: string
           weight_measured_date_input: string
+        }
+        Returns: undefined
+      }
+      update_patient_from_monitoring: {
+        Args: {
+          birth_input: string
+          breed_input: string
+          gender_input: string
+          hos_owner_id_input: string
+          hos_patient_id_input: string
+          is_weight_changed_input: boolean
+          memo_input: string
+          microchip_no_input: string
+          name_input: string
+          owner_name_input: string
+          patient_id_input: string
+          species_input: string
+          weight_input: string
         }
         Returns: undefined
       }
@@ -1829,7 +1483,7 @@ export type Database = {
       }
     }
     Enums: {
-      owner_level_enum: "S" | "A" | "B" | "C"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1956,8 +1610,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      owner_level_enum: ["S", "A", "B", "C"],
-    },
+    Enums: {},
   },
 } as const
