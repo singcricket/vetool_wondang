@@ -64,3 +64,24 @@ export const updateMsTime = async (
     return
   }
 }
+
+export const updateMsPatient = async (
+  sessionId: string,
+  patientId: string,
+) => {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('monitoring_sessions')
+    .update({
+      patient_id: patientId,
+    })
+    .match({ session_id: sessionId })
+
+  if (error) {
+    console.error('Update failed:', error.message)
+    return false
+  }
+
+  return true
+}

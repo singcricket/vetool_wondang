@@ -33,6 +33,7 @@ export default function SessionHeader({
         hosId={hosId}
         targetDate={targetDate}
         patient={msData.patient!}
+        sessionId={msData.session_id}
       />
 
       {/* <ClHeaderActions checklistData={checklistData} /> */}

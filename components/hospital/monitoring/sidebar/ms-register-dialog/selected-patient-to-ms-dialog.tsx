@@ -10,9 +10,11 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { registerMonitoringSession } from '@/lib/services/monitoring/ms-register'
+import { updateMsPatient } from '@/lib/services/monitoring/update-ms'
 import { CheckIcon, LoaderCircleIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Dispatch, type SetStateAction, useState } from 'react'
+import { toast } from 'sonner'
 
 type Props = {
   patientId: string
@@ -21,6 +23,8 @@ type Props = {
   hosId: string
   targetDate: string
   setIsRegisterDialogOpen: Dispatch<SetStateAction<boolean>>
+  isSessionUpdatePatient?: boolean
+  sessionId?: string
 }
 
 export default function SelectedPatientToMsDialog({
@@ -30,6 +34,8 @@ export default function SelectedPatientToMsDialog({
   hosId,
   targetDate,
   setIsRegisterDialogOpen,
+  isSessionUpdatePatient,
+  sessionId,
 }: Props) {
   const { push } = useRouter()
 
@@ -38,8 +44,19 @@ export default function SelectedPatientToMsDialog({
 
   const handleConfirm = async () => {
     setIsSubmitting(true)
-
-    const returningSessionId = await registerMonitoringSession(
+    if(isSessionUpdatePatient && sessionId){
+      const updatemspatient = await updateMsPatient(
+        sessionId,
+        patientId,
+      )
+      if(updatemspatient){
+        setIsSubmitting(false)
+        setIsConfirmDialogOpen(false)
+        setIsRegisterDialogOpen(false)
+        toast.success('모니터링 세션에 환자 정보 추가 완료')
+      }
+    }else{
+        const returningSessionId = await registerMonitoringSession(
       hosId,
       targetDate,
       patientId,
@@ -57,6 +74,8 @@ export default function SelectedPatientToMsDialog({
     push(
       `/hospital/${hosId}/monitoring/${targetDate}/monitoring-session/${returningSessionId}/session`,
     )
+    }
+   
   }
 
   return (

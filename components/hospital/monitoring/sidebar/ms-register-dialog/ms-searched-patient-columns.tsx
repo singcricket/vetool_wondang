@@ -10,12 +10,16 @@ type Props = {
   hosId: string
   targetDate: string
   setIsRegisterDialogOpen: Dispatch<SetStateAction<boolean>>
+  isSessionUpdatePatient?: boolean
+  sessionId?: string
 }
 
 export const msSearchedPatientsColumns = ({
   hosId,
   targetDate,
   setIsRegisterDialogOpen,
+  isSessionUpdatePatient,
+  sessionId,
 }: Props): ColumnDef<Patient>[] => {
   const columns: ColumnDef<Patient>[] = [
     {
@@ -102,6 +106,8 @@ export const msSearchedPatientsColumns = ({
             hosId={hosId}
             targetDate={targetDate}
             setIsRegisterDialogOpen={setIsRegisterDialogOpen}
+            isSessionUpdatePatient={isSessionUpdatePatient}
+            sessionId={sessionId}
           />
         )
       },

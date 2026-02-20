@@ -14,12 +14,16 @@ type Props = {
   hosId: string
   targetDate: string
   setIsRegisterDialogOpen: Dispatch<SetStateAction<boolean>>
+  isSessionUpdatePatient?: boolean
+  sessionId?: string
 }
 
 export default function MsSearchPatientContainer({
   hosId,
   targetDate,
   setIsRegisterDialogOpen,
+  isSessionUpdatePatient,
+  sessionId,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -77,6 +81,8 @@ export default function MsSearchPatientContainer({
               hosId,
               targetDate,
               setIsRegisterDialogOpen,
+              isSessionUpdatePatient,
+              sessionId,
             })}
           />
         )}

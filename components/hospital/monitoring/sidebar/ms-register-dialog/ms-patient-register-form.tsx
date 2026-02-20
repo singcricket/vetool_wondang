@@ -45,6 +45,7 @@ import {
 } from '@/constants/hospital/register/signalments'
 import { registerPatientFormSchema } from '@/lib/schemas/patient/patient-schema'
 import { registerMonitoringSession, updatePatientFromMonitoring } from '@/lib/services/monitoring/ms-register'
+import { updateMsPatient } from '@/lib/services/monitoring/update-ms'
 import {
   insertPatient,
   isHosPatientIdDuplicated,
@@ -68,6 +69,8 @@ type Props =
       setIsDialogOpen: Dispatch<SetStateAction<boolean>>
       isEdit: true
       patient: MsPatient
+       isSessionUpdatePatient?: boolean
+      sessionId?: string
     }
   | {
       hosId: string
@@ -75,6 +78,8 @@ type Props =
       setIsDialogOpen: Dispatch<SetStateAction<boolean>>
       isEdit?: false
       patient?: MsPatient | null
+      isSessionUpdatePatient?: boolean
+      sessionId?: string
     }
 
 export default function MsPatientRegisterForm({
@@ -83,6 +88,8 @@ export default function MsPatientRegisterForm({
   setIsDialogOpen,
   isEdit,
   patient,
+  isSessionUpdatePatient,
+  sessionId
 }: Props) {
   const { push, refresh } = useRouter()
 
@@ -185,23 +192,37 @@ export default function MsPatientRegisterForm({
       },
       hosId,
     )
+    if(isSessionUpdatePatient && sessionId){
+        const updatemspatient = await updateMsPatient(
+            sessionId,
+            returningPatientId,
+        )
+        if(updatemspatient){
+            setIsSubmitting(false)
+          
+      setIsDialogOpen(false)
 
-    const returningSessionId = await registerMonitoringSession(
-      hosId,
-      targetDate,
-      returningPatientId,
-      format(birth, 'yyyy-MM-dd'),
-    )
+      toast.success('모니터링 세션에 환자 정보 추가 완료')
+        }
+    }else{
+      const returningSessionId = await registerMonitoringSession(
+        hosId,
+        targetDate,
+        returningPatientId,
+        format(birth, 'yyyy-MM-dd'),
+      )
 
-    push(
-      `/hospital/${hosId}/monitoring/${targetDate}/monitoring-session/${returningSessionId}/session`,
-    )
+      push(
+        `/hospital/${hosId}/monitoring/${targetDate}/monitoring-session/${returningSessionId}/session`,
+      )
 
-    setIsSubmitting(false)
+      setIsSubmitting(false)
 
-    setIsDialogOpen(false)
+      setIsDialogOpen(false)
 
-    toast.success('신규 환자 등록 및 체크리스트 등록 완료')
+      toast.success('신규 환자 등록 및 모니터링 세션 등록 완료')
+    }
+    
   }
 
   const handleUpdate = async (
