@@ -55,6 +55,18 @@ export default function EditMsTimeDialog({
 
     setIsDialogOpen(false)
   }
+  const handleCancelEnd = (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsUpdating(true)
+    updateMsTime(
+      sessionId,
+      localTimeToUTCISO(startTimeInput),
+      null,
+    )
+    toast.success('모니터링 종료를 취소하였습니다')
+    setIsUpdating(false)
+    setIsDialogOpen(false)
+  }
 
   const handleReset = () => resetMsTime(sessionId)
 
@@ -109,6 +121,11 @@ export default function EditMsTimeDialog({
                 닫기
               </Button>
             </DialogClose>
+            {endTime && <DialogClose asChild>
+              <Button variant="outline" size="sm" onClick={handleCancelEnd}>
+                종료취소
+              </Button>
+            </DialogClose>}
 
             <DialogClose asChild>
               <Button variant="secondary" size="sm" onClick={handleReset}>

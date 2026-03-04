@@ -1,7 +1,6 @@
 import type {Patient } from '@/types'
 
 export type MsVetSub = {
-  primary: string // 집도의 name
   secondary : string // 보조의(assistant) name
   anesthesia: string // 마취의 name
   other: string // 기타 name

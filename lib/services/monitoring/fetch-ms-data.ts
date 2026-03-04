@@ -15,6 +15,7 @@ export type MonitoringSidebarData = Omit<
   > | null
 } & {
   vet_sub: MsVetSub
+  session_group: string[]
 }
 
 export const fetchMonitoringSidebarData = async (
@@ -53,6 +54,7 @@ export type MsWithPatientWithWeight = Omit<
   patient: MsPatient | null
   memo_tx : MsMemoTx
   vet_sub : MsVetSub
+  session_group: string[]
 }
 
 export const fetchMsWithPatientWithWeight = async (

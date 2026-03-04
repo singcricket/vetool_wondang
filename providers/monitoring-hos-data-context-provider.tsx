@@ -6,18 +6,18 @@ import { createContext, useContext } from 'react'
 
 export type OrderColorDisplay = 'dot' | 'full'
 
-type ClContextDataType = {
-  clContextData: ClContextData
+type MsContextDataType = {
+  msContextData: MsContextData
 }
 
-type ClContextData = {
+type MsContextData = {
   vetsListData: Vet[]
   groupListData: string[]
   plan: Plan
   // sidebarData: IcuSidebarIoData[]
 }
 
-const MonitoringHosDataContext = createContext<ClContextDataType | undefined>(
+const MonitoringHosDataContext = createContext<MsContextDataType | undefined>(
   undefined,
 )
 
@@ -31,11 +31,11 @@ export const useMonitoringContextData = () => {
 }
 
 export const MonitoringHosDataProvider: React.FC<{
-  clContextData: ClContextData
+  msContextData: MsContextData
   children: React.ReactNode
-}> = ({ clContextData, children }) => {
+}> = ({ msContextData, children }) => {
   return (
-    <MonitoringHosDataContext.Provider value={{ clContextData }}>
+    <MonitoringHosDataContext.Provider value={{ msContextData }}>
       {children}
     </MonitoringHosDataContext.Provider>
   )

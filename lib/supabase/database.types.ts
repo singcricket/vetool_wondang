@@ -658,13 +658,15 @@ export type Database = {
           planned_minutes: Json | null
           planned_todo: Json | null
           planned_vitals: Json | null
-          session_group: string | null
+          session_group: Json | null
           session_id: string
           session_title: string | null
           start_time: string | null
           tags: string | null
           updated_at: string | null
+          user_tags: string | null
           vet_main: string | null
+          vet_primary: string | null
           vet_sub: Json | null
         }
         Insert: {
@@ -681,13 +683,15 @@ export type Database = {
           planned_minutes?: Json | null
           planned_todo?: Json | null
           planned_vitals?: Json | null
-          session_group?: string | null
+          session_group?: Json | null
           session_id?: string
           session_title?: string | null
           start_time?: string | null
           tags?: string | null
           updated_at?: string | null
+          user_tags?: string | null
           vet_main?: string | null
+          vet_primary?: string | null
           vet_sub?: Json | null
         }
         Update: {
@@ -704,13 +708,15 @@ export type Database = {
           planned_minutes?: Json | null
           planned_todo?: Json | null
           planned_vitals?: Json | null
-          session_group?: string | null
+          session_group?: Json | null
           session_id?: string
           session_title?: string | null
           start_time?: string | null
           tags?: string | null
           updated_at?: string | null
+          user_tags?: string | null
           vet_main?: string | null
+          vet_primary?: string | null
           vet_sub?: Json | null
         }
         Relationships: [
@@ -731,6 +737,13 @@ export type Database = {
           {
             foreignKeyName: "monitoring_sessions_vet_main_fkey"
             columns: ["vet_main"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monitoring_sessions_vet_primary_fkey"
+            columns: ["vet_primary"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
@@ -1198,7 +1211,29 @@ export type Database = {
       fetch_monitoring_sidebar_data: {
         Args: { due_date_input: string; hos_id_input: string }
         Returns: {
+          age_in_days: number
           end_time: string
+          is_template: boolean
+          patient: Json
+          session_group: Json
+          session_id: string
+          session_title: string
+          start_time: string
+          tags: string
+          updated_at: string
+          vet_main: string
+          vet_primary: string
+          vet_sub: Json
+        }[]
+      }
+      fetch_ms_with_patient_with_weight: {
+        Args: { session_id_input: string }
+        Returns: {
+          age_in_days: number
+          created_at: string
+          due_date: string
+          end_time: string
+          hos_id: string
           interval_setting: number
           is_template: boolean
           memo_etc: string
@@ -1207,19 +1242,16 @@ export type Database = {
           planned_minutes: Json
           planned_todo: Json
           planned_vitals: Json
-          session_group: string
+          session_group: Json
           session_id: string
           session_title: string
           start_time: string
           tags: string
           updated_at: string
           vet_main: string
+          vet_primary: string
           vet_sub: Json
         }[]
-      }
-      fetch_ms_with_patient_with_weight: {
-        Args: { session_id_input: string }
-        Returns: Json
       }
       get_chartable_vitals_data: {
         Args: { icu_io_id_input: string }

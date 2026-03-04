@@ -6,6 +6,7 @@
 import type { MsWithPatientWithWeight } from "@/lib/services/monitoring/fetch-ms-data"
 import MsTimeIndicator from "@/components/hospital/monitoring/session-header/ms-time-indicator"
 import MsPatientUpdateDialog from "@/components/hospital/monitoring/session-header/ms-patient-update-dialog"
+import MsHeaderRightButtons from "./ms-header-right-buttons"
 
 type Props = {
   hosId: string
@@ -36,7 +37,11 @@ export default function SessionHeader({
         sessionId={msData.session_id}
       />
 
-      {/* <ClHeaderActions checklistData={checklistData} /> */}
+      <MsHeaderRightButtons
+        msData={msData}
+        hosId={hosId}
+        targetDate={targetDate}
+      />
     </header>
   )
 }

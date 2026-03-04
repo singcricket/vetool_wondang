@@ -17,11 +17,13 @@ export const registerMonitoringSession = async (
     .from('monitoring_sessions')
     .insert({
       session_title: '',
-      session_group: '내과',
+      session_group: ['내과'],
       hos_id: hosId,
       age_in_days: getDaysSince(birth),
       patient_id: patientId,
       due_date: targetDate,
+      vet_main: null,
+      vet_primary: null,
     })
     .select('session_id')
     .single()
@@ -44,10 +46,12 @@ export const registerEmergencyMs = async (
     .from('monitoring_sessions')
     .insert({
       session_title: '응급처치',
-      session_group: '응급',
+      session_group: ['응급'],
       hos_id: hosId,
       due_date: targetDate,
       start_time: new Date().toISOString(), 
+      vet_main: null,
+      vet_primary: null,
     })
     .select('session_id')
     .single()

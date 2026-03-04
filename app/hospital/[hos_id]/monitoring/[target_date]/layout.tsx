@@ -44,7 +44,7 @@ export default async function MonitoringPageLayout(props: {
   return (
     <MonitoringHosDataProvider
       // TODO : 실제 데이터 fetching
-      clContextData={{
+      msContextData={{
         groupListData: postGroupList,
         plan: plan,
         vetsListData: vetList,

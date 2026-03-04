@@ -1,3 +1,4 @@
+import ClientRedirect from '@/components/common/client-redirect'
 import DesktopSidebar from '@/components/hospital/common/sidebar/desktop-sidebar/desktop-sidebar'
 import MobileLayout from '@/components/hospital/common/sidebar/mobile-layout/mobile-layout'
 import { getVetoolUserData } from '@/lib/services/auth/authorization'
@@ -7,6 +8,12 @@ export default async function HospitalLayout(
 ) {
   const { hos_id } = await props.params
   const vetoolUser = await getVetoolUserData()
+  const isSuper = vetoolUser.is_super
+
+  if (!isSuper && vetoolUser.hos_id !== hos_id) {
+    return <ClientRedirect to={`/hospital/${vetoolUser.hos_id}`} />
+  }
+
   const plan = 'severe'
 
   return (

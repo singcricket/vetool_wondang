@@ -1,4 +1,5 @@
 import NoResultSquirrel from '@/components/common/no-result-squirrel'
+import SessionBody from '@/components/hospital/monitoring/session-body/session-body'
 // import ChecklistBody from '@/components/hospital/checklist/checklist-body/checklist-body'
 
 import SessionHeader from '@/components/hospital/monitoring/session-header/session-header'
@@ -32,7 +33,11 @@ export default async function SessionMainPage(props: {
         targetDate={target_date}
         msData={msData}
       />
-
+    <SessionBody 
+      hosId={hos_id} 
+      targetDate={target_date} 
+      msData={msData} 
+    />
       {/* <ChecklistBody checklistData={checklistData} /> */}
     </div>
   )

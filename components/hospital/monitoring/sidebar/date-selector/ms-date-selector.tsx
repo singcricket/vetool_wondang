@@ -17,7 +17,7 @@ export default function MsDateSelector({ hosId, targetDate }: Props) {
   const updateDate = (newDate: Date) => {
     const newDateString = format(newDate, 'yyyy-MM-dd')
 
-    push(`/hospital/${hosId}/monitoring/${newDateString}/session`)
+    push(`/hospital/${hosId}/monitoring/${newDateString}/monitoring-session`)
   }
 
   const handleUpdateDate = (days: number) => {

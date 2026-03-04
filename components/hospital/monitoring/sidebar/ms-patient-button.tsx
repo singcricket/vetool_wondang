@@ -23,7 +23,7 @@ export default function MsPatientButton({
   targetDate,
   vetList,
 }: Props) {
-  const { start_time, end_time, session_title, session_group, vet_main, vet_sub } =
+  const { start_time, end_time, session_title, session_group, vet_main, vet_sub, vet_primary } =
     monitoringSession
 
   const process = !start_time ? 'pending' : !end_time ? 'processing' : 'ended'
@@ -38,12 +38,15 @@ export default function MsPatientButton({
     : ''
 
   const {
-    clContextData: { vetsListData },
+    msContextData: { vetsListData },
   } = useMonitoringContextData()
 
   const foundVet = vetsListData.find(
     (vet : Vet) => vet.user_id === vet_main,
   ) // 주치의
+  const foundPrimaryVet = vetsListData.find(
+    (vet : Vet) => vet.user_id === vet_primary,
+  ) // 술자
 
   const handlePatientButtonClick = () =>
     push(
@@ -67,7 +70,7 @@ export default function MsPatientButton({
               : '미지정'}
           </div>
 
-          <div>{session_group}</div>
+          <div>{session_group.length > 0 ? session_group.map((group: string, i:number) => group).join(' ') : '미지정'}</div>
         </div>
 
         <div className="flex justify-between gap-2">
@@ -87,7 +90,7 @@ export default function MsPatientButton({
         <div className="flex justify-between gap-2">
           <div className="ml-0.5 flex items-center gap-0.5">
             <StethoscopeIcon style={{ width: 12, height: 12 }} />
-            술자 : {vet_sub.primary==='' ? '미지정' : vet_sub.primary } / 주치의 : {foundVet?.name ?? '미지정'}
+            술자 : {!vet_primary ? '미지정' : foundPrimaryVet?.name} / 주치의 : {foundVet?.name ?? '미지정'}
           </div>
 
           <div className="flex items-center gap-0.5">

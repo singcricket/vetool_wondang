@@ -24,7 +24,7 @@ export default function MsDatePicker({ targetDate, hosId }: Props) {
     if (date) {
       const formattedDate = format(date, 'yyyy-MM-dd')
 
-      push(`/hospital/${hosId}/monitoring/${formattedDate}/session`)
+      push(`/hospital/${hosId}/monitoring/${formattedDate}/monitoring-session`)
 
       setOpen(false)
     }
