@@ -1,16 +1,25 @@
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useDebouncedCallback } from 'use-debounce'
 
 export function useMonitoringRealtime(hosId: string) {
   const [isRealtimeReady, setIsRealtimeReady] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const supabase = createClient()
   const subscriptionRef = useRef<RealtimeChannel | null>(null)
   const { refresh } = useRouter()
 
-  const debouncedRefresh = useDebouncedCallback(refresh, 500)
+  const debouncedRefresh = useDebouncedCallback(() => {
+    if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return
+    }
+
+    startTransition(() => {
+        refresh()
+    })
+  }, 1000)
 
   const handleChange = useCallback(
     (payload: any) => {

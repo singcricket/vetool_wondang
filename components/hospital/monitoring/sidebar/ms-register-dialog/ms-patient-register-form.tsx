@@ -196,6 +196,7 @@ export default function MsPatientRegisterForm({
         const updatemspatient = await updateMsPatient(
             sessionId,
             returningPatientId,
+            format(birth, 'yyyy-MM-dd'),
         )
         if(updatemspatient){
             setIsSubmitting(false)

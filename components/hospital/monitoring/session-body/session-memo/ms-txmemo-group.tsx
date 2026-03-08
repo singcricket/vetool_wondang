@@ -15,8 +15,8 @@ import {
 import { ReactSortable, type Sortable } from 'react-sortablejs'
 import { toast } from 'sonner'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
+import SingleMsTxMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-tx-memo'
 import { updateMsMemo } from '@/lib/services/monitoring/update-ms'
-import SingleMsLiveMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-live-memo'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 
 
@@ -29,7 +29,7 @@ type Props = {
   msData: MsWithPatientWithWeight
 }
 
-export default function MsLiveMemoGroup({
+export default function MsTxMemoGroup({
   memo,
 //   setMemos,
   sessionId,
@@ -39,7 +39,7 @@ export default function MsLiveMemoGroup({
   const [isUpdating, setIsUpdating] = useState(false)
   const [sortedMemos, setSortedMemos] = useState<MsMemo[]>(memo ?? [])
   const [memoInput, setMemoInput] = useState('')
-  const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[2])
+  const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[0])
 
   const lastMemoRef = useRef<HTMLLIElement>(null)
 
@@ -56,7 +56,7 @@ export default function MsLiveMemoGroup({
   const handleUpdateDbMemo = async (updatedFilteredMemos: MsMemo[]) => {
     setIsUpdating(true)
 
-    await updateMsMemo(sessionId, updatedFilteredMemos)
+   await updateMsMemo(sessionId, updatedFilteredMemos)
 
     setIsUpdating(false)
   }
@@ -84,9 +84,9 @@ export default function MsLiveMemoGroup({
       check:'',
       create_timestamp: createdAt,
       color: memoColor as MemoColor,
-      done_timestamp: createdAt,
-      is_done: true,
-      is_realtime_memo: true,
+      done_timestamp: null,
+      is_done: false,
+      is_realtime_memo: false,
       chosen: false,
       has_imgs: false,
       img_url: [],
@@ -135,18 +135,27 @@ export default function MsLiveMemoGroup({
       </Label>
 
       <ScrollArea className="h-60 rounded-t-md border p-2">
-       
-          {sortedMemos.filter((memo) => memo.is_done).length === 0 ? (
+        <ReactSortable
+          id="memo-tx"
+          list={sortedMemos}
+          setList={setSortedMemos}
+          className="space-y-2"
+          animation={250}
+          handle=".handle"
+          onEnd={handleReorderMemo}
+          disabled={isUpdating}
+        >
+          {sortedMemos.filter((memo) => !memo.is_realtime_memo).length === 0 ? (
             <NoResultSquirrel
               text="처치 정보 없음"
               size="sm"
               className="h-52 flex-col font-normal text-muted-foreground"
             />
           ) : (
-            sortedMemos.filter((memo) => memo.is_done).map((memo,i) => (
-              <SingleMsLiveMemo
+            sortedMemos.filter((memo) => !memo.is_realtime_memo).map((memo) => (
+              <SingleMsTxMemo
                 isMemoNameSetting={false}
-                key={memo.id+i}
+                key={memo.id}
                 memo={memo}
                 memoIndex={memo.id}
                 handleEditMemo={handleEditMemo}
@@ -156,7 +165,7 @@ export default function MsLiveMemoGroup({
               />
             ))
           )}
-        
+         </ReactSortable>
         <ScrollBar orientation="vertical" />
         
       </ScrollArea>

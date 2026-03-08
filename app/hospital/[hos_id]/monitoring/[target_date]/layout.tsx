@@ -48,6 +48,7 @@ export default async function MonitoringPageLayout(props: {
         groupListData: postGroupList,
         plan: plan,
         vetsListData: vetList,
+        vitalRefRange: vital_ref_range,
       }}
     >
       <div className="flex h-desktop">

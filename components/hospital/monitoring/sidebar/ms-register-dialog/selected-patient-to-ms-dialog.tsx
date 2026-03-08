@@ -48,6 +48,7 @@ export default function SelectedPatientToMsDialog({
       const updatemspatient = await updateMsPatient(
         sessionId,
         patientId,
+        birth
       )
       if(updatemspatient){
         setIsSubmitting(false)

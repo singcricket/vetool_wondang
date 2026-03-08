@@ -3,6 +3,7 @@ import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data
 
 import MsInfoContainer from '@/components/hospital/monitoring/session-body/session-info/session-info-container'
 import MsMemoContainer from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-container'
+import MsClContainer from '@/components/hospital/monitoring/session-body/session-checklist/ms-cl-container'
 type Props = {
   msData : MsWithPatientWithWeight
   targetDate: string
@@ -15,6 +16,7 @@ export default function SessionBody({ msData, targetDate, hosId }: Props) {
     <div className="mt-12 flex w-[420vw] flex-col gap-2 p-2 sm:w-[300vw] md:w-full">
         <MsInfoContainer msData={msData} />
         <MsMemoContainer msData={msData} />
+        <MsClContainer msData={msData} />
       {/* <ChartInfos chartData={chartData} />
 
       <ChartTable chartData={chartData} targetDate={targetDate} hosId={hosId} />

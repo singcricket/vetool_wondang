@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { MonitoringSession, Patient } from '@/types'
-import { MsMemoTx, MsVetSub } from '@/types/monitoring/monitoring-type'
+import { MsMemoTx, MsVetSub, VitalResults } from '@/types/monitoring/monitoring-type'
 import { redirect } from 'next/navigation'
 
 export type MonitoringSidebarData = Omit<
@@ -50,11 +50,15 @@ export type MsWithPatientWithWeight = Omit<
   | 'patient_id'
   | 'memo_tx'
   | 'vet_sub'
+  | 'planned_vitals'
+  | 'vital_results'
 > & {
   patient: MsPatient | null
   memo_tx : MsMemoTx
   vet_sub : MsVetSub
   session_group: string[]
+  planned_vitals: string[] | null
+  vital_results : VitalResults | null
 }
 
 export const fetchMsWithPatientWithWeight = async (

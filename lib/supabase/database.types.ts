@@ -655,7 +655,6 @@ export type Database = {
           memo_etc: string | null
           memo_tx: Json | null
           patient_id: string | null
-          planned_minutes: Json | null
           planned_todo: Json | null
           planned_vitals: Json | null
           session_group: Json | null
@@ -668,6 +667,7 @@ export type Database = {
           vet_main: string | null
           vet_primary: string | null
           vet_sub: Json | null
+          vital_results: Json | null
         }
         Insert: {
           age_in_days?: number | null
@@ -680,7 +680,6 @@ export type Database = {
           memo_etc?: string | null
           memo_tx?: Json | null
           patient_id?: string | null
-          planned_minutes?: Json | null
           planned_todo?: Json | null
           planned_vitals?: Json | null
           session_group?: Json | null
@@ -693,6 +692,7 @@ export type Database = {
           vet_main?: string | null
           vet_primary?: string | null
           vet_sub?: Json | null
+          vital_results?: Json | null
         }
         Update: {
           age_in_days?: number | null
@@ -705,7 +705,6 @@ export type Database = {
           memo_etc?: string | null
           memo_tx?: Json | null
           patient_id?: string | null
-          planned_minutes?: Json | null
           planned_todo?: Json | null
           planned_vitals?: Json | null
           session_group?: Json | null
@@ -718,6 +717,7 @@ export type Database = {
           vet_main?: string | null
           vet_primary?: string | null
           vet_sub?: Json | null
+          vital_results?: Json | null
         }
         Relationships: [
           {
@@ -1221,6 +1221,7 @@ export type Database = {
           start_time: string
           tags: string
           updated_at: string
+          user_tags: string
           vet_main: string
           vet_primary: string
           vet_sub: Json
@@ -1239,7 +1240,7 @@ export type Database = {
           memo_etc: string
           memo_tx: Json
           patient: Json
-          planned_minutes: Json
+          vital_results: Json
           planned_todo: Json
           planned_vitals: Json
           session_group: Json
@@ -1248,6 +1249,7 @@ export type Database = {
           start_time: string
           tags: string
           updated_at: string
+          user_tags: string
           vet_main: string
           vet_primary: string
           vet_sub: Json

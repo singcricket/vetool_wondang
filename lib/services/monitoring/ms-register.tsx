@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getDaysSince } from "@/lib/utils/utils"
+import { VITAL_REFERENCE_DATA } from '@/types/monitoring/monitoring-type';
 import { redirect } from 'next/navigation'
 
 
@@ -12,6 +13,11 @@ export const registerMonitoringSession = async (
   birth: string,
 ) => {
   const supabase = await createClient()
+
+  const DEFAULT_VITALS : string[] = [];
+VITAL_REFERENCE_DATA.map((db,i)=>{
+  i<4 && DEFAULT_VITALS.push(db.vitalName)
+})
 
   const { data, error } = await supabase
     .from('monitoring_sessions')
@@ -24,6 +30,7 @@ export const registerMonitoringSession = async (
       due_date: targetDate,
       vet_main: null,
       vet_primary: null,
+      planned_vitals: DEFAULT_VITALS,
     })
     .select('session_id')
     .single()
@@ -41,7 +48,10 @@ export const registerEmergencyMs = async (
   targetDate: string,
 ) => {
   const supabase = await createClient()
-
+ const DEFAULT_VITALS : string[] = [];
+VITAL_REFERENCE_DATA.map((db,i)=>{
+  i<4 && DEFAULT_VITALS.push(db.vitalName)
+})
   const { data, error } = await supabase
     .from('monitoring_sessions')
     .insert({
@@ -52,6 +62,7 @@ export const registerEmergencyMs = async (
       start_time: new Date().toISOString(), 
       vet_main: null,
       vet_primary: null,
+       planned_vitals: DEFAULT_VITALS,
     })
     .select('session_id')
     .single()

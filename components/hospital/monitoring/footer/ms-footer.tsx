@@ -22,7 +22,9 @@ export default function MsFooter({ hosId, targetDate }: Props) {
 
   useEffect(() => {
     if (isRealtimeReady) {
-      refresh()
+      if (document.activeElement?.tagName !== 'INPUT') {
+          refresh()
+      }
     }
   }, [isRealtimeReady, refresh])
 

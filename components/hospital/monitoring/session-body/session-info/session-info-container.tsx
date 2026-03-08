@@ -41,7 +41,7 @@ export default function MsInfoContainer({
         <MsGroup groupListData={groupListData} sessionId={session_id} currentGroups = {session_group}/>
       </div>
        <div className="col-span-12">
-        <MsTag msTag={user_tags ?? ''} sessionId={session_id} />
+        <MsTag msTag={user_tags ?? ''} sessionId={session_id} msData={msData} />
       </div>
 
       
