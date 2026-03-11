@@ -13,20 +13,10 @@ type Props = {
 export default function SessionBody({ msData, targetDate, hosId }: Props) {
  
   return (
-    <div className="mt-12 flex w-[420vw] flex-col gap-2 p-2 sm:w-[300vw] md:w-full">
+    <div className="mt-12 flex w-full flex-col gap-2 p-2 pb-32">
         <MsInfoContainer msData={msData} />
         <MsMemoContainer msData={msData} />
         <MsClContainer msData={msData} />
-      {/* <ChartInfos chartData={chartData} />
-
-      <ChartTable chartData={chartData} targetDate={targetDate} hosId={hosId} />
-
-      <ChartMemos
-        memoA={memo_a as Memo[] | null}
-        memoB={memo_b as Memo[] | null}
-        memoC={memo_c as Memo[] | null}
-        icuIoId={icu_io_id}
-      /> */}
     </div>
   )
 }

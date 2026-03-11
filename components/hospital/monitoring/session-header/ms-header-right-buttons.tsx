@@ -1,7 +1,6 @@
+import MsAddTemplateDialog from './addtemplate/ms-add-template-dialog'
 import DeleteMsChartDialog from './delete-mschart-dialog'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
-// import AddTemplateDialog from './add-template-dialog'
-// import DischargeDialog from './discharge/discharge-dialog'
 
 type Props = {
   msData: MsWithPatientWithWeight
@@ -18,6 +17,9 @@ export default function MsHeaderRightButtons({
 
   return (
     <div className="absolute right-2 top-1.5 hidden gap-1 2xl:flex">
+      <MsAddTemplateDialog 
+      hosId={hosId}
+      msData={msData} />
       {/* <AddTemplateDialog
         orders={orders}
         patientName={patient.name}

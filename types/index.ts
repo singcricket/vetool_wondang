@@ -25,6 +25,7 @@ export type HosDrug = Database['public']['Tables']['hos_drugs']['Row']
 export type Diet = Database['public']['Tables']['diets']['Row']
 export type Vitals = Database['public']['Tables']['vitals']['Row']
 export type MonitoringSession = Database['public']['Tables']['monitoring_sessions']['Row']
+export type MsTemplate = Database['public']['Tables']['monitoring_sessions_template']['Row']
 
 // is_vet 이 true인 경우에만 사용하는 user
 export type Vet = Pick<

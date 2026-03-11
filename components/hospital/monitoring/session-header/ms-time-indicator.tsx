@@ -30,7 +30,7 @@ export default function MsTimeIndicator({
   const hasNotStarted = !hasStarted
 
   return (
-    <div className="absolute left-2 flex items-center">
+    <div className="flex items-center 2xl:absolute 2xl:left-2">
       {hasNotStarted && (
         <Button
           size="icon"

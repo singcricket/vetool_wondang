@@ -2,8 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getDaysSince } from "@/lib/utils/utils"
-import { VITAL_REFERENCE_DATA } from '@/types/monitoring/monitoring-type';
+import { MsMemo, VITAL_REFERENCE_DATA, VitalResults } from '@/types/monitoring/monitoring-type';
 import { redirect } from 'next/navigation'
+import { MsWithPatientWithWeight } from './fetch-ms-data';
 
 
 export const registerMonitoringSession = async (
@@ -117,4 +118,72 @@ export const updatePatientFromMonitoring = async (
 }
 
 
+export const createMsTemplateChart = async (
+  hosId: string,
+  template_name: string,
+  template_comment: string,
+  template_vital_rusults: VitalResults,
+  template_memo_tx : MsMemo[],
+  msData: MsWithPatientWithWeight,
+) => {
+  const supabase = await createClient()
 
+  const { error } = await supabase.from('monitoring_sessions_template').insert({
+    hos_id: hosId,
+    session_template_title: template_name,
+    session_comment: template_comment,
+    vital_results: template_vital_rusults??[],
+    planned_vitals : msData.planned_vitals??[],
+    is_template: true,
+    interval_setting : msData.interval_setting??0,
+    memo_tx: template_memo_tx,
+    memo_etc : msData.memo_etc
+  }).select('session_template_id').single()
+
+  if (error) {
+    console.error(error)
+    redirect(`/error?message=${error.message}`)
+  }
+}
+
+type MsTemplatePayload = {
+  session_template_title: string
+  session_comment: string
+  interval_setting: number
+  planned_vitals: string[]
+  vital_results: VitalResults
+  memo_tx: MsMemo[]
+}
+
+export const insertMsTemplateChart = async (
+  hosId: string,
+  payload: MsTemplatePayload,
+) => {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('monitoring_sessions_template')
+    .insert({ ...payload, hos_id: hosId, is_template: true })
+
+  if (error) {
+    console.error(error)
+    redirect(`/error?message=${error.message}`)
+  }
+}
+
+export const updateMsTemplateChart = async (
+  templateId: string,
+  payload: MsTemplatePayload,
+) => {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('monitoring_sessions_template')
+    .update(payload)
+    .eq('session_template_id', templateId)
+
+  if (error) {
+    console.error(error)
+    redirect(`/error?message=${error.message}`)
+  }
+}

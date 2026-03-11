@@ -24,14 +24,16 @@ export default function MsMemoContainer({
   }, [msData.memo_tx])
 
   return (
-    <div className="relative">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="flex flex-wrap gap-2">
+      <div className="w-full md:w-[calc(50%-0.25rem)]">
         <MsTxMemoGroup
           memo={memos}
           sessionId={msData.session_id}
           memoName="처치 및 추가정보"
           msData={msData}
         />
+      </div>
+      <div className="w-full md:w-[calc(50%-0.25rem)]">
         <MsLiveMemoGroup
           memo={memos}
           sessionId={msData.session_id}

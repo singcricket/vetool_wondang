@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { MonitoringSession, Patient } from '@/types'
+import { MonitoringSession, MsTemplate, Patient } from '@/types'
 import { MsMemoTx, MsVetSub, VitalResults } from '@/types/monitoring/monitoring-type'
 import { redirect } from 'next/navigation'
 
@@ -61,6 +61,17 @@ export type MsWithPatientWithWeight = Omit<
   vital_results : VitalResults | null
 }
 
+export type MsTemplateChart = Omit<
+  MsTemplate,
+  | 'memo_tx'
+  | 'planned_vitals'
+  | 'vital_results'
+> & {
+  memo_tx : MsMemoTx
+  planned_vitals: string[] | null
+  vital_results : VitalResults | null
+}
+
 export const fetchMsWithPatientWithWeight = async (
   sessionId: string,
 ) => {
@@ -79,4 +90,23 @@ export const fetchMsWithPatientWithWeight = async (
   console.log('fetch ms with patient with weight', data)
 
   return data as MsWithPatientWithWeight
+}
+
+export const getMsTemplates = async (
+  hosId: string,
+) => {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('monitoring_sessions_template')
+    .select('*')
+    .eq('hos_id', hosId)
+    .order('session_template_title', { ascending: false })
+  if (error) {
+    console.error(error)
+    redirect(`/error?message=${error.message}`)
+  }
+  
+
+  return data as MsTemplateChart[]
 }

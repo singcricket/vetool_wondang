@@ -5,6 +5,7 @@ import { getDaysSince } from '@/lib/utils/utils'
 import { MsMemoTx, MsVetSub, VitalResults } from '@/types/monitoring/monitoring-type'
 
 
+
 export const startMsTime = async (sessionId: string) => {
   const supabase = await createClient()
 
@@ -342,4 +343,42 @@ export const updateMsVitalResults = async (
   }
 
   return true
+}
+
+export const deleteMsTemplateChart = async (mstemplateId: string) => {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('monitoring_sessions_template')
+    .delete()
+    .match({ session_template_id: mstemplateId })
+
+  if (error) {
+    console.error('Delete failed:', error.message)
+    return false
+  }
+
+  return true
+}
+
+export type postmsData = {
+  planned_vitals : string[] | null
+  vital_results : VitalResults | null
+  memo_tx : MsMemoTx |null
+  interval_setting : number | null
+  memo_etc : string | null
+}
+export const updateMonitoringSession = async ( sessionId:string, postmsdata : postmsData) =>{
+   const supabase = await createClient()
+   const { error } = await supabase
+   .from('monitoring_sessions')
+   .update(postmsdata)
+   .match( { session_id : sessionId})
+
+   if(error){
+    console.error('update failed:', error.message)
+    return false
+   }
+
+   return true
 }

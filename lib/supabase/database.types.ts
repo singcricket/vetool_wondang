@@ -750,6 +750,62 @@ export type Database = {
           },
         ]
       }
+      monitoring_sessions_template: {
+        Row: {
+          created_at: string | null
+          hos_id: string
+          interval_setting: number | null
+          is_template: boolean | null
+          memo_etc: string | null
+          memo_tx: Json | null
+          planned_todo: Json | null
+          planned_vitals: Json | null
+          session_comment: string | null
+          session_template_id: string
+          session_template_title: string | null
+          updated_at: string | null
+          vital_results: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          hos_id: string
+          interval_setting?: number | null
+          is_template?: boolean | null
+          memo_etc?: string | null
+          memo_tx?: Json | null
+          planned_todo?: Json | null
+          planned_vitals?: Json | null
+          session_comment?: string | null
+          session_template_id?: string
+          session_template_title?: string | null
+          updated_at?: string | null
+          vital_results?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          hos_id?: string
+          interval_setting?: number | null
+          is_template?: boolean | null
+          memo_etc?: string | null
+          memo_tx?: Json | null
+          planned_todo?: Json | null
+          planned_vitals?: Json | null
+          session_comment?: string | null
+          session_template_id?: string
+          session_template_title?: string | null
+          updated_at?: string | null
+          vital_results?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_sessions_template_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
       notices: {
         Row: {
           created_at: string
@@ -1240,7 +1296,6 @@ export type Database = {
           memo_etc: string
           memo_tx: Json
           patient: Json
-          vital_results: Json
           planned_todo: Json
           planned_vitals: Json
           session_group: Json
@@ -1253,6 +1308,7 @@ export type Database = {
           vet_main: string
           vet_primary: string
           vet_sub: Json
+          vital_results: Json
         }[]
       }
       get_chartable_vitals_data: {

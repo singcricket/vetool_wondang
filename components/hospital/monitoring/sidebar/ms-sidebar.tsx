@@ -2,6 +2,7 @@
 import { fetchMonitoringSidebarData } from '@/lib/services/monitoring/fetch-ms-data'
 import MsDesktopSidebar from './ms-desktop-sidebar'
 import { Vet } from '@/types'
+import { MobileMsSidebarSheet } from './mobile/mobile-ms-sidebar-sheet'
 
 type Props = {
   hosId: string
@@ -25,11 +26,12 @@ export default async function MsSidebar({ hosId, targetDate, hosGroupList, vetLi
         vetList={vetList}
       />
 
-      {/* <ClMobileSidebarSheet
-        hosId={hosId}
-        targetDate={targetDate}
-        checklistSidebarData={checklistSidebarData}
-      /> */}
+     <MobileMsSidebarSheet
+      targetDate={targetDate}
+      hosId={hosId}
+      monitoringSidebarData={monitoringSidebarData}
+      vetList={vetList}
+     />
     </>
   )
 }

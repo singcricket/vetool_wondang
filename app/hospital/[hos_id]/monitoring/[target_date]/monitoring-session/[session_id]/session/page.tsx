@@ -1,10 +1,9 @@
+import MobileTitle from '@/components/common/mobile-title'
 import NoResultSquirrel from '@/components/common/no-result-squirrel'
 import SessionBody from '@/components/hospital/monitoring/session-body/session-body'
-// import ChecklistBody from '@/components/hospital/checklist/checklist-body/checklist-body'
-
 import SessionHeader from '@/components/hospital/monitoring/session-header/session-header'
 import { fetchMsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
-
+import { ClipboardListIcon } from 'lucide-react'
 export default async function SessionMainPage(props: {
   params: Promise<{
     hos_id: string
@@ -18,16 +17,21 @@ export default async function SessionMainPage(props: {
 
   if (!msData) {
     return (
+      <>
+      <MobileTitle icon={ClipboardListIcon} title="모니터링" />
       <NoResultSquirrel
         text="모니터링 세션이 없습니다"
         className="mt-40 flex-col"
         size="lg"
       />
+      </>
     )
   }
 
   return (
-    <div className="flex-col">
+    <>
+    <div className="relative flex flex-col">
+      <MobileTitle icon={ClipboardListIcon} title="모니터링" />
       <SessionHeader
         hosId={hos_id}
         targetDate={target_date}
@@ -38,7 +42,8 @@ export default async function SessionMainPage(props: {
       targetDate={target_date} 
       msData={msData} 
     />
-      {/* <ChecklistBody checklistData={checklistData} /> */}
+     
     </div>
+    </>
   )
 }

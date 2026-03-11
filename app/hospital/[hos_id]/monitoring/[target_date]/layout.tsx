@@ -59,7 +59,7 @@ export default async function MonitoringPageLayout(props: {
         vetList={vetList}
         />
 
-        <div className="ml-0 w-screen flex-1 2xl:ml-96 2xl:w-auto">
+        <div className="ml-0 w-screen flex-1 overflow-y-auto h-desktop 2xl:ml-96 2xl:w-auto">
           {props.children}
         </div>
       </div>

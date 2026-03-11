@@ -98,33 +98,33 @@ export const VITAL_REFERENCE_DATA: VitalConfig[] = [
   { vitalName: "기타", type: "text" }
 ];
 
-const monitoringData = [
-  {
-    minTime: "10",
-    create_timestamp: "2026-03-07T16:10:00Z",
-    vitals: [
-      { vitalName: "체온", value: "38.5" },
-      { vitalName: "심박수", value: "110" },
-      { vitalName: "SPO2", value: "98" }
-    ]
-  },
-  {
-    minTime: "15",
-    create_timestamp: "2026-03-07T16:15:00Z",
-    vitals: [
-      { vitalName: "체온", value: "38.6" },
-      { vitalName: "심박수", value: "112" }
-    ]
-  },
-  {
-    minTime: "20",
-    create_timestamp: "2026-03-07T16:20:00Z",
-    vitals: [
-      { vitalName: "체온", value: "38.4" },
-      { vitalName: "SPO2", value: "99" }
-    ]
-  }
-];
+// const monitoringData = [
+//   {
+//     minTime: "10",
+//     create_timestamp: "2026-03-07T16:10:00Z",
+//     vitals: [
+//       { vitalName: "체온", value: "38.5" },
+//       { vitalName: "심박수", value: "110" },
+//       { vitalName: "SPO2", value: "98" }
+//     ]
+//   },
+//   {
+//     minTime: "15",
+//     create_timestamp: "2026-03-07T16:15:00Z",
+//     vitals: [
+//       { vitalName: "체온", value: "38.6" },
+//       { vitalName: "심박수", value: "112" }
+//     ]
+//   },
+//   {
+//     minTime: "20",
+//     create_timestamp: "2026-03-07T16:20:00Z",
+//     vitals: [
+//       { vitalName: "체온", value: "38.4" },
+//       { vitalName: "SPO2", value: "99" }
+//     ]
+//   }
+// ];
 
 // 1. 개별 측정 항목 (예: 체온: 38.5)
 export type VitalEntry = {
