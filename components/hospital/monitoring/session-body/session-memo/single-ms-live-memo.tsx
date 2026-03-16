@@ -6,10 +6,12 @@ import { MEMO_COLORS } from '@/constants/hospital/icu/chart/colors'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { cn } from '@/lib/utils/utils'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
-import { CheckIcon, GripVerticalIcon, PencilIcon } from 'lucide-react'
+import { CheckIcon, GripVerticalIcon, PencilIcon, XIcon } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import MsMemoTimeStamp from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-timestamp'
+import MsMemoImageGallery from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-gallery'
+import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 
 type Props = {
   memo: MsMemo
@@ -31,6 +33,10 @@ const SingleMsLiveMemo = React.forwardRef<HTMLLIElement, Props>(
     const [editedDoneTimestamp, setEditedDoneTimestamp] = useState<string | null>(
       memo.done_timestamp,
     )
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false)
+    const [editedImgUrls, setEditedImgUrls] = useState<string[]>(memo.img_url || [])
+    const [deletedImgUrls, setDeletedImgUrls] = useState<string[]>([])
 
     const editingTextAreaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -47,14 +53,22 @@ const SingleMsLiveMemo = React.forwardRef<HTMLLIElement, Props>(
       setEditedMemoColor(memo.color)
       setEditedCreateTimestamp(memo.create_timestamp)
       setEditedDoneTimestamp(memo.done_timestamp)
+      setEditedImgUrls(memo.img_url || [])
+      setDeletedImgUrls([])
     }, [memo])
 
-    const handleUpdateSingleMemo = () => {
-      if (editedMemo.trim().length === 0) {
-        toast.warning('메모를 입력해주세요')
+    const handleUpdateSingleMemo = async () => {
+      if (editedMemo.trim().length === 0 && editedImgUrls.length === 0) {
+        toast.warning('메모/이미지를 입력해주세요')
         editingTextAreaRef.current?.focus()
         return
       }
+
+      if (deletedImgUrls.length > 0) {
+        await deleteMsMemoImage(deletedImgUrls)
+        setDeletedImgUrls([])
+      }
+
       handleEditMemo(
         {
           ...memo,
@@ -63,6 +77,8 @@ const SingleMsLiveMemo = React.forwardRef<HTMLLIElement, Props>(
           create_timestamp: editedCreateTimestamp,
           done_timestamp: editedDoneTimestamp,
           is_done: !!editedDoneTimestamp,
+          img_url: editedImgUrls,
+          has_imgs: editedImgUrls.length > 0,
         },
         memoIndex,
       )
@@ -143,6 +159,30 @@ const SingleMsLiveMemo = React.forwardRef<HTMLLIElement, Props>(
                   ref={editingTextAreaRef}
                   onKeyDown={handleKeyDown}
                 />
+                
+                {editedImgUrls.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {editedImgUrls.map((url, idx) => (
+                      <div key={idx} className="relative h-16 w-16 overflow-hidden rounded-md border border-black/10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="memo attachment thumbnail" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newUrls = [...editedImgUrls]
+                            newUrls.splice(idx, 1)
+                            setEditedImgUrls(newUrls)
+                            setDeletedImgUrls((prev) => [...prev, url])
+                          }}
+                          className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                        >
+                          <XIcon size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <MemoColorPicker
                   memoColor={editedMemoColor}
                   setMemoColor={setEditedMemoColor}
@@ -154,9 +194,45 @@ const SingleMsLiveMemo = React.forwardRef<HTMLLIElement, Props>(
                 />
               </div>
             ) : (
-              <p className="mr-2 whitespace-pre-wrap break-all text-sm">
-                {memo.memo}
-              </p>
+              <div className="flex flex-col gap-2">
+                {memo.memo && (
+                  <p className="mr-2 whitespace-pre-wrap break-all text-sm">
+                    {memo.memo}
+                  </p>
+                )}
+                
+                {/* 첨부된 이미지 썸네일 렌더링 */}
+                {memo.has_imgs && memo.img_url && memo.img_url.length > 0 && (
+                  <>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {memo.img_url.map((url, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            setSelectedImageIndex(idx)
+                            setIsGalleryOpen(true)
+                          }}
+                          className="relative h-20 w-20 cursor-pointer overflow-hidden rounded-md border border-black/10 transition-opacity hover:opacity-80"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt="memo attachment thumbnail"
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <MsMemoImageGallery
+                      imgUrls={memo.img_url}
+                      isGalleryOpen={isGalleryOpen}
+                      setIsGalleryOpen={setIsGalleryOpen}
+                      selectedImageIndex={selectedImageIndex}
+                    />
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>

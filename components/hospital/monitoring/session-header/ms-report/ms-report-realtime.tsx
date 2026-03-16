@@ -1,13 +1,14 @@
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
 import { differenceInMinutes, format } from 'date-fns'
+import type { ReportImageSize } from './ms-report'
 
-type Props = { msData: MsWithPatientWithWeight }
+type Props = { msData: MsWithPatientWithWeight; imageSize: ReportImageSize }
 
 const TH = 'border border-gray-300 bg-gray-50 px-3 py-1.5 text-left text-xs font-semibold text-gray-600'
 const TD = 'border border-gray-300 px-3 py-1.5 text-sm align-top'
 
-export default function MsReportRealtime({ msData }: Props) {
+export default function MsReportRealtime({ msData, imageSize }: Props) {
   const startTime = msData.start_time ? new Date(msData.start_time) : null
 
   const memos = (msData.memo_tx as MsMemo[])
@@ -49,11 +50,27 @@ export default function MsReportRealtime({ msData }: Props) {
                       </span>
                     )}
                   </td>
-                  <td
-                    className={TD}
-                    // style={{ borderLeftWidth: 3 }}
-                  >
-                    <span className="whitespace-pre-wrap">{m.memo}</span>
+                  <td className={TD}>
+                    {m.memo && <div className="whitespace-pre-wrap">{m.memo}</div>}
+                    
+                    {m.has_imgs && m.img_url && m.img_url.length > 0 && (
+                      <div className={`mt-2 grid gap-2 ${
+                        imageSize === 'small' ? 'grid-cols-4' :
+                        imageSize === 'medium' ? 'grid-cols-2' :
+                        'grid-cols-1'
+                      }`}>
+                        {m.img_url.map((url, idx) => (
+                          <div key={idx} className="relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={url}
+                              alt={`memo attachment ${idx + 1}`}
+                              className="w-full h-auto rounded-md border border-gray-200 object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </td>
                 </tr>
               )

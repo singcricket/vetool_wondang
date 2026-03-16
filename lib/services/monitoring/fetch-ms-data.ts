@@ -126,6 +126,8 @@ export type MonitoringSessionChart = Omit<
   session_group: string[]
   planned_vitals: string[] | null
   vital_results : VitalResults | null
+  patient: MsPatient | null
+  tags: string | null
 }
 
 export const getMonitoringSessions = async (
@@ -135,7 +137,7 @@ export const getMonitoringSessions = async (
 
   const { data, error } = await supabase
     .from('monitoring_sessions')
-    .select('*')
+    .select('*, patient:patients(*)')
     .eq('hos_id', hosId)
     .order('due_date', { ascending: false })
   if (error) {

@@ -19,7 +19,7 @@ import { FileText } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { buildMsReportText } from './build-ms-report-text'
-import MsReport from './ms-report'
+import MsReport, { ReportImageSize } from './ms-report'
 import { useMonitoringContextData } from '@/providers/monitoring-hos-data-context-provider'
 
 type Props = {
@@ -29,6 +29,7 @@ type Props = {
 export default function MsReportContainer({ msData }: Props) {
   const [isParentsDialogOpen, setIsParentsDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [imageSize, setImageSize] = useState<ReportImageSize>('medium')
   const reportRef = useRef<HTMLDivElement>(null)
 
   const { msContextData } = useMonitoringContextData()
@@ -135,11 +136,42 @@ export default function MsReportContainer({ msData }: Props) {
       </DialogTrigger>
 
       <DialogContent className="flex w-[95vw] max-w-5xl max-h-[85vh] flex-col overflow-hidden">
-        <DialogHeader className="gap-2">
-          <DialogTitle>
-            {msData.patient ? msData.patient.name : '미지정 환자'} 모니터링 리포트
-          </DialogTitle>
-          <DialogDescription className="flex gap-1">
+        <DialogHeader className="gap-2 pr-16 sm:flex sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <DialogTitle>
+              {msData.patient ? msData.patient.name : '미지정 환자'} 모니터링 리포트
+            </DialogTitle>
+
+            <div className="hidden sm:flex items-center gap-1 rounded-md border p-0.5">
+              {(['small', 'medium', 'large'] as ReportImageSize[]).map((size) => (
+                <Button
+                  key={size}
+                  variant={imageSize === size ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setImageSize(size)}
+                >
+                  {size === 'small' ? '작게' : size === 'medium' ? '중간' : '크게'}
+                </Button>
+              ))}
+            </div>
+          </div>
+          
+          <DialogDescription className="flex gap-1 flex-wrap">
+            <div className="sm:hidden flex items-center gap-1 w-full mb-2">
+              <span className="text-xs font-semibold mr-2 text-primary">사진 크기:</span>
+              {(['small', 'medium', 'large'] as ReportImageSize[]).map((size) => (
+                <Button
+                  key={size}
+                  variant={imageSize === size ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => setImageSize(size)}
+                >
+                  {size === 'small' ? '작게' : size === 'medium' ? '중간' : '크게'}
+                </Button>
+              ))}
+            </div>
             <Button
               variant="outline"
               className="text-xs font-semibold"
@@ -172,7 +204,7 @@ export default function MsReportContainer({ msData }: Props) {
 
         <div className="flex-1 overflow-y-auto py-2 pr-1">
           <div ref={reportRef} className="bg-white p-4">
-            <MsReport msData={msData} />
+            <MsReport msData={msData} imageSize={imageSize} />
           </div>
         </div>
 

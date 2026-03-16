@@ -1,5 +1,6 @@
 import NoResultSquirrel from '@/components/common/no-result-squirrel'
 import MemoColorPicker from '@/components/hospital/icu/main/chart/selected-chart/chart-body/chart-memos/memo-color-picker'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,9 +16,12 @@ import {
 import { ReactSortable, type Sortable } from 'react-sortablejs'
 import { toast } from 'sonner'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
+import { Camera, ImagePlus, Loader2 } from 'lucide-react'
+import { useMsMemoImageUpload } from '@/hooks/use-ms-memo-image-upload'
+import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { updateMsMemo } from '@/lib/services/monitoring/update-ms'
 import SingleMsLiveMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-live-memo'
-import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
+import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 
 
 
@@ -42,6 +46,12 @@ export default function MsLiveMemoGroup({
   const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[2])
 
   const lastMemoRef = useRef<HTMLLIElement>(null)
+
+  const { isUploading, cameraInputRef, galleryInputRef, handleFileUpload } =
+    useMsMemoImageUpload({
+      sessionId,
+      onUploadComplete: async (urls) => await handleAddMemo(urls),
+    })
 
   useEffect(() => {
     memo && setSortedMemos(memo)
@@ -72,8 +82,8 @@ export default function MsLiveMemoGroup({
     await handleUpdateDbMemo(newOrder)
   }
 
-  const handleAddMemo = async () => {
-    if (memoInput.trim() === '') return
+  const handleAddMemo = async (imgUrls: string[] = []) => {
+    if (memoInput.trim() === '' && imgUrls.length === 0) return
 
     const createdAt = new Date().toISOString()
     const uniqueId = `${createdAt}-${Math.random().toString(36).substring(2, 11)}`
@@ -88,8 +98,8 @@ export default function MsLiveMemoGroup({
       is_done: true,
       is_realtime_memo: true,
       chosen: false,
-      has_imgs: false,
-      img_url: [],
+      has_imgs: imgUrls.length > 0,
+      img_url: imgUrls,
     }
    
     const updatedMemos = [...sortedMemos, newMemo]
@@ -99,7 +109,7 @@ export default function MsLiveMemoGroup({
 
     await handleUpdateDbMemo(updatedMemos)
 
-    toast.success(`${memoName}에 새 메모를 추가했습니 다`)
+    toast.success(`${memoName}에 새 메모를 추가했습니다`)
   }
 
   const handleEditMemo = async (editedMemo: MsMemo, memoId: string) => {
@@ -115,6 +125,12 @@ export default function MsLiveMemoGroup({
   }
 
   const handleDeleteMemo = async (memoId: string) => {
+    const memoToDelete = sortedMemos.find((memo) => memo.id === memoId)
+
+    if (memoToDelete && memoToDelete.has_imgs && memoToDelete.img_url) {
+      await deleteMsMemoImage(memoToDelete.img_url)
+    }
+
     const updatedEntries = sortedMemos.filter(
       (memo) => memo.id !== memoId,
     )
@@ -163,7 +179,7 @@ export default function MsLiveMemoGroup({
 
       <div className="relative">
         <Textarea
-          disabled={isUpdating}
+          disabled={isUpdating || isUploading}
           placeholder="줄 추가 : Shift + Enter ⏎"
           id={`memo-tx`}
           value={memoInput}
@@ -174,10 +190,54 @@ export default function MsLiveMemoGroup({
               handleAddMemo()
             }
           }}
-          className="w-full rounded-none rounded-b-md border-t-0 pr-7 text-sm placeholder:text-xs"
+          className="w-full rounded-none rounded-b-md border-t-0 pr-24 text-sm placeholder:text-xs"
         />
 
-        <MemoColorPicker memoColor={memoColor} setMemoColor={setMemoColor} />
+        <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+          {/* 숨김 처리된 파일 인풋들 */}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            ref={cameraInputRef}
+            onChange={handleFileUpload}
+          />
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            ref={galleryInputRef}
+            onChange={handleFileUpload}
+          />
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+            title="사진 촬영"
+            disabled={isUploading}
+            onClick={() => cameraInputRef.current?.click()}
+          >
+            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+            title="사진 업로드"
+            disabled={isUploading}
+            onClick={() => galleryInputRef.current?.click()}
+          >
+            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+          </Button>
+          <MemoColorPicker
+            memoColor={memoColor}
+            setMemoColor={setMemoColor}
+            className="static inset-auto"
+          />
+        </div>
       </div>
     </div>
   )

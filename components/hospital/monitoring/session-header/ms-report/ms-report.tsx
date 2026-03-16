@@ -7,11 +7,14 @@ import MsReportRealtime from './ms-report-realtime'
 import MsReportVetComment from './ms-report-vet-comment'
 import { differenceInMinutes, format } from 'date-fns'
 
+export type ReportImageSize = 'small' | 'medium' | 'large'
+
 type Props = {
   msData: MsWithPatientWithWeight
+  imageSize: ReportImageSize
 }
 
-export default function MsReport({ msData }: Props) {
+export default function MsReport({ msData, imageSize }: Props) {
   const patientName = msData.patient?.name ?? '미지정 환자'
   const reportDate = msData.due_date
     ? format(new Date(msData.due_date), 'yyyy년 MM월 dd일')
@@ -36,10 +39,7 @@ export default function MsReport({ msData }: Props) {
     <div className="flex flex-col gap-6 text-sm ">
       {/* 타이틀 */}
       <div className="border-b pb-3 text-center">
-        <h1 className="text-lg font-bold">{msData.session_title} 리포트</h1>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {patientName} · {reportDate}
-        </p>
+        <h1 className="text-2xl font-bold">{msData.session_title} 리포트</h1>
       </div>
 
       {/* 시간 정보 */}
@@ -70,7 +70,7 @@ export default function MsReport({ msData }: Props) {
       <MsReportChecklist msData={msData} />
 
       {/* 5. 실시간 타임테이블 */}
-      <MsReportRealtime msData={msData} />
+      <MsReportRealtime msData={msData} imageSize={imageSize} />
 
       {/* 6. 수의사 소견 */}
       <MsReportVetComment msData={msData} />

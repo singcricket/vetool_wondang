@@ -9,12 +9,15 @@ import { type MemoColor } from '@/types/icu/chart'
 import { Check } from 'lucide-react'
 import { type Dispatch, type SetStateAction, useState } from 'react'
 
+import { cn } from '@/lib/utils/utils'
+
 type Props = {
   memoColor: MemoColor
   setMemoColor: Dispatch<SetStateAction<MemoColor>>
+  className?: string
 }
 
-export default function MemoColorPicker({ memoColor, setMemoColor }: Props) {
+export default function MemoColorPicker({ memoColor, setMemoColor, className }: Props) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
   const handleSelectColor = (color: MemoColor) => {
     setMemoColor(color)
@@ -23,7 +26,7 @@ export default function MemoColorPicker({ memoColor, setMemoColor }: Props) {
 
   return (
     <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-      <PopoverTrigger asChild className="absolute right-1.5 top-1.5">
+      <PopoverTrigger asChild className={cn('absolute right-1.5 top-1.5', className)}>
         <Button
           variant="outline"
           className="h-5 w-5 rounded-md border-2 border-white p-0 shadow-none"

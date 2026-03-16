@@ -73,7 +73,11 @@ export default function ConfirmPasteMsTemplateDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>모니터링 세션 템플릿 붙여넣기</DialogTitle>
-          <DialogDescription>선택한 템플릿을 붙여넣습니다</DialogDescription>
+          <DialogDescription className="rounded-md bg-destructive/10 p-3 text-destructive font-medium border border-destructive/20">
+            선택한 템플릿을 붙여 넣습니다. 기존 작성한 자료는 템플릿으로 대체
+            됩니다. 이 작업은 되돌릴 수 없습니다. 선택한 템플릿을 붙여
+            넣겠습니까?
+          </DialogDescription>
         </DialogHeader>
 
        
@@ -88,6 +92,7 @@ export default function ConfirmPasteMsTemplateDialog({
             buttonText="확인"
             onClick={handlePasteSelectedTemplate}
             isPending={isLoading}
+            className="bg-destructive hover:bg-destructive/90"
           />
         </DialogFooter>
       </DialogContent>
