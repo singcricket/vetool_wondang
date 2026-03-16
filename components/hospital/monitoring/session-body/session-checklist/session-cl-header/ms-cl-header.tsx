@@ -18,7 +18,7 @@ export default function MsClHeader({ msData }: Props) {
    
     
     return (
-       <div className="mt-12 flex w-[420vw] flex-col gap-2 p-2 sm:w-[300vw] md:w-full">
+       <div className="mt-12 flex w-full flex-col gap-2 p-2">
             <MsClSelect msData={msData} clNames={clNames}/>
             <MsClInterval msData={msData}/>
             {/* <div className="col-span-1"><MsClPlanTime msData={msData}/></div> */}

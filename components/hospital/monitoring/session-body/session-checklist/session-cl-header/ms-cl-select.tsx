@@ -44,7 +44,7 @@ export default function MsClSelect({ msData, clNames }: Props) {
         <Button 
           size="default"
           variant="outline"
-          className="flex w-full items-center justify-start gap-2 px-2"
+          className="flex h-auto w-full flex-wrap items-center justify-start gap-2 px-2 py-1.5"
         >
           <ListChecks size={16} className="text-muted-foreground" />
          
