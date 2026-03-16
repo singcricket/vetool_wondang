@@ -15,11 +15,12 @@ import { CheckIcon, LoaderCircleIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Dispatch, type SetStateAction, useState } from 'react'
 import { toast } from 'sonner'
+import type { Patient } from '@/types'
+import { format } from 'date-fns'
+import { getDaysSince } from '@/lib/utils/utils'
 
 type Props = {
-  patientId: string
-  name: string
-  birth: string
+  patient: Patient
   hosId: string
   targetDate: string
   setIsRegisterDialogOpen: Dispatch<SetStateAction<boolean>>
@@ -28,9 +29,7 @@ type Props = {
 }
 
 export default function SelectedPatientToMsDialog({
-  patientId,
-  name,
-  birth,
+  patient,
   hosId,
   targetDate,
   setIsRegisterDialogOpen,
@@ -47,8 +46,9 @@ export default function SelectedPatientToMsDialog({
     if(isSessionUpdatePatient && sessionId){
       const updatemspatient = await updateMsPatient(
         sessionId,
-        patientId,
-        birth
+        patient.patient_id,
+        patient.birth,
+        "#"+patient.hos_patient_id+"#"+patient.hos_owner_id+"#"+patient.name+"#"+patient.species+"#"+patient.breed+"#"+patient.gender+"#"+getDaysSince(format(patient.birth, 'yyyy-MM-dd'))
       )
       if(updatemspatient){
         setIsSubmitting(false)
@@ -60,8 +60,9 @@ export default function SelectedPatientToMsDialog({
         const returningSessionId = await registerMonitoringSession(
       hosId,
       targetDate,
-      patientId,
-      birth,
+      patient.patient_id,
+      patient.birth,
+      "#"+patient.hos_patient_id+"#"+patient.hos_owner_id+"#"+patient.name+"#"+patient.species+"#"+patient.breed+"#"+patient.gender+"#"+getDaysSince(format(patient.birth, 'yyyy-MM-dd'))
     )
 
     // toast({
@@ -94,7 +95,7 @@ export default function SelectedPatientToMsDialog({
           <AlertDialogTitle>모니터링 세션 등록</AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogDescription>
-          {targetDate}에 {name}(이)의 모니터링세션에 등록 하시겠습니까 ?
+          {targetDate}에 {patient.name}(이)의 모니터링세션에 등록 하시겠습니까 ?
         </AlertDialogDescription>
 
         <AlertDialogFooter className="pt-8">

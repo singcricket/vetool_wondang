@@ -44,13 +44,14 @@ import {
   SEX,
 } from '@/constants/hospital/register/signalments'
 import { registerPatientFormSchema } from '@/lib/schemas/patient/patient-schema'
+import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { registerMonitoringSession, updatePatientFromMonitoring } from '@/lib/services/monitoring/ms-register'
 import { updateMsPatient } from '@/lib/services/monitoring/update-ms'
 import {
   insertPatient,
   isHosPatientIdDuplicated,
 } from '@/lib/services/patient/patient'
-import { cn } from '@/lib/utils/utils'
+import { cn, getDaysSince } from '@/lib/utils/utils'
 import { MsPatient } from '@/types/monitoring/monitoring-type'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CaretSortIcon } from '@radix-ui/react-icons'
@@ -71,6 +72,7 @@ type Props =
       patient: MsPatient
        isSessionUpdatePatient?: boolean
       sessionId?: string
+      msData?: MsWithPatientWithWeight
     }
   | {
       hosId: string
@@ -80,6 +82,7 @@ type Props =
       patient?: MsPatient | null
       isSessionUpdatePatient?: boolean
       sessionId?: string
+      msData?: MsWithPatientWithWeight
     }
 
 export default function MsPatientRegisterForm({
@@ -89,7 +92,8 @@ export default function MsPatientRegisterForm({
   isEdit,
   patient,
   isSessionUpdatePatient,
-  sessionId
+  sessionId,
+  msData
 }: Props) {
   const { push, refresh } = useRouter()
 
@@ -197,6 +201,8 @@ export default function MsPatientRegisterForm({
             sessionId,
             returningPatientId,
             format(birth, 'yyyy-MM-dd'),
+            "#"+hos_patient_id+"#"+hos_owner_id+"#"+name+"#"+species+"#"+breed+"#"+gender+"#"+getDaysSince(format(birth, 'yyyy-MM-dd'))
+            
         )
         if(updatemspatient){
             setIsSubmitting(false)
@@ -211,6 +217,7 @@ export default function MsPatientRegisterForm({
         targetDate,
         returningPatientId,
         format(birth, 'yyyy-MM-dd'),
+          "#"+hos_patient_id+"#"+hos_owner_id+"#"+name+"#"+species+"#"+breed+"#"+gender+"#"+getDaysSince(format(birth, 'yyyy-MM-dd'))
       )
 
       push(
@@ -263,6 +270,8 @@ export default function MsPatientRegisterForm({
       },
       patient!.patient_id,
       isWeightChanged!,
+      msData ?? null
+
     )
 
     toast.success('환자 정보를 수정하였습니다')

@@ -5,13 +5,14 @@ import { getDaysSince } from "@/lib/utils/utils"
 import { MsMemo, VITAL_REFERENCE_DATA, VitalResults } from '@/types/monitoring/monitoring-type';
 import { redirect } from 'next/navigation'
 import { MsWithPatientWithWeight } from './fetch-ms-data';
-
+import { format } from 'date-fns'
 
 export const registerMonitoringSession = async (
   hosId: string,
   targetDate: string,
   patientId: string,
   birth: string,
+  tags: string,
 ) => {
   const supabase = await createClient()
 
@@ -32,6 +33,7 @@ VITAL_REFERENCE_DATA.map((db,i)=>{
       vet_main: null,
       vet_primary: null,
       planned_vitals: DEFAULT_VITALS,
+      tags:tags
     })
     .select('session_id')
     .single()
@@ -92,6 +94,7 @@ export const updatePatientFromMonitoring = async (
   },
   patientId: string,
   isWeightChanged: boolean,
+  msData : MsWithPatientWithWeight | null
 ) => {
   const supabase = await createClient()
 
@@ -115,6 +118,25 @@ export const updatePatientFromMonitoring = async (
     console.error(error)
     redirect(`/error?message=${error.message}`)
   }
+  if(msData){
+    const pretag = msData.tags?.split('#')??[]
+    let newtag =  ""
+    for(let i = 0; i < pretag.length - 7; i++){
+      if(pretag[i]!=="")  newtag += "#"+pretag[i]
+    }
+    newtag += "#"+updatePatient.hos_patient_id+"#"+updatePatient.hos_owner_id+"#"+updatePatient.name+"#"+updatePatient.species+"#"+updatePatient.breed+"#"+updatePatient.gender+"#"+getDaysSince(format(updatePatient.birth, 'yyyy-MM-dd'))
+    const updatems = await supabase.from('monitoring_sessions').update({
+        tags: newtag,
+        age_in_days: getDaysSince(format(updatePatient.birth, 'yyyy-MM-dd')),
+        
+      }).match({session_id: msData.session_id})
+
+      if (updatems.error) {
+        console.error(updatems.error)
+        redirect(`/error?message=${updatems.error.message}`)
+      }
+  }
+ 
 }
 
 

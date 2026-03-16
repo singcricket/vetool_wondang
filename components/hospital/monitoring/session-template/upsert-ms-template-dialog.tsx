@@ -22,7 +22,7 @@ type Props = EditTemplateProps
 type EditTemplateProps = {
   hosId: string
   isEdit: true
-  mstemplate: MsTemplateChart
+  mstemplate: MsTemplateChart | null
 }
 
 export default function UpsertMsTemplateDialog({

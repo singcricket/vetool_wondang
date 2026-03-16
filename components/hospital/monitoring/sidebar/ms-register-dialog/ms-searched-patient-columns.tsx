@@ -95,14 +95,9 @@ export const msSearchedPatientsColumns = ({
       accessorKey: 'register_checklist_action',
       header: () => '환자선택',
       cell: ({ row }) => {
-        const patientId = row.original.patient_id
-        const name = row.original.name
-        const birth = row.original.birth
         return (
           <SelectedPatientToMsDialog
-            patientId={patientId}
-            name={name}
-            birth={birth}
+            patient={row.original}
             hosId={hosId}
             targetDate={targetDate}
             setIsRegisterDialogOpen={setIsRegisterDialogOpen}

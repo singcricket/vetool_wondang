@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import type { MsPatient } from '@/lib/services/monitoring/fetch-ms-data'
+import type { MsPatient, MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { useState } from 'react'
 import MsPatientRegisterForm from '@/components/hospital/monitoring/sidebar/ms-register-dialog/ms-patient-register-form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -21,6 +21,7 @@ type Props = {
   targetDate: string
   patient: MsPatient | null
   sessionId: string
+  msData : MsWithPatientWithWeight
 }
 
 export default function MsPatientUpdateDialog({
@@ -28,6 +29,7 @@ export default function MsPatientUpdateDialog({
   targetDate,
   patient,
   sessionId,
+  msData
 }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [tab, setTab] = useState('search')
@@ -86,7 +88,10 @@ export default function MsPatientUpdateDialog({
           hosId={hosId}
           targetDate={targetDate}
           setIsDialogOpen={setIsDialogOpen}
+          isSessionUpdatePatient={true}
+          sessionId={sessionId}
           isEdit={!!patient}
+          msData={msData}
         />
        ) : (
         <Tabs

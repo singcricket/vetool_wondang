@@ -52,6 +52,7 @@ export type MsWithPatientWithWeight = Omit<
   | 'vet_sub'
   | 'planned_vitals'
   | 'vital_results'
+  | 'session_info'
 > & {
   patient: MsPatient | null
   memo_tx : MsMemoTx
@@ -59,6 +60,7 @@ export type MsWithPatientWithWeight = Omit<
   session_group: string[]
   planned_vitals: string[] | null
   vital_results : VitalResults | null
+  session_info : string[]
 }
 
 export type MsTemplateChart = Omit<
@@ -109,4 +111,38 @@ export const getMsTemplates = async (
   
 
   return data as MsTemplateChart[]
+}
+
+export type MonitoringSessionChart = Omit<
+  MonitoringSession,
+  | 'memo_tx'
+  | 'vet_sub'
+  | 'session_group'
+  | 'planned_vitals'
+  | 'vital_results'
+> & {
+  memo_tx : MsMemoTx
+  vet_sub : MsVetSub
+  session_group: string[]
+  planned_vitals: string[] | null
+  vital_results : VitalResults | null
+}
+
+export const getMonitoringSessions = async (
+  hosId: string,
+) => {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('monitoring_sessions')
+    .select('*')
+    .eq('hos_id', hosId)
+    .order('due_date', { ascending: false })
+  if (error) {
+    console.error(error)
+    redirect(`/error?message=${error.message}`)
+  }
+  
+
+  return data as MonitoringSessionChart[]
 }

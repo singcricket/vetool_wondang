@@ -52,7 +52,8 @@ const [preTags, setPreTags]=useState(msTag??"")
       })
       .filter(t => t.length > 0)
       
-
+    const hosPatientId = msData.patient?.hos_patient_id ?? ""
+    const hosOwnerId = msData.patient?.hos_owner_id ?? ""
     const patientName = msData.patient?.name ?? ""
     const patientGender = msData.patient?.gender ?? ""
     const patientSpecies = msData.patient?.species ?? ""
@@ -63,6 +64,8 @@ const [preTags, setPreTags]=useState(msTag??"")
       sessionId,
       preTags??"",
       keywordsArray,
+      hosPatientId,
+      hosOwnerId,
       patientName,
       patientGender,
       patientSpecies,

@@ -7,6 +7,8 @@ import MsGroup from '@/components/hospital/monitoring/session-body/session-info/
 import MsTag from '@/components/hospital/monitoring/session-body/session-info/mstags'
 import { BookmarkIcon } from 'lucide-react'
 import AddTemplateDialog from './addtemplate/add-template-dialog'
+import MsVetComment from '@/components/hospital/monitoring/session-body/session-info/ms-vet-comment'
+
 export default function MsInfoContainer({
   msData,
 }: {
@@ -43,6 +45,9 @@ export default function MsInfoContainer({
       <div className="w-full">
         <MsTag msTag={user_tags ?? ''} sessionId={session_id} msData={msData} />
       </div>
+       <div className="w-full">
+        <MsVetComment msData={msData} />
+       </div>
     </div>
   )
 }

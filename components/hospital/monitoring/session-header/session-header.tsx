@@ -34,6 +34,7 @@ export default function SessionHeader({
         targetDate={targetDate}
         patient={msData.patient!}
         sessionId={msData.session_id}
+        msData={msData}
       />
 
       <div className="hidden 2xl:block">

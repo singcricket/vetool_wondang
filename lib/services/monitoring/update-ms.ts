@@ -72,7 +72,8 @@ export const updateMsTime = async (
 export const updateMsPatient = async (
   sessionId: string,
   patientId: string,
-  birth : string
+  birth : string,
+  tags : string
 ) => {
   const supabase = await createClient()
 
@@ -80,7 +81,8 @@ export const updateMsPatient = async (
     .from('monitoring_sessions')
     .update({
       patient_id: patientId,
-      age_in_days:getDaysSince(birth)
+      age_in_days:getDaysSince(birth),
+      tags:tags
     })
     .match({ session_id: sessionId })
 
@@ -196,6 +198,8 @@ export const updateMsTag = async (
   sessionId: string,
   msTag:string,
   preTagsArray: string[],
+  hosPatientId: string,
+  hosOwnerId: string,
   patientName: string,
   patientGender: string,
   patientSpecies: string,
@@ -233,16 +237,19 @@ export const updateMsTag = async (
       combinedTagsSet.add(tag.trim())
     })
   }
-  if (patientName) combinedTagsSet.add(patientName)
-  if (patientSpecies) combinedTagsSet.add(patientSpecies)
-  if (patientBreed) combinedTagsSet.add(patientBreed)
-  if (patientGender) combinedTagsSet.add(patientGender)
-  if (ageInDays) combinedTagsSet.add(ageInDays)
+  // if(hosPatientId) combinedTagsSet.add(hosPatientId)
+  // if(hosOwnerId) combinedTagsSet.add(hosOwnerId)
+  // if (patientName) combinedTagsSet.add(patientName)
+  // if (patientSpecies) combinedTagsSet.add(patientSpecies)
+  // if (patientBreed) combinedTagsSet.add(patientBreed)
+  // if (patientGender) combinedTagsSet.add(patientGender)
+  // if (ageInDays) combinedTagsSet.add(ageInDays)
 
   // 4. 최종 tags 문자열 생성 (#tag1#tag2...)
-  const finalTagsString = Array.from(combinedTagsSet)
+  const _finalTagsString = Array.from(combinedTagsSet)
     .map(tag => `#${tag}`)
     .join('')
+  const finalTagsString = _finalTagsString+"#"+hosPatientId+"#"+hosOwnerId+"#"+patientName+"#"+patientSpecies+"#"+patientBreed+"#"+patientGender+"#"+ageInDays
   console.log("finalTagsString",finalTagsString)
   // 5. DB 업데이트 (user_tags는 콤마 구분자, tags는 # 구분자)
   console.log("tag",msTag)
@@ -381,4 +388,25 @@ export const updateMonitoringSession = async ( sessionId:string, postmsdata : po
    }
 
    return true
+}
+
+export const updateMsComment = async (
+  sessionId: string,
+  memo_etc: string,
+) => {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('monitoring_sessions')
+    .update({
+      memo_etc: memo_etc,
+    })
+    .match({ session_id: sessionId })
+
+  if (error) {
+    console.error('Update failed:', error.message)
+    return false
+  }
+
+  return true
 }

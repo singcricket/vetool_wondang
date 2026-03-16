@@ -655,10 +655,10 @@ export type Database = {
           memo_etc: string | null
           memo_tx: Json | null
           patient_id: string | null
-          planned_todo: Json | null
           planned_vitals: Json | null
           session_group: Json | null
           session_id: string
+          session_info: Json | null
           session_title: string | null
           start_time: string | null
           tags: string | null
@@ -680,10 +680,10 @@ export type Database = {
           memo_etc?: string | null
           memo_tx?: Json | null
           patient_id?: string | null
-          planned_todo?: Json | null
           planned_vitals?: Json | null
           session_group?: Json | null
           session_id?: string
+          session_info?: Json | null
           session_title?: string | null
           start_time?: string | null
           tags?: string | null
@@ -705,10 +705,10 @@ export type Database = {
           memo_etc?: string | null
           memo_tx?: Json | null
           patient_id?: string | null
-          planned_todo?: Json | null
           planned_vitals?: Json | null
           session_group?: Json | null
           session_id?: string
+          session_info?: Json | null
           session_title?: string | null
           start_time?: string | null
           tags?: string | null
@@ -758,9 +758,9 @@ export type Database = {
           is_template: boolean | null
           memo_etc: string | null
           memo_tx: Json | null
-          planned_todo: Json | null
           planned_vitals: Json | null
           session_comment: string | null
+          session_info: Json | null
           session_template_id: string
           session_template_title: string | null
           updated_at: string | null
@@ -773,9 +773,9 @@ export type Database = {
           is_template?: boolean | null
           memo_etc?: string | null
           memo_tx?: Json | null
-          planned_todo?: Json | null
           planned_vitals?: Json | null
           session_comment?: string | null
+          session_info?: Json | null
           session_template_id?: string
           session_template_title?: string | null
           updated_at?: string | null
@@ -788,9 +788,9 @@ export type Database = {
           is_template?: boolean | null
           memo_etc?: string | null
           memo_tx?: Json | null
-          planned_todo?: Json | null
           planned_vitals?: Json | null
           session_comment?: string | null
+          session_info?: Json | null
           session_template_id?: string
           session_template_title?: string | null
           updated_at?: string | null
@@ -1296,7 +1296,7 @@ export type Database = {
           memo_etc: string
           memo_tx: Json
           patient: Json
-          planned_todo: Json
+          session_info: Json
           planned_vitals: Json
           session_group: Json
           session_id: string
