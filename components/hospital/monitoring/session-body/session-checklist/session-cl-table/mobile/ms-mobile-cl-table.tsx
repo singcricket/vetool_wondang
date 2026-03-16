@@ -42,6 +42,16 @@ export default function MsMobileClTable({ msData }: Props) {
     vitalResultsRef.current = vitalResults
   }, [vitalResults])
 
+  // 언마운트 시 혹은 세션 아이디 변경 시 대기 중인 저장 작업이 있다면 즉시 실행
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current)
+        updateMsVitalResults(msData.session_id, vitalResultsRef.current)
+      }
+    }
+  }, [msData.session_id])
+
   // 3초 디바운스 저장
   const scheduleSave = useCallback(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current)

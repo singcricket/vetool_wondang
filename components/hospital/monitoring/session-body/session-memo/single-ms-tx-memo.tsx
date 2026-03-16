@@ -12,6 +12,8 @@ import { toast } from 'sonner'
 import MsMemoTimeStamp from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-timestamp'
 import MsMemoImageGallery from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-gallery'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
+import { useMsMemoImageUpload } from '@/hooks/use-ms-memo-image-upload'
+import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
 
 type Props = {
   memo: MsMemo
@@ -37,6 +39,14 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
     const [isGalleryOpen, setIsGalleryOpen] = useState(false)
     const [editedImgUrls, setEditedImgUrls] = useState<string[]>(memo.img_url || [])
     const [deletedImgUrls, setDeletedImgUrls] = useState<string[]>([])
+
+    const { isUploading, cameraInputRef, galleryInputRef, handleFileUpload } =
+      useMsMemoImageUpload({
+        sessionId: msData.session_id,
+        onUploadComplete: async (urls: string[]) => {
+          setEditedImgUrls((prev) => [...prev, ...urls])
+        },
+      })
 
     const editingTextAreaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -178,7 +188,7 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setEditedMemo(e.target.value)
                   }
-                  className="min-h-8 overflow-hidden px-1 py-0.5 pr-7 text-sm"
+                  className="min-h-8 overflow-hidden px-1 py-0.5 pr-24 text-sm"
                   ref={editingTextAreaRef}
                   onKeyDown={handleKeyDown}
                 />
@@ -206,10 +216,19 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
                   </div>
                 )}
 
-                <MemoColorPicker
-                  memoColor={editedMemoColor}
-                  setMemoColor={setEditedMemoColor}
-                />
+                <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                  <MsMemoImageUploadButtons
+                    isUploading={isUploading}
+                    cameraInputRef={cameraInputRef}
+                    galleryInputRef={galleryInputRef}
+                    handleFileUpload={handleFileUpload}
+                  />
+                  <MemoColorPicker
+                    memoColor={editedMemoColor}
+                    setMemoColor={setEditedMemoColor}
+                    className="static inset-auto"
+                  />
+                </div>
                 <CheckIcon
                   size={14}
                   onClick={handleUpdateSingleMemo}

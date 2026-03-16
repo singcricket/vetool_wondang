@@ -16,12 +16,12 @@ import {
 import { ReactSortable, type Sortable } from 'react-sortablejs'
 import { toast } from 'sonner'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
-import { Camera, ImagePlus, Loader2 } from 'lucide-react'
 import { useMsMemoImageUpload } from '@/hooks/use-ms-memo-image-upload'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { updateMsMemo } from '@/lib/services/monitoring/update-ms'
 import SingleMsLiveMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-live-memo'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
+import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
 
 
 
@@ -194,44 +194,12 @@ export default function MsLiveMemoGroup({
         />
 
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-          {/* 숨김 처리된 파일 인풋들 */}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            ref={cameraInputRef}
-            onChange={handleFileUpload}
+          <MsMemoImageUploadButtons
+            isUploading={isUploading}
+            cameraInputRef={cameraInputRef}
+            galleryInputRef={galleryInputRef}
+            handleFileUpload={handleFileUpload}
           />
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            ref={galleryInputRef}
-            onChange={handleFileUpload}
-          />
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-            title="사진 촬영"
-            disabled={isUploading}
-            onClick={() => cameraInputRef.current?.click()}
-          >
-            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-            title="사진 업로드"
-            disabled={isUploading}
-            onClick={() => galleryInputRef.current?.click()}
-          >
-            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-          </Button>
           <MemoColorPicker
             memoColor={memoColor}
             setMemoColor={setMemoColor}

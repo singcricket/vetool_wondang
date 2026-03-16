@@ -72,12 +72,12 @@ const FOOTER_MAIN_VIEW_MENUS = [
     label: '검색',
     value: 'search',
     icon: <SearchIcon />,
-    hideInMobile: true,
+    hideInMobile: false,
   },
   {
     label: '템플릿',
     value: 'template',
     icon: <BookmarkIcon />,
-    hideInMobile: true,
+    hideInMobile: false,
   },
 ] as const

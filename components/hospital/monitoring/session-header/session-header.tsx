@@ -22,7 +22,7 @@ export default function SessionHeader({
   const { end_time, start_time } = msData
 
   return (
-    <header className="relative flex min-h-12 flex-col items-center justify-center gap-2 border-b py-2 2xl:h-12 2xl:flex-row 2xl:py-0">
+    <header className="sticky top-0 z-40 flex min-h-12 flex-col items-center justify-center gap-2 border-b bg-background py-2 2xl:h-12 2xl:flex-row 2xl:py-0">
       <MsTimeIndicator
         startTime={start_time}
         endTime={end_time}
