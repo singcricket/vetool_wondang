@@ -21,7 +21,7 @@ type Props = EditTemplateProps
 
 type EditTemplateProps = {
   hosId: string
-  isEdit: true
+  isEdit: boolean
   mstemplate: MsTemplateChart | null
 }
 

@@ -134,7 +134,11 @@ export default function MsTemplateEdit({ hosId, isEdit, mstemplate, onOpenChange
       </section>
 
       {/* ── 처치 및 추가정보 ── */}
-      <MsTemplateMemo memos={memos} setMemos={setMemos} />
+      <MsTemplateMemo 
+        memos={memos} 
+        setMemos={setMemos} 
+        templateId={mstemplate?.session_template_id ?? `new-template-${hosId}-${Date.now()}`}
+      />
 
       {/* ── 측정 시간 슬롯 ── */}
       <MsTemplateTimeSlots

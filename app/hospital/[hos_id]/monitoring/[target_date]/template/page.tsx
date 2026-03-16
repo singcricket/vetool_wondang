@@ -12,7 +12,7 @@ export default async function MsTemplatePage(props : PageProps<'/hospital/[hos_i
         <div>
             <MobileTitle icon={BookmarkIcon} title="템플릿" />
             <MsTemplateEntry msTemplates={msTemplates} hosId={hos_id} />
-            <UpsertMsTemplateDialog hosId={hos_id} isEdit={true} mstemplate={null} />
+            <UpsertMsTemplateDialog hosId={hos_id} isEdit={false} mstemplate={null} />
         </div>
     )
 }
