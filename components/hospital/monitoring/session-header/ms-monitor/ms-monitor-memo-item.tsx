@@ -4,24 +4,49 @@ import { useState } from "react"
 import { format } from "date-fns"
 import { MsMemo } from "@/types/monitoring/monitoring-type"
 import MsMemoImageGallery from "@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-gallery"
+import { cn } from "@/lib/utils/utils"
 
 type Props = {
   memo: MsMemo
+  startTime: string | null
 }
 
-export default function MsMonitorMemoItem({ memo }: Props) {
+export default function MsMonitorMemoItem({ memo, startTime }: Props) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isGalleryOpen, setIsGalleryOpen] = useState(false)
 
+  const diffMinutes = (startTime && memo.done_timestamp)
+    ? Math.floor((new Date(memo.done_timestamp).getTime() - new Date(startTime).getTime()) / 60000)
+    : null
+
+  const diffText = diffMinutes !== null
+    ? diffMinutes === 0
+      ? '(시작)'
+      : diffMinutes > 0
+        ? `(시작 후 ${diffMinutes}분)`
+        : `(시작 전 ${Math.abs(diffMinutes)}분)`
+    : ''
+
   return (
     <div 
-      className="p-4 rounded-lg border-l-4 shadow-sm bg-muted/5 transition-all hover:bg-muted/10"
+      className={cn(
+        "p-4 rounded-lg border-l-4 shadow-sm transition-all hover:bg-muted/10",
+        memo.is_done ? "bg-muted/5" : "bg-amber-50/50 ring-1 ring-amber-200"
+      )}
       style={{ borderLeftColor: memo.color || 'gray' }}
     >
       <div className="flex justify-between items-start mb-2">
-        <span className="text-[10px] text-muted-foreground font-mono">
-          {format(new Date(memo.create_timestamp), 'HH:mm:ss')}
-        </span>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
+          <span>
+            {memo.done_timestamp 
+              ? format(new Date(memo.done_timestamp), 'HH:mm:ss')
+              : '진행전'
+            }
+          </span>
+          {memo.is_done && diffText && (
+            <span className="text-primary font-bold">{diffText}</span>
+          )}
+        </div>
         {memo.is_done && (
           <span className="text-[10px] bg-green-100 text-green-700 px-1.5 rounded font-bold">DONE</span>
         )}

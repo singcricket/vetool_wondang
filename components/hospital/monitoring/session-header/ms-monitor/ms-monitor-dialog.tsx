@@ -36,8 +36,8 @@ export default function MsMonitorDialog({ msData }: Props) {
           <div className="flex items-center gap-2">
             <Monitor className="h-5 w-5 text-primary" />
             <DialogTitle className="text-lg font-bold">
-              모니터링 대시보드 - {msData.patient?.name}({msData.patient?.breed}
-              {" " + msData.patient?.gender + " " + calculateAgeKo(msData.patient?.birth) + " " + msData.patient?.body_weight + "kg"})
+              모니터링 대시보드 - {msData.patient? msData.patient.name:"미등록 환자"}
+              {msData.patient && "(" + msData.patient?.breed + " " + msData.patient?.gender + " " + calculateAgeKo(msData.patient?.birth) + " " + msData.patient?.body_weight + "kg)"}
             </DialogTitle>
           </div>
           {/* <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>닫기</Button> */}
@@ -53,7 +53,7 @@ export default function MsMonitorDialog({ msData }: Props) {
           </div>
 
           {/* 오른쪽 컬럼 (전체 높이): Memo Tx */}
-          <MsMonitorMemoList memoTx={msData.memo_tx} />
+          <MsMonitorMemoList memoTx={msData.memo_tx} startTime={msData.start_time} />
 
         </div>
       </DialogContent>
