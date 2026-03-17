@@ -2,6 +2,7 @@ import MsAddTemplateDialog from './addtemplate/ms-add-template-dialog'
 import DeleteMsChartDialog from './delete-mschart-dialog'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import MsReportContainer from '@/components/hospital/monitoring/session-header/ms-report/ms-report-container'
+import MsMonitorDialog from '@/components/hospital/monitoring/session-header/ms-monitor/ms-monitor-dialog'
 
 type Props = {
   msData: MsWithPatientWithWeight
@@ -23,13 +24,11 @@ export default function MsHeaderRightButtons({
       msData={msData} />
      
 
-      {/* <ShareChartDialog icuIoId={icu_io.icu_io_id} targetDate={targetDate} /> */}
-
-      {/* <CopyChartButton icuChartId={icu_chart_id} /> */}
-
       <MsReportContainer  msData={msData} />
 
-      {/* <DischargeDialog icuIo={chartData.icu_io} patient={chartData.patient} /> */}
+      <MsMonitorDialog
+       msData={msData}
+      />
 
       <DeleteMsChartDialog
        msData={msData}

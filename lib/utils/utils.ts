@@ -96,6 +96,30 @@ export function calculateAge(dateString: string) {
   }
 }
 
+export function calculateAgeKo(dateString: string | null | undefined) {
+  if (!dateString) return ''
+  const birthDate = new Date(dateString)
+  const today = new Date()
+
+  let ageYears = today.getFullYear() - birthDate.getFullYear()
+  let ageMonths = today.getMonth() - birthDate.getMonth()
+
+  if (ageMonths < 0) {
+    ageYears--
+    ageMonths += 12
+  }
+
+  if (today.getDate() < birthDate.getDate()) {
+    ageMonths--
+    if (ageMonths < 0) {
+      ageYears--
+      ageMonths += 12
+    }
+  }
+
+  return `${ageYears}년 ${ageMonths}개월`
+}
+
 export const getConsecutiveDays = (selectedDate: Date) => {
   // Create a new date in the local timezone to avoid UTC conversion issues
   const normalizedSelectedDate = new Date(

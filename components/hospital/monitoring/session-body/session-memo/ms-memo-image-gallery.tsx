@@ -24,7 +24,7 @@ export default function MsMemoImageGallery({
 
   return (
     <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
-      <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none sm:rounded-none">
+      <DialogContent className="max-w-[95vw] border-none bg-transparent p-0 shadow-none sm:rounded-none lg:max-w-7xl">
         <Carousel
           opts={{
             startIndex: selectedImageIndex,
@@ -36,14 +36,14 @@ export default function MsMemoImageGallery({
             {imgUrls.map((url, idx) => (
               <CarouselItem
                 key={idx}
-                className="flex h-[80vh] items-center justify-center cursor-pointer"
+                className="flex h-[90vh] items-center justify-center cursor-pointer"
                 onClick={() => setIsGalleryOpen(false)} // 사진 아무데나 누르면 닫히도록 편의성 추가
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
                   alt={`memo attachment full view ${idx + 1}`}
-                  className="max-h-full w-auto max-w-full rounded-md object-contain"
+                  className="max-h-full w-auto max-w-full rounded-md object-contain shadow-2xl"
                 />
               </CarouselItem>
             ))}
