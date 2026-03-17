@@ -65,7 +65,7 @@ export const VITAL_REFERENCE_DATA: VitalConfig[] = [
   { vitalName: "체온(°C)", type: "range", min: "37.5", max: "39.3", unit: "°C" },
   { vitalName: "심박수(HR)", type: "range", min: "80", max: "150", unit: "bpm" },
   { vitalName: "호흡수(RR)", type: "range", min: "15", max: "30", unit: "회/분" },
-  { vitalName: "혈압(BP)", type: "text" }, // 수축기/이완기 등 복합 입력이 많으므로 text 또는 전용 포맷 권장
+  { vitalName: "혈압(BP)", type: "range", min: "80", max: "150", unit: "mmHg" }, // 수축기/이완기 등 복합 입력이 많으므로 text 또는 전용 포맷 권장
   { vitalName: "SPO2", type: "range", min: "95", max: "100", unit: "%" },
   { vitalName: "혈당", type: "range", min: "80", max: "120", unit: "mg/dL" },
   { vitalName: "EtCO2", type: "range", min: "35", max: "45", unit: "mmHg" },

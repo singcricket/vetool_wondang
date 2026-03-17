@@ -2,9 +2,16 @@
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { VitalResults } from "@/types/monitoring/monitoring-type"
+import { VitalResults, VITAL_REFERENCE_DATA } from "@/types/monitoring/monitoring-type"
 import { Trash2 } from "lucide-react"
 import { SelectedSlotMode } from "./ms-mobile-cl-table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 type Props = {
   selectedSlotIndex: SelectedSlotMode
@@ -72,6 +79,9 @@ export default function MsMobileClInputTable({
           ? (newVitalValues[vitalName] ?? '')
           : (existingEntry?.value ?? '')
 
+        const vitalConfig = VITAL_REFERENCE_DATA.find(v => v.vitalName === vitalName)
+        const isSelect = vitalConfig?.type === 'select'
+
         return (
           <div key={vitalName} className="flex items-center border-b last:border-b-0">
             {/* 항목명 */}
@@ -80,18 +90,43 @@ export default function MsMobileClInputTable({
             </div>
             {/* 값 입력 */}
             <div className="flex-1 px-1">
-              <Input
-                className="h-8 rounded-none border-none bg-transparent px-1 text-xs ring-inset focus-visible:ring-1"
-                value={value}
-                onChange={(e) => {
-                  if (isAddMode) {
-                    setNewVitalValues({ ...newVitalValues, [vitalName]: e.target.value })
-                  } else {
-                    onVitalChange(vitalName, e.target.value)
-                  }
-                }}
-                disabled={isSaving}
-              />
+              {isSelect ? (
+                <Select
+                  value={value}
+                  onValueChange={(val) => {
+                    if (isAddMode) {
+                      setNewVitalValues({ ...newVitalValues, [vitalName]: val })
+                    } else {
+                      onVitalChange(vitalName, val)
+                    }
+                  }}
+                  disabled={isSaving}
+                >
+                  <SelectTrigger className="h-8 w-full rounded-none border-none bg-transparent px-1 text-xs ring-inset focus:ring-1 focus-visible:ring-1 shadow-none">
+                    <SelectValue placeholder="" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vitalConfig?.options?.map((option) => (
+                      <SelectItem key={option} value={option} className="text-xs">
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  className="h-8 rounded-none border-none bg-transparent px-1 text-xs ring-inset focus-visible:ring-1"
+                  value={value}
+                  onChange={(e) => {
+                    if (isAddMode) {
+                      setNewVitalValues({ ...newVitalValues, [vitalName]: e.target.value })
+                    } else {
+                      onVitalChange(vitalName, e.target.value)
+                    }
+                  }}
+                  disabled={isSaving}
+                />
+              )}
             </div>
           </div>
         )

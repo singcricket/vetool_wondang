@@ -7,6 +7,14 @@ import { cn } from '@/lib/utils/utils'
 import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { VITAL_REFERENCE_DATA } from "@/types/monitoring/monitoring-type"
 
 type Props = {
     timeSlot: VitalTimeSlot
@@ -55,16 +63,38 @@ export default function MsClTableResultRow({
             {clNames.map((vital) => {
                 if (selectedClNames.includes(vital)) {
                     const vitalEntry = timeSlot.vitals.find(v => v.vitalName === vital)
+                    const vitalConfig = VITAL_REFERENCE_DATA.find(v => v.vitalName === vital)
+                    const isSelect = vitalConfig?.type === 'select'
+
                     return (
                         <TableCell className="handle group p-0" key={vital}>
                             <div className={cn('[&:focus-within_.tx-result-overlay]:opacity-50', 'relative [&:focus-within_.tx-result-overlay]:overflow-visible')}>
-                                <Input
-                                    className="h-11 rounded-none border-none bg-transparent px-1 text-center ring-inset focus-visible:ring-1"
-                                    value={vitalEntry?.value ?? ''}
-                                    onChange={(e) => onVitalChange(vital, e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                                    disabled={isUpdating}
-                                />
+                                {isSelect ? (
+                                    <Select
+                                        value={vitalEntry?.value ?? ''}
+                                        onValueChange={(value) => onVitalChange(vital, value)}
+                                        disabled={isUpdating}
+                                    >
+                                        <SelectTrigger className="h-11 w-full rounded-none border-none bg-transparent px-1 text-center ring-inset focus:ring-1 focus-visible:ring-1 shadow-none justify-center">
+                                            <SelectValue placeholder="" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {vitalConfig?.options?.map((option) => (
+                                                <SelectItem key={option} value={option}>
+                                                    {option}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Input
+                                        className="h-11 rounded-none border-none bg-transparent px-1 text-center ring-inset focus-visible:ring-1"
+                                        value={vitalEntry?.value ?? ''}
+                                        onChange={(e) => onVitalChange(vital, e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                                        disabled={isUpdating}
+                                    />
+                                )}
                             </div>
                         </TableCell>
                     )
