@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
 import { CheckIcon, Pencil1Icon, TrashIcon } from '@radix-ui/react-icons'
-import { XIcon } from 'lucide-react'
+import { GripVertical, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import MsMemoImageGallery from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-gallery'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
@@ -61,86 +61,91 @@ export default function MsTemplateMemoItem({
 
   return (
     <div
-      className="flex flex-col gap-2 rounded-md border p-2 text-sm"
-      style={{ borderLeftColor: memo.color, borderLeftWidth: 3 }}
+      className="group relative flex w-full items-start rounded-md px-2 py-1 transition-colors hover:bg-black/5"
+      style={{
+        backgroundColor: memo.color || '#F3F4F6',
+      }}
     >
-      <div className="flex items-start gap-2">
-        {isEditing ? (
-          <>
-            <div className="flex-1 flex flex-col gap-2 relative">
-              <Textarea
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === 'Enter' &&
-                    !e.shiftKey &&
-                    !e.nativeEvent.isComposing
-                  ) {
-                    e.preventDefault()
-                    handleSave()
-                  }
-                  if (e.key === 'Escape') handleCancel()
-                }}
-                className="w-full min-h-[60px] resize-none text-sm pr-16"
-                autoFocus
-                disabled={isUploading}
-              />
-              
-              <div className="absolute right-1 top-1 flex items-center gap-1">
-                <MsMemoImageUploadButtons
-                  isUploading={isUploading}
-                  cameraInputRef={cameraInputRef}
-                  galleryInputRef={galleryInputRef}
-                  handleFileUpload={handleFileUpload}
-                />
-              </div>
+      {!isEditing && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="drag-handle z-20 h-8 w-6 shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
+        >
+          <GripVertical size={14} />
+        </Button>
+      )}
 
-              {editedImgUrls.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {editedImgUrls.map((url, idx) => (
-                    <div
-                      key={idx}
-                      className="relative h-12 w-12 overflow-hidden rounded-md border border-black/10"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={url}
-                        alt="thumbnail"
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newUrls = [...editedImgUrls]
-                          newUrls.splice(idx, 1)
-                          setEditedImgUrls(newUrls)
-                          setDeletedImgUrls((prev) => [...prev, url])
-                        }}
-                        className="absolute right-0.5 top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
-                      >
-                        <XIcon size={8} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+      <div className="flex flex-1 flex-col gap-1 p-1">
+        {isEditing ? (
+          <div className="relative flex flex-col gap-2">
+            <Textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault()
+                  handleSave()
+                }
+                if (e.key === 'Escape') handleCancel()
+              }}
+              className="min-h-[60px] w-full resize-none bg-white/50 text-sm pr-20"
+              autoFocus
+              disabled={isUploading}
+            />
+            
+            <div className="absolute right-1 top-1 flex items-center gap-1">
+              <MsMemoImageUploadButtons
+                isUploading={isUploading}
+                cameraInputRef={cameraInputRef}
+                galleryInputRef={galleryInputRef}
+                handleFileUpload={handleFileUpload}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-primary hover:bg-primary/10"
+                onClick={handleSave}
+                type="button"
+              >
+                <CheckIcon className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 shrink-0 text-primary"
-              onClick={handleSave}
-              type="button"
-            >
-              <CheckIcon />
-            </Button>
-          </>
+
+            {editedImgUrls.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {editedImgUrls.map((url, idx) => (
+                  <div
+                    key={idx}
+                    className="relative h-12 w-12 overflow-hidden rounded-md border border-black/10"
+                  >
+                    <img
+                      src={url}
+                      alt="thumbnail"
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newUrls = [...editedImgUrls]
+                        newUrls.splice(idx, 1)
+                        setEditedImgUrls(newUrls)
+                        setDeletedImgUrls((prev) => [...prev, url])
+                      }}
+                      className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                    >
+                      <XIcon size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
-          <>
-            <div className="flex-1 flex flex-col gap-1">
+          <div className="flex items-start justify-between">
+            <div className="flex flex-1 flex-col gap-1">
               <span
-                className="cursor-pointer whitespace-pre-wrap break-words"
+                className="cursor-pointer whitespace-pre-wrap break-words text-sm leading-snug"
                 onClick={() => setIsEditing(true)}
               >
                 {memo.memo}
@@ -155,9 +160,8 @@ export default function MsTemplateMemoItem({
                         setSelectedImageIndex(idx)
                         setIsGalleryOpen(true)
                       }}
-                      className="relative h-12 w-12 cursor-pointer overflow-hidden rounded-md border border-black/10 transition-opacity hover:opacity-80"
+                      className="relative h-14 w-14 cursor-pointer overflow-hidden rounded-md border border-black/10 transition-opacity hover:opacity-80 shadow-sm"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={url}
                         alt="thumbnail"
@@ -169,25 +173,27 @@ export default function MsTemplateMemoItem({
               )}
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={() => setIsEditing(true)}
-              type="button"
-            >
-              <Pencil1Icon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-              onClick={() => onDelete(memo.id)}
-              type="button"
-            >
-              <TrashIcon />
-            </Button>
-          </>
+            <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:bg-black/5 hover:text-foreground"
+                onClick={() => setIsEditing(true)}
+                type="button"
+              >
+                <Pencil1Icon className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => onDelete(memo.id)}
+                type="button"
+              >
+                <TrashIcon className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 

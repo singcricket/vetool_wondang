@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
 import MsTemplateMemoItem from './ms-template-memo-item'
+import { ReactSortable } from 'react-sortablejs'
 
 type Props = {
   memos: MsMemo[]
@@ -70,22 +71,27 @@ export default function MsTemplateMemo({ memos, setMemos, templateId }: Props) {
       prev.map((m) => (m.id === id ? { ...m, memo: newText, img_url: newImgUrls, has_imgs: newImgUrls.length > 0 } : m)),
     )
 
-  const txMemos = memos.filter((m) => !m.is_realtime_memo)
 
   return (
     <section>
       <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-        처치 및 추가정보 ({txMemos.length})
+        처치 및 추가정보 ({memos.length})
       </h3>
 
       <ScrollArea className="h-44 rounded-t-md border p-2">
-        <div className="space-y-2">
-          {txMemos.length === 0 ? (
+        <ReactSortable
+          list={memos}
+          setList={setMemos}
+          animation={200}
+          handle=".drag-handle"
+          className="space-y-2"
+        >
+          {memos.length === 0 ? (
             <p className="py-8 text-center text-xs text-muted-foreground">
               메모 없음
             </p>
           ) : (
-            txMemos.map((m) => (
+            memos.map((m) => (
               <MsTemplateMemoItem
                 key={m.id}
                 memo={m}
@@ -95,7 +101,7 @@ export default function MsTemplateMemo({ memos, setMemos, templateId }: Props) {
               />
             ))
           )}
-        </div>
+        </ReactSortable>
         <ScrollBar orientation="vertical" />
       </ScrollArea>
 
