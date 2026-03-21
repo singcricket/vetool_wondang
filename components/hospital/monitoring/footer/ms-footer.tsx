@@ -32,7 +32,7 @@ export default function MsFooter({ hosId, targetDate }: Props) {
     <footer className="fixed bottom-0 left-0 right-0 z-40 flex h-[calc(2.5rem+env(safe-area-inset-bottom))] justify-between border-t bg-white 2xl:left-10">
       <ul className="flex h-10 items-center gap-2">
         <li className="mx-2">
-          <MonitoringRealtimeStatus isSubscriptionReady={isRealtimeReady} />
+          <MonitoringRealtimeStatus />
         </li>
 
         {FOOTER_MAIN_VIEW_MENUS.map(({ label, value, icon, hideInMobile }) => (
