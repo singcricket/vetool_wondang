@@ -2,8 +2,8 @@ import HelperTooltip from '@/components/common/helper-tooltip'
 
 export default function MerToolTip() {
   return (
-    <HelperTooltip side="right">
-      <div>
+    <HelperTooltip side="bottom">
+      <div className="text-xs">
         RER(70 x BW(kg) <sup>0.75</sup> kcal/day) x Life Stage Factor
       </div>
 

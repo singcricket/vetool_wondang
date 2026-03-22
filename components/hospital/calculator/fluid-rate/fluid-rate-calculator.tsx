@@ -5,11 +5,15 @@ import { useState } from 'react'
 import RehydrationTab from './rehydration/rehydration-tab'
 import ResuscitationTab from './resuscitation/resuscitation-tab'
 
+type Props = {
+  patientData: PatientWithWeight | null
+  setIsSheetOpen: React.Dispatch<React.SetStateAction<boolean>>
+}
+
 export default function FluidRateCalculator({
   patientData,
-}: {
-  patientData: PatientWithWeight | null
-}) {
+  setIsSheetOpen,
+}: Props) {
   const [tab, setTab] = useState('maintenance')
   const [localWeight, setLocalWeight] = useState(
     patientData?.vital?.body_weight ?? '',
@@ -28,10 +32,10 @@ export default function FluidRateCalculator({
 
       <TabsContent value="maintenance" className="px-2">
         <MaintenanceTab
-          birth={patientData?.patient.birth}
           weight={localWeight}
           species={patientData?.patient.species}
           handleLocalWeightChange={handleLocalWeightChange}
+          setIsSheetOpen={setIsSheetOpen}
         />
       </TabsContent>
 
@@ -39,6 +43,7 @@ export default function FluidRateCalculator({
         <RehydrationTab
           weight={localWeight}
           handleLocalWeightChange={handleLocalWeightChange}
+          setIsSheetOpen={setIsSheetOpen}
         />
       </TabsContent>
 
@@ -47,6 +52,7 @@ export default function FluidRateCalculator({
           species={patientData?.patient.species}
           weight={localWeight}
           handleLocalWeightChange={handleLocalWeightChange}
+          setIsSheetOpen={setIsSheetOpen}
         />
       </TabsContent>
     </Tabs>

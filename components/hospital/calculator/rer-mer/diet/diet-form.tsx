@@ -1,19 +1,9 @@
-'use client'
-
 import DietComboBox from '@/components/hospital/calculator/rer-mer/diet/diet-combo-box'
-import DietFeedPerDayInput from '@/components/hospital/calculator/rer-mer/diet/diet-feed-per-day-input'
 import CalculatorResult from '@/components/hospital/calculator/result/calculator-result'
+import { DIETS } from '@/constants/hospital/icu/calculator/diet'
 import { cacluateFeedAmount } from '@/lib/calculators/rer-mer'
-import { getDiets } from '@/lib/services/icu/chart/get-diets'
-import { useEffect, useState } from 'react'
-
-export type Diet = {
-  diet_id: string
-  name: string
-  company: string
-  unit: string
-  mass_vol: number
-}
+import { useState } from 'react'
+import UnitInput from '../../unit-input'
 
 type Props = {
   mer?: number
@@ -21,58 +11,56 @@ type Props = {
 }
 
 export default function DietForm({ mer, setIsSheetOpen }: Props) {
-  const [diets, setDiets] = useState<Diet[]>([])
-  const [selectedDiet, setSelectedDiet] = useState<string>('')
+  const [selectedDietId, setSelectedDietId] = useState<number | undefined>()
   const [feedPerDay, setFeedPerDay] = useState('2')
 
-  useEffect(() => {
-    getDiets().then(setDiets)
-  }, [])
-
-  const mappedDietList = diets.map((diet) => ({
-    value: diet.name,
-    label: diet.name,
-  }))
-
-  const massVol = diets.find((diet) => diet.name === selectedDiet)?.mass_vol
-  const unit = diets.find((diet) => diet.name === selectedDiet)?.unit ?? 'g'
+  const selectedDiet = DIETS.find((diet) => diet.diet_id === selectedDietId)
+  const massVol = selectedDiet?.mass_vol
+  const unit = selectedDiet?.unit ?? 'g'
 
   const result = cacluateFeedAmount(mer, massVol, Number(feedPerDay))
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="mt-2 grid grid-cols-2 gap-2">
+    <>
+      <div className="grid grid-cols-2 gap-4">
         <DietComboBox
-          mappedDietList={mappedDietList}
-          selectedDiet={selectedDiet}
-          setSelectedDiet={setSelectedDiet}
+          diets={DIETS}
+          selectedDietId={selectedDietId}
+          setSelectedDietId={setSelectedDietId}
           disabled={!mer}
         />
 
-        <DietFeedPerDayInput
-          feedPerDay={feedPerDay}
-          setFeedPerDay={setFeedPerDay}
+        <UnitInput
+          label="급여 횟수"
+          id="feedPerDay"
+          unit="회/일"
+          value={feedPerDay}
+          onChange={(e) => setFeedPerDay(e.target.value)}
+          placeholder="1~24"
           disabled={!mer}
         />
       </div>
 
-      {result && (
-        <CalculatorResult
-          displayResult={
-            <>
-              <span>{selectedDiet}</span>{' '}
-              <span className="font-bold text-primary">
-                {result.toString()}
-                {unit}/회
-              </span>
-            </>
-          }
-          copyResult={`${selectedDiet} ${result.toString()}${unit}/회`}
-          hasInsertOrderButton
-          orderType="feed"
-          setIsSheetOpen={setIsSheetOpen}
-        />
-      )}
-    </div>
+      <div className="mt-4">
+        {result && selectedDiet && (
+          <CalculatorResult
+            displayResult={
+              <>
+                <span>{selectedDiet.name}</span>{' '}
+                <span className="font-bold text-primary">
+                  {result.toString()} {unit}/회
+                </span>
+              </>
+            }
+            copyResult={`${selectedDiet.name} ${result.toString()} ${unit}/회, ${feedPerDay} 회/일`}
+            orderName={selectedDiet.name}
+            orderComment={`${result.toString()} ${unit}/회, ${feedPerDay} 회/일`}
+            hasInsertOrderButton
+            orderType="feed"
+            setIsSheetOpen={setIsSheetOpen}
+          />
+        )}
+      </div>
+    </>
   )
 }

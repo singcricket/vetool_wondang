@@ -1,7 +1,6 @@
 import CalculatorSidebar from '@/components/hospital/calculator/calculator-sidebar'
 import SelectedCalculators from '@/components/hospital/calculator/selected-calculators'
 import SelectedPatient from '@/components/hospital/calculator/selected-patient'
-import UpgragePlanPromptModal from '@/components/hospital/common/upgrade-plan-prompt-modal'
 import {
   SheetContent,
   SheetDescription,
@@ -16,13 +15,11 @@ import { useState } from 'react'
 type Props = {
   patientData: PatientWithWeight | null
   setIsSheetOpen: React.Dispatch<React.SetStateAction<boolean>>
-  isCalculatorEnabled: boolean
 }
 
 export default function CalculatorSheetContent({
   patientData,
   setIsSheetOpen,
-  isCalculatorEnabled,
 }: Props) {
   const isMobile = useIsMobile()
 
@@ -31,7 +28,7 @@ export default function CalculatorSheetContent({
 
   return (
     <SheetContent
-      className="flex w-full flex-col gap-0 overflow-auto p-0 md:w-2/3 md:flex-row xl:w-[820px]"
+      className="flex w-full flex-col gap-0 overflow-hidden p-0 md:w-2/3 md:flex-row xl:w-[820px]"
       noCloseButton={!isMobile}
     >
       <VisuallyHidden>
@@ -44,18 +41,18 @@ export default function CalculatorSheetContent({
         setSelectedCalculator={setSelectedCalculator}
       />
 
-      {isCalculatorEnabled ? (
-        <div className="flex h-full w-full flex-col justify-between gap-2 p-3">
+      <div className="flex h-full min-h-0 w-full flex-col gap-2 p-3">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <SelectedCalculators
             selectedCalculator={selectedCalculator}
             patientData={patientData}
             setIsSheetOpen={setIsSheetOpen}
           />
-          {patientData && <SelectedPatient patientData={patientData} />}
         </div>
-      ) : (
-        <UpgragePlanPromptModal onExit={() => setIsSheetOpen(false)} />
-      )}
+
+        {patientData && <SelectedPatient patientData={patientData} />}
+      </div>
     </SheetContent>
   )
 }
+

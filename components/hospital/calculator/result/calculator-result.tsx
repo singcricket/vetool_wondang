@@ -1,11 +1,14 @@
 import { type OrderType } from '@/constants/hospital/icu/chart/order'
 import CopyButton from './copy-button'
 import InsertOrderButton from './insert-order-button'
+import { cn } from '@/lib/utils/utils'
 
 type Props = {
-  displayResult: React.ReactNode
+  displayResult?: React.ReactNode
   copyResult: string
-  comment?: string
+  orderName?: string
+  orderComment?: string
+  hasCopyButton?: boolean
   hasInsertOrderButton?: boolean
   setIsSheetOpen?: React.Dispatch<React.SetStateAction<boolean>>
   orderType?: OrderType
@@ -14,27 +17,37 @@ type Props = {
 export default function CalculatorResult({
   displayResult,
   copyResult,
-  comment,
+  orderName,
+  orderComment,
+  hasCopyButton = true,
   hasInsertOrderButton = false,
   setIsSheetOpen,
   orderType,
 }: Props) {
   return (
-    <div className="flex w-full animate-slideDown flex-col items-center justify-center rounded-md bg-slate-100 py-4 text-lg">
-      <div className="flex items-center gap-1">
+    <div className="flex w-full animate-fade-up flex-col rounded-lg border border-border/50 bg-muted/30 p-4">
+      {displayResult && (
+        <div
+          className={cn(
+            hasCopyButton && 'mb-2',
+            'text-center text-sm font-medium tracking-tight sm:text-base',
+          )}
+        >
+          {displayResult}
+        </div>
+      )}
+
+      <div className={cn('flex flex-wrap items-center justify-center gap-2')}>
         {hasInsertOrderButton && (
           <InsertOrderButton
-            orderName={copyResult}
+            orderName={orderName ?? copyResult}
+            orderComment={orderComment}
             setIsSheetOpen={setIsSheetOpen}
             orderType={orderType}
           />
         )}
-        <div className="text-xs sm:text-base">{displayResult}</div>
-
-        <CopyButton copyResult={copyResult} />
+        {hasCopyButton && <CopyButton copyResult={copyResult} />}
       </div>
-
-      {comment && <span className="text-sm font-normal">{comment}</span>}
     </div>
   )
 }

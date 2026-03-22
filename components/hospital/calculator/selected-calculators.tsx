@@ -1,9 +1,14 @@
 import Bsa from '@/components/hospital/calculator/bsa/bsa'
+import Chocolate from '@/components/hospital/calculator/chocolate/chocolate'
 import Cri from '@/components/hospital/calculator/cri/cri'
+import Dextrose from '@/components/hospital/calculator/dextrose/dextrose'
+import EmergencyCalculator from '@/components/hospital/calculator/emergency/emergency-calculator'
 import FluidRateCalculator from '@/components/hospital/calculator/fluid-rate/fluid-rate-calculator'
 import RerMerCalculator from '@/components/hospital/calculator/rer-mer/rer-mer-calculator'
+import TransfusionCalculator from '@/components/hospital/calculator/transfusion/transfusion-calculator'
 import VitalCounter from '@/components/hospital/calculator/vital-counter/vital-counter'
 import type { SelectedCalculator } from '@/constants/hospital/icu/calculator/calculator'
+import type { Species } from '@/constants/hospital/register/signalments'
 import type { PatientWithWeight } from '@/lib/services/patient/patient'
 import Kcl from './kcl/kcl'
 
@@ -19,11 +24,14 @@ export default function SelectedCalculators({
   setIsSheetOpen,
 }: Props) {
   return (
-    <div className="h-full">
+    <div className="h-full p-[1px]">
       {selectedCalculator === 'counter' && <VitalCounter />}
 
       {selectedCalculator === 'fluid-rate' && (
-        <FluidRateCalculator patientData={patientData} />
+        <FluidRateCalculator
+          patientData={patientData}
+          setIsSheetOpen={setIsSheetOpen}
+        />
       )}
 
       {selectedCalculator === 'kcl' && (
@@ -51,9 +59,27 @@ export default function SelectedCalculators({
         <Bsa weight={patientData?.vital?.body_weight ?? ''} />
       )}
 
-      {/* {selectedCalculator === 'chocolate' && (
+      {selectedCalculator === 'chocolate' && (
         <Chocolate weight={patientData?.vital?.body_weight ?? ''} />
-      )} */}
+      )}
+
+      {selectedCalculator === 'dextrose' && <Dextrose />}
+
+      {selectedCalculator === 'transfusion' && (
+        <TransfusionCalculator
+          weight={patientData?.vital?.body_weight ?? ''}
+          patientSpecies={patientData?.patient.species as Species}
+        />
+      )}
+
+      {selectedCalculator === 'emergency' && (
+        <EmergencyCalculator
+          weight={patientData?.vital?.body_weight ?? ''}
+          patientSpecies={patientData?.patient.species}
+          setIsSheetOpen={setIsSheetOpen}
+        />
+      )}
     </div>
   )
 }
+

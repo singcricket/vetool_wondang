@@ -1,9 +1,15 @@
 import { Button } from '@/components/ui/button'
-import { ClipboardCheckIcon, ClipboardIcon } from 'lucide-react'
+import { ClipboardCheckIcon, CopyIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-export default function CopyButton({ copyResult }: { copyResult: string }) {
+export default function CopyButton({
+  copyResult,
+  iconOnly = false,
+}: {
+  copyResult: string
+  iconOnly?: boolean
+}) {
   const [isCopied, setIsCopied] = useState(false)
 
   const handleCopyResult = () => {
@@ -14,20 +20,18 @@ export default function CopyButton({ copyResult }: { copyResult: string }) {
 
       toast.success('계산 결과가 클립보드에 복사되었습니다')
     }
+
+    setTimeout(() => setIsCopied(false), 2000)
   }
 
   return (
     <Button
       onClick={handleCopyResult}
-      className="xl:text-xs 2xl:text-sm"
       variant="ghost"
-      size="icon"
+      size={iconOnly ? 'icon' : 'default'}
     >
-      {isCopied ? (
-        <ClipboardCheckIcon className="h-4 w-4" />
-      ) : (
-        <ClipboardIcon className="h-4 w-4" />
-      )}
+      {isCopied ? <ClipboardCheckIcon /> : <CopyIcon />}
+      {!iconOnly && '복사'}
     </Button>
   )
 }

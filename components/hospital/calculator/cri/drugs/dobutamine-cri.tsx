@@ -3,11 +3,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import UnitInput from '@/components/hospital/calculator/unit-input'
+import CalculatorWarning from '../../calculator-warning'
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
-import CalculatorResult from '../../result/calculator-result'
+import CriResultCard from '../cri-result-card'
 
 const DOBUTAMINE_CONCENTRATION = 50
 
@@ -41,10 +41,20 @@ export default function DobutamineCri({
   // 3. 최종 첨가할 도부타민 용량 계산 (mL)
   // (syringeVolume + x) : fluidRate = x : hourlyVolume
   // x = (syringeVolume * hourlyVolume) / (fluidRate - hourlyVolume)
-  const dobutamineVol = (
-    (Number(syringeVol) * hourlyVolume) /
-    (Number(fluidRate) - hourlyVolume)
-  ).toFixed(2)
+  const isImpossible = hourlyVolume >= Number(fluidRate)
+  const dobutamineVol = isImpossible
+    ? 0
+    : (Number(syringeVol) * hourlyVolume) / (Number(fluidRate) - hourlyVolume)
+
+  const totalVol = Number(syringeVol) + dobutamineVol
+  const runtime =
+    Number(fluidRate) > 0 ? (totalVol / Number(fluidRate)).toFixed(1) : '0'
+
+  const actualHourlyVolume =
+    totalVol > 0 ? (dobutamineVol * Number(fluidRate)) / totalVol : 0
+  const actualMgHr = actualHourlyVolume * DOBUTAMINE_CONCENTRATION
+  const actualUgKgMin =
+    Number(weight) > 0 ? (actualMgHr * 1000) / (Number(weight) * 60) : 0
 
   return (
     <AccordionItem value="dobutamine">
@@ -52,87 +62,98 @@ export default function DobutamineCri({
 
       <AccordionContent className="space-y-4 px-1">
         <div className="grid grid-cols-2 gap-2">
-          <div className="relative">
-            <Label htmlFor="weight">체중 </Label>
-            <Input
-              type="number"
-              id="weight"
-              className="mt-1"
-              value={weight}
-              onChange={handleChangeWeight}
-              placeholder="체중"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              kg
-            </span>
-          </div>
+          <UnitInput
+            label="체중"
+            id="weight"
+            unit="kg"
+            value={weight}
+            onChange={handleChangeWeight}
+            placeholder="체중"
+          />
 
-          <div className="relative">
-            <Label htmlFor="dobutamineDose">
-              약물 용량 (개: 5 ~ 20, 고양이: 1 ~ 5)
-            </Label>
-            <Input
-              type="number"
-              id="dobutamineDose"
-              className="mt-1"
-              value={dobutamineDose}
-              onChange={(e) => setDobutamineDose(e.target.value)}
-              placeholder="도부타민 용량"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              μg/kg/min
-            </span>
-          </div>
+          <UnitInput
+            label="용량 (개: 5~20, 고: 1~5)"
+            id="dobutamineDose"
+            unit="μg/kg/min"
+            value={dobutamineDose}
+            onChange={(e) => setDobutamineDose(e.target.value)}
+            placeholder="도부타민 용량"
+          />
 
-          <div className="relative">
-            <Label htmlFor="syringeVol">사용할 주사기</Label>
-            <Input
-              type="number"
-              id="syringeVol"
-              className="mt-1"
-              value={syringeVol}
-              onChange={(e) => setSyringeVol(e.target.value)}
-              placeholder="사용할 주사기"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              cc
-            </span>
-          </div>
+          <UnitInput
+            label="사용할 주사기"
+            id="syringeVol"
+            unit="cc"
+            value={syringeVol}
+            onChange={(e) => setSyringeVol(e.target.value)}
+            placeholder="사용할 주사기"
+          />
 
-          <div className="relative">
-            <Label htmlFor="fluidRate">수액 속도</Label>
-            <Input
-              type="number"
-              id="fluidRate"
-              className="mt-1"
-              value={fluidRate}
-              onChange={(e) => setFluidRate(e.target.value)}
-              placeholder="수액속도"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              mL/hr
-            </span>
-          </div>
+          <UnitInput
+            label="수액 속도"
+            id="fluidRate"
+            unit="mL/hr"
+            value={fluidRate}
+            onChange={(e) => setFluidRate(e.target.value)}
+            placeholder="수액속도"
+          />
         </div>
 
-        {Number(dobutamineVol) > 0 && (
-          <CalculatorResult
-            displayResult={
-              <div>
-                수액{' '}
-                <span className="font-bold text-primary">{syringeVol}mL</span> +
-                Dobutamine{' '}
-                <span className="font-bold text-primary">
-                  {dobutamineVol}mL
-                </span>{' '}
-                , FR :{' '}
-                <span className="font-bold text-primary">{fluidRate}mL/hr</span>{' '}
-              </div>
-            }
-            copyResult={`수액 ${syringeVol}mL + Dobutamine ${dobutamineVol}mL , FR : ${fluidRate}mL/hr`}
-            hasInsertOrderButton={hasSelectedPatient}
-            setIsSheetOpen={setIsSheetOpen}
-          />
+        <CalculatorWarning>
+          <li>빈맥·부정맥 발생 시 용량 감량 또는 중단</li>
+          <li>고양이: 1 µg/kg/min부터 시작 권장</li>
+          <li>가급적 전용 라인 사용</li>
+        </CalculatorWarning>
+
+        {isImpossible ? (
+          <div className="text-center text-sm font-semibold text-destructive">
+            수액속도를 올리거나 약물용량을 줄이세요
+          </div>
+        ) : (
+          Number(dobutamineVol) > 0 && (
+            <CriResultCard
+              preparation={
+                <div>
+                  수액{' '}
+                  <span className="font-bold text-primary">
+                    {syringeVol} mL
+                  </span>
+                  <br />
+                  Dobutamine{' '}
+                  <span className="font-bold text-primary">
+                    {Number(dobutamineVol).toFixed(2)} mL
+                  </span>
+                </div>
+              }
+              pumpSetting={
+                <div>
+                  FR:{' '}
+                  <span className="font-bold text-primary">
+                    {fluidRate} mL/hr
+                  </span>
+                </div>
+              }
+              delivery={
+                <div>
+                  <span className="font-bold text-primary">
+                    {actualUgKgMin.toFixed(2)} µg/kg/min
+                  </span>
+                  <br />
+                  <span className="font-bold text-primary">
+                    {actualMgHr.toFixed(2)} mg/hr
+                  </span>
+                </div>
+              }
+              runtime={
+                <span className="font-bold text-primary">{runtime} hr</span>
+              }
+              copyResult={`Dobutamine CRI, Dose: ${dobutamineDose}μg/kg/min, FR: ${fluidRate}ml/hr, Mix: Fluid ${syringeVol}ml + Dobutamine ${Number(dobutamineVol).toFixed(2)}ml`}
+              orderName="Dobutamine CRI"
+              orderComment={`Dose: ${dobutamineDose}μg/kg/min, FR: ${fluidRate}ml/hr, Mix: Fluid ${syringeVol}ml + Dobutamine ${Number(dobutamineVol).toFixed(2)}ml`}
+              hasInsertOrderButton={hasSelectedPatient}
+              setIsSheetOpen={setIsSheetOpen}
+            />
+          )
         )}
       </AccordionContent>
     </AccordionItem>

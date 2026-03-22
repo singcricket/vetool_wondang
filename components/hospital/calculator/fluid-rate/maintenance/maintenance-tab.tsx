@@ -1,7 +1,6 @@
-import WarningMessage from '@/components/common/warning-message'
 import MaintenanceToolTip from '@/components/hospital/calculator/fluid-rate/maintenance/maintenance-tool-tip'
 import CalculatorResult from '@/components/hospital/calculator/result/calculator-result'
-import { Input } from '@/components/ui/input'
+import UnitInput from '@/components/hospital/calculator/unit-input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -17,28 +16,30 @@ import {
 } from '@/components/ui/sheet'
 import type { Species } from '@/constants/hospital/register/signalments'
 import { calculateMaintenanceRate } from '@/lib/calculators/fluid-rate'
-import { getDaysSince } from '@/lib/utils/utils'
 import type { CalcMethod, Fold } from '@/types/hospital/calculator'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { useParams } from 'next/navigation'
 import { useState } from 'react'
+import CalculatorWarning from '../../calculator-warning'
 
 type Props = {
-  birth?: string
   species?: string
   weight: string
   handleLocalWeightChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  setIsSheetOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
 export default function MaintenanceTab({
-  birth,
   weight,
   species,
   handleLocalWeightChange,
+  setIsSheetOpen,
 }: Props) {
   const [localSpecies, setLocalSpecies] = useState(species ?? 'canine')
   const [calcMethod, setCalcMethod] = useState('a')
   const [fold, setFold] = useState<Fold>('1')
 
-  const isPediatric = getDaysSince(birth ? birth : '1') <= 365
+  const { patient_id } = useParams()
+  const hasSelectedPatient = Boolean(patient_id)
 
   const result = calculateMaintenanceRate(
     weight,
@@ -54,33 +55,21 @@ export default function MaintenanceTab({
           <span>Maintenance</span>
           <MaintenanceToolTip />
         </SheetTitle>
+
         <VisuallyHidden>
           <SheetDescription />
         </VisuallyHidden>
-
-        {isPediatric && (
-          <WarningMessage
-            className="text-sm"
-            text="Pediatrics의 경우,  Adult Dog x 3, Adult Cat x 2.5"
-          />
-        )}
       </SheetHeader>
 
       <div className="grid grid-cols-2 gap-2">
-        <div className="relative">
-          <Label htmlFor="weight">체중</Label>
-          <Input
-            type="number"
-            id="weight"
-            className="mt-1"
-            value={weight}
-            onChange={handleLocalWeightChange}
-            placeholder="체중"
-          />
-          <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-            kg
-          </span>
-        </div>
+        <UnitInput
+          label="체중"
+          id="weight"
+          unit="kg"
+          value={weight}
+          onChange={handleLocalWeightChange}
+          placeholder="체중"
+        />
 
         <div>
           <Label htmlFor="species">종</Label>
@@ -115,7 +104,7 @@ export default function MaintenanceTab({
               ) : (
                 <>
                   <SelectItem value="a">
-                    a. 80 x (몸무게)<sup>0.75</sup> mL/day
+                    a. 80 x (몸무게)<sup>0.75</sup> mL/day{' '}
                   </SelectItem>
                   <SelectItem value="b">b. 40 mL/kg/day</SelectItem>
                   <SelectItem value="c">
@@ -137,22 +126,45 @@ export default function MaintenanceTab({
               <SelectValue placeholder="배수" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">1배수</SelectItem>
-              <SelectItem value="1.5">1.5배수</SelectItem>
-              <SelectItem value="2">2배수</SelectItem>
-              <SelectItem value="2.5">2.5배수</SelectItem>
-              <SelectItem value="3">3배수</SelectItem>
+              <SelectItem value="1">1</SelectItem>
+              <SelectItem value="1.5">1.5</SelectItem>
+              <SelectItem value="2">2</SelectItem>
+              <SelectItem value="2.5">2.5</SelectItem>
+              <SelectItem value="3">3</SelectItem>
+              <SelectItem value="3.5">3.5</SelectItem>
+              <SelectItem value="4">4</SelectItem>
+              <SelectItem value="4.5">4.5</SelectItem>
+              <SelectItem value="5">5</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
+      <CalculatorWarning>
+        <li>환자 상태에 따라 조절 필요</li>
+        <li className="tracking-tight">
+          Pediatrics는 높은 대사율로 인해 더 많은 유지량이 필요
+        </li>
+        <ul className="ml-2 list-disc text-xs">
+          <li>Puppy: 성견 유지속도의 약 3배 권장</li>
+          <li>Kitten: 성묘 유지속도의 약 2.5배 권장</li>
+        </ul>
+      </CalculatorWarning>
+
       {result && (
         <CalculatorResult
           displayResult={
-            <span className="font-bold text-primary">{result} mL/hr</span>
+            <>
+              Maintenance fluid{' '}
+              <span className="font-bold text-primary">{result} mL/hr</span>
+            </>
           }
-          copyResult={`${result} mL/hr`}
+          copyResult={`Maintenance fluid therapy, FR: ${result} mL/hr`}
+          hasInsertOrderButton={hasSelectedPatient}
+          orderName="Maintenance fluid therapy"
+          orderComment={`FR: ${result} mL/hr`}
+          orderType="fluid"
+          setIsSheetOpen={setIsSheetOpen}
         />
       )}
     </div>

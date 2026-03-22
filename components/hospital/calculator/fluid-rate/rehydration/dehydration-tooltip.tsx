@@ -10,16 +10,12 @@ import {
 
 export default function DehydrationTooltip() {
   return (
-    <HelperTooltip side="right">
+    <HelperTooltip side="bottom">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-white">
-              Estimated % Dehydration
-            </TableHead>
-            <TableHead className="text-white">
-              Physical Examination Finding
-            </TableHead>
+            <TableHead>Estimated % Dehydration</TableHead>
+            <TableHead>Physical Examination Finding</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -81,7 +77,7 @@ export default function DehydrationTooltip() {
         </TableBody>
       </Table>
 
-      <div className="mt-2">
+      <div className="mt-2 text-xs text-muted-foreground">
         *2024 AAHA Fluid Therapy Guidelines for Dogs and Cats
       </div>
     </HelperTooltip>

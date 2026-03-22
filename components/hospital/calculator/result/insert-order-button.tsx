@@ -28,14 +28,18 @@ import OrderFormField from '../../icu/main/chart/selected-chart/chart-body/table
 
 type Props = {
   orderName: string
+  orderComment?: string
   setIsSheetOpen?: React.Dispatch<React.SetStateAction<boolean>>
   orderType?: OrderType
+  iconOnly?: boolean
 }
 
 export default function InsertOrderButton({
   orderName,
+  orderComment = '',
   setIsSheetOpen,
   orderType,
+  iconOnly = false,
 }: Props) {
   const { hos_id, target_date, patient_id } = useParams()
 
@@ -70,24 +74,25 @@ export default function InsertOrderButton({
     defaultValues: {
       icu_chart_order_type: orderType,
       icu_chart_order_name: orderName,
-      icu_chart_order_comment: '',
+      icu_chart_order_comment: orderComment,
     },
   })
 
   useEffect(() => {
     form.setValue('icu_chart_order_name', orderName)
-  }, [orderName, form])
+    form.setValue('icu_chart_order_comment', orderComment)
+  }, [orderName, orderComment, form])
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <ListPlusIcon />
+        <Button variant="ghost" size={iconOnly ? 'icon' : 'default'}>
+          <ListPlusIcon /> {!iconOnly && '차트에 추가'}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>계산 오더 추가</DialogTitle>
+          <DialogTitle>오더 추가</DialogTitle>
           <VisuallyHidden>
             <DialogDescription />
           </VisuallyHidden>

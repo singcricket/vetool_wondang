@@ -1,5 +1,4 @@
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import UnitInput from '@/components/hospital/calculator/unit-input'
 import {
   SheetDescription,
   SheetHeader,
@@ -35,7 +34,8 @@ export default function Kcl({ weight, setIsSheetOpen }: Props) {
   return (
     <>
       <SheetHeader>
-        <SheetTitle>KCl(2mEq/mL) 첨가</SheetTitle>
+        <SheetTitle className="mb-3 text-left">KCl 첨가</SheetTitle>
+
         <VisuallyHidden>
           <SheetDescription />
         </VisuallyHidden>
@@ -43,28 +43,23 @@ export default function Kcl({ weight, setIsSheetOpen }: Props) {
 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-2">
-          <div className="relative">
-            <Label htmlFor="weight">체중</Label>
-            <Input
-              autoComplete="off"
-              type="number"
-              id="weight"
-              className="mt-1"
-              value={localWeight}
-              onChange={(e) => setLocalWeight(e.target.value)}
-              placeholder="체중"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              kg
-            </span>
-          </div>
+          <UnitInput
+            label="체중"
+            id="weight"
+            unit="kg"
+            value={localWeight}
+            onChange={(e) => setLocalWeight(e.target.value)}
+            placeholder="체중"
+          />
         </div>
 
-        <KclTable
-          localWeight={Number(localWeight)}
-          selectedKcl={selectedKcl}
-          setSelectedKCl={setSelectedKcl}
-        />
+        <div className="overflow-auto">
+          <KclTable
+            localWeight={Number(localWeight)}
+            selectedKcl={selectedKcl}
+            setSelectedKCl={setSelectedKcl}
+          />
+        </div>
 
         {selectedKclData && localWeight && (
           <CalculatorResult
@@ -81,9 +76,11 @@ export default function Kcl({ weight, setIsSheetOpen }: Props) {
                 </span>
               </div>
             }
-            copyResult={`${fluid.toLocaleUpperCase()} + KCl ${kclMl}mL, 최대 수액속도 : ${(selectedKclData.maxFluidRate * Number(localWeight)).toFixed(1)}mL/hr`}
+            copyResult={`${fluid.toLocaleUpperCase()} + KCl ${kclMl} mL, 최대 수액속도 : ${(selectedKclData.maxFluidRate * Number(localWeight)).toFixed(1)} mL/hr`}
             hasInsertOrderButton={hasSelectedPatient}
             orderType="fluid"
+            orderName={`${fluid.toLocaleUpperCase()} + KCl ${kclMl} mL`}
+            orderComment={`최대 수액속도 : ${(selectedKclData.maxFluidRate * Number(localWeight)).toFixed(1)} mL/hr`}
             setIsSheetOpen={setIsSheetOpen}
           />
         )}

@@ -12,7 +12,32 @@ import {
   type SelectedCalculator,
 } from '@/constants/hospital/icu/calculator/calculator'
 import { cn } from '@/lib/utils/utils'
+import {
+  CandyCaneIcon,
+  CookieIcon,
+  DropletIcon,
+  DropletsIcon,
+  FlaskConicalIcon,
+  HeartIcon,
+  RulerIcon,
+  SyringeIcon,
+  UtensilsIcon,
+  ZapIcon,
+} from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
+
+const CALCULATOR_ICONS: Record<SelectedCalculator, React.ReactNode> = {
+  counter: <HeartIcon className="h-4 w-4" />,
+  'fluid-rate': <DropletsIcon className="h-4 w-4" />,
+  kcl: <FlaskConicalIcon className="h-4 w-4" />,
+  'rer-mer': <UtensilsIcon className="h-4 w-4" />,
+  cri: <SyringeIcon className="h-4 w-4" />,
+  bsa: <RulerIcon className="h-4 w-4" />,
+  chocolate: <CookieIcon className="h-4 w-4" />,
+  dextrose: <CandyCaneIcon className="h-4 w-4" />,
+  transfusion: <DropletIcon className="h-4 w-4" />,
+  emergency: <ZapIcon className="h-4 w-4" />,
+}
 
 type Props = {
   selectedCalculator: SelectedCalculator
@@ -31,17 +56,19 @@ export default function CalculatorSidebar({
           <li key={calculator.value}>
             <Button
               className={cn(
-                selectedCalculator === calculator.value &&
-                  'bg-primary text-white',
-                'h-10 w-full rounded-none',
+                'h-10 w-full justify-start gap-2 rounded-none',
+                selectedCalculator === calculator.value
+                  ? 'border-r-2 border-primary bg-primary/10 font-medium text-primary hover:bg-primary/10'
+                  : 'text-muted-foreground',
               )}
               variant="ghost"
               onClick={() => setSelectedCalculator(calculator.value)}
             >
+              {CALCULATOR_ICONS[calculator.value]}
               {/* <NewFeature
                 className={cn(
-                  '-right-2 -top-0.5',
-                  calculator.value !== 'cri' && 'hidden',
+                  calculator.label === 'CRI' ? 'block' : 'hidden',
+                  '-right-2 -top-1',
                 )}
               > */}
               {calculator.label}
@@ -58,9 +85,10 @@ export default function CalculatorSidebar({
         }
         value={selectedCalculator}
       >
-        <SelectTrigger className="ml-2 mt-2 w-[240px] md:hidden">
+        <SelectTrigger className="mx-3 mt-3 w-[calc(100%-100px)] md:hidden">
           <SelectValue defaultValue={selectedCalculator} />
         </SelectTrigger>
+
         <SelectContent>
           <SelectGroup>
             {CALCULATORS.map((calculator) => (

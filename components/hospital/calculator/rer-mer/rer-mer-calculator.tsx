@@ -28,7 +28,7 @@ export default function RerMerCalculator({ weight, setIsSheetOpen }: Props) {
     <>
       <div>
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+          <SheetTitle className="mb-3 flex items-center gap-2">
             <span>MER</span>
             <MerToolTip />
           </SheetTitle>

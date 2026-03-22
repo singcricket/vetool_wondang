@@ -2,25 +2,23 @@
 
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
-import { hasPermissions, type Plan } from '@/constants/company/plans'
+import { Spinner } from '@/components/ui/spinner'
 import {
   getPatientData,
   type PatientWithWeight,
 } from '@/lib/services/patient/patient'
-import { CalculatorIcon, LoaderCircleIcon } from 'lucide-react'
+import { CalculatorIcon } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
 import CalculatorSheetContentsDynamic from './calculator-sheet-contents-dynamic'
-import { Spinner } from '@/components/ui/spinner'
+import { fetchMsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 
-export default function CalculatorSheet({ plan }: { plan: Plan }) {
+export default function CalculatorSheet() {
   const { patient_id } = useParams()
-
+  const { session_id } = useParams()
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [isFetching, setIsFetching] = useState(false)
   const [patientData, setPatientData] = useState<PatientWithWeight | null>(null)
-
-  const isCalculatorEnabled = hasPermissions(plan, 'CALCULATOR')
 
   const fetchPatientData = async () => {
     setIsFetching(true)
@@ -28,6 +26,22 @@ export default function CalculatorSheet({ plan }: { plan: Plan }) {
     if (patient_id) {
       const patientData = await getPatientData(patient_id as string)
       setPatientData(patientData)
+    }
+    else if(session_id){
+      const msPatientData = await fetchMsWithPatientWithWeight(session_id as string)
+const patientData = await getPatientData(msPatientData.patient?.patient_id as string)
+      
+      setPatientData(patientData)
+    
+
+//       patient
+// : 
+// {name: '올리', birth: '2024-08-15', breed: 'AMERICAN SHORTHAIR', gender: 'sf', species: 'feline', …}
+// vital
+// : 
+// {created_at: '2026-03-12T15:32:57.6181+00:00', body_weight: '5'}
+
+      msPatientData.patient && setPatientData(patientData)
     }
 
     setIsFetching(false)
@@ -45,17 +59,19 @@ export default function CalculatorSheet({ plan }: { plan: Plan }) {
 
   return (
     <Sheet open={isSheetOpen} onOpenChange={handleOpenChange}>
+      {/* <NewFeature className="right-1 top-1"> */}
       <SheetTrigger asChild>
-        <Button size="icon" className="mr-1 h-8 w-8 2xl:mr-0">
+        <Button size="icon" className="mr-1 h-8 w-8 rounded-full 2xl:mr-0">
           {isFetching ? <Spinner /> : <CalculatorIcon />}
         </Button>
       </SheetTrigger>
+      {/* </NewFeature> */}
 
       <CalculatorSheetContentsDynamic
         patientData={patientData}
         setIsSheetOpen={setIsSheetOpen}
-        isCalculatorEnabled={isCalculatorEnabled}
       />
     </Sheet>
   )
 }
+

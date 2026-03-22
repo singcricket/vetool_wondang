@@ -58,20 +58,14 @@ export default function VitalCounter() {
     const beatsLength = vitalCountState.beats.length
 
     if (beatsLength >= MINIMUM_BEATS_FOR_CALCULATION) {
-      // 마지막 측정 시간 - 첫 번째 측정 시간
       const totalTime =
         vitalCountState.beats[beatsLength - 1] - vitalCountState.beats[0]
-      // 측정 횟수
       const beatsCount = beatsLength - 1
-      // 평균 심박수
       const avgBpm = Math.round(
         (beatsCount * MILLISECONDS_PER_MINUTE) / totalTime,
       )
 
-      setTimeout(
-        () => setVitalCountState((prev) => ({ ...prev, averageBpm: avgBpm })),
-        0,
-      )
+      setVitalCountState((prev) => ({ ...prev, averageBpm: avgBpm }))
     }
   }, [vitalCountState.beats])
 
@@ -83,46 +77,46 @@ export default function VitalCounter() {
       </VisuallyHidden>
 
       <div className="flex h-full items-center justify-center">
-        <div className="relative flex select-none flex-col items-center">
-          <Heart
-            className={cn(
-              'h-72 w-72 cursor-pointer transition-all duration-200',
-              vitalCountState.isPressed ? 'scale-95' : 'scale-100',
-            )}
-            fill="#e15745"
-            stroke="#e15745"
-            strokeWidth={1}
-            onPointerDown={handlePressStart}
-            onPointerUp={handlePressEnd}
-          />
-          <span className="mt-2 text-xl font-bold">심박수, 호흡수 측정</span>
+        <div className="relative flex select-none flex-col items-center gap-4">
+          <div className="relative">
+            <Heart
+              className={cn(
+                'h-36 w-36 cursor-pointer transition-all duration-150 sm:h-52 sm:w-52',
+                vitalCountState.isPressed ? 'scale-90' : 'scale-100',
+              )}
+              fill="#e15745"
+              stroke="#e15745"
+              strokeWidth={1}
+              onPointerDown={handlePressStart}
+              onPointerUp={handlePressEnd}
+            />
+          </div>
 
-          <div className="flex h-32 flex-col items-center justify-center">
+          <span className="text-xl font-bold">심박수, 호흡수 측정</span>
+
+          <div className="flex w-full min-h-[90px] flex-col items-center justify-center rounded-lg border bg-muted/50 px-6 py-4 text-center sm:w-auto sm:px-8">
             {!vitalCountState.isActive && vitalCountState.beats.length === 0 ? (
-              <span className="text-md text-muted-foreground sm:text-lg">
+              <span className="text-sm text-muted-foreground">
                 하트를 눌러서 측정을 시작하세요
               </span>
             ) : (
-              <div className="flex flex-col items-center">
-                <span className="text-lg text-gray-600">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm text-muted-foreground">
                   {vitalCountState.isActive ? '측정 중...' : '측정 완료'}
                 </span>
 
-                <div className="flex h-12 items-center justify-center">
-                  {vitalCountState.averageBpm && (
-                    <span className="text-2xl font-bold text-primary sm:text-4xl">
-                      {vitalCountState.averageBpm} 회/분
-                    </span>
-                  )}
-                </div>
+                {vitalCountState.averageBpm && (
+                  <span className="text-3xl font-bold text-primary sm:text-4xl">
+                    {vitalCountState.averageBpm}{' '}
+                    <span className="text-xl font-semibold">회/분</span>
+                  </span>
+                )}
 
-                <div className="flex h-6 items-center justify-center">
-                  {vitalCountState.beats.length >= 0 && (
-                    <span className="text-sm text-gray-500">
-                      측정 횟수: {vitalCountState.beats.length + 1}회
-                    </span>
-                  )}
-                </div>
+                {vitalCountState.beats.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    측정 횟수: {vitalCountState.beats.length + 1}회
+                  </span>
+                )}
               </div>
             )}
           </div>

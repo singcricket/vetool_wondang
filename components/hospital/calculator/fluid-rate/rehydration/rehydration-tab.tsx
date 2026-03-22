@@ -1,5 +1,5 @@
 import RehydrationToolTip from '@/components/hospital/calculator/fluid-rate/rehydration/rehydration-tool-tip'
-import { Input } from '@/components/ui/input'
+import UnitInput from '@/components/hospital/calculator/unit-input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -14,22 +14,29 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { calculateRehydration } from '@/lib/calculators/fluid-rate'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { AlertCircleIcon } from 'lucide-react'
+import { useParams } from 'next/navigation'
 import { useState } from 'react'
 import CalculatorResult from '../../result/calculator-result'
-import HelperTooltip from '@/components/common/helper-tooltip'
 import DehydrationTooltip from './dehydration-tooltip'
 
 type Props = {
   weight: string
   handleLocalWeightChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  setIsSheetOpen: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export default function RehydrationTab({
   weight,
   handleLocalWeightChange,
+  setIsSheetOpen,
 }: Props) {
   const [dehydrationRate, setDehydrationRate] = useState('5')
   const [rehydrationTime, setRehydrationTime] = useState('12')
+
+  const { patient_id } = useParams()
+  const hasSelectedPatient = Boolean(patient_id)
 
   const result = calculateRehydration(weight, dehydrationRate, rehydrationTime)
 
@@ -40,32 +47,26 @@ export default function RehydrationTab({
           <span>Rehydration</span>
           <RehydrationToolTip />
         </SheetTitle>
-        <SheetDescription>
-          *on-going loss 및 maintenance rate은 계산하지 않음
-        </SheetDescription>
+        <VisuallyHidden>
+          <SheetDescription />
+        </VisuallyHidden>
       </SheetHeader>
 
       <div className="grid grid-cols-2 gap-2">
-        <div className="relative">
-          <Label htmlFor="weight">체중</Label>
-          <Input
-            type="number"
-            id="weight"
-            className="mt-1"
-            value={weight}
-            onChange={handleLocalWeightChange}
-            placeholder="체중"
-          />
-          <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-            kg
-          </span>
-        </div>
+        <UnitInput
+          label="체중"
+          id="weight"
+          unit="kg"
+          value={weight}
+          onChange={handleLocalWeightChange}
+          placeholder="체중"
+        />
 
         <div className="flex flex-col justify-end">
-          <Label htmlFor="dehydration" className="flex items-center gap-1">
-            <span>탈수 정도</span>
+          <div className="flex items-center gap-1">
+            <Label htmlFor="dehydration">탈수 정도</Label>
             <DehydrationTooltip />
-          </Label>
+          </div>
 
           <Select onValueChange={setDehydrationRate} value={dehydrationRate}>
             <SelectTrigger className="mt-1" id="dehydration">
@@ -84,31 +85,50 @@ export default function RehydrationTab({
           </Select>
         </div>
 
-        <div className="relative">
-          <Label htmlFor="rehydrationTime">교정 시간</Label>
-          <Input
-            type="number"
-            id="rehydrationTime"
-            className="mt-1"
-            value={rehydrationTime}
-            onChange={(e) => setRehydrationTime(e.target.value)}
-            placeholder="교정 시간"
-          />
-          <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-            hr
-          </span>
+        <UnitInput
+          label="교정 시간"
+          id="rehydrationTime"
+          unit="hr"
+          value={rehydrationTime}
+          onChange={(e) => setRehydrationTime(e.target.value)}
+          placeholder="교정 시간"
+        />
+      </div>
+
+      <div className="space-y-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <div className="flex items-center gap-1.5 font-medium">
+          <AlertCircleIcon className="h-3.5 w-3.5 shrink-0" />
+          주의사항
         </div>
+        <ul className="ml-5 list-disc space-y-0.5">
+          <li>On-going loss 및 유지 수액(maintenance)은 별도 계산 필요</li>
+        </ul>
       </div>
 
       {result && (
         <CalculatorResult
           displayResult={
-            <span className="font-bold text-primary">
-              {result.ratePerHour.toString()} mL/hr
-            </span>
+            <>
+              Rehydration fluid{' '}
+              <span className="font-bold text-primary">
+                {result.totalMl} mL
+              </span>
+              를 <br className="sm:hidden" />
+              <span className="font-bold text-primary">
+                {rehydrationTime} 시간
+              </span>{' '}
+              동안 주입 =
+              <span className="font-bold text-primary">
+                {result.ratePerHour.toString()} mL/hr
+              </span>
+            </>
           }
-          copyResult={`${result.ratePerHour} mL/hr`}
-          comment={`${result.totalMl}mL를 ${rehydrationTime}시간 동안 주입`}
+          copyResult={`Rehydration fluid therapy, ${result.totalMl} ml for ${rehydrationTime} hr = FR: ${result.ratePerHour} mL/hr`}
+          hasInsertOrderButton={hasSelectedPatient}
+          orderName="Rehydration fluid therapy"
+          orderComment={`${result.totalMl} ml for ${rehydrationTime} hr = FR: ${result.ratePerHour} mL/hr`}
+          orderType="fluid"
+          setIsSheetOpen={setIsSheetOpen}
         />
       )}
     </div>

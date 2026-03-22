@@ -5,9 +5,10 @@ import {
 } from '@/components/ui/accordion'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import CalculatorWarning from '../../calculator-warning'
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
-import CalculatorResult from '../../result/calculator-result'
+import CriResultCard from '../cri-result-card'
 import HelperTooltip from '@/components/common/helper-tooltip'
 
 type Props = {
@@ -30,12 +31,7 @@ export default function BicarbonateCri({
 
   return (
     <AccordionItem value="bicarbonate">
-      <AccordionTrigger>
-        <div className="flex items-center gap-2">
-          <span>Sodium Bicarbonate (HCO3 = 1 mEq/mL)</span>
-          <HelperTooltip>BW(kg) x BE x 0.3</HelperTooltip>
-        </div>
-      </AccordionTrigger>
+      <AccordionTrigger>Sodium Bicarbonate (HCO3 = 1 mEq/mL)</AccordionTrigger>
 
       <AccordionContent className="space-y-4 px-1">
         <div className="grid grid-cols-2 gap-2">
@@ -55,7 +51,7 @@ export default function BicarbonateCri({
           </div>
 
           <div className="relative">
-            <Label htmlFor="baseExcess">Base Excess(Base Deficit) 절대값</Label>
+            <Label htmlFor="baseExcess">Base Excess</Label>
             <Input
               type="number"
               id="baseExcess"
@@ -70,22 +66,35 @@ export default function BicarbonateCri({
           </div>
         </div>
 
+        <CalculatorWarning>
+          <li>BW(kg) x BE x 0.3</li>
+          <li>2~6시간에 걸쳐 천천히 투여</li>
+          <li>칼슘 함유 수액과 동일 라인 금지 (침전 위험)</li>
+          <li>혈가스(BGA) 모니터링</li>
+        </CalculatorWarning>
+
         {Number(result) > 0 && (
-          <CalculatorResult
-            displayResult={
-              <div>
-                Sodium Bicarbonate{' '}
-                <span className="font-bold text-primary">{result}mL</span> 의
-                1/3~1/2{' '}
-                <span className="font-bold text-primary">
-                  ({(Number(result) / 3).toFixed(2)}~
-                  {(Number(result) / 2).toFixed(2)}mL)
-                </span>
-                을 <span className="font-bold text-primary">2~6시간</span> 동안
-                공급
+          <CriResultCard
+            preparation={
+              <div className="space-y-1">
+                <div>
+                  Sodium Bicarbonate{' '}
+                  <span className="font-bold text-primary">{result} mL</span>
+                </div>{' '}
+                의 1/3~1/2
+                <div className="text-xs font-normal text-muted-foreground">
+                  (초기 교정량: {(Number(result) / 3).toFixed(2)}~
+                  {(Number(result) / 2).toFixed(2)} mL)
+                </div>
+                <div>NS 1:1 희석</div>
               </div>
             }
-            copyResult={`Sodium Bicarbonate ${result}mL 의 1/3~1/2(${(Number(result) / 3).toFixed(2)}~${(Number(result) / 2).toFixed(2)}mL)을 2~6시간동안 공급 `}
+            pumpSetting={
+              <div className="space-y-1">2~6시간에 걸쳐 천천히 정맥 투여</div>
+            }
+            copyResult={`Sodium Bicarbonate CRI, 초기 교정량: ${(Number(result) / 3).toFixed(2)}~${(Number(result) / 2).toFixed(2)}ml, Mix: NS 1:1 희석하여 2~6시간 점적 투여`}
+            orderName="Sodium Bicarbonate CRI"
+            orderComment={`초기 교정량: ${(Number(result) / 3).toFixed(2)}~${(Number(result) / 2).toFixed(2)}ml, Mix: NS 1:1 희석하여 2~6시간 투여`}
             hasInsertOrderButton={hasSelectedPatient}
             setIsSheetOpen={setIsSheetOpen}
           />

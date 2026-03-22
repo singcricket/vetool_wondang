@@ -25,7 +25,7 @@ export default function KclTable({
     setSelectedKCl(selectedKcl === id ? null : id)
 
   return (
-    <Table className="border">
+    <Table className="border text-xs">
       <TableHeader>
         <TableRow>
           <TableHead className="border-r text-center" rowSpan={2}>

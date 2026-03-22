@@ -3,11 +3,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import UnitInput from '@/components/hospital/calculator/unit-input'
+import CalculatorWarning from '../../calculator-warning'
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
-import CalculatorResult from '../../result/calculator-result'
+import CriResultCard from '../cri-result-card'
 
 const FUROSEMIDE_CONCENTRATION = 10
 
@@ -40,12 +40,24 @@ export default function FurosemideCri({
 
   // 3. 주사기 용량에 맞춰 퓨로세미드와 수액의 비율 계산
   // hourlyVolume : fluidRate = x : syringeVolume
-  const furosemideVol = (
-    (Number(hourlyVolume) * Number(syringeVol)) /
-    Number(fluidRate)
-  ).toFixed(2)
+  const isImpossible = hourlyVolume >= Number(fluidRate)
+  const furosemideVol = isImpossible
+    ? 0
+    : (Number(hourlyVolume) * Number(syringeVol)) / Number(fluidRate)
 
-  const fluidVol = (Number(syringeVol) - Number(furosemideVol)).toFixed(2)
+  const fluidVol = Number(syringeVol) - furosemideVol
+
+  const runtime =
+    Number(fluidRate) > 0
+      ? (Number(syringeVol) / Number(fluidRate)).toFixed(1)
+      : '0'
+
+  const actualHourlyVolume =
+    Number(syringeVol) > 0
+      ? (furosemideVol * Number(fluidRate)) / Number(syringeVol)
+      : 0
+  const actualMgHr = actualHourlyVolume * FUROSEMIDE_CONCENTRATION
+  const actualMgKgHr = Number(weight) > 0 ? actualMgHr / Number(weight) : 0
 
   return (
     <AccordionItem value="furosemide">
@@ -53,85 +65,99 @@ export default function FurosemideCri({
 
       <AccordionContent className="space-y-4 px-1">
         <div className="grid grid-cols-2 gap-2">
-          <div className="relative">
-            <Label htmlFor="weight">체중</Label>
-            <Input
-              type="number"
-              id="weight"
-              className="mt-1"
-              value={weight}
-              onChange={handleChangeWeight}
-              placeholder="체중"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              kg
-            </span>
-          </div>
+          <UnitInput
+            label="체중"
+            id="weight"
+            unit="kg"
+            value={weight}
+            onChange={handleChangeWeight}
+            placeholder="체중"
+          />
 
-          <div className="relative">
-            <Label htmlFor="furosemideDose">약물 용량 (0.2 ~ 1)</Label>
-            <Input
-              type="number"
-              id="furosemideDose"
-              className="mt-1"
-              value={furosemideDoseRate}
-              onChange={(e) => setFurosemideDoseRate(e.target.value)}
-              placeholder="퓨로세마이드 용량"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              mg/kg/hr
-            </span>
-          </div>
+          <UnitInput
+            label="용량 (0.2 ~ 1)"
+            id="furosemideDose"
+            unit="mg/kg/hr"
+            value={furosemideDoseRate}
+            onChange={(e) => setFurosemideDoseRate(e.target.value)}
+            placeholder="퓨로세마이드 용량"
+          />
 
-          <div className="relative">
-            <Label htmlFor="syringeVol">사용할 주사기</Label>
-            <Input
-              type="number"
-              id="syringeVol"
-              className="mt-1"
-              value={syringeVol}
-              onChange={(e) => setSyringeVol(e.target.value)}
-              placeholder="사용할 주사기"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              cc
-            </span>
-          </div>
+          <UnitInput
+            label="사용할 주사기"
+            id="syringeVol"
+            unit="cc"
+            value={syringeVol}
+            onChange={(e) => setSyringeVol(e.target.value)}
+            placeholder="사용할 주사기"
+          />
 
-          <div className="relative">
-            <Label htmlFor="fluidRate">수액 속도</Label>
-            <Input
-              type="number"
-              id="fluidRate"
-              className="mt-1"
-              value={fluidRate}
-              onChange={(e) => setFluidRate(e.target.value)}
-              placeholder="수액속도"
-            />
-            <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-              mL/hr
-            </span>
-          </div>
+          <UnitInput
+            label="수액 속도"
+            id="fluidRate"
+            unit="mL/hr"
+            value={fluidRate}
+            onChange={(e) => setFluidRate(e.target.value)}
+            placeholder="수액속도"
+          />
         </div>
 
-        {Number(fluidVol) > 0 && Number(furosemideVol) > 0 && (
-          <CalculatorResult
-            displayResult={
-              <>
-                수액{' '}
-                <span className="font-bold text-primary">{fluidVol}mL</span> +
-                Furosemide{' '}
-                <span className="font-bold text-primary">
-                  {furosemideVol}mL
-                </span>{' '}
-                , FR :{' '}
-                <span className="font-bold text-primary">{fluidRate}mL/hr</span>{' '}
-              </>
-            }
-            copyResult={`수액 ${fluidVol}mL + Furosemide ${furosemideVol}mL , FR : ${fluidRate}mL/hr`}
-            hasInsertOrderButton={hasSelectedPatient}
-            setIsSheetOpen={setIsSheetOpen}
-          />
+        <CalculatorWarning>
+          <li>저칼륨·저나트륨 등 전해질 이상 모니터링</li>
+          <li>소변량(UOP) 정기적 확인</li>
+          <li>신기능 저하 시 용량 감량 고려</li>
+        </CalculatorWarning>
+
+        {isImpossible ? (
+          <div className="text-center text-sm font-semibold text-destructive">
+            수액속도를 올리거나 약물용량을 줄이세요
+          </div>
+        ) : (
+          Number(fluidVol) > 0 &&
+          Number(furosemideVol) > 0 && (
+            <CriResultCard
+              preparation={
+                <div>
+                  수액{' '}
+                  <span className="font-bold text-primary">
+                    {fluidVol.toFixed(2)} mL
+                  </span>
+                  <br />
+                  Furosemide{' '}
+                  <span className="font-bold text-primary">
+                    {furosemideVol.toFixed(2)} mL
+                  </span>
+                </div>
+              }
+              pumpSetting={
+                <div>
+                  FR:{' '}
+                  <span className="font-bold text-primary">
+                    {fluidRate} mL/hr
+                  </span>
+                </div>
+              }
+              delivery={
+                <div>
+                  <span className="font-bold text-primary">
+                    {actualMgKgHr.toFixed(2)} mg/kg/hr
+                  </span>
+                  <br />
+                  <span className="font-bold text-primary">
+                    {actualMgHr.toFixed(2)} mg/hr
+                  </span>
+                </div>
+              }
+              runtime={
+                <span className="font-bold text-primary">{runtime} hr</span>
+              }
+              copyResult={`Furosemide CRI, Dose: ${furosemideDoseRate}mg/kg/hr, FR: ${fluidRate}ml/hr, Mix: Fluid ${fluidVol.toFixed(2)}ml + Furosemide ${furosemideVol.toFixed(2)}ml`}
+              orderName="Furosemide CRI"
+              orderComment={`Dose: ${furosemideDoseRate}mg/kg/hr, FR: ${fluidRate}ml/hr, Mix: Fluid ${fluidVol.toFixed(2)}ml + Furosemide ${furosemideVol.toFixed(2)}ml`}
+              hasInsertOrderButton={hasSelectedPatient}
+              setIsSheetOpen={setIsSheetOpen}
+            />
+          )
         )}
       </AccordionContent>
     </AccordionItem>

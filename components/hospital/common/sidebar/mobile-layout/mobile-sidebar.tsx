@@ -67,7 +67,7 @@ export default function MobileSidebar({ hosId, vetoolUser, plan }: Props) {
         </ul>
 
         <div className="flex flex-col items-end">
-          <CalculatorSheet plan={plan} />
+          <CalculatorSheet />
 
           <SidebarUserDropdown
             isMobile

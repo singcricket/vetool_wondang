@@ -1,6 +1,5 @@
+import UnitInput from '@/components/hospital/calculator/unit-input'
 import BsaToolTip from '@/components/hospital/calculator/bsa/bsa-tool-tip'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   SheetDescription,
   SheetHeader,
@@ -29,20 +28,15 @@ export default function Bsa({ weight }: { weight: string }) {
         </VisuallyHidden>
       </SheetHeader>
 
-      <div className="relative w-1/2">
-        <Label htmlFor="weight">체중</Label>
-        <Input
-          type="number"
-          id="weight"
-          className="mt-1"
-          value={localWeight}
-          onChange={(e) => setLocalWeight(e.target.value)}
-          placeholder="체중"
-        />
-        <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-          kg
-        </span>
-      </div>
+      <UnitInput
+        label="체중"
+        id="weight"
+        unit="kg"
+        wrapperClassName="w-1/2"
+        value={localWeight}
+        onChange={(e) => setLocalWeight(e.target.value)}
+        placeholder="체중"
+      />
 
       {result && (
         <CalculatorResult
@@ -52,6 +46,7 @@ export default function Bsa({ weight }: { weight: string }) {
             </span>
           }
           copyResult={`${result.toString()} m²`}
+          hasCopyButton={false}
         />
       )}
     </div>

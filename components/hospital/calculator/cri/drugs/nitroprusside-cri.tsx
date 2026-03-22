@@ -1,16 +1,16 @@
+import UnitInput from '@/components/hospital/calculator/unit-input'
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import UnitInput from '@/components/hospital/calculator/unit-input'
-import CalculatorWarning from '../../calculator-warning'
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
+import CalculatorWarning from '../../calculator-warning'
 import CriResultCard from '../cri-result-card'
 
-// 포스텐 제품 1ml = 인 1mmol, 칼륨 1mEq(=1mmol)
-const PHOSPHATE_CONCENTRATION = 1
+// 50 mg/vial을 2 mL D5W로 용해 → 25 mg/mL
+const NITROPRUSSIDE_CONCENTRATION = 25 // mg/mL
 
 type Props = {
   weight: string
@@ -18,7 +18,7 @@ type Props = {
   handleChangeWeight: (e: React.ChangeEvent<HTMLInputElement>) => void
 }
 
-export default function PhosphateCri({
+export default function NitroprussideCri({
   weight,
   setIsSheetOpen,
   handleChangeWeight,
@@ -26,43 +26,36 @@ export default function PhosphateCri({
   const { patient_id } = useParams()
   const hasSelectedPatient = Boolean(patient_id)
 
-  // fluidVol에 phosphateVol를 넣고 fluidRate 속도로 투여
-  // fluidVol + phosphateVol = totalVol
-  // phosphateDoseRate  = 0.01 ~ 0.12 mmol/kg/hr
-  const [phosphateDoseRate, setPhosphateDoseRate] = useState('0.01')
+  const [dose, setDose] = useState('1')
   const [syringeVol, setSyringeVol] = useState('30')
   const [fluidRate, setFluidRate] = useState('2')
 
-  // 1. 시간당 필요한 phosphate 용량 계산 (mmol/hr)
-  const hourlyDose = Number(phosphateDoseRate) * Number(weight)
+  // 1. 시간당 필요한 니트로프루시드 용량 (mg/hr)
+  const hourlyDose = (Number(dose) * Number(weight) * 60) / 1000
 
-  // 2. 시간당 필요한 phosphate 원액 용량 계산 (mL/hr)
-  const hourlyVolume = hourlyDose / PHOSPHATE_CONCENTRATION
+  // 2. 시간당 필요한 니트로프루시드 원액 용량 (mL/hr)
+  const hourlyVolume = hourlyDose / NITROPRUSSIDE_CONCENTRATION
 
-  // 3. 주사기 용량에 맞춰 phosphate와 수액의 비율 계산
-  // hourlyVolume : fluidRate = x : syringeVolume
   const isImpossible = hourlyVolume >= Number(fluidRate)
-  const phosphateVol = isImpossible
+
+  // 3. 첨가할 니트로프루시드 볼륨 (mL)
+  const nitroprussideVol = isImpossible
     ? 0
-    : (Number(hourlyVolume) * Number(syringeVol)) / Number(fluidRate)
+    : (Number(syringeVol) * hourlyVolume) / (Number(fluidRate) - hourlyVolume)
 
-  const fluidVol = Number(syringeVol) - phosphateVol
-
+  const totalVol = Number(syringeVol) + nitroprussideVol
   const runtime =
-    Number(fluidRate) > 0
-      ? (Number(syringeVol) / Number(fluidRate)).toFixed(1)
-      : '0'
+    Number(fluidRate) > 0 ? (totalVol / Number(fluidRate)).toFixed(1) : '0'
 
   const actualHourlyVolume =
-    Number(syringeVol) > 0
-      ? (phosphateVol * Number(fluidRate)) / Number(syringeVol)
-      : 0
-  const actualMmolHr = actualHourlyVolume * PHOSPHATE_CONCENTRATION
-  const actualMmolKgHr = Number(weight) > 0 ? actualMmolHr / Number(weight) : 0
+    totalVol > 0 ? (nitroprussideVol * Number(fluidRate)) / totalVol : 0
+  const actualMgHr = actualHourlyVolume * NITROPRUSSIDE_CONCENTRATION
+  const actualUgKgMin =
+    Number(weight) > 0 ? (actualMgHr * 1000) / (Number(weight) * 60) : 0
 
   return (
-    <AccordionItem value="phosphate">
-      <AccordionTrigger>Phosten (136.1mg/ml)</AccordionTrigger>
+    <AccordionItem value="nitroprusside">
+      <AccordionTrigger>Nitroprusside (50mg/vial)</AccordionTrigger>
 
       <AccordionContent className="space-y-4 px-1">
         <div className="grid grid-cols-2 gap-2">
@@ -76,12 +69,12 @@ export default function PhosphateCri({
           />
 
           <UnitInput
-            label="용량 (0.01 ~ 0.12)"
-            id="phosphateDose"
-            unit="mmol/kg/hr"
-            value={phosphateDoseRate}
-            onChange={(e) => setPhosphateDoseRate(e.target.value)}
-            placeholder="퓨로세마이드 용량"
+            label="용량 (1 ~ 10)"
+            id="dose"
+            unit="µg/kg/min"
+            value={dose}
+            onChange={(e) => setDose(e.target.value)}
+            placeholder="1"
           />
 
           <UnitInput
@@ -90,7 +83,7 @@ export default function PhosphateCri({
             unit="cc"
             value={syringeVol}
             onChange={(e) => setSyringeVol(e.target.value)}
-            placeholder="사용할 주사기"
+            placeholder="주사기 용량"
           />
 
           <UnitInput
@@ -99,14 +92,14 @@ export default function PhosphateCri({
             unit="mL/hr"
             value={fluidRate}
             onChange={(e) => setFluidRate(e.target.value)}
-            placeholder="수액속도"
+            placeholder="수액 속도"
           />
         </div>
 
         <CalculatorWarning>
-          <li>칼슘 함유 수액(LRS, Ca gluconate 등)과 동일 라인 금지</li>
-          <li>4~6시간마다 P, iCa, K 모니터링</li>
-          <li>1 mL = 인 1 mmol + 칼륨 1 mEq — 총 K 보충량 계산에 포함</li>
+          <li>50 mg/vial + D5W 2 mL 용해 → 25 mg/mL 기준</li>
+          <li>D5W로만 조제 (NS, RLS 금지)</li>
+          <li>차광 필수 (cyanide 생성)</li>
         </CalculatorWarning>
 
         {isImpossible ? (
@@ -114,19 +107,18 @@ export default function PhosphateCri({
             수액속도를 올리거나 약물용량을 줄이세요
           </div>
         ) : (
-          Number(fluidVol) > 0 &&
-          Number(phosphateVol) > 0 && (
+          Number(nitroprussideVol) > 0 && (
             <CriResultCard
               preparation={
                 <div>
-                  NS{' '}
+                  D5W{' '}
                   <span className="font-bold text-primary">
-                    {fluidVol.toFixed(2)} mL
+                    {syringeVol} mL
                   </span>
                   <br />
-                  Phosten{' '}
+                  Nitroprusside{' '}
                   <span className="font-bold text-primary">
-                    {phosphateVol.toFixed(2)} mL
+                    {Number(nitroprussideVol).toFixed(2)} mL
                   </span>
                 </div>
               }
@@ -141,20 +133,20 @@ export default function PhosphateCri({
               delivery={
                 <div>
                   <span className="font-bold text-primary">
-                    {actualMmolKgHr.toFixed(2)} mmol/kg/hr
+                    {actualUgKgMin.toFixed(2)} µg/kg/min
                   </span>
                   <br />
                   <span className="font-bold text-primary">
-                    {actualMmolHr.toFixed(2)} mmol/hr
+                    {actualMgHr.toFixed(2)} mg/hr
                   </span>
                 </div>
               }
               runtime={
                 <span className="font-bold text-primary">{runtime} hr</span>
               }
-              copyResult={`Phosphate CRI, Dose: ${phosphateDoseRate}mmol/kg/hr, FR: ${fluidRate}ml/hr, Mix: NS ${fluidVol.toFixed(2)}ml + Phosten ${phosphateVol.toFixed(2)}ml`}
-              orderName="Phosphate CRI"
-              orderComment={`Dose: ${phosphateDoseRate}mmol/kg/hr, FR: ${fluidRate}ml/hr, Mix: NS ${fluidVol.toFixed(2)}ml + Phosten ${phosphateVol.toFixed(2)}ml`}
+              copyResult={`Nitroprusside CRI, Dose: ${dose}µg/kg/min, FR: ${fluidRate}ml/hr, Mix: D5W ${syringeVol}ml + Nitroprusside ${Number(nitroprussideVol).toFixed(2)}ml`}
+              orderName="Nitroprusside CRI"
+              orderComment={`Dose: ${dose}µg/kg/min, FR: ${fluidRate}ml/hr, Mix: D5W ${syringeVol}ml + Nitroprusside ${Number(nitroprussideVol).toFixed(2)}ml`}
               hasInsertOrderButton={hasSelectedPatient}
               setIsSheetOpen={setIsSheetOpen}
             />

@@ -1,3 +1,4 @@
+import UnitInput from '@/components/hospital/calculator/unit-input'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { type Dispatch, type SetStateAction } from 'react'
@@ -24,37 +25,24 @@ export default function MerForm({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-2">
-        <div className="relative">
-          <Label htmlFor="weight">체중</Label>
-          <Input
-            autoComplete="off"
-            type="number"
-            id="weight"
-            className="mt-1"
-            value={localWeight}
-            onChange={(e) => setLocalWeight(e.target.value)}
-            placeholder="체중"
-          />
-          <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-            kg
-          </span>
-        </div>
+        <UnitInput
+          label="체중"
+          id="weight"
+          unit="kg"
+          value={localWeight}
+          onChange={(e) => setLocalWeight(e.target.value)}
+          placeholder="체중"
+        />
 
-        <div className="relative">
-          <Label htmlFor="rer">RER</Label>
-          <Input
-            type="number"
-            id="rer"
-            className="mt-1"
-            value={rer ?? ''}
-            readOnly
-            disabled
-            placeholder="RER"
-          />
-          <span className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-            kcal/day
-          </span>
-        </div>
+        <UnitInput
+          label="RER"
+          id="rer"
+          unit="kcal/day"
+          value={rer ?? ''}
+          readOnly
+          disabled
+          placeholder="RER"
+        />
 
         <div>
           <Label htmlFor="factor" className="flex items-center gap-2">
@@ -80,6 +68,7 @@ export default function MerForm({
             </span>
           }
           copyResult={`${result.toFixed(0).toString()} kcal/day`}
+          hasCopyButton={false}
         />
       )}
     </div>

@@ -2,10 +2,10 @@ import HelperTooltip from '@/components/common/helper-tooltip'
 
 export default function MaintenanceToolTip() {
   return (
-    <HelperTooltip side="right">
-      <div className="flex gap-10">
+    <HelperTooltip side="bottom">
+      <div className="flex gap-5 text-xs">
         <div>
-          <div className="text-sm font-bold">개</div>
+          <div className="font-bold">개</div>
           <div>
             a. 132 x BW(kg) <sup>0.75</sup> mL/day
           </div>
@@ -14,7 +14,7 @@ export default function MaintenanceToolTip() {
         </div>
 
         <div>
-          <div className="text-sm font-bold">고양이</div>
+          <div className="font-bold">고양이</div>
           <div>
             a. 80 x BW(kg) <sup>0.75</sup> mL/day
           </div>

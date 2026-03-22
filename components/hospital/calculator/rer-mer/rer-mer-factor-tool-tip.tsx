@@ -2,7 +2,6 @@ import HelperTooltip from '@/components/common/helper-tooltip'
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -68,26 +67,15 @@ const FACTORS = [
 
 export default function FactorToolTip() {
   return (
-    <HelperTooltip side="right">
-      <Table className="text-sm">
-        <TableCaption className="text-xs text-muted-foreground">
-          <p>
-            *2021 AAHA Nutrition and Weight Management Guidelines for Dogs and
-            Cats
-          </p>
-          <p>
-            *Sedentary, indoor, hopitalized pets may require less caloric intake
-            than indicated above.
-          </p>
-        </TableCaption>
-
+    <HelperTooltip side="bottom">
+      <Table className="text-xs">
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Factors</TableHead>
-            <TableHead className="w-[180px] text-center text-sm font-bold">
+            <TableHead className="w-[180px] text-center font-bold">
               개
             </TableHead>
-            <TableHead className="w-[180px] text-center text-sm font-bold">
+            <TableHead className="w-[180px] text-center font-bold">
               고양이
             </TableHead>
           </TableRow>
@@ -102,6 +90,17 @@ export default function FactorToolTip() {
           ))}
         </TableBody>
       </Table>
+
+      <div className="mt-2 text-xs text-muted-foreground">
+        <p>
+          *2021 AAHA Nutrition and Weight Management Guidelines for Dogs and
+          Cats
+        </p>
+        <p>
+          *Sedentary, indoor, hopitalized pets may require less caloric intake
+          than indicated above.
+        </p>
+      </div>
     </HelperTooltip>
   )
 }

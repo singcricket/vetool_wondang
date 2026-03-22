@@ -11,7 +11,10 @@ import DobutamineCri from './drugs/dobutamine-cri'
 import FurosemideCri from './drugs/furosemide-cri'
 import MetoclopramideCri from './drugs/metoclopramide-cri'
 import NorepinephrineCri from './drugs/norepinephrine-cri'
+import NitroprussideCri from './drugs/nitroprusside-cri'
 import PhosphateCri from './drugs/phosphate.-cri'
+import PropofolCri from './drugs/propofol-cri'
+import RemifentanilCri from './drugs/remifentanil-cri'
 
 type Props = {
   weight: string
@@ -33,14 +36,19 @@ export default function Cri({ weight, setIsSheetOpen }: Props) {
         </SheetDescription>
       </SheetHeader>
 
-      <Accordion type="single">
+      <Accordion type="single" collapsible>
         <FurosemideCri
           weight={localWeight}
           setIsSheetOpen={setIsSheetOpen}
           handleChangeWeight={handleChangeWeight}
         />
-
         <DobutamineCri
+          weight={localWeight}
+          setIsSheetOpen={setIsSheetOpen}
+          handleChangeWeight={handleChangeWeight}
+        />
+
+        <NitroprussideCri
           weight={localWeight}
           setIsSheetOpen={setIsSheetOpen}
           handleChangeWeight={handleChangeWeight}
@@ -68,6 +76,18 @@ export default function Cri({ weight, setIsSheetOpen }: Props) {
           handleChangeWeight={handleChangeWeight}
           setIsSheetOpen={setIsSheetOpen}
           weight={localWeight}
+        />
+
+        <PropofolCri
+          weight={localWeight}
+          setIsSheetOpen={setIsSheetOpen}
+          handleChangeWeight={handleChangeWeight}
+        />
+
+        <RemifentanilCri
+          weight={localWeight}
+          setIsSheetOpen={setIsSheetOpen}
+          handleChangeWeight={handleChangeWeight}
         />
       </Accordion>
     </div>
