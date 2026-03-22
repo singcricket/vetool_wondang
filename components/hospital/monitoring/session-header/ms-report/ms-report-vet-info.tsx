@@ -11,8 +11,8 @@ export default function MsReportVetInfo({ msData }: Props) {
 const { msContextData } = useMonitoringContextData();
 const { vetsListData } = msContextData;
   const rows: [string, string][] = [
-    ['주치의', vetsListData.find((vet) => vet.user_id === msData.vet_main)?.name ?? ''],
-    ['담당의', vetsListData.find((vet) => vet.user_id === msData.vet_primary)?.name ?? ''],
+    ['담당의', vetsListData.find((vet) => vet.user_id === msData.vet_main)?.name ?? ''],
+    ['집도의', vetsListData.find((vet) => vet.user_id === msData.vet_primary)?.name ?? ''],
     ['보조의', vetsListData.find((vet) => vet.user_id === sub?.secondary)?.name ?? ''],
     ['마취의', vetsListData.find((vet) => vet.user_id === sub?.anesthesia)?.name ?? ''],
     ['기타', sub?.other ?? ''],

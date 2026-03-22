@@ -39,8 +39,8 @@ function buildVetSection(msData: MsWithPatientWithWeight, vetsListData: Vet[]): 
   const getVetName = (id: string | null | undefined) => 
     vetsListData.find((vet) => vet.user_id === id)?.name ?? ''
 
-  if (msData.vet_main) rows.push(line('주치의', getVetName(msData.vet_main)))
-  if (msData.vet_primary) rows.push(line('담당의', getVetName(msData.vet_primary)))
+  if (msData.vet_main) rows.push(line('담당의', getVetName(msData.vet_main)))
+  if (msData.vet_primary) rows.push(line('집도의', getVetName(msData.vet_primary)))
   if (sub?.secondary) rows.push(line('보조의', getVetName(sub.secondary)))
   if (sub?.anesthesia) rows.push(line('마취의', getVetName(sub.anesthesia)))
   if (sub?.other) rows.push(line('기타', sub.other ?? ''))

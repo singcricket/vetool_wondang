@@ -37,13 +37,13 @@ export default function SessionHeader({
         msData={msData}
       />
 
-      <div className="hidden 2xl:block">
+      
         <MsHeaderRightButtons
           msData={msData}
           hosId={hosId}
           targetDate={targetDate}
         />
-      </div>
+      
     </header>
   )
 }
