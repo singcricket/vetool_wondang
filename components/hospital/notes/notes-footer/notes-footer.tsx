@@ -18,7 +18,7 @@ export default function NotesFooter({ hosId }: Props) {
   const isListPage = !isSearchPage && !pathname.includes('/new') && !pathname.includes('/edit')
 
   return (
-    <footer className="fixed bottom-0 left-0 2xl:left-10 right-0 z-40 flex h-10 border-t bg-white items-center justify-start px-4 shadow-sm">
+    <footer className="fixed bottom-0 left-0 2xl:left-64 right-0 z-40 flex h-10 border-t bg-white items-center justify-start px-4 shadow-sm">
       <ul className="flex h-full items-center gap-2">
         <li>
           <Button

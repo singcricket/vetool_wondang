@@ -36,8 +36,9 @@ import { toast } from 'sonner'
 
 interface Props {
   content: any
-  onChange: (content: any) => void
+  onChange?: (content: any) => void
   hosId: string
+  editable?: boolean
 }
 
 const MenuButton = ({ 
@@ -72,12 +73,17 @@ const MenuButton = ({
 )
 
 // Custom NodeView for Image Resizing
-const ImageComponent = ({ node, updateAttributes }: any) => {
+const ImageComponent = ({ node, updateAttributes, editor }: any) => {
   const [resizing, setResizing] = useState(false)
   const [width, setWidth] = useState(node.attrs.width || '100%')
   const imageRef = useRef<HTMLImageElement>(null)
+  
+  // Get editable state from editor
+  const isEditable = editor.isEditable
 
   const onMouseDown = (event: React.MouseEvent) => {
+    if (!isEditable) return
+    
     event.preventDefault()
     setResizing(true)
 
@@ -119,24 +125,26 @@ const ImageComponent = ({ node, updateAttributes }: any) => {
         title={node.attrs.title}
         className={cn(
           "rounded-lg shadow-md border border-slate-200 transition-shadow",
-          resizing ? "ring-2 ring-blue-500 shadow-xl" : "group-hover:ring-2 group-hover:ring-blue-300"
+          resizing ? "ring-2 ring-blue-500 shadow-xl" : (isEditable ? "group-hover:ring-2 group-hover:ring-blue-300" : "")
         )}
         style={{ width: '100%', height: 'auto' }}
       />
       
-      {/* Resize Handle */}
-      <div
-        className={cn(
-          "absolute bottom-2 right-2 w-4 h-4 bg-blue-600 rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg pointer-events-auto z-10",
-          resizing && "opacity-100 scale-125"
-        )}
-        onMouseDown={onMouseDown}
-      >
-        <div className="w-1.5 h-1.5 border-r-2 border-b-2 border-white" />
-      </div>
+      {/* Resize Handle - Only show if editable */}
+      {isEditable && (
+        <div
+          className={cn(
+            "absolute bottom-2 right-2 w-4 h-4 bg-blue-600 rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg pointer-events-auto z-10",
+            resizing && "opacity-100 scale-125"
+          )}
+          onMouseDown={onMouseDown}
+        >
+          <div className="w-1.5 h-1.5 border-r-2 border-b-2 border-white" />
+        </div>
+      )}
 
       {/* Size Indicator */}
-      {(resizing || node.attrs.width) && (
+      {(resizing || (isEditable && node.attrs.width)) && (
         <div className="absolute top-2 right-2 bg-slate-900/75 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
           {width}
         </div>
@@ -166,7 +174,7 @@ const ResizableImage = Image.extend({
   },
 })
 
-export default function NotesEditor({ content, onChange, hosId }: Props) {
+export default function NotesEditor({ content, onChange, hosId, editable = true }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
@@ -187,16 +195,20 @@ export default function NotesEditor({ content, onChange, hosId }: Props) {
       }),
     ],
     content: content,
+    editable: editable,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
-      onChange(editor.getJSON())
+      onChange?.(editor.getJSON())
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none max-w-none min-h-[600px] p-8 bg-white'
+        class: cn(
+           'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none max-w-none p-8 bg-white',
+           editable ? 'min-h-[600px]' : ''
+        )
       }
     }
-  })
+  }, [editable])
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -217,142 +229,153 @@ export default function NotesEditor({ content, onChange, hosId }: Props) {
     }
   }
 
+  useEffect(() => {
+    if (editor && content && editor.isEmpty) {
+      editor.commands.setContent(content)
+    }
+  }, [editor, content])
+
   if (!editor) return null
 
   return (
-    <div className="w-full border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm ring-1 ring-slate-100">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-50/80 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm">
-        <MenuButton
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          active={editor.isActive('bold')}
-          title="굵게"
-        >
-          <BoldIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        <MenuButton
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          active={editor.isActive('italic')}
-          title="기울임"
-        >
-          <ItalicIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        <MenuButton
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          active={editor.isActive('highlight')}
-          title="하이라이트"
-        >
-          <HighlighterIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        
-        <div className="w-px h-6 bg-slate-300 mx-1" />
+    <div className={cn(
+       "w-full overflow-hidden bg-white",
+       editable ? "border border-slate-200 rounded-2xl shadow-sm ring-1 ring-slate-100" : ""
+    )}>
+      {/* Toolbar - Only if editable */}
+      {editable && (
+        <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-50/80 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm">
+          <MenuButton
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            active={editor.isActive('bold')}
+            title="굵게"
+          >
+            <BoldIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            active={editor.isActive('italic')}
+            title="기울임"
+          >
+            <ItalicIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+            active={editor.isActive('highlight')}
+            title="하이라이트"
+          >
+            <HighlighterIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          
+          <div className="w-px h-6 bg-slate-300 mx-1" />
 
-        <MenuButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          active={editor.isActive('heading', { level: 1 })}
-          title="제목 1"
-        >
-          <Heading1Icon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        <MenuButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          active={editor.isActive('heading', { level: 2 })}
-          title="제목 2"
-        >
-          <Heading2Icon size={16} strokeWidth={2.5} />
-        </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            active={editor.isActive('heading', { level: 1 })}
+            title="제목 1"
+          >
+            <Heading1Icon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            active={editor.isActive('heading', { level: 2 })}
+            title="제목 2"
+          >
+            <Heading2Icon size={16} strokeWidth={2.5} />
+          </MenuButton>
 
-        <div className="w-px h-6 bg-slate-300 mx-1" />
+          <div className="w-px h-6 bg-slate-300 mx-1" />
 
-        <MenuButton
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          active={editor.isActive({ textAlign: 'left' })}
-          title="왼쪽 정렬"
-        >
-          <AlignLeftIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        <MenuButton
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          active={editor.isActive({ textAlign: 'center' })}
-          title="가운데 정렬"
-        >
-          <AlignCenterIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        <MenuButton
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          active={editor.isActive({ textAlign: 'right' })}
-          title="오른쪽 정렬"
-        >
-          <AlignRightIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            active={editor.isActive({ textAlign: 'left' })}
+            title="왼쪽 정렬"
+          >
+            <AlignLeftIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            active={editor.isActive({ textAlign: 'center' })}
+            title="가운데 정렬"
+          >
+            <AlignCenterIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            active={editor.isActive({ textAlign: 'right' })}
+            title="오른쪽 정렬"
+          >
+            <AlignRightIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
 
-        <div className="w-px h-6 bg-slate-300 mx-1" />
+          <div className="w-px h-6 bg-slate-300 mx-1" />
 
-        <MenuButton
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          active={editor.isActive('bulletList')}
-          title="불렛 리스트"
-        >
-          <ListIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        <MenuButton
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          active={editor.isActive('orderedList')}
-          title="번호 리스트"
-        >
-          <ListOrderedIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        <MenuButton
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          active={editor.isActive('blockquote')}
-          title="인용"
-        >
-          <QuoteIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            active={editor.isActive('bulletList')}
+            title="불렛 리스트"
+          >
+            <ListIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            active={editor.isActive('orderedList')}
+            title="번호 리스트"
+          >
+            <ListOrderedIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            active={editor.isActive('blockquote')}
+            title="인용"
+          >
+            <QuoteIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
 
-        <div className="w-px h-6 bg-slate-300 mx-1" />
+          <div className="w-px h-6 bg-slate-300 mx-1" />
 
-        <MenuButton
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-          title="표 삽입"
-        >
-          <TableIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+            title="표 삽입"
+          >
+            <TableIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
 
-        <MenuButton
-          onClick={() => fileInputRef.current?.click()}
-          title="이미지 업로드"
-        >
-          <ImageIcon size={16} strokeWidth={2.5} />
-        </MenuButton>
-        <input 
-          type="file" 
-          hidden 
-          ref={fileInputRef} 
-          accept="image/*" 
-          onChange={handleImageUpload}
-        />
+          <MenuButton
+            onClick={() => fileInputRef.current?.click()}
+            title="이미지 업로드"
+          >
+            <ImageIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+          <input 
+            type="file" 
+            hidden 
+            ref={fileInputRef} 
+            accept="image/*" 
+            onChange={handleImageUpload}
+          />
 
-        <div className="flex-1" />
+          <div className="flex-1" />
 
-        <MenuButton
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().undo()}
-          title="실행 취소"
-        >
-          <UndoIcon size={16} />
-        </MenuButton>
-        <MenuButton
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().redo()}
-          title="다시 실행"
-        >
-          <RedoIcon size={16} />
-        </MenuButton>
-      </div>
+          <MenuButton
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+            title="실행 취소"
+          >
+            <UndoIcon size={16} />
+          </MenuButton>
+          <MenuButton
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+            title="다시 실행"
+          >
+            <RedoIcon size={16} />
+          </MenuButton>
+        </div>
+      )}
 
       {/* Table Action Bar */}
-      {editor.isActive('table') && (
+      {editable && editor.isActive('table') && (
          <div className="flex flex-wrap items-center gap-1 p-2 bg-blue-50/50 border-b border-blue-100 animate-in slide-in-from-top-2">
             <Button size="sm" variant="outline" className="h-7 text-xs px-2" onClick={() => editor.chain().focus().addColumnBefore().run()}>열 추가(앞)</Button>
             <Button size="sm" variant="outline" className="h-7 text-xs px-2" onClick={() => editor.chain().focus().addColumnAfter().run()}>열 추가(뒤)</Button>
@@ -367,7 +390,10 @@ export default function NotesEditor({ content, onChange, hosId }: Props) {
       )}
 
       {/* Editor Content */}
-      <div className="relative min-h-[600px] cursor-text bg-white" onClick={() => editor.chain().focus().run()}>
+      <div className={cn(
+        "relative cursor-text bg-white",
+        editable ? "min-h-[600px]" : "cursor-default"
+      )} onClick={() => editable && editor.chain().focus().run()}>
         <EditorContent editor={editor} />
       </div>
 

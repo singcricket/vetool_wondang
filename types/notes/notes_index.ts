@@ -4,6 +4,15 @@ export type Note = Database['public']['Tables']['notes']['Row']
 export type NoteInsert = Database['public']['Tables']['notes']['Insert']
 export type NoteUpdate = Database['public']['Tables']['notes']['Update']
 
+export interface NoteAuthor {
+  name: string
+  position: string
+}
+
+export type NoteWithAuthor = Note & {
+  author: NoteAuthor
+}
+
 export interface NoteCategoryNode {
   id: string
   label: string

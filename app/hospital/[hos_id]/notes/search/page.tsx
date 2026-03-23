@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import NotesSearch from '@/components/hospital/notes/notes-body/notes-search'
+import NotesSearch from '@/components/hospital/notes/notes-search/notes-search'
 import NotesMainHeader from '@/components/hospital/notes/notes-body/notes-main-header'
 
 export default function NotesSearchPage() {

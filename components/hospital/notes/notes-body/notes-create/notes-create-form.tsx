@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { createNote, getNoteCategories } from '@/lib/services/notes/notes'
+import { createNote, updateNote, getNoteCategories, getNoteById } from '@/lib/services/notes/notes'
 import { 
   ChevronLeftIcon, 
   UserIcon, 
@@ -35,7 +35,14 @@ interface UserData {
   position: string
 }
 
-export default function NotesCreateForm() {
+interface Props {
+  isDialog?: boolean
+  onDone?: () => void
+  onCancel?: () => void
+  editNoteId?: string | null
+}
+
+export default function NotesCreateForm({ isDialog = false, onDone, onCancel, editNoteId }: Props) {
   const router = useRouter()
   const { hos_id } = useParams()
   const supabase = createClient()
@@ -55,30 +62,45 @@ export default function NotesCreateForm() {
       setIsLoading(true)
 
       try {
-        const catData = await getNoteCategories(hos_id as string)
+        // Fetch Categories and Users
+        const [catData, { data: usersData, error: usersError }] = await Promise.all([
+          getNoteCategories(hos_id as string),
+          supabase
+            .from('users')
+            .select('user_id, name, position')
+            .eq('hos_id', hos_id as string)
+            .order('name', { ascending: true })
+        ])
+
         setDbCategories(catData)
-
-        const { data: usersData, error: usersError } = await supabase
-          .from('users')
-          .select('user_id, name, position')
-          .eq('hos_id', hos_id as string)
-          .order('name', { ascending: true })
-
         if (usersError) throw usersError
         setHospitalUsers(usersData || [])
 
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          setSelectedAuthorId(user.id)
+        // If Editing, fetch existing note
+        if (editNoteId) {
+          const existingNote = await getNoteById(editNoteId)
+          if (existingNote) {
+            setTitle(existingNote.title)
+            setContent(existingNote.content)
+            setSelectedAuthorId(existingNote.user_id || '')
+            setUserTags(existingNote.user_tags || [])
+          }
+        } else {
+          // New Note: set default author
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            setSelectedAuthorId(user.id)
+          }
         }
       } catch (error) {
         console.error('Error fetching data:', error)
+        toast.error('데이터를 불러오는데 실패했습니다')
       } finally {
         setIsLoading(false)
       }
     }
     fetchData()
-  }, [hos_id, supabase])
+  }, [hos_id, supabase, editNoteId])
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -94,21 +116,36 @@ export default function NotesCreateForm() {
     try {
       const finalUserTags = userTags.filter(tag => tag && tag.trim() !== '')
 
-      await createNote({
-        hos_id: hos_id as string,
-        user_id: selectedAuthorId,
-        title,
-        tags: [], 
-        user_tags: finalUserTags,
-        content: content,
-        is_shared: true
-      })
-      toast.success('지식 문서가 발행되었습니다')
-      router.push(`/hospital/${hos_id}/notes`)
-      router.refresh()
+      if (editNoteId) {
+        await updateNote(editNoteId, {
+          title,
+          user_id: selectedAuthorId,
+          user_tags: finalUserTags,
+          content: content,
+        })
+        toast.success('지식 문서가 수정되었습니다')
+      } else {
+        await createNote({
+          hos_id: hos_id as string,
+          user_id: selectedAuthorId,
+          title,
+          tags: [], 
+          user_tags: finalUserTags,
+          content: content,
+          is_shared: true
+        })
+        toast.success('지식 문서가 발행되었습니다')
+      }
+      
+      if (isDialog && onDone) {
+        onDone()
+      } else {
+        router.push(`/hospital/${hos_id}/notes`)
+        router.refresh()
+      }
     } catch (error) {
-      console.error('Failed to create note:', error)
-      toast.error('발행 중 오류가 발생했습니다')
+      console.error('Failed to save note:', error)
+      toast.error('저장 중 오류가 발생했습니다')
     } finally {
       setIsSubmitting(false)
     }
@@ -137,18 +174,32 @@ export default function NotesCreateForm() {
     }
   }
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel()
+    } else if (isDialog && onDone) {
+      onDone()
+    } else {
+      router.back()
+    }
+  }
+
   return (
     <div className="flex flex-col h-full bg-white overflow-hidden">
       {/* Action Header */}
       <div className="flex h-12 items-center justify-between px-4 border-b shrink-0 bg-background sticky top-0 z-40">
         <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={() => router.back()}>
-                <ChevronLeftIcon size={18} />
-            </Button>
-            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-tight">새 지식 문서 작성</h2>
+            {!isDialog && (
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={handleCancel}>
+                  <ChevronLeftIcon size={18} />
+              </Button>
+            )}
+            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-tight">
+               {editNoteId ? "지식 문서 수정" : (isDialog ? "새 지식 문서 팝업 작성" : "새 지식 문서 작성")}
+            </h2>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-slate-400 hover:text-slate-600" onClick={() => router.back()}>
+            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-slate-400 hover:text-slate-600" onClick={handleCancel}>
                 취소
             </Button>
             <Button 
@@ -158,7 +209,7 @@ export default function NotesCreateForm() {
               onClick={handleSave}
             >
                 <CloudUploadIcon size={16} className="mr-2" />
-                {isSubmitting ? '발행 중...' : '지식 문서 발행'}
+                {isSubmitting ? '저장 중...' : (editNoteId ? '수정 완료' : '지식 문서 발행')}
             </Button>
         </div>
       </div>
@@ -169,7 +220,7 @@ export default function NotesCreateForm() {
           {/* Metadata Row */}
           <div className="flex flex-wrap gap-2">
             
-            {/* Title - Increased Padding (pl-14) */}
+            {/* Title */}
             <div className="w-full md:w-[calc(40%-0.5rem)] relative flex items-center h-10">
               <Label className="absolute left-4 text-slate-400 z-10 pointer-events-none w-5 h-5 flex items-center justify-center" htmlFor="note-title">
                 <ClipboardListIcon size={16} />
@@ -183,13 +234,13 @@ export default function NotesCreateForm() {
               />
             </div>
 
-            {/* Author - Increased Padding (pl-14) */}
+            {/* Author */}
             <div className="w-full md:w-[calc(30%-0.5rem)] relative flex items-center h-10">
               <Label className="absolute left-4 text-slate-400 z-10 pointer-events-none w-5 h-5 flex items-center justify-center">
                 <UserIcon size={16} />
               </Label>
               <Select onValueChange={setSelectedAuthorId} value={selectedAuthorId}>
-                <SelectTrigger className="pl-14 h-10 w-full border-slate-200 hover:border-slate-300 transition-colors shadow-none font-medium">
+                <SelectTrigger className="pl-14 h-10 w-full border-slate-200 hover:border-slate-300 transition-colors shadow-none font-medium text-xs">
                   <SelectValue placeholder="작성자 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -202,7 +253,7 @@ export default function NotesCreateForm() {
               </Select>
             </div>
 
-            {/* Category selection (Separated Component) */}
+            {/* Category selection */}
             <div className="w-full md:w-[calc(30%-0.5rem)]">
                <NotesCategorySelect 
                   flatCategories={flatCategories} 

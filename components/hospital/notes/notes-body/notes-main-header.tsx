@@ -1,9 +1,8 @@
 'use client'
 
-import { PlusIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
+import NotesCreateDialog from './notes-create/notes-create-dialog'
 
 interface Props {
   title: string
@@ -16,7 +15,6 @@ export default function NotesMainHeader({
   selectedCategory, 
   showCreateBtn = true 
 }: Props) {
-  const router = useRouter()
   const { hos_id } = useParams()
 
   return (
@@ -31,14 +29,7 @@ export default function NotesMainHeader({
       </div>
 
       {showCreateBtn && (
-        <Button 
-          size="sm"
-          className="flex items-center gap-2 pr-4 text-sm font-bold"
-          onClick={() => router.push(`/hospital/${hos_id}/notes/new`)}
-        >
-          <PlusIcon size={18} />
-          <span>새 노트 작성</span>
-        </Button>
+        <NotesCreateDialog />
       )}
     </header>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import NotesList from '@/components/hospital/notes/notes-body/notes-list'
+import NotesList from '@/components/hospital/notes/notes-body/notes-list/notes-list'
 import NotesMainHeader from '@/components/hospital/notes/notes-body/notes-main-header'
 
 export default function NotesPage() {
