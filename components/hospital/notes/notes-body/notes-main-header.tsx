@@ -29,7 +29,7 @@ export default function NotesMainHeader({
       </div>
 
       {showCreateBtn && (
-        <NotesCreateDialog />
+        <NotesCreateDialog defaultCategory={selectedCategory} />
       )}
     </header>
   )

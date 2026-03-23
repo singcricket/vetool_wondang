@@ -150,24 +150,62 @@ export const getNotesByTag = async (hosId: string, tag: string) => {
 export type SearchType = 'all' | 'title' | 'content' | 'tags'
 
 export const searchNotes = async (hosId: string, searchTerm: string, searchType: SearchType = 'all') => {
+  // 1. Split and trim search terms (1st-pass)
+  const firstPassTerms = searchTerm
+    .split(',')
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0)
+
+  if (firstPassTerms.length === 0) return []
+
+  let finalTerms = firstPassTerms
+
+  // 2. Specialized logic for tags searchType
+  if (searchType === 'tags') {
+    // 3. Check for replacements in keywords table (case-insensitive)
+    const keywordConditions = firstPassTerms.map(t => `keyword.ilike.${t}`).join(',')
+    const { data: keywordMappings } = await supabase
+      .from('keywords')
+      .select('keyword, search_keyword')
+      .or(keywordConditions)
+
+    if (keywordMappings && keywordMappings.length > 0) {
+      // Create a mapping dictionary (using lowercase keys for easier matching)
+      const mappingDict = Object.fromEntries(
+        keywordMappings
+          .filter((row) => row.keyword && row.search_keyword)
+          .map((row) => [row.keyword!.toLowerCase(), row.search_keyword!])
+      )
+
+      // 4. Create 2nd-pass terms by replacing matched ones
+      finalTerms = firstPassTerms.map((term) => mappingDict[term.toLowerCase()] || term)
+    }
+  }
+
+  // 5. Build and execute query with AND logic (chaining filters)
   let query = supabase
     .from('notes')
     .select('*, author:users(name, position)')
     .eq('hos_id', hosId)
 
-  if (searchType === 'title') {
-    query = query.ilike('title', `%${searchTerm}%`)
-  } else if (searchType === 'content') {
-    // Note: 'content' is Jsonb. For simplicity, we search as text if possible, 
-    // but typically content search in JSON needs specific operators.
-    // If it's just a text-like Json, we can try to cast it.
-    // For now, let's assume the user knows their schema.
-    query = query.filter('content', 'ilike', `%${searchTerm}%`)
-  } else if (searchType === 'tags') {
-    query = query.or(`user_tags.cs.{${searchTerm}},tags.cs.{${searchTerm}}`)
-  } else {
-    query = query.or(`title.ilike.%${searchTerm}%,user_tags.cs.{${searchTerm}},tags.cs.{${searchTerm}}`)
-  }
+  finalTerms.forEach((term) => {
+    // Variations for case-insensitive array matching
+    const termLower = term.toLowerCase()
+    const termUpper = term.toUpperCase()
+    const variations = `{${term},${termLower},${termUpper}}`
+
+    if (searchType === 'title') {
+      query = query.ilike('title', `%${term}%`)
+    } else if (searchType === 'content') {
+      query = query.filter('content', 'ilike', `%${term}%`)
+    } else if (searchType === 'tags') {
+      // 6. Case-insensitive overlap check on notes.tags
+      query = query.or(`tags.ov.${variations}`)
+    } else {
+      // 7. All-around case-insensitive check
+      query = query.or(`title.ilike.%${term}%,user_tags.ov.${variations},tags.ov.${variations}`)
+    }
+  })
 
   const { data, error } = await query.order('created_at', { ascending: false })
 

@@ -10,7 +10,11 @@ import {
 } from '@/components/ui/dialog'
 import NotesCreateForm from './notes-create-form'
 
-export default function NotesCreateDialog() {
+interface Props {
+  defaultCategory?: string | null
+}
+
+export default function NotesCreateDialog({ defaultCategory }: Props) {
   const [open, setOpen] = useState(false)
 
   const handleClose = () => {
@@ -29,7 +33,11 @@ export default function NotesCreateDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden border-none shadow-2xl [&>button]:hidden">
-        <NotesCreateForm isDialog onDone={handleClose} />
+        <NotesCreateForm 
+          isDialog 
+          onDone={handleClose} 
+          defaultCategory={defaultCategory} 
+        />
       </DialogContent>
     </Dialog>
   )

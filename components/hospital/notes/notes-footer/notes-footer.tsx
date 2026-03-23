@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/utils'
 import { ListIcon, SearchIcon } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
+import useNotesRealtime from '@/hooks/use-notes-realtime'
 
 interface Props {
   hosId: string
 }
 
 export default function NotesFooter({ hosId }: Props) {
+  useNotesRealtime(hosId)
   const router = useRouter()
   const pathname = usePathname()
   

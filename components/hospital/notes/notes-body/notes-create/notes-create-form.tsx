@@ -40,9 +40,11 @@ interface Props {
   onDone?: () => void
   onCancel?: () => void
   editNoteId?: string | null
+  copyNoteId?: string | null
+  defaultCategory?: string | null
 }
 
-export default function NotesCreateForm({ isDialog = false, onDone, onCancel, editNoteId }: Props) {
+export default function NotesCreateForm({ isDialog = false, onDone, onCancel, editNoteId, copyNoteId, defaultCategory }: Props) {
   const router = useRouter()
   const { hos_id } = useParams()
   const supabase = createClient()
@@ -76,20 +78,34 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
         if (usersError) throw usersError
         setHospitalUsers(usersData || [])
 
-        // If Editing, fetch existing note
-        if (editNoteId) {
-          const existingNote = await getNoteById(editNoteId)
+        // Fetch data based on ID (Edit or Copy)
+        const targetId = editNoteId || copyNoteId
+        
+        if (targetId) {
+          const existingNote = await getNoteById(targetId)
           if (existingNote) {
-            setTitle(existingNote.title)
+            setTitle(editNoteId ? existingNote.title : `${existingNote.title} (복사본)`)
             setContent(existingNote.content)
-            setSelectedAuthorId(existingNote.user_id || '')
             setUserTags(existingNote.user_tags || [])
+            
+            // For Copying: default to current user
+            if (copyNoteId) {
+              const { data: { user } } = await supabase.auth.getUser()
+              if (user) setSelectedAuthorId(user.id)
+            } else {
+              // For Editing: use the original author if possible
+              setSelectedAuthorId(existingNote.user_id || '')
+            }
           }
         } else {
-          // New Note: set default author
+          // New Note: set default author and category if provided
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
             setSelectedAuthorId(user.id)
+          }
+
+          if (defaultCategory) {
+            setUserTags([defaultCategory])
           }
         }
       } catch (error) {
@@ -100,7 +116,7 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
       }
     }
     fetchData()
-  }, [hos_id, supabase, editNoteId])
+  }, [hos_id, supabase, editNoteId, copyNoteId])
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -141,7 +157,7 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
         onDone()
       } else {
         router.push(`/hospital/${hos_id}/notes`)
-        router.refresh()
+        // router.refresh()
       }
     } catch (error) {
       console.error('Failed to save note:', error)
@@ -195,7 +211,7 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
               </Button>
             )}
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-tight">
-               {editNoteId ? "지식 문서 수정" : (isDialog ? "새 지식 문서 팝업 작성" : "새 지식 문서 작성")}
+               {editNoteId ? "지식 문서 수정" : (copyNoteId ? "지식 문서 복사" : (isDialog ? "새 지식 문서 팝업 작성" : "새 지식 문서 작성"))}
             </h2>
         </div>
         <div className="flex items-center gap-2">

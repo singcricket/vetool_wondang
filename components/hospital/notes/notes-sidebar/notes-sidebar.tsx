@@ -192,27 +192,36 @@ function CategorySettingsDialog({
     setEditingCats(update(editingCats))
   }
 
-  const renderEditableCategory = (node: NoteCategoryNode, depth = 0) => (
-    <div key={node.id} className="space-y-2 mb-2">
-      <div className={cn("flex items-center gap-2", depth > 0 && "ml-4 pl-2 border-l border-slate-200")}>
-        <FolderIcon size={14} className="text-slate-400" />
-        <Input 
-          value={node.label} 
-          onChange={(e) => updateLabel(node.id, e.target.value)}
-          className="h-8 text-[11px] font-medium"
-        />
-        {depth < 1 && (
-          <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-blue-500" onClick={() => addCategory(node.id)}>
-            <PlusIcon size={14} />
-          </Button>
-        )}
-        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-300 hover:text-red-500" onClick={() => removeCategory(node.id)}>
-          <Trash2Icon size={14} />
-        </Button>
+  const renderEditableCategory = (node: NoteCategoryNode, depth = 0) => {
+    const isSpecialCategory = node.label === '전체 보기'
+    
+    return (
+      <div key={node.id} className="space-y-2 mb-2">
+        <div className={cn("flex items-center gap-2", depth > 0 && "ml-4 pl-2 border-l border-slate-200")}>
+          <FolderIcon size={14} className={cn(isSpecialCategory ? "text-blue-500" : "text-slate-400")} />
+          <Input 
+            value={node.label} 
+            onChange={(e) => updateLabel(node.id, e.target.value)}
+            className="h-8 text-[11px] font-medium"
+            disabled={isSpecialCategory}
+          />
+          {!isSpecialCategory && (
+            <>
+              {depth < 1 && (
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-blue-500" onClick={() => addCategory(node.id)}>
+                  <PlusIcon size={14} />
+                </Button>
+              )}
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-300 hover:text-red-500" onClick={() => removeCategory(node.id)}>
+                <Trash2Icon size={14} />
+              </Button>
+            </>
+          )}
+        </div>
+        {node.children?.map(child => renderEditableCategory(child, depth + 1))}
       </div>
-      {node.children?.map(child => renderEditableCategory(child, depth + 1))}
-    </div>
-  )
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -223,7 +232,7 @@ function CategorySettingsDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-sm font-black uppercase">Manage Categories</DialogTitle>
+          <DialogTitle className="text-sm font-black uppercase">카테고리 설정</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 pr-4">
           <div className="py-4">

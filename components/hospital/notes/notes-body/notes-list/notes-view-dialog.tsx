@@ -15,6 +15,7 @@ import {
   CalendarIcon, 
   UserIcon, 
   EditIcon, 
+  CopyIcon,
   XIcon,
   TagIcon,
   HashIcon 
@@ -32,14 +33,21 @@ interface Props {
 export default function NotesViewDialog({ note, children }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [isCopying, setIsCopying] = useState(false)
 
   const handleEdit = () => {
     setIsEditing(true)
   }
 
-  const handleCancelEdit = () => {
-    setIsEditing(false)
+  const handleCopy = () => {
+    setIsCopying(true)
   }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    setIsCopying(false)
+  }
+
 
   const handleDone = () => {
     setIsEditing(false)
@@ -50,19 +58,23 @@ export default function NotesViewDialog({ note, children }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       setIsOpen(open)
-      if (!open) setIsEditing(false)
+      if (!open) {
+        setIsEditing(false)
+        setIsCopying(false)
+      }
     }}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
       
       <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden border-none shadow-2xl flex flex-col [&>button]:hidden">
-        {isEditing ? (
+        {isEditing || isCopying ? (
           <NotesCreateForm 
             isDialog 
             onDone={handleDone} 
-            onCancel={handleCancelEdit}
-            editNoteId={note.notes_id} 
+            onCancel={handleCancel}
+            editNoteId={isEditing ? note.notes_id : null} 
+            copyNoteId={isCopying ? note.notes_id : null}
           />
         ) : (
           <div className="flex flex-col h-full bg-white">
@@ -90,6 +102,15 @@ export default function NotesViewDialog({ note, children }: Props) {
                 >
                   <EditIcon size={14} />
                   수정하기
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-4 hover:bg-slate-50 transition-colors"
+                  onClick={handleCopy}
+                >
+                  <CopyIcon size={14} />
+                  복사하기
                 </Button>
                 <Button 
                   variant="ghost" 
