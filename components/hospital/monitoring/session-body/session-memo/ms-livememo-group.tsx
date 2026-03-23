@@ -144,7 +144,7 @@ export default function MsLiveMemoGroup({
   return (
     <div className="relative flex w-full flex-col">
       <Label
-        className="mb-1 ml-2 text-xs text-muted-foreground"
+        className="mb-1 ml-2 text-lg text-muted-foreground"
         htmlFor={`memo-tx`}
       >
         {memoName} ({sortedMemos.length})

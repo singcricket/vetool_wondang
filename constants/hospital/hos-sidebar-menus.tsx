@@ -5,6 +5,7 @@ import {
   HeartPulseIcon,
   HomeIcon,
   ListChecksIcon,
+  NotebookPen,
   PawPrintIcon,
   SliceIcon,
   SyringeIcon,
@@ -36,10 +37,10 @@ export const HOS_SIDEBAR_MENUS = [
     icon: <Activity />,
   },
   {
-    name: '외과차트',
-    path: 'surgery',
-    isReady: false,
-    icon: <SliceIcon />,
+    name: '진료노트',
+    path: 'notes',
+    isReady: true,
+    icon: <NotebookPen />,
   },
   {
     name: '심초차트',

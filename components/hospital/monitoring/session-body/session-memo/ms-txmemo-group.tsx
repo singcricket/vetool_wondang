@@ -145,18 +145,22 @@ export default function MsTxMemoGroup({
   return (
     <div className="relative flex w-full flex-col">
       <Label
-        className="mb-1 ml-2 text-xs text-muted-foreground"
+        className="mb-1 ml-2 text-lg font-semibold text-blue-500"
         htmlFor={`memo-tx`}
       >
-        {memoName} ({sortedMemos.length})
+        {memoName}{' '}
+        <span className="font-normal text-muted-foreground">
+          ({sortedMemos.filter((m) => !m.is_realtime_memo && !m.is_done).length}개 대기 /{' '}
+          {sortedMemos.filter((m) => !m.is_realtime_memo && m.is_done).length}개 완료)
+        </span>
       </Label>
 
-      <ScrollArea className="h-60 rounded-t-md border p-2">
+      <ScrollArea className="h-60 rounded-t-md border-2 border-blue-200 bg-blue-50/30 p-2">
         <ReactSortable
           id="memo-tx"
           list={sortedMemos}
           setList={setSortedMemos}
-          className="space-y-2"
+          className="space-y-0"
           animation={250}
           handle=".handle"
           onEnd={handleReorderMemo}
@@ -166,7 +170,7 @@ export default function MsTxMemoGroup({
             <NoResultSquirrel
               text="처치 정보 없음"
               size="sm"
-              className="h-52 flex-col font-normal text-muted-foreground"
+              className="h-52 flex-col font-normal text-blue-300"
             />
           ) : (
             sortedMemos.filter((memo) => !memo.is_realtime_memo).map((memo) => (
@@ -178,19 +182,17 @@ export default function MsTxMemoGroup({
                 handleEditMemo={handleEditMemo}
                 onDelete={() => handleDeleteMemo(memo.id)}
                 msData={msData}
-                // ref={memo.id === sortedMemos.length - 1 ? lastMemoRef : null}
               />
             ))
           )}
-         </ReactSortable>
+        </ReactSortable>
         <ScrollBar orientation="vertical" />
-        
       </ScrollArea>
 
       <div className="relative">
         <Textarea
           disabled={isUpdating || isUploading}
-          placeholder="줄 추가 : Shift + Enter ⏎"
+          placeholder="처치 항목 추가 : Enter ⏎  |  줄바꿈 : Shift + Enter"
           id={`memo-tx`}
           value={memoInput}
           onChange={(e) => setMemoInput(e.target.value)}
@@ -200,7 +202,7 @@ export default function MsTxMemoGroup({
               handleAddMemo()
             }
           }}
-          className="w-full rounded-none rounded-b-md border-t-0 pr-24 text-sm placeholder:text-xs"
+          className="w-full rounded-none rounded-b-md border-2 border-t-0 border-blue-200 bg-white pl-3 pr-24 text-sm placeholder:text-xs placeholder:text-blue-300 focus-visible:ring-blue-300"
         />
 
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">

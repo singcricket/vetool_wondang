@@ -202,6 +202,7 @@ export type Database = {
           is_personal: boolean
           master_user_id: string
           name: string
+          notes_category: Json | null
           order_color: Json | null
           order_font_size: number
           plan: string
@@ -222,6 +223,7 @@ export type Database = {
           is_personal?: boolean
           master_user_id: string
           name: string
+          notes_category?: Json | null
           order_color?: Json | null
           order_font_size?: number
           plan?: string
@@ -242,6 +244,7 @@ export type Database = {
           is_personal?: boolean
           master_user_id?: string
           name?: string
+          notes_category?: Json | null
           order_color?: Json | null
           order_font_size?: number
           plan?: string
@@ -806,6 +809,57 @@ export type Database = {
           },
         ]
       }
+      notes: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          hos_id: string
+          is_shared: boolean | null
+          notes_id: string
+          tags: string[] | null
+          title: string
+          user_id: string | null
+          user_tags: string[] | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          hos_id: string
+          is_shared?: boolean | null
+          notes_id?: string
+          tags?: string[] | null
+          title: string
+          user_id?: string | null
+          user_tags?: string[] | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          hos_id?: string
+          is_shared?: boolean | null
+          notes_id?: string
+          tags?: string[] | null
+          title?: string
+          user_id?: string | null
+          user_tags?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       notices: {
         Row: {
           created_at: string
@@ -1214,8 +1268,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      checklist_sidebar_data: {
-        Args: { _due_date: string; _hos_id: string }
+      copy_prev_chart: {
+        Args: { patient_id_input: string; target_date_input: string }
         Returns: Json
       }
       copy_prev_orders: {
@@ -1244,9 +1298,14 @@ export type Database = {
         }
         Returns: undefined
       }
-      fetch_checklist_sidebar_data: {
-        Args: { due_date_input: string; hos_id_input: string }
-        Returns: Json
+      discharge_patient: {
+        Args: {
+          icu_io_id_input: string
+          is_alive_input: boolean
+          keywords_input: string
+          patient_id_input: string
+        }
+        Returns: undefined
       }
       fetch_icu_chart_data: {
         Args: {
@@ -1296,10 +1355,10 @@ export type Database = {
           memo_etc: string
           memo_tx: Json
           patient: Json
-          session_info: Json
           planned_vitals: Json
           session_group: Json
           session_id: string
+          session_info: Json
           session_title: string
           start_time: string
           tags: string
@@ -1387,6 +1446,7 @@ export type Database = {
         Args: { icu_chart_id_input: string }
         Returns: Json
       }
+      get_vetool_user: { Args: never; Returns: Json }
       insert_calc_result_order: {
         Args: {
           hos_id_input: string
