@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getNotes, getNotesByTag } from '@/lib/services/notes/notes'
 import { NoteWithAuthor } from '@/types/notes/notes_index'
 import { useParams } from 'next/navigation'
@@ -18,27 +18,36 @@ export default function NotesList({ category }: Props) {
   const { hos_id } = useParams()
   const [notes, setNotes] = useState<NoteWithAuthor[]>([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchNotes = async () => {
-      setLoading(true)
-      try {
-        if (category) {
-          const fetched = await getNotesByTag(hos_id as string, category)
-          setNotes(fetched as NoteWithAuthor[])
-        } else {
-          const fetched = await getNotes(hos_id as string)
-          setNotes(fetched as NoteWithAuthor[])
-        }
-      } catch (error) {
-        console.error('Failed to fetch notes:', error)
-      } finally {
-        setLoading(false)
+  const fetchNotes = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
+    try {
+      if (category) {
+        const fetched = await getNotesByTag(hos_id as string, category)
+        setNotes(fetched as NoteWithAuthor[])
+      } else {
+        const fetched = await getNotes(hos_id as string)
+        setNotes(fetched as NoteWithAuthor[])
       }
+    } catch (error) {
+      console.error('Failed to fetch notes:', error)
+    } finally {
+      if (!silent) setLoading(false)
     }
-
-    if (hos_id) fetchNotes()
   }, [hos_id, category])
+
+  // 초기 로드 성격의 useEffect
+  useEffect(() => {
+    if (hos_id) fetchNotes(false)
+  }, [hos_id, fetchNotes])
+
+  // 실시간 변경 감지 시 리로드
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchNotes(true) // 실시간 변경 시에는 기존 데이터를 유지하면서 배경에서 갱신(silent)
+    }
+    window.addEventListener('notes-updated', handleUpdate)
+    return () => window.removeEventListener('notes-updated', handleUpdate)
+  }, [fetchNotes])
 
   if (loading) {
     return (

@@ -28,29 +28,40 @@ export default function NotesSearch({ searchTerm, setSearchTerm }: Props) {
   const [loading, setLoading] = useState(false)
   const [searchType, setSearchType] = useState<SearchType>('all')
 
-  useEffect(() => {
-    const performSearch = async () => {
-      if (searchTerm.length < 2) {
-        setResults([])
-        return
-      }
-      
-      setLoading(true)
-      try {
-        const fetched = await searchNotes(hos_id as string, searchTerm, searchType)
-        setResults(fetched)
-      } catch (error) {
-        console.error('Search failed:', error)
-      } finally {
-        setLoading(false)
-      }
+  const performSearch = async (silent = false) => {
+    if (searchTerm.length < 2) {
+      setResults([])
+      return
     }
+    
+    if (!silent) setLoading(true)
+    try {
+      const fetched = await searchNotes(hos_id as string, searchTerm, searchType)
+      setResults(fetched)
+    } catch (error) {
+      console.error('Search failed:', error)
+    } finally {
+      if (!silent) setLoading(false)
+    }
+  }
 
+  useEffect(() => {
     const timer = setTimeout(() => {
-      if (hos_id) performSearch()
+      if (hos_id) performSearch(false)
     }, 500)
 
     return () => clearTimeout(timer)
+  }, [hos_id, searchTerm, searchType])
+
+  // 실시간 변경 감지 시 리로드
+  useEffect(() => {
+    const handleUpdate = () => {
+      if (searchTerm.length >= 2) {
+        performSearch(true)
+      }
+    }
+    window.addEventListener('notes-updated', handleUpdate)
+    return () => window.removeEventListener('notes-updated', handleUpdate)
   }, [hos_id, searchTerm, searchType])
 
   return (

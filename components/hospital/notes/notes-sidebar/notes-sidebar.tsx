@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { cn } from '@/lib/utils/utils'
 import { HashIcon, SettingsIcon, ChevronRightIcon, PlusIcon, Trash2Icon, FolderIcon } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -33,19 +33,29 @@ export default function NotesSidebar({ hosId }: Props) {
   const [categories, setCategories] = useState<NotesCategoryConfig>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data = await getNoteCategories(hosId)
-        setCategories(data)
-      } catch (error) {
-        console.error('Failed to fetch categories:', error)
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchCategories = useCallback(async () => {
+    try {
+      const data = await getNoteCategories(hosId)
+      setCategories(data)
+    } catch (error) {
+      console.error('Failed to fetch categories:', error)
+    } finally {
+      setIsLoading(false)
     }
-    fetchCategories()
   }, [hosId])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
+
+  // 실시간 변경 감지 시 카테고리 갱신
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchCategories()
+    }
+    window.addEventListener('notes-updated', handleUpdate)
+    return () => window.removeEventListener('notes-updated', handleUpdate)
+  }, [fetchCategories])
 
   const handleSelectCategory = (category: string | null) => {
     const params = new URLSearchParams()

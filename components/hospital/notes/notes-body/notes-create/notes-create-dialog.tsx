@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button'
 import { 
   Dialog, 
   DialogContent, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import NotesCreateForm from './notes-create-form'
 
 interface Props {
@@ -33,6 +36,9 @@ export default function NotesCreateDialog({ defaultCategory }: Props) {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden border-none shadow-2xl [&>button]:hidden">
+        <VisuallyHidden>
+          <DialogTitle>새 노트 작성</DialogTitle>
+        </VisuallyHidden>
         <NotesCreateForm 
           isDialog 
           onDone={handleClose} 

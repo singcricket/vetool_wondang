@@ -230,10 +230,27 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
   }
 
   useEffect(() => {
-    if (editor && content && editor.isEmpty) {
-      editor.commands.setContent(content)
+    if (!editor || !content) return
+
+    // 1. 에디터가 완전히 비어있는 경우 (초기 로드): 무조건 콘텐츠 설정
+    if (editor.isEmpty) {
+      setTimeout(() => {
+        editor.commands.setContent(content)
+      }, 0)
+      return
     }
-  }, [editor, content])
+
+    // 2. 이미 무언가 입력된 상태에서 수정 모드인 경우: 외부 변경 무시 (사용자 입력 보호)
+    if (editable) return
+
+    // 3. 열람 모드이고 콘텐츠가 실제로 변경된 경우: 갱신
+    const currentJson = editor.getJSON()
+    if (JSON.stringify(currentJson) !== JSON.stringify(content)) {
+      setTimeout(() => {
+        editor.commands.setContent(content)
+      }, 0)
+    }
+  }, [editor, content, editable])
 
   if (!editor) return null
 

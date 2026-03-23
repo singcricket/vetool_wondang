@@ -7,8 +7,20 @@ import {
   DialogContent, 
   DialogHeader,
   DialogTitle,
-  DialogTrigger 
+  DialogTrigger,
+  DialogFooter 
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -18,9 +30,12 @@ import {
   CopyIcon,
   XIcon,
   TagIcon,
-  HashIcon 
+  HashIcon,
+  Trash2Icon
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { deleteNote } from '@/lib/services/notes/notes'
+import { toast } from 'sonner'
 import NotesEditor from '../notes-create/notes-editor'
 import NotesCreateForm from '../notes-create/notes-create-form'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -53,6 +68,18 @@ export default function NotesViewDialog({ note, children }: Props) {
     setIsEditing(false)
     setIsOpen(false)
     window.location.reload() 
+  }
+
+  const handleDelete = async () => {
+    try {
+      await deleteNote(note.notes_id)
+      toast.success('노트가 삭제되었습니다')
+      setIsOpen(false)
+      // window.location.reload()
+    } catch (error) {
+      toast.error('삭제에 실패했습니다')
+      console.error(error)
+    }
   }
 
   return (
@@ -112,6 +139,37 @@ export default function NotesViewDialog({ note, children }: Props) {
                   <CopyIcon size={14} />
                   복사하기
                 </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-3 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2Icon size={14} />
+                      삭제하기
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>정말로 삭제하시겠습니까?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        삭제 후 복구는 되지 않습니다. 신중하게 결정해주세요.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="text-xs font-bold">취소</AlertDialogCancel>
+                      <AlertDialogAction 
+                         className="bg-red-500 hover:bg-red-600 font-bold text-xs"
+                         onClick={handleDelete}
+                      >
+                        삭제
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+               
                 <Button 
                   variant="ghost" 
                   size="sm" 
