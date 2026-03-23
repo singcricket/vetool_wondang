@@ -107,9 +107,10 @@ export default function NotesViewDialog({ note, children }: Props) {
         ) : (
           <div className="flex flex-col h-full bg-white">
             {/* View Header */}
-            <div className="flex h-auto py-5 items-center justify-between px-4 sm:px-8 border-b shrink-0 bg-slate-50/70 backdrop-blur-sm">
-              <div className="flex flex-col gap-2 min-w-0 flex-1">
-                <DialogTitle className="text-3xl font-black text-slate-900 line-clamp-2 tracking-tighter">
+            <div className="flex flex-wrap h-auto py-4 sm:py-5 items-center justify-between gap-4 pl-4 sm:pl-8 pr-6 sm:pr-12 border-b shrink-0 bg-slate-50/70 backdrop-blur-sm">
+              {/* Left Group: Title & Tags */}
+              <div className="flex flex-col gap-2 min-w-0 flex-1 basis-full sm:basis-auto">
+                <DialogTitle className="text-2xl sm:text-3xl font-black text-slate-900 line-clamp-2 tracking-tighter">
                   {note.title}
                 </DialogTitle>
                 <div className="flex flex-wrap gap-1.5">
@@ -121,34 +122,35 @@ export default function NotesViewDialog({ note, children }: Props) {
                 </div>
               </div>
               
-              <div className="flex items-center gap-3">
+              {/* Right Group: Action Buttons */}
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-4"
+                  className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-2 sm:px-4"
                   onClick={handleEdit}
                 >
                   <EditIcon size={14} />
-                  수정하기
+                  <span className="hidden sm:inline">수정하기</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-4 hover:bg-slate-50 transition-colors"
+                  className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-2 sm:px-4 hover:bg-slate-50 transition-colors"
                   onClick={handleCopy}
                 >
                   <CopyIcon size={14} />
-                  복사하기
+                  <span className="hidden sm:inline">복사하기</span>
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-3 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-2 sm:px-3 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
                     >
                       <Trash2Icon size={14} />
-                      삭제하기
+                      <span className="hidden sm:inline">삭제하기</span>
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -164,20 +166,20 @@ export default function NotesViewDialog({ note, children }: Props) {
                          className="bg-red-500 hover:bg-red-600 font-bold text-xs"
                          onClick={handleDelete}
                       >
-                        삭제
+                         삭제
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-
-               
+                
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  className="h-9 px-4 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 transition-all"
+                  className="h-9 gap-1.5 px-2 sm:px-4 text-xs font-bold border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all"
                   onClick={() => setIsOpen(false)}
                 >
-                  취소
+                  <XIcon size={14} />
+                  <span className="hidden sm:inline">창 닫기</span>
                 </Button>
               </div>
             </div>
@@ -200,7 +202,7 @@ export default function NotesViewDialog({ note, children }: Props) {
                          <CalendarIcon size={12} /> 작성일
                       </span>
                       <div className="font-medium text-slate-600">
-                         {note.created_at ? format(new Date(note.created_at), 'yyyy년 MM월 dd일 HH:mm') : '-'}
+                         {note.created_at ? format(new Date(note.created_at as string), 'yyyy년 MM월 dd일 HH:mm') : '-'}
                       </div>
                    </div>
                 </div>
