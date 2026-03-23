@@ -153,6 +153,9 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
         toast.success('지식 문서가 발행되었습니다')
       }
       
+      // 실시간 업데이트 이벤트 발생 (즉각적인 목록 갱신 유도)
+      window.dispatchEvent(new CustomEvent('notes-updated'))
+
       if (isDialog && onDone) {
         onDone()
       } else {
@@ -226,7 +229,7 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
               onClick={handleSave}
             >
                 <CloudUploadIcon size={14} className="sm:mr-2" />
-                <span className="hidden sm:inline">{isSubmitting ? '저장 중...' : (editNoteId ? '수정 완료' : '지식 문서 발행')}</span>
+                <span className="hidden sm:inline">{isSubmitting ? '저장 중...' : (editNoteId ? '수정 완료' : '문서 발행')}</span>
                 <span className="inline sm:hidden">{isSubmitting ? '...' : (editNoteId ? '저장' : '발행')}</span>
             </Button>
         </div>

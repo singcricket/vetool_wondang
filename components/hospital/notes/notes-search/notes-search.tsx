@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { SearchIcon, FilterIcon } from 'lucide-react'
 import NotesSearchResults from './notes-search-results'
+import Autocomplete from '@/components/common/auto-complete/auto-complete'
 
 interface Props {
   searchTerm: string
@@ -26,7 +27,7 @@ export default function NotesSearch({ searchTerm, setSearchTerm }: Props) {
   const { hos_id } = useParams()
   const [results, setResults] = useState<NoteWithAuthor[]>([])
   const [loading, setLoading] = useState(false)
-  const [searchType, setSearchType] = useState<SearchType>('all')
+  const [searchType, setSearchType] = useState<SearchType>('tags')
 
   const performSearch = async (silent = false) => {
     if (searchTerm.length < 2) {
@@ -34,9 +35,24 @@ export default function NotesSearch({ searchTerm, setSearchTerm }: Props) {
       return
     }
     
+    // ( ) 괄호가 포함된 단어의 경우 괄호 앞부분만 추출하여 검색어로 사용
+    const cleanedSearchTerm = searchTerm
+      .split(',')
+      .map(part => {
+        const index = part.indexOf('(')
+        return index > -1 ? part.substring(0, index).trim() : part.trim()
+      })
+      .filter(part => part.length > 0)
+      .join(',')
+
+    if (!cleanedSearchTerm || cleanedSearchTerm.length < 2) {
+      setResults([])
+      return
+    }
+
     if (!silent) setLoading(true)
     try {
-      const fetched = await searchNotes(hos_id as string, searchTerm, searchType)
+      const fetched = await searchNotes(hos_id as string, cleanedSearchTerm, searchType)
       setResults(fetched)
     } catch (error) {
       console.error('Search failed:', error)
@@ -83,27 +99,27 @@ export default function NotesSearch({ searchTerm, setSearchTerm }: Props) {
           </SelectContent>
         </Select>
 
-        <div className="relative flex-1 group">
-          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none transition-transform group-focus-within:scale-110">
-            <SearchIcon className="h-6 w-6 text-blue-500" />
+          <div className="relative flex-1 group">
+            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10 transition-transform group-focus-within:scale-110">
+              <SearchIcon className="h-6 w-6 text-blue-500" />
+            </div>
+            
+            <Autocomplete 
+              defaultValue={searchTerm}
+              onInputChange={setSearchTerm}
+              placeholder={
+                searchType === 'title' ? '제목으로 검색...' :
+                searchType === 'content' ? '내용으로 검색...' :
+                searchType === 'tags' ? '키워드로 검색...' :
+                '제목, 내용, 키워드로 검색해보세요...'
+              }
+              inputClassName="h-16 w-full pl-14 pr-6 rounded-2xl border-2 border-slate-200 bg-white text-lg shadow-xl shadow-slate-100 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300"
+            />
+
+            <div className="absolute inset-y-0 right-10 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity z-10 pointer-events-none">
+              <span className="text-xs font-bold px-2 py-1 bg-slate-100 rounded border border-slate-200">ENTER</span>
+            </div>
           </div>
-          <Input
-            type="text"
-            placeholder={
-              searchType === 'title' ? '제목으로 검색...' :
-              searchType === 'content' ? '내용으로 검색...' :
-              searchType === 'tags' ? '키워드로 검색...' :
-              '제목, 내용, 키워드로 검색해보세요...'
-            }
-            className="h-16 w-full pl-14 pr-6 rounded-2xl border-2 border-slate-200 bg-white text-lg shadow-xl shadow-slate-100 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            autoFocus
-          />
-          <div className="absolute inset-y-0 right-4 flex items-center gap-1.5 opacity-40 hover:opacity-100 transition-opacity">
-            <span className="text-xs font-bold px-2 py-1 bg-slate-100 rounded border border-slate-200">ENTER</span>
-          </div>
-        </div>
       </section>
 
       {/* Suggested or Recent Search Results */}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEditor, EditorContent, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
+import { Extension } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { Table } from '@tiptap/extension-table'
 import { TableHeader } from '@tiptap/extension-table-header'
@@ -8,10 +9,19 @@ import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { Image } from '@tiptap/extension-image'
 import { Color } from '@tiptap/extension-color'
+import { FontFamily } from '@tiptap/extension-font-family'
 import { TextStyle } from '@tiptap/extension-text-style'
+import { Link } from '@tiptap/extension-link'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { Highlight } from '@tiptap/extension-highlight'
 import { Button } from '@/components/ui/button'
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from '@/components/ui/select'
 import { 
   BoldIcon, 
   ItalicIcon, 
@@ -27,7 +37,9 @@ import {
   AlignCenterIcon,
   AlignLeftIcon,
   AlignRightIcon,
-  HighlighterIcon
+  HighlighterIcon,
+  LinkIcon,
+  Link2OffIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { useRef, useState, useEffect } from 'react'
@@ -71,6 +83,53 @@ const MenuButton = ({
     {children}
   </Button>
 )
+
+// Custom NodeView for Image Resizing
+// Custom FontSize Extension
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    }
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element: HTMLElement) => element.style.fontSize?.replace(/['"]+/g, '') || null,
+            renderHTML: (attributes: any) => {
+              if (!attributes.fontSize) {
+                return {}
+              }
+              return {
+                style: `font-size: ${attributes.fontSize}`,
+              }
+            },
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    return {
+      setFontSize: (fontSize: string) => ({ chain }: any) => {
+        return chain()
+          .setMark('textStyle', { fontSize })
+          .run()
+      },
+      unsetFontSize: () => ({ chain }: any) => {
+        return chain()
+          .setMark('textStyle', { fontSize: null })
+          .removeEmptyTextStyle()
+          .run()
+      },
+    }
+  },
+})
 
 // Custom NodeView for Image Resizing
 const ImageComponent = ({ node, updateAttributes, editor }: any) => {
@@ -184,11 +243,21 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
       TableRow,
       TableHeader,
       TableCell,
+      FontSize,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: 'https',
+        HTMLAttributes: {
+          class: 'text-blue-600 underline cursor-pointer hover:text-blue-800'
+        }
+      }),
       ResizableImage.configure({
         allowBase64: true,
       }),
       TextStyle,
       Color,
+      FontFamily,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -262,6 +331,62 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
       {/* Toolbar - Only if editable */}
       {editable && (
         <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-50/80 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm">
+          {/* Font Family Selector */}
+          <Select
+            value={editor.getAttributes('textStyle').fontFamily || 'initial'}
+            onValueChange={(value) => {
+              if (value === 'initial') {
+                editor.chain().focus().unsetFontFamily().run()
+              } else {
+                editor.chain().focus().setFontFamily(value).run()
+              }
+            }}
+          >
+            <SelectTrigger className="h-8 w-[110px] text-xs border-none bg-white font-bold text-slate-600 focus:ring-0">
+              <SelectValue placeholder="글꼴" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[150px]">
+              <SelectItem value="initial" className="text-xs">기본글꼴</SelectItem>
+              <SelectItem value="Pretendard" className="text-xs font-['Pretendard']">프리텐다드</SelectItem>
+              <SelectItem value="'Nanum Gothic', sans-serif" className="text-xs font-['Nanum_Gothic']">나눔고딕</SelectItem>
+              <SelectItem value="'Nanum Myeongjo', serif" className="text-xs font-['Nanum_Myeongjo']">나눔명조</SelectItem>
+              <SelectItem value="'GmarketSansMedium', sans-serif" className="text-xs font-bold">G마켓산스</SelectItem>
+              <SelectItem value="monospace" className="text-xs font-mono">코딩글꼴</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="w-px h-6 bg-slate-200 mx-1" />
+
+          {/* Font Size Selector */}
+          <Select
+            value={editor.getAttributes('textStyle').fontSize || 'initial'}
+            onValueChange={(value) => {
+              if (value === 'initial') {
+                (editor.commands as any).unsetFontSize()
+              } else {
+                (editor.commands as any).setFontSize(value)
+              }
+            }}
+          >
+            <SelectTrigger className="h-8 w-[80px] text-xs border-none bg-white font-bold text-slate-600 focus:ring-0">
+              <SelectValue placeholder="크기" />
+            </SelectTrigger>
+            <SelectContent className="min-w-[80px]">
+              <SelectItem value="initial" className="text-xs">기본</SelectItem>
+              <SelectItem value="12px" className="text-xs">12px</SelectItem>
+              <SelectItem value="14px" className="text-xs">14px</SelectItem>
+              <SelectItem value="16px" className="text-xs">16px</SelectItem>
+              <SelectItem value="18px" className="text-xs">18px</SelectItem>
+              <SelectItem value="20px" className="text-xs">20px</SelectItem>
+              <SelectItem value="24px" className="text-xs font-bold">24px</SelectItem>
+              <SelectItem value="30px" className="text-xs font-bold">30px</SelectItem>
+              <SelectItem value="36px" className="text-xs font-black">36px</SelectItem>
+              <SelectItem value="48px" className="text-xs font-black">48px</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="w-px h-6 bg-slate-200 mx-1" />
+
           <MenuButton
             onClick={() => editor.chain().focus().toggleBold().run()}
             active={editor.isActive('bold')}
@@ -283,8 +408,34 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
           >
             <HighlighterIcon size={16} strokeWidth={2.5} />
           </MenuButton>
-          
-          <div className="w-px h-6 bg-slate-300 mx-1" />
+
+          <MenuButton
+            onClick={() => {
+              const previousUrl = editor.getAttributes('link').href
+              const url = window.prompt('URL을 입력하세요', previousUrl)
+
+              if (url === null) return
+              if (url === '') {
+                editor.chain().focus().extendMarkRange('link').unsetLink().run()
+                return
+              }
+
+              editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+            }}
+            active={editor.isActive('link')}
+            title="링크 삽입/수정"
+          >
+            <LinkIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+
+          <MenuButton
+            onClick={() => editor.chain().focus().extendMarkRange('link').unsetLink().run()}
+            disabled={!editor.isActive('link')}
+            title="링크 해제"
+          >
+            <Link2OffIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+<div className="w-px h-6 bg-slate-300 mx-1" />
 
           <MenuButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}

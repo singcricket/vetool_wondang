@@ -17,8 +17,10 @@ import { useDebouncedCallback } from 'use-debounce'
 
 type Props = {
   className?: string
+  inputClassName?: string
   label?: string
   handleUpdate?: (value: string) => void
+  onInputChange?: (value: string) => void // New prop for real-time updates
   defaultValue?: string
   isUpdating?: boolean
   placeholder?: string
@@ -26,8 +28,10 @@ type Props = {
 
 export default function Autocomplete({
   className,
+  inputClassName,
   label,
   handleUpdate,
+  onInputChange,
   defaultValue,
   isUpdating,
   placeholder,
@@ -81,8 +85,9 @@ export default function Autocomplete({
       setCursorPosition(cursorPos)
       debouncedSearch(inputValue, cursorPos)
       setSelectedIndex(0)
+      if (onInputChange) onInputChange(inputValue)
     },
-    [debouncedSearch],
+    [debouncedSearch, onInputChange],
   )
 
   const insertSuggestion = useCallback(
@@ -100,6 +105,7 @@ export default function Autocomplete({
       const newInput = [...beforeCursor, ...afterCursor.slice(1)].join(', ')
       setInput(newInput)
       setSuggestions([])
+      if (onInputChange) onInputChange(newInput)
 
       // 중간 키워드 수정 후 커서 위치 유지
       const timeoutId = setTimeout(() => {
@@ -170,7 +176,7 @@ export default function Autocomplete({
         value={input}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        className={cn(label ? 'pl-8' : '')}
+        className={cn(label ? 'pl-8' : '', inputClassName)}
         onBlur={() => handleUpdate!(input)}
         disabled={isUpdating}
         placeholder={placeholder ?? ''}

@@ -67,7 +67,8 @@ export default function NotesViewDialog({ note, children }: Props) {
   const handleDone = () => {
     setIsEditing(false)
     setIsOpen(false)
-    window.location.reload() 
+    // 페이지 전체 새로고침 없이 자연스럽게 업데이트 전파
+    window.dispatchEvent(new CustomEvent('notes-updated'))
   }
 
   const handleDelete = async () => {
