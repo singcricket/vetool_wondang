@@ -18,7 +18,7 @@ export default function NotesMainHeader({
   const { hos_id } = useParams()
 
   return (
-    <header className="flex h-12 items-center justify-between px-4 border-b bg-background shrink-0 sticky top-0 z-30 shadow-sm">
+    <header className="flex h-12 items-center justify-between px-4 pl-14 2xl:pl-4 border-b bg-background sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-3">
         <h1 className="text-lg font-bold text-foreground tracking-tight">{title}</h1>
         {selectedCategory && (

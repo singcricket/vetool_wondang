@@ -203,7 +203,7 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
     editorProps: {
       attributes: {
         class: cn(
-           'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none max-w-none p-8 bg-white',
+           'prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none max-w-none px-4 py-8 sm:px-8 bg-white break-words overflow-x-auto',
            editable ? 'min-h-[600px]' : ''
         )
       }
@@ -239,7 +239,7 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
 
   return (
     <div className={cn(
-       "w-full overflow-hidden bg-white",
+       "w-full overflow-x-auto bg-white",
        editable ? "border border-slate-200 rounded-2xl shadow-sm ring-1 ring-slate-100" : ""
     )}>
       {/* Toolbar - Only if editable */}

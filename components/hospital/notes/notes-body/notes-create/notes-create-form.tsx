@@ -210,22 +210,24 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
                   <ChevronLeftIcon size={18} />
               </Button>
             )}
-            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-tight">
-               {editNoteId ? "지식 문서 수정" : (copyNoteId ? "지식 문서 복사" : (isDialog ? "새 지식 문서 팝업 작성" : "새 지식 문서 작성"))}
+            <h2 className="text-[10px] sm:text-sm font-bold text-slate-700 uppercase tracking-tight truncate max-w-[150px] sm:max-w-none">
+               {editNoteId ? "수정" : (copyNoteId ? "복사" : (isDialog ? "팝업 작성" : "작성"))}
+               <span className="hidden sm:inline"> {editNoteId ? "지식 문서 수정" : (copyNoteId ? "지식 문서 복사" : (isDialog ? "새 지식 문서 팝업 작성" : "새 지식 문서 작성"))}</span>
             </h2>
         </div>
-        <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-slate-400 hover:text-slate-600" onClick={handleCancel}>
+        <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="sm" className="h-8 px-2 text-[10px] sm:text-xs font-bold text-slate-400 hover:text-slate-600" onClick={handleCancel}>
                 취소
             </Button>
             <Button 
               size="sm" 
-              className="px-4 py-2 font-bold" 
+              className="px-2 sm:px-4 py-2 font-bold text-[10px] sm:text-sm" 
               disabled={isSubmitting || isLoading} 
               onClick={handleSave}
             >
-                <CloudUploadIcon size={16} className="mr-2" />
-                {isSubmitting ? '저장 중...' : (editNoteId ? '수정 완료' : '지식 문서 발행')}
+                <CloudUploadIcon size={14} className="sm:mr-2" />
+                <span className="hidden sm:inline">{isSubmitting ? '저장 중...' : (editNoteId ? '수정 완료' : '지식 문서 발행')}</span>
+                <span className="inline sm:hidden">{isSubmitting ? '...' : (editNoteId ? '저장' : '발행')}</span>
             </Button>
         </div>
       </div>
@@ -237,26 +239,26 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
           <div className="flex flex-wrap gap-2">
             
             {/* Title */}
-            <div className="w-full md:w-[calc(40%-0.5rem)] relative flex items-center h-10">
-              <Label className="absolute left-4 text-slate-400 z-10 pointer-events-none w-5 h-5 flex items-center justify-center" htmlFor="note-title">
-                <ClipboardListIcon size={16} />
+            <div className="w-full sm:w-[calc(40%-0.5rem)] relative flex items-center h-10">
+              <Label className="absolute left-3 text-slate-400 z-10 pointer-events-none w-4 h-4 flex items-center justify-center" htmlFor="note-title">
+                <ClipboardListIcon size={14} />
               </Label>
               <Input
                 id="note-title"
                 placeholder="지식 문서 제목"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="pl-14 h-10 w-full border-slate-200 focus-visible:ring-slate-300 shadow-none font-bold"
+                className="pl-10 h-10 w-full border-slate-200 focus-visible:ring-slate-300 shadow-none font-bold text-xs sm:text-sm"
               />
             </div>
 
             {/* Author */}
-            <div className="w-full md:w-[calc(30%-0.5rem)] relative flex items-center h-10">
-              <Label className="absolute left-4 text-slate-400 z-10 pointer-events-none w-5 h-5 flex items-center justify-center">
-                <UserIcon size={16} />
+            <div className="w-full sm:w-[calc(30%-0.5rem)] relative flex items-center h-10">
+              <Label className="absolute left-3 text-slate-400 z-10 pointer-events-none w-4 h-4 flex items-center justify-center">
+                <UserIcon size={14} />
               </Label>
               <Select onValueChange={setSelectedAuthorId} value={selectedAuthorId}>
-                <SelectTrigger className="pl-14 h-10 w-full border-slate-200 hover:border-slate-300 transition-colors shadow-none font-medium text-xs">
+                <SelectTrigger className="pl-10 h-10 w-full border-slate-200 hover:border-slate-300 transition-colors shadow-none font-medium text-[10px] sm:text-xs">
                   <SelectValue placeholder="작성자 선택" />
                 </SelectTrigger>
                 <SelectContent>
@@ -270,7 +272,7 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
             </div>
 
             {/* Category selection */}
-            <div className="w-full md:w-[calc(30%-0.5rem)]">
+            <div className="w-full sm:w-[calc(30%-0.5rem)]">
                <NotesCategorySelect 
                   flatCategories={flatCategories} 
                   userTags={userTags} 

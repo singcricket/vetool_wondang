@@ -79,7 +79,7 @@ export default function NotesViewDialog({ note, children }: Props) {
         ) : (
           <div className="flex flex-col h-full bg-white">
             {/* View Header */}
-            <div className="flex h-auto py-5 items-center justify-between px-8 border-b shrink-0 bg-slate-50/70 backdrop-blur-sm">
+            <div className="flex h-auto py-5 items-center justify-between px-4 sm:px-8 border-b shrink-0 bg-slate-50/70 backdrop-blur-sm">
               <div className="flex flex-col gap-2 min-w-0 flex-1">
                 <DialogTitle className="text-3xl font-black text-slate-900 line-clamp-2 tracking-tighter">
                   {note.title}
@@ -124,7 +124,7 @@ export default function NotesViewDialog({ note, children }: Props) {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="p-8 max-w-[1000px] mx-auto space-y-8">
+              <div className="p-4 sm:p-8 max-w-[1000px] mx-auto space-y-8">
                 {/* Meta Info Section */}
                 <div className="grid grid-cols-2 gap-4 pb-8 border-b border-slate-100">
                    <div className="space-y-1.5">
