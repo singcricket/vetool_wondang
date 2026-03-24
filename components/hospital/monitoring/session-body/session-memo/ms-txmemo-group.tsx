@@ -1,17 +1,15 @@
 import NoResultSquirrel from '@/components/common/no-result-squirrel'
 import MemoColorPicker from '@/components/hospital/icu/main/chart/selected-chart/chart-body/chart-memos/memo-color-picker'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import { MEMO_COLORS } from '@/constants/hospital/icu/chart/colors'
 import type { MemoColor } from '@/types/icu/chart'
 import {
   useEffect,
   useRef,
   useState,
-  type Dispatch,
-  type SetStateAction,
 } from 'react'
 import { ReactSortable, type Sortable } from 'react-sortablejs'
 import { toast } from 'sonner'
@@ -19,16 +17,13 @@ import { MsMemo } from '@/types/monitoring/monitoring-type'
 import SingleMsTxMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-tx-memo'
 import { updateMsMemo } from '@/lib/services/monitoring/update-ms'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
-import { Camera, ImagePlus, Loader2 } from 'lucide-react'
+import { ClipboardListIcon, PlusIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import { useMsMemoImageUpload } from '@/hooks/use-ms-memo-image-upload'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
 
-
-
 type Props = {
   memo: MsMemo[]
-//   setMemos: Dispatch<SetStateAction<MsMemo[]>>
   sessionId: string
   memoName: string
   msData: MsWithPatientWithWeight
@@ -36,7 +31,6 @@ type Props = {
 
 export default function MsTxMemoGroup({
   memo,
-//   setMemos,
   sessionId,
   memoName,
   msData,
@@ -45,6 +39,7 @@ export default function MsTxMemoGroup({
   const [sortedMemos, setSortedMemos] = useState<MsMemo[]>(memo ?? [])
   const [memoInput, setMemoInput] = useState('')
   const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[0])
+  const [isInputOpen, setIsInputOpen] = useState(false)
 
   const lastMemoRef = useRef<HTMLLIElement>(null)
 
@@ -66,19 +61,15 @@ export default function MsTxMemoGroup({
 
   const handleUpdateDbMemo = async (updatedFilteredMemos: MsMemo[]) => {
     setIsUpdating(true)
-
-   await updateMsMemo(sessionId, updatedFilteredMemos)
-
+    await updateMsMemo(sessionId, updatedFilteredMemos)
     setIsUpdating(false)
   }
 
   const handleReorderMemo = async (event: Sortable.SortableEvent) => {
-    const { from, to, oldIndex, newIndex } = event
-
+    const { oldIndex, newIndex } = event
     const newOrder = [...sortedMemos]
     const [movedItem] = newOrder.splice(oldIndex as number, 1)
     newOrder.splice(newIndex as number, 0, movedItem)
-
     setSortedMemos(newOrder)
     await handleUpdateDbMemo(newOrder)
   }
@@ -92,7 +83,7 @@ export default function MsTxMemoGroup({
     const newMemo: MsMemo = {
       id: uniqueId,
       memo: memoInput.trim(),
-      check:'',
+      check: '',
       create_timestamp: createdAt,
       color: memoColor as MemoColor,
       done_timestamp: null,
@@ -102,60 +93,72 @@ export default function MsTxMemoGroup({
       has_imgs: imgUrls.length > 0,
       img_url: imgUrls,
     }
-   
-    const updatedMemos = [...sortedMemos, newMemo]
 
+    const updatedMemos = [...sortedMemos, newMemo]
     setSortedMemos(updatedMemos)
     setMemoInput('')
-
     await handleUpdateDbMemo(updatedMemos)
-
-    toast.success(`${memoName}에 새 메모를 추가했습니다`)
+    toast.success('처치 항목을 추가했습니다')
   }
 
   const handleEditMemo = async (editedMemo: MsMemo, memoId: string) => {
     const editedMemos = sortedMemos.map((memo) =>
       memo.id === memoId ? editedMemo : memo,
     )
-
     setSortedMemos(editedMemos)
-
     await handleUpdateDbMemo(editedMemos)
-
     toast.success('메모를 수정하였습니다')
   }
 
   const handleDeleteMemo = async (memoId: string) => {
     const memoToDelete = sortedMemos.find((memo) => memo.id === memoId)
-
     if (memoToDelete && memoToDelete.has_imgs && memoToDelete.img_url) {
       await deleteMsMemoImage(memoToDelete.img_url)
     }
-
-    const updatedEntries = sortedMemos.filter(
-      (memo) => memo.id !== memoId,
-    )
+    const updatedEntries = sortedMemos.filter((memo) => memo.id !== memoId)
     setSortedMemos(updatedEntries)
-
     await handleUpdateDbMemo(updatedEntries)
-
     toast.success('메모를 삭제하였습니다')
   }
 
-  return (
-    <div className="relative flex w-full flex-col">
-      <Label
-        className="mb-1 ml-2 text-lg font-semibold text-blue-500"
-        htmlFor={`memo-tx`}
-      >
-        {memoName}{' '}
-        <span className="font-normal text-muted-foreground">
-          ({sortedMemos.filter((m) => !m.is_realtime_memo && !m.is_done).length}개 대기 /{' '}
-          {sortedMemos.filter((m) => !m.is_realtime_memo && m.is_done).length}개 완료)
-        </span>
-      </Label>
+  const planMemos = sortedMemos.filter((m) => !m.is_realtime_memo)
+  const pendingCount = planMemos.filter((m) => !m.is_done).length
+  const doneCount = planMemos.filter((m) => m.is_done).length
 
-      <ScrollArea className="h-60 rounded-t-md border-2 border-blue-200 bg-blue-50/30 p-2">
+  return (
+    <div className="flex w-full flex-col rounded-xl border-2 border-blue-200 bg-white overflow-hidden shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50 border-b-2 border-blue-200">
+        <div className="flex items-center gap-2">
+          <ClipboardListIcon size={16} className="text-blue-600 shrink-0" />
+          <span className="text-sm font-black text-blue-700">{memoName}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Badge
+            variant="secondary"
+            className="text-[10px] font-bold px-1.5 py-0 bg-orange-100 text-orange-600 border-orange-200"
+          >
+            대기 {pendingCount}
+          </Badge>
+          <Badge
+            variant="secondary"
+            className="text-[10px] font-bold px-1.5 py-0 bg-blue-100 text-blue-600 border-blue-200"
+          >
+            완료 {doneCount}
+          </Badge>
+          <button
+            onClick={() => setIsInputOpen((v) => !v)}
+            title={isInputOpen ? '입력창 닫기' : '항목 추가'}
+            className="ml-1 flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-blue-600 hover:bg-blue-100 transition-colors"
+          >
+            {isInputOpen ? <ChevronUpIcon size={13} /> : <PlusIcon size={13} />}
+            {isInputOpen ? '닫기' : '항목 추가'}
+          </button>
+        </div>
+      </div>
+
+      {/* Memo List */}
+      <ScrollArea className="h-56 bg-blue-50/20 p-2">
         <ReactSortable
           id="memo-tx"
           list={sortedMemos}
@@ -166,14 +169,14 @@ export default function MsTxMemoGroup({
           onEnd={handleReorderMemo}
           disabled={isUpdating}
         >
-          {sortedMemos.filter((memo) => !memo.is_realtime_memo).length === 0 ? (
+          {planMemos.length === 0 ? (
             <NoResultSquirrel
-              text="처치 정보 없음"
+              text="처치 계획 없음"
               size="sm"
-              className="h-52 flex-col font-normal text-blue-300"
+              className="h-48 flex-col font-normal text-blue-300"
             />
           ) : (
-            sortedMemos.filter((memo) => !memo.is_realtime_memo).map((memo) => (
+            planMemos.map((memo) => (
               <SingleMsTxMemo
                 isMemoNameSetting={false}
                 key={memo.id}
@@ -189,11 +192,13 @@ export default function MsTxMemoGroup({
         <ScrollBar orientation="vertical" />
       </ScrollArea>
 
-      <div className="relative">
+      {/* Input — 기본 숨김, 토글로 표시 */}
+      {isInputOpen && (
+      <div className="relative border-t-2 border-blue-200">
         <Textarea
           disabled={isUpdating || isUploading}
-          placeholder="처치 항목 추가 : Enter ⏎  |  줄바꿈 : Shift + Enter"
-          id={`memo-tx`}
+          placeholder="처치 항목 추가 → Enter ⏎  |  줄바꿈 → Shift + Enter"
+          id="memo-tx"
           value={memoInput}
           onChange={(e) => setMemoInput(e.target.value)}
           onKeyDown={(e) => {
@@ -202,9 +207,8 @@ export default function MsTxMemoGroup({
               handleAddMemo()
             }
           }}
-          className="w-full rounded-none rounded-b-md border-2 border-t-0 border-blue-200 bg-white pl-3 pr-24 text-sm placeholder:text-xs placeholder:text-blue-300 focus-visible:ring-blue-300"
+          className="w-full rounded-none border-0 bg-white pl-3 pr-24 text-sm placeholder:text-xs placeholder:text-blue-300 focus-visible:ring-blue-200 resize-none"
         />
-
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
           <MsMemoImageUploadButtons
             isUploading={isUploading}
@@ -219,6 +223,7 @@ export default function MsTxMemoGroup({
           />
         </div>
       </div>
+      )}
     </div>
   )
 }

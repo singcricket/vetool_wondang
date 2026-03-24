@@ -6,7 +6,10 @@ import { MonitoringSidebarData } from '@/lib/services/monitoring/fetch-ms-data'
 import type { Vet } from '@/types'
 import { DEFAULT_MS_FILTER_STATE, filterPatients } from '../filters/filters'
 import MsPatientList from '../ms-patient-list'
-
+import MsDateSelector from '../date-selector/ms-date-selector'
+import { Suspense } from 'react'
+import MsRegisterDialog from '../ms-register-dialog/ms-register-dialog'
+import MsEmergencyDialog from '@/components/hospital/monitoring/sidebar/ms-emergency-dialog'
 type Props = {
   handleCloseMobileDrawer?: () => void
   monitoringSidebarData: MonitoringSidebarData[]
@@ -31,8 +34,14 @@ export default function MobileMsSidebar({
 
   return (
     <aside className="flex flex-col">
-      <IcuDateSelector targetDate={targetDate} />
+      <Suspense>
+         <MsDateSelector hosId={hosId} targetDate={targetDate} />
+         </Suspense>
+  <div className="flex flex-col gap-2">
+        <MsRegisterDialog hosId={hosId} targetDate={targetDate} />
 
+        <MsEmergencyDialog hosId={hosId} targetDate={targetDate} />
+      </div>
       <Separator className="mt-2" />
 
       {monitoringSidebarData.length === 0 ? (
@@ -48,6 +57,7 @@ export default function MobileMsSidebar({
         targetDate={targetDate}
         filters={DEFAULT_MS_FILTER_STATE}
         vetList={vetList}
+        handleCloseMobileDrawer={handleCloseMobileDrawer}
         />
         </div>
       )}

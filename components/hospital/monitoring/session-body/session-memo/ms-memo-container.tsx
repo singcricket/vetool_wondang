@@ -24,20 +24,23 @@ export default function MsMemoContainer({
   }, [msData.memo_tx])
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <div className="w-full md:w-[calc(50%-0.25rem)]">
+    <div className="flex flex-wrap gap-3">
+      {/* 처치 계획 패널 */}
+      <div className="w-full md:w-[calc(50%-0.375rem)]">
         <MsTxMemoGroup
           memo={memos}
           sessionId={msData.session_id}
-          memoName="처치 및 추가정보"
+          memoName="처치 계획"
           msData={msData}
         />
       </div>
-      <div className="w-full md:w-[calc(50%-0.25rem)]">
+
+      {/* 실시간 기록 패널 */}
+      <div className="w-full md:w-[calc(50%-0.375rem)]">
         <MsLiveMemoGroup
           memo={memos}
           sessionId={msData.session_id}
-          memoName="실시간 진행 상황"
+          memoName="실시간 기록"
           msData={msData}
         />
       </div>

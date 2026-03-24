@@ -1,19 +1,15 @@
 import NoResultSquirrel from '@/components/common/no-result-squirrel'
 import MemoColorPicker from '@/components/hospital/icu/main/chart/selected-chart/chart-body/chart-memos/memo-color-picker'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import { MEMO_COLORS } from '@/constants/hospital/icu/chart/colors'
 import type { MemoColor } from '@/types/icu/chart'
 import {
   useEffect,
   useRef,
   useState,
-  type Dispatch,
-  type SetStateAction,
 } from 'react'
-import { ReactSortable, type Sortable } from 'react-sortablejs'
 import { toast } from 'sonner'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
 import { useMsMemoImageUpload } from '@/hooks/use-ms-memo-image-upload'
@@ -22,12 +18,10 @@ import { updateMsMemo } from '@/lib/services/monitoring/update-ms'
 import SingleMsLiveMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-live-memo'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
-
-
+import { ActivityIcon } from 'lucide-react'
 
 type Props = {
   memo: MsMemo[]
-//   setMemos: Dispatch<SetStateAction<MsMemo[]>>
   sessionId: string
   memoName: string
   msData: MsWithPatientWithWeight
@@ -35,7 +29,6 @@ type Props = {
 
 export default function MsLiveMemoGroup({
   memo,
-//   setMemos,
   sessionId,
   memoName,
   msData,
@@ -65,21 +58,8 @@ export default function MsLiveMemoGroup({
 
   const handleUpdateDbMemo = async (updatedFilteredMemos: MsMemo[]) => {
     setIsUpdating(true)
-
     await updateMsMemo(sessionId, updatedFilteredMemos)
-
     setIsUpdating(false)
-  }
-
-  const handleReorderMemo = async (event: Sortable.SortableEvent) => {
-    const { from, to, oldIndex, newIndex } = event
-
-    const newOrder = [...sortedMemos]
-    const [movedItem] = newOrder.splice(oldIndex as number, 1)
-    newOrder.splice(newIndex as number, 0, movedItem)
-
-    setSortedMemos(newOrder)
-    await handleUpdateDbMemo(newOrder)
   }
 
   const handleAddMemo = async (imgUrls: string[] = []) => {
@@ -91,7 +71,7 @@ export default function MsLiveMemoGroup({
     const newMemo: MsMemo = {
       id: uniqueId,
       memo: memoInput.trim(),
-      check:'',
+      check: '',
       create_timestamp: createdAt,
       color: memoColor as MemoColor,
       done_timestamp: createdAt,
@@ -101,87 +81,92 @@ export default function MsLiveMemoGroup({
       has_imgs: imgUrls.length > 0,
       img_url: imgUrls,
     }
-   
-    const updatedMemos = [...sortedMemos, newMemo]
 
+    const updatedMemos = [...sortedMemos, newMemo]
     setSortedMemos(updatedMemos)
     setMemoInput('')
-
     await handleUpdateDbMemo(updatedMemos)
-
-    toast.success(`${memoName}에 새 메모를 추가했습니다`)
+    toast.success('진행 상황을 기록했습니다')
   }
 
   const handleEditMemo = async (editedMemo: MsMemo, memoId: string) => {
     const editedMemos = sortedMemos.map((memo) =>
       memo.id === memoId ? editedMemo : memo,
     )
-
     setSortedMemos(editedMemos)
-
     await handleUpdateDbMemo(editedMemos)
-
     toast.success('메모를 수정하였습니다')
   }
 
   const handleDeleteMemo = async (memoId: string) => {
     const memoToDelete = sortedMemos.find((memo) => memo.id === memoId)
-
     if (memoToDelete && memoToDelete.has_imgs && memoToDelete.img_url) {
       await deleteMsMemoImage(memoToDelete.img_url)
     }
-
-    const updatedEntries = sortedMemos.filter(
-      (memo) => memo.id !== memoId,
-    )
+    const updatedEntries = sortedMemos.filter((memo) => memo.id !== memoId)
     setSortedMemos(updatedEntries)
-
     await handleUpdateDbMemo(updatedEntries)
-
     toast.success('메모를 삭제하였습니다')
   }
 
-  return (
-    <div className="relative flex w-full flex-col">
-      <Label
-        className="mb-1 ml-2 text-lg text-muted-foreground"
-        htmlFor={`memo-tx`}
-      >
-        {memoName} ({sortedMemos.length})
-      </Label>
+  const liveMemos = sortedMemos.filter((m) => m.is_done)
 
-      <ScrollArea className="h-60 rounded-t-md border p-2">
-       
-          {sortedMemos.filter((memo) => memo.is_done).length === 0 ? (
-            <NoResultSquirrel
-              text="처치 정보 없음"
-              size="sm"
-              className="h-52 flex-col font-normal text-muted-foreground"
-            />
-          ) : (
-            sortedMemos.filter((memo) => memo.is_done).map((memo,i) => (
-              <SingleMsLiveMemo
-                isMemoNameSetting={false}
-                key={memo.id+i}
-                memo={memo}
-                memoIndex={memo.id}
-                handleEditMemo={handleEditMemo}
-                onDelete={() => handleDeleteMemo(memo.id)}
-                msData={msData}
-                // ref={memo.id === sortedMemos.length - 1 ? lastMemoRef : null}
-              />
-            ))
-          )}
-        
+  return (
+    <div className="flex w-full flex-col rounded-xl border-2 border-emerald-200 bg-white overflow-hidden shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-emerald-50 border-b-2 border-emerald-200">
+        <div className="flex items-center gap-2">
+          <ActivityIcon size={16} className="text-emerald-600 shrink-0" />
+          <span className="text-sm font-black text-emerald-700">{memoName}</span>
+        </div>
+        <Badge
+          variant="secondary"
+          className="text-[10px] font-bold px-1.5 py-0 bg-emerald-100 text-emerald-600 border-emerald-200"
+        >
+          {liveMemos.length}건 기록됨
+        </Badge>
+      </div>
+
+      {/* Timeline List */}
+      <ScrollArea className="h-56 bg-emerald-50/20 p-2">
+        {liveMemos.length === 0 ? (
+          <NoResultSquirrel
+            text="기록 없음"
+            size="sm"
+            className="h-48 flex-col font-normal text-emerald-300"
+          />
+        ) : (
+          <div className="relative pl-4">
+            {/* Vertical timeline line */}
+            <div className="absolute left-[11px] top-2 bottom-2 w-px bg-emerald-200" />
+
+            {liveMemos.map((memo, i) => (
+              <div key={memo.id + i} className="relative flex gap-3 mb-1.5">
+                {/* Timeline dot */}
+                <div className="absolute -left-4 top-[10px] h-2.5 w-2.5 rounded-full border-2 border-emerald-400 bg-white z-10 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <SingleMsLiveMemo
+                    isMemoNameSetting={false}
+                    memo={memo}
+                    memoIndex={memo.id}
+                    handleEditMemo={handleEditMemo}
+                    onDelete={() => handleDeleteMemo(memo.id)}
+                    msData={msData}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         <ScrollBar orientation="vertical" />
-        
       </ScrollArea>
 
-      <div className="relative">
+      {/* Input */}
+      <div className="relative border-t-2 border-emerald-200">
         <Textarea
           disabled={isUpdating || isUploading}
-          placeholder="줄 추가 : Shift + Enter ⏎"
-          id={`memo-tx`}
+          placeholder="지금 발생한 일을 기록하세요 → Enter ⏎  |  줄바꿈 → Shift + Enter"
+          id="memo-live"
           value={memoInput}
           onChange={(e) => setMemoInput(e.target.value)}
           onKeyDown={(e) => {
@@ -190,9 +175,8 @@ export default function MsLiveMemoGroup({
               handleAddMemo()
             }
           }}
-          className="w-full rounded-none rounded-b-md border-t-0 pr-24 text-sm placeholder:text-xs"
+          className="w-full rounded-none border-0 bg-white pl-3 pr-24 text-sm placeholder:text-xs placeholder:text-emerald-300 focus-visible:ring-emerald-200 resize-none"
         />
-
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
           <MsMemoImageUploadButtons
             isUploading={isUploading}
