@@ -5,10 +5,8 @@ import { NoteWithAuthor } from '@/types/notes/notes_index'
 import { 
   Dialog, 
   DialogContent, 
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter 
 } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -29,9 +27,7 @@ import {
   EditIcon, 
   CopyIcon,
   XIcon,
-  TagIcon,
-  HashIcon,
-  Trash2Icon
+  Trash2Icon,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { deleteNote } from '@/lib/services/notes/notes'
@@ -39,6 +35,8 @@ import { toast } from 'sonner'
 import NotesEditor from '../notes-create/notes-editor'
 import NotesCreateForm from '../notes-create/notes-create-form'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import NotesRelatedPanel from '../../notes-search/notes-related-panel'
+import { cn } from '@/lib/utils/utils'
 
 interface Props {
   note: NoteWithAuthor
@@ -49,38 +47,43 @@ export default function NotesViewDialog({ note, children }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
+  /** 메인 뷰에 현재 표시 중인 노트. 우측 패널에서 교체 가능 */
+  const [viewingNote, setViewingNote] = useState<NoteWithAuthor>(note)
+  /** 연관 노트 패널에서 검색 중인 태그. null이면 패널 닫힘 */
+  const [activeTag, setActiveTag] = useState<string | null>(null)
 
-  const handleEdit = () => {
-    setIsEditing(true)
-  }
-
-  const handleCopy = () => {
-    setIsCopying(true)
-  }
-
+  const handleEdit = () => setIsEditing(true)
+  const handleCopy = () => setIsCopying(true)
   const handleCancel = () => {
     setIsEditing(false)
     setIsCopying(false)
   }
 
-
   const handleDone = () => {
     setIsEditing(false)
     setIsOpen(false)
-    // 페이지 전체 새로고침 없이 자연스럽게 업데이트 전파
     window.dispatchEvent(new CustomEvent('notes-updated'))
   }
 
   const handleDelete = async () => {
     try {
-      await deleteNote(note.notes_id)
+      await deleteNote(viewingNote.notes_id)
       toast.success('노트가 삭제되었습니다')
       setIsOpen(false)
-      // window.location.reload()
     } catch (error) {
       toast.error('삭제에 실패했습니다')
       console.error(error)
     }
+  }
+
+  /** 패널의 Maximize 클릭 시 메인 뷰를 해당 노트로 교체 */
+  const handleSelectNote = (selected: NoteWithAuthor) => {
+    setViewingNote(selected)
+    setActiveTag(null)  // 패널 닫기 (필요 시 열어둘 수도 있음)
+  }
+
+  const handleTagClick = (tag: string) => {
+    setActiveTag((prev) => (prev === tag ? null : tag))
   }
 
   return (
@@ -89,6 +92,8 @@ export default function NotesViewDialog({ note, children }: Props) {
       if (!open) {
         setIsEditing(false)
         setIsCopying(false)
+        setActiveTag(null)
+        setViewingNote(note)
       }
     }}>
       <DialogTrigger asChild>
@@ -105,18 +110,41 @@ export default function NotesViewDialog({ note, children }: Props) {
             copyNoteId={isCopying ? note.notes_id : null}
           />
         ) : (
-          <div className="flex flex-col h-full bg-white">
-            {/* View Header */}
+          <div className="flex flex-col h-full bg-white overflow-hidden">
+            {/* ── View Header ─────────────────────────────────────────── */}
             <div className="flex flex-wrap h-auto py-4 sm:py-5 items-center justify-between gap-4 pl-4 sm:pl-8 pr-6 sm:pr-12 border-b shrink-0 bg-slate-50/70 backdrop-blur-sm">
               {/* Left Group: Title & Tags */}
               <div className="flex flex-col gap-2 min-w-0 flex-1 basis-full sm:basis-auto">
+                {/* 원본 노트와 다른 노트를 보는 경우 breadcrumb 표시 */}
+                {viewingNote.notes_id !== note.notes_id && (
+                  <p className="text-[10px] text-slate-400 font-semibold pb-0.5">
+                    ← 연관 노트 열람 중
+                  </p>
+                )}
                 <DialogTitle className="text-2xl sm:text-3xl font-black text-slate-900 line-clamp-2 tracking-tighter">
-                  {note.title}
+                  {viewingNote.title}
                 </DialogTitle>
+
+                {/* Clickable tag badges */}
                 <div className="flex flex-wrap gap-1.5">
-                  {note.user_tags?.map(tag => (
-                    <Badge key={tag} variant="secondary" className="px-2 py-0.5 text-[10px] font-bold bg-white text-blue-600 border-blue-100 shadow-sm">
+                  {viewingNote.user_tags?.map(tag => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      onClick={() => handleTagClick(tag)}
+                      title={`'${tag}' 연관 노트 검색`}
+                      className={cn(
+                        'px-2 py-0.5 text-[10px] font-bold shadow-sm cursor-pointer select-none transition-all duration-200',
+                        // 태블릿/PC에서만 클릭 가능한 시각적 피드백
+                        'md:hover:scale-105 md:hover:shadow-md',
+                        activeTag === tag
+                          ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300 ring-offset-1'
+                          : 'bg-white text-blue-600 border-blue-100 md:hover:bg-blue-50',
+                      )}
+                    >
                       #{tag}
+                      {/* 태블릿 이상에서만 연관검색 힌트 아이콘 표시 */}
+                      <span className="hidden md:inline ml-1 opacity-50">↗</span>
                     </Badge>
                   ))}
                 </div>
@@ -184,39 +212,59 @@ export default function NotesViewDialog({ note, children }: Props) {
               </div>
             </div>
 
-            <ScrollArea className="flex-1">
-              <div className="p-4 sm:p-8 max-w-[1000px] mx-auto space-y-8">
-                {/* Meta Info Section */}
-                <div className="grid grid-cols-2 gap-4 pb-8 border-b border-slate-100">
-                   <div className="space-y-1.5">
+            {/* ── Body: Main Content + Related Panel ──────────────────── */}
+            <div className="flex flex-1 overflow-hidden">
+              {/* Main Note Content */}
+              <ScrollArea className={cn(
+                'flex-1 transition-all duration-300',
+                activeTag ? 'md:basis-[60%]' : 'basis-full'
+              )}>
+                <div className="p-4 sm:p-8 max-w-[1000px] mx-auto space-y-8">
+                  {/* Meta Info */}
+                  <div className="grid grid-cols-2 gap-4 pb-8 border-b border-slate-100">
+                    <div className="space-y-1.5">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                         <UserIcon size={12} /> 작성자
+                        <UserIcon size={12} /> 작성자
                       </span>
                       <div className="flex items-center gap-2">
-                         <span className="font-bold text-slate-700">{note.author?.name}</span>
-                         <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{note.author?.position}</span>
+                        <span className="font-bold text-slate-700">{viewingNote.author?.name}</span>
+                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{viewingNote.author?.position}</span>
                       </div>
-                   </div>
-                   <div className="space-y-1.5">
+                    </div>
+                    <div className="space-y-1.5">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                         <CalendarIcon size={12} /> 작성일
+                        <CalendarIcon size={12} /> 작성일
                       </span>
                       <div className="font-medium text-slate-600">
-                         {note.created_at ? format(new Date(note.created_at as string), 'yyyy년 MM월 dd일 HH:mm') : '-'}
+                        {viewingNote.created_at ? format(new Date(viewingNote.created_at as string), 'yyyy년 MM월 dd일 HH:mm') : '-'}
                       </div>
-                   </div>
-                </div>
+                    </div>
+                  </div>
 
-                {/* Content Body */}
-                <div className="min-h-[500px]">
-                  <NotesEditor 
-                    content={note.content} 
-                    hosId={note.hos_id} 
-                    editable={false} 
+                  {/* Content Body */}
+                  <div className="min-h-[500px]">
+                    <NotesEditor 
+                      content={viewingNote.content} 
+                      hosId={viewingNote.hos_id} 
+                      editable={false} 
+                    />
+                  </div>
+                </div>
+              </ScrollArea>
+
+              {/* Related Notes Panel - 태블릿/PC에서만 표시 (md 이상) */}
+              {activeTag && (
+                <div className="hidden md:flex md:basis-[40%] max-w-[420px] shrink-0 overflow-hidden">
+                  <NotesRelatedPanel
+                    hosId={viewingNote.hos_id}
+                    tag={activeTag}
+                    currentNoteId={viewingNote.notes_id}
+                    onClose={() => setActiveTag(null)}
+                    onSelectNote={handleSelectNote}
                   />
                 </div>
-              </div>
-            </ScrollArea>
+              )}
+            </div>
           </div>
         )}
       </DialogContent>
