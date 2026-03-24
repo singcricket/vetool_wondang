@@ -1507,6 +1507,19 @@ export type Database = {
         }
         Returns: string
       }
+      search_notes_by_content: {
+        Args: { hos_id_input: string; search_term: string }
+        Returns: {
+          content: Json
+          created_at: string
+          hos_id: string
+          is_shared: boolean
+          notes_id: string
+          tags: string[]
+          title: string
+          user_tags: string[]
+        }[]
+      }
       search_patients: {
         Args: {
           hos_id_input: string

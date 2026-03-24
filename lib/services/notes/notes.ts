@@ -182,6 +182,41 @@ export const searchNotes = async (hosId: string, searchTerm: string, searchType:
     }
   }
 
+  // content 검색은 JSONB ::text 캐스팅이 필요하므로 RPC로 ID 목록만 가져온 후
+  // 별도 쿼리로 author 포함 full data 조회
+  if (searchType === 'content') {
+    let matchingIds: string[] | null = null
+
+    for (const term of finalTerms) {
+      const { data, error } = await (supabase as any).rpc('search_notes_by_content', {
+        hos_id_input: hosId,
+        search_term: term,
+      })
+
+      if (error) throw error
+
+      const ids = ((data ?? []) as any[]).map((n: any) => n.notes_id as string)
+
+      if (matchingIds === null) {
+        matchingIds = ids
+      } else {
+        // AND 로직: 교집합
+        matchingIds = matchingIds.filter((id) => ids.includes(id))
+      }
+    }
+
+    if (!matchingIds || matchingIds.length === 0) return []
+
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*, author:users(name, position)')
+      .in('notes_id', matchingIds)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as NoteWithAuthor[]
+  }
+
   // 5. Build and execute query with AND logic (chaining filters)
   let query = supabase
     .from('notes')
@@ -196,13 +231,11 @@ export const searchNotes = async (hosId: string, searchTerm: string, searchType:
 
     if (searchType === 'title') {
       query = query.ilike('title', `%${term}%`)
-    } else if (searchType === 'content') {
-      query = query.filter('content', 'ilike', `%${term}%`)
     } else if (searchType === 'tags') {
-      // 6. Case-insensitive overlap check on notes.tags
+      // Case-insensitive overlap check on notes.tags
       query = query.or(`tags.ov.${variations}`)
     } else {
-      // 7. All-around case-insensitive check
+      // all: title + tags
       query = query.or(`title.ilike.%${term}%,user_tags.ov.${variations},tags.ov.${variations}`)
     }
   })

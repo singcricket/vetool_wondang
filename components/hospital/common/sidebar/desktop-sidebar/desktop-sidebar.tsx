@@ -1,4 +1,5 @@
 import CalculatorSheet from '@/components/hospital/calculator/calculator-sheet'
+import NotesSheet from '@/components/hospital/notes/notes-sheet'
 import Feedback from '@/components/hospital/feedback/feedback'
 import type { Plan } from '@/constants/company/plans'
 import { HOS_SIDEBAR_MENUS } from '@/constants/hospital/hos-sidebar-menus'
@@ -34,6 +35,8 @@ export default async function DesktopSidebar({
       </ul>
 
       <div className="flex flex-col items-center justify-end gap-2">
+        <NotesSheet />
+
         <CalculatorSheet />
 
         <Feedback />

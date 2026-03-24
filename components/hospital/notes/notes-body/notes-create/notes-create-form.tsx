@@ -148,7 +148,7 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
           tags: [], 
           user_tags: finalUserTags,
           content: content,
-          is_shared: true
+          is_shared: false
         })
         toast.success('지식 문서가 발행되었습니다')
       }
