@@ -122,7 +122,14 @@ export function MonitoringNotificationProvider({
             const message = `[${session.session_title || '모니터링'}] 예정된 처치 시간입니다: ${memo.memo.slice(0, 20)}...`
             
             // 1) 토스트
-            toast.info('처치 예정 시간 도달', { description: message, duration: 8000 })
+            toast.info('처치 예정 시간 도달', { 
+              description: message, 
+              duration: Number.POSITIVE_INFINITY, // 수동으로 끌 때까지 무한 유지
+              action: {
+                label: '확인',
+                onClick: () => console.log('알림 확인됨')
+              }
+            })
             
             // 2) 네이티브 푸시 알림
             sendNotification('처치 알림', { body: message })
@@ -132,18 +139,27 @@ export function MonitoringNotificationProvider({
               // 임시 비프음 (Oscillator)
               const audioCtx = window.AudioContext ? new window.AudioContext() : null
               if (audioCtx && audioCtx.state !== 'suspended') {
-                const oscillator = audioCtx.createOscillator()
-                const gainNode = audioCtx.createGain()
-                
-                oscillator.type = 'sine'
-                oscillator.frequency.value = 880 // A5 소리
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime) // 소리 크기 조절
-                
-                oscillator.connect(gainNode)
-                gainNode.connect(audioCtx.destination)
-                
-                oscillator.start()
-                oscillator.stop(audioCtx.currentTime + 0.3) // 0.3초간 재생
+                // 3번 울리는 삐-삐-삐 알림 패턴 (더 크고 뚜렷하게)
+                for (let i = 0; i < 3; i++) {
+                  const oscillator = audioCtx.createOscillator()
+                  const gainNode = audioCtx.createGain()
+                  
+                  oscillator.type = 'sine'
+                  oscillator.frequency.value = 880 // A5 소리
+                  
+                  // 기존 볼륨 0.1 -> 0.5로 상향
+                  const startTime = audioCtx.currentTime + i * 0.4
+                  const stopTime = startTime + 0.2 // 0.2초 재생 후 0.2초 간격
+                  
+                  gainNode.gain.setValueAtTime(0.8, startTime)
+                  gainNode.gain.setValueAtTime(0, stopTime)
+                  
+                  oscillator.connect(gainNode)
+                  gainNode.connect(audioCtx.destination)
+                  
+                  oscillator.start(startTime)
+                  oscillator.stop(stopTime)
+                }
               }
             } catch (e) {
               // ignore
