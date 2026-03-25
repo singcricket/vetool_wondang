@@ -41,18 +41,13 @@ export default function MsClMinTimeInput({
       onChange(finalValue)
     }
 
-    // 초기 계산 또는 외부에서 값을 비웠을 때(추가 성공 시 등) 자동 재계산
+    // 마운트 시 또는 startTime 변경 시 즉시 계산
     if (value === '') {
-        calculateElapsed()
+      calculateElapsed()
     }
 
-    // 인터벌 설정 (분 단위 -> 밀리초)
-    // interval_setting이 null/0 이면 1분(60000ms), 1 이상이면 해당 분만큼
-    const intervalMs = (intervalSetting && intervalSetting >= 1) 
-      ? intervalSetting * 60000 
-      : 60000
-
-    const timer = setInterval(calculateElapsed, intervalMs)
+    // 1초마다 재계산하여 헤더 타이머와 동기화
+    const timer = setInterval(calculateElapsed, 1000)
 
     return () => clearInterval(timer)
   }, [startTime, intervalSetting, onChange, value === ''])

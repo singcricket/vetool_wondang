@@ -44,15 +44,19 @@ export default function MsMobileClTimeSelect({
         displayMinutes = Math.floor(actualDiffMinutes / intervalSetting) * intervalSetting
       }
       const finalValue = displayMinutes < 0 ? "0" : displayMinutes.toString()
-      if (newMinTime === '') setNewMinTime(finalValue)
+      
+      // 데스크탑과 동일하게 매초 업데이트 (값이 비어있을 때 초기화 포함)
+      setNewMinTime(finalValue)
     }
 
-    if (newMinTime === '') calculateElapsed()
+    if (newMinTime === '') {
+      calculateElapsed()
+    }
 
-    const intervalMs = intervalSetting && intervalSetting >= 1 ? intervalSetting * 60000 : 60000
-    const timer = setInterval(calculateElapsed, intervalMs)
+    // 1초마다 재계산하여 헤더 타이머와 동기화
+    const timer = setInterval(calculateElapsed, 1000)
     return () => clearInterval(timer)
-  }, [startTime, intervalSetting, newMinTime, setNewMinTime])
+  }, [startTime, intervalSetting, setNewMinTime])
 
   // 시간 표시 포맷: 시작 시간 + 분 -> HH:MM 형태
   const formatTime = (minTime: string) => {
