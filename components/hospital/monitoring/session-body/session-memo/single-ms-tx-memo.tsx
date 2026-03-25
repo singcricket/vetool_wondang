@@ -14,6 +14,8 @@ import MsMemoImageGallery from '@/components/hospital/monitoring/session-body/se
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 import { useMsMemoImageUpload } from '@/hooks/use-ms-memo-image-upload'
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
+import MsMemoSchedulePicker from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-schedule-picker'
+import { MsMemoSchedule } from '@/types/monitoring/monitoring-type'
 
 type Props = {
   memo: MsMemo
@@ -39,6 +41,9 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
     const [isGalleryOpen, setIsGalleryOpen] = useState(false)
     const [editedImgUrls, setEditedImgUrls] = useState<string[]>(memo.img_url || [])
     const [deletedImgUrls, setDeletedImgUrls] = useState<string[]>([])
+    const [editedSchedule, setEditedSchedule] = useState<MsMemoSchedule | undefined>(
+      memo.schedule,
+    )
 
     const { isUploading, cameraInputRef, galleryInputRef, handleFileUpload } =
       useMsMemoImageUpload({
@@ -64,6 +69,7 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
       setEditedCreateTimestamp(memo.create_timestamp)
       setEditedDoneTimestamp(memo.done_timestamp)
       setEditedImgUrls(memo.img_url || [])
+      setEditedSchedule(memo.schedule)
       setDeletedImgUrls([])
     }, [memo])
 
@@ -89,6 +95,7 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
           is_done: !!editedDoneTimestamp,
           img_url: editedImgUrls,
           has_imgs: editedImgUrls.length > 0,
+          schedule: editedSchedule,
         },
         memoIndex,
       )
@@ -119,6 +126,40 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
     }
 
     const isDone = !!editedDoneTimestamp
+
+    // 예약 시간 텍스트 포맷팅 헬퍼
+    const formatScheduleText = () => {
+      if (!memo.schedule) return null
+
+      if (memo.schedule.type === 'absolute') {
+        return `⏰ 예정: ${memo.schedule.value}`
+      }
+      if (memo.schedule.type === 'after_start') {
+        if (msData.start_time) {
+          const time = new Date(new Date(msData.start_time).getTime() + Number(memo.schedule.value) * 60000)
+          const timeStr = time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+          return `⏰ 예정: ${timeStr} (시작 후 ${memo.schedule.value}분)`
+        }
+        return `⏰ 시작 후 ${memo.schedule.value}분 뒤`
+      }
+      if (memo.schedule.type === 'after_prev') {
+        const allMemos = msData.memo_tx as any as MsMemo[] | null
+        const targetMemo = allMemos?.find((m) => m.id === memo.schedule?.target_memo_id)
+        const targetName = targetMemo 
+          ? (targetMemo.memo.length > 8 ? targetMemo.memo.slice(0, 8) + '...' : targetMemo.memo) 
+          : '이전 처치'
+        
+        if (targetMemo?.done_timestamp) {
+          const time = new Date(new Date(targetMemo.done_timestamp).getTime() + Number(memo.schedule.value) * 60000)
+          const timeStr = time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+          return `⏰ 예정: ${timeStr} (${targetName} 완료 후 ${memo.schedule.value}분)`
+        }
+        return `⏰ ${targetName} 완료 후 ${memo.schedule.value}분 뒤`
+      }
+      return null
+    }
+
+    const scheduleText = formatScheduleText()
 
     return (
       <li
@@ -229,6 +270,13 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
               )}
 
               <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                <MsMemoSchedulePicker
+                  schedule={editedSchedule}
+                  onScheduleChange={setEditedSchedule}
+                  memos={msData.memo_tx as any as MsMemo[]}
+                  currentMemoId={memo.id}
+                  msData={msData}
+                />
                 <MsMemoImageUploadButtons
                   isUploading={isUploading}
                   cameraInputRef={cameraInputRef}
@@ -249,16 +297,23 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {memo.memo && (
-                <p
-                  className={cn(
-                    'mr-2 whitespace-pre-wrap break-all text-sm',
-                    isDone && 'text-muted-foreground line-through decoration-muted-foreground/60',
-                  )}
-                >
-                  {memo.memo}
-                </p>
-              )}
+              <div className="flex flex-col gap-0.5">
+                {scheduleText && (
+                  <div className={cn("text-[11px] font-semibold", isDone ? "text-muted-foreground line-through opacity-60" : "text-blue-500")}>
+                    {scheduleText}
+                  </div>
+                )}
+                {memo.memo && (
+                  <p
+                    className={cn(
+                      'mr-2 whitespace-pre-wrap break-all text-sm',
+                      isDone && 'text-muted-foreground line-through decoration-muted-foreground/60',
+                    )}
+                  >
+                    {memo.memo}
+                  </p>
+                )}
+              </div>
 
               {/* 첨부된 이미지 썸네일 렌더링 */}
               {memo.has_imgs && memo.img_url && memo.img_url.length > 0 && (

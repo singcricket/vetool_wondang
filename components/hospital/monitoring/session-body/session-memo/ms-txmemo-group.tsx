@@ -21,6 +21,8 @@ import { ClipboardListIcon, PlusIcon, ChevronDownIcon, ChevronUpIcon } from 'luc
 import { useMsMemoImageUpload } from '@/hooks/use-ms-memo-image-upload'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
+import MsMemoSchedulePicker from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-schedule-picker'
+import { MsMemoSchedule } from '@/types/monitoring/monitoring-type'
 
 type Props = {
   memo: MsMemo[]
@@ -39,6 +41,7 @@ export default function MsTxMemoGroup({
   const [sortedMemos, setSortedMemos] = useState<MsMemo[]>(memo ?? [])
   const [memoInput, setMemoInput] = useState('')
   const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[0])
+  const [memoSchedule, setMemoSchedule] = useState<MsMemoSchedule | undefined>(undefined)
   const [isInputOpen, setIsInputOpen] = useState(false)
 
   const lastMemoRef = useRef<HTMLLIElement>(null)
@@ -92,11 +95,13 @@ export default function MsTxMemoGroup({
       chosen: false,
       has_imgs: imgUrls.length > 0,
       img_url: imgUrls,
+      schedule: memoSchedule,
     }
 
     const updatedMemos = [...sortedMemos, newMemo]
     setSortedMemos(updatedMemos)
     setMemoInput('')
+    setMemoSchedule(undefined)
     await handleUpdateDbMemo(updatedMemos)
     toast.success('처치 항목을 추가했습니다')
   }
@@ -207,9 +212,15 @@ export default function MsTxMemoGroup({
               handleAddMemo()
             }
           }}
-          className="w-full rounded-none border-0 bg-white pl-3 pr-24 text-sm placeholder:text-xs placeholder:text-blue-300 focus-visible:ring-blue-200 resize-none"
+          className="w-full rounded-none border-0 bg-white pl-3 pr-32 text-sm placeholder:text-xs placeholder:text-blue-300 focus-visible:ring-blue-200 resize-none"
         />
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+          <MsMemoSchedulePicker
+            schedule={memoSchedule}
+            onScheduleChange={setMemoSchedule}
+            memos={sortedMemos}
+            msData={msData}
+          />
           <MsMemoImageUploadButtons
             isUploading={isUploading}
             cameraInputRef={cameraInputRef}

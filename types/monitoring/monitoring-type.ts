@@ -17,19 +17,27 @@ export type MsPatient = Omit<
 }
 
 
-export type MsMemo = 
-    { 
-  id: string;             // 보통 id나 순번 (문자열인 경우)
-  memo: string;              // 메모 내용
-  check: string;             // 체크 여부나 관련 텍스트
-  create_timestamp: string;  // 생성 시간 (보통 밀리초 단위 숫자로 관리)
-  color: MemoColor;             // 메모 색상 (예: "#ffffff" 또는 "red")
-  is_done: boolean;          // 완료 여부 (true/false)
-  is_realtime_memo: boolean; // 실시간 메모 여부
-  done_timestamp: string | null; // 완료 시간 (완료 전엔 없을 수 있으므로 null 허용)
-  chosen: boolean;           // 선택 여부
-  has_imgs: boolean;         // 이미지 포함 여부
-  img_url: string[];         // 이미지 URL들의 배열 (문자열 배열)
+export type MemoScheduleType = 'absolute' | 'after_start' | 'after_prev'
+
+export type MsMemoSchedule = {
+  type: MemoScheduleType
+  value: string | number // '16:30', 30, 15
+  target_memo_id?: string
+}
+
+export type MsMemo = { 
+  id: string             // 보통 id나 순번 (문자열인 경우)
+  memo: string              // 메모 내용
+  check: string             // 체크 여부나 관련 텍스트
+  create_timestamp: string  // 생성 시간 (보통 밀리초 단위 숫자로 관리)
+  color: MemoColor             // 메모 색상 (예: "#ffffff" 또는 "red")
+  is_done: boolean          // 완료 여부 (true/false)
+  is_realtime_memo: boolean // 실시간 메모 여부
+  done_timestamp: string | null // 완료 시간 (완료 전엔 없을 수 있으므로 null 허용)
+  chosen: boolean           // 선택 여부
+  has_imgs: boolean         // 이미지 포함 여부
+  img_url: string[]         // 이미지 URL들의 배열 (문자열 배열)
+  schedule?: MsMemoSchedule // 예정 시간 기록용
 }
 export type MsMemoTx = MsMemo[] | []
 
