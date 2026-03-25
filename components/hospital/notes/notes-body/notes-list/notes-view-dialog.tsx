@@ -100,14 +100,22 @@ export default function NotesViewDialog({ note, children }: Props) {
         {children}
       </DialogTrigger>
       
-      <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden border-none shadow-2xl flex flex-col [&>button]:hidden">
+      <DialogContent 
+        className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden border-none shadow-2xl flex flex-col [&>button]:hidden"
+        onEscapeKeyDown={(e) => {
+          if (isEditing || isCopying) e.preventDefault()
+        }}
+        onInteractOutside={(e) => {
+          if (isEditing || isCopying) e.preventDefault()
+        }}
+      >
         {isEditing || isCopying ? (
           <NotesCreateForm 
             isDialog 
             onDone={handleDone} 
             onCancel={handleCancel}
-            editNoteId={isEditing ? note.notes_id : null} 
-            copyNoteId={isCopying ? note.notes_id : null}
+            editNoteId={isEditing ? viewingNote.notes_id : null} 
+            copyNoteId={isCopying ? viewingNote.notes_id : null}
           />
         ) : (
           <div className="flex flex-col h-full bg-white overflow-hidden">

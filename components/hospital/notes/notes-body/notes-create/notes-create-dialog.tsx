@@ -35,7 +35,11 @@ export default function NotesCreateDialog({ defaultCategory }: Props) {
           <span>새 노트 작성</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden border-none shadow-2xl [&>button]:hidden">
+      <DialogContent 
+        className="max-w-[95vw] w-[1400px] h-[90vh] p-0 overflow-hidden border-none shadow-2xl [&>button]:hidden"
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <VisuallyHidden>
           <DialogTitle>새 노트 작성</DialogTitle>
         </VisuallyHidden>
