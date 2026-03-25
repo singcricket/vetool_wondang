@@ -10,16 +10,21 @@ import MsMemoImageGallery from '@/components/hospital/monitoring/session-body/se
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 import { useMsMemoImageUpload } from '@/hooks/use-ms-memo-image-upload'
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
+import MsMemoSchedulePicker from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-schedule-picker'
+import { MsMemoSchedule } from '@/types/monitoring/monitoring-type'
+import { cn } from '@/lib/utils/utils'
 
 type Props = {
   memo: MsMemo
+  memos: MsMemo[] // added
   onDelete: (id: string) => void
-  onEdit: (id: string, newText: string, newImgUrls: string[]) => void
+  onEdit: (id: string, newText: string, newImgUrls: string[], newSchedule?: MsMemoSchedule) => void
   templateId: string
 }
 
 export default function MsTemplateMemoItem({
   memo,
+  memos,
   onDelete,
   onEdit,
   templateId,
@@ -28,6 +33,9 @@ export default function MsTemplateMemoItem({
   const [editText, setEditText] = useState(memo.memo)
   const [editedImgUrls, setEditedImgUrls] = useState<string[]>(memo.img_url || [])
   const [deletedImgUrls, setDeletedImgUrls] = useState<string[]>([])
+  const [editedSchedule, setEditedSchedule] = useState<MsMemoSchedule | undefined>(
+    memo.schedule,
+  )
 
   const [isGalleryOpen, setIsGalleryOpen] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -48,35 +56,34 @@ export default function MsTemplateMemoItem({
       setDeletedImgUrls([])
     }
 
-    onEdit(memo.id, editText.trim(), editedImgUrls)
+    onEdit(memo.id, editText.trim(), editedImgUrls, editedSchedule)
     setIsEditing(false)
   }
 
   const handleCancel = () => {
     setEditText(memo.memo)
     setEditedImgUrls(memo.img_url || [])
+    setEditedSchedule(memo.schedule)
     setDeletedImgUrls([])
     setIsEditing(false)
   }
 
   return (
     <div
-      className="group relative flex w-full items-start rounded-md px-2 py-1 transition-colors hover:bg-black/5"
-      style={{
-        backgroundColor: memo.color || '#F3F4F6',
-      }}
+      className="group relative mb-1.5 flex w-full items-start gap-2 rounded-md border border-blue-200 bg-blue-50/60 px-2 py-2 shadow-sm transition-all duration-200"
+      style={{ borderLeftColor: memo.color || '#F3F4F6', borderLeftWidth: '3px' }}
     >
       {!isEditing && (
         <Button
           variant="ghost"
           size="icon"
-          className="drag-handle z-20 h-8 w-6 shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
+          className="drag-handle z-20 mt-0.5 hidden h-6 w-6 shrink-0 cursor-grab text-blue-300 md:flex active:cursor-grabbing"
         >
           <GripVertical size={14} />
         </Button>
       )}
 
-      <div className="flex flex-1 flex-col gap-1 p-1">
+      <div className="flex w-full min-w-0 flex-col gap-1">
         {isEditing ? (
           <div className="relative flex flex-col gap-2">
             <Textarea
@@ -95,6 +102,13 @@ export default function MsTemplateMemoItem({
             />
             
             <div className="absolute right-1 top-1 flex items-center gap-1">
+              <MsMemoSchedulePicker
+                schedule={editedSchedule}
+                onScheduleChange={setEditedSchedule}
+                memos={memos}
+                currentMemoId={memo.id}
+                msData={undefined as any}
+              />
               <MsMemoImageUploadButtons
                 isUploading={isUploading}
                 cameraInputRef={cameraInputRef}
@@ -144,6 +158,13 @@ export default function MsTemplateMemoItem({
         ) : (
           <div className="flex items-start justify-between">
             <div className="flex flex-1 flex-col gap-1">
+              {memo.schedule && (
+                <div className="text-[11px] font-semibold text-blue-500">
+                  {memo.schedule.type === 'absolute' && `⏰ 예정: ${memo.schedule.value}`}
+                  {memo.schedule.type === 'after_start' && `⏰ 시작 후 ${memo.schedule.value}분 뒤`}
+                  {memo.schedule.type === 'after_prev' && `⏰ ${memos.find(m => m.id === memo.schedule?.target_memo_id)?.memo.slice(0, 8) || '이전 처치'}${memos.find(m => m.id === memo.schedule?.target_memo_id)?.memo.length! > 8 ? '...' : ''} 완료 후 ${memo.schedule.value}분 뒤`}
+                </div>
+              )}
               <span
                 className="cursor-pointer whitespace-pre-wrap break-words text-sm leading-snug"
                 onClick={() => setIsEditing(true)}
