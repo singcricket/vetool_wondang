@@ -11,14 +11,16 @@ export default async function SharedResourcePage(props: { params: Promise<{ shar
     const params = await props.params;
     const shareId = params.share_id;
 
-    // 1. Fetch share record and validate using the normal client (Enforces RLS for share_target_id)
-    const userSupabase = await createClient()
+    // 1. Fetch share record and validate using the ADMIN client (Bypasses RLS since this is a secret UUID based link)
+    const adminSupabase = createAdminClient()
     
-    const { data: share, error } = await (userSupabase as any)
+    const { data: shareData, error } = await adminSupabase
       .from('resource_shares')
       .select('*')
       .eq('id', shareId)
       .single()
+
+    const share = shareData as any
 
     if (error || !share) {
       console.error('Share fetch error:', error)
