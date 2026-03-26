@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import SharedNoteView from './_components/shared-note-view'
 import SharedMonitoringView from './_components/SharedMonitoringView'
+import SharedCollectionView from './_components/shared-collection-view'
 import { Suspense } from 'react'
 
 export default async function SharedResourcePage(props: { params: Promise<{ share_id: string }> }) {
@@ -28,13 +29,8 @@ export default async function SharedResourcePage(props: { params: Promise<{ shar
     }
 
     // 2. Validate expiration time
-    const now = new Date()
-    if (share.valid_until && new Date(share.valid_until) < now) {
-      return <InvalidShareView message="만료된 공유 링크입니다." />
-    }
-
-    if (share.valid_from && new Date(share.valid_from) > now) {
-      return <InvalidShareView message="아직 유효 시간이 도래하지 않은 링크입니다." />
+    if (share.expires_at && new Date(share.expires_at) < new Date()) {
+      return <InvalidShareView message="공유 기한이 만료된 링크입니다." />
     }
 
     // 3. Optional: Target validation for 'user' or 'hospital' targets could happen here if needed,
@@ -42,32 +38,34 @@ export default async function SharedResourcePage(props: { params: Promise<{ shar
     // Since this is server-side fetch without auth context yet, we skip manual target check 
     // unless we force login. For 'public', it's open. For user/hospital, we assume RLS checks this.
 
-    // 4. Render content based on resource_type
     return (
-      <main className="min-h-screen bg-slate-50 flex flex-col pt-8">
-        <div className="w-full max-w-5xl mx-auto px-4 lg:px-8 mb-4">
-          <header className="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-black tracking-tight text-slate-800">
-                Vetool 공유 문서
-              </h1>
-              <span className="bg-blue-100 text-blue-700 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">
-                {share.resource_type}
-              </span>
-            </div>
-            <Link href="/" className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
-              병원 홈으로 가기
-            </Link>
-          </header>
-
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center p-4 md:p-8">
+        <div className="w-full max-w-5xl">
+          {/* Main Resource Viewer */}
           <Suspense fallback={<div className="p-12 text-center text-slate-400">문서를 불러오는 중...</div>}>
-            {share.resource_type === 'note' && <SharedNoteView resourceId={share.resource_id} restrictedData={share.restricted_data} />}
-            {share.resource_type === 'monitoring' && <SharedMonitoringView resourceId={share.resource_id} restrictedData={share.restricted_data} />}
-            {share.resource_type === 'icu' && <div className="p-12 text-center text-slate-500 bg-white rounded-xl shadow-sm border">ICU 뷰어는 준비 중입니다.</div>}
+            {share.resource_type === 'note' && (
+              <SharedNoteView resourceId={share.resource_id} restrictedData={share.restricted_data} />
+            )}
+            {share.resource_type === 'monitoring' && (
+              <SharedMonitoringView resourceId={share.resource_id} restrictedData={share.restricted_data} />
+            )}
+            {share.resource_type === 'collection' && (
+              <SharedCollectionView resourceId={share.resource_id} restrictedData={share.restricted_data} />
+            )}
+            {share.resource_type === 'icu' && (
+              <div className="p-12 text-center text-slate-500 bg-white rounded-xl shadow-sm border">
+                ICU 뷰어는 준비 중입니다.
+              </div>
+            )}
           </Suspense>
+
+          <footer className="mt-12 text-center text-slate-400 text-sm pb-8">
+            <p>© {new Date().getFullYear()} Vetool - Veterinary Record Tool</p>
+          </footer>
         </div>
-      </main>
+      </div>
     )
+
   } catch (e: any) {
     console.error('Shared Page Render Error:', e)
     return (
