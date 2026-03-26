@@ -37,12 +37,6 @@ export const HOS_SIDEBAR_MENUS = [
     icon: <Activity />,
   },
   {
-    name: '진료노트',
-    path: 'notes',
-    isReady: true,
-    icon: <NotebookPen />,
-  },
-  {
     name: '심초차트',
     path: 'echocardio',
     isReady: false,
@@ -59,6 +53,12 @@ export const HOS_SIDEBAR_MENUS = [
     path: 'analytics',
     isReady: false,
     icon: <BarChart4Icon />,
+  },
+  {
+    name: '진료노트',
+    path: 'notes',
+    isReady: true,
+    icon: <NotebookPen />,
   },
   {
     name: '컬렉션',

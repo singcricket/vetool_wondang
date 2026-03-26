@@ -112,7 +112,7 @@ export default function SharedCollectionLayout({ collection, items, children }: 
                     "text-sm font-bold truncate",
                     isSelected ? "text-slate-900" : "text-slate-600 group-hover:text-slate-800"
                   )}>
-                    {item.resource_type === 'note' ? '진료 기록 열람' : '모니터링 기록 열람'}
+                    {item.displayTitle}
                   </span>
                 </div>
                 {isSelected && (

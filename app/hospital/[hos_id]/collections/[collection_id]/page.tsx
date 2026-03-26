@@ -41,6 +41,27 @@ export default async function CollectionDetailPage(props: { params: Promise<{ ho
     .eq('collection_id', collection_id)
     .order('order_index', { ascending: true })
 
+  // 3. Fetch item titles for better display
+  const noteIds = items?.filter((i: any) => i.resource_type === 'note').map((i: any) => i.resource_id) || []
+  const sessionIds = items?.filter((i: any) => i.resource_type === 'monitoring').map((i: any) => i.resource_id) || []
+
+  const [notesRes, sessionsRes] = await Promise.all([
+    noteIds.length > 0 
+      ? (supabase as any).from('notes').select('notes_id, title').in('notes_id', noteIds)
+      : Promise.resolve({ data: [] }),
+    sessionIds.length > 0
+      ? (supabase as any).from('monitoring_sessions').select('session_id, patient:patients(name)').in('session_id', sessionIds)
+      : Promise.resolve({ data: [] })
+  ])
+
+  const notesData = notesRes?.data || []
+  const sessionsData = sessionsRes?.data || []
+
+  const titlesMap: Record<string, string> = {
+    ...Object.fromEntries(notesData.map((n: any) => [n.notes_id, n.title])),
+    ...Object.fromEntries(sessionsData.map((s: any) => [s.session_id, `모니터링: ${s.patient?.name || '알 수 없음'}`]))
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6 max-w-5xl mx-auto w-full">
       <CollectionHeader collection={col} hosId={hos_id} />
@@ -78,7 +99,7 @@ export default async function CollectionDetailPage(props: { params: Promise<{ ho
                     <span className="text-[10px] font-mono text-slate-300">#{item.resource_id.slice(0, 8)}</span>
                   </div>
                   <span className="text-sm font-bold text-slate-700 truncate">
-                    {item.resource_type === 'note' ? '진료 기록 항목' : '모니터링 세션 항목'}
+                    {titlesMap[item.resource_id] || (item.resource_type === 'note' ? '제목 없는 진료 기록' : '제목 없는 모니터링 세션')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
