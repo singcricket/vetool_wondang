@@ -4,7 +4,7 @@ import { Collection, CollectionItem } from '@/types/collections/collection-type'
 export async function fetchCollections(hosId: string, userId: string) {
   const supabase = await createClient()
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('resource_collections')
     .select(`
       *,
@@ -21,7 +21,7 @@ export async function fetchCollections(hosId: string, userId: string) {
 export async function createCollection(payload: Partial<Collection>) {
   const supabase = await createClient()
   
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('resource_collections')
     .insert(payload)
     .select()
