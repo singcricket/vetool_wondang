@@ -29,6 +29,7 @@ import {
   XIcon,
   Trash2Icon,
   Share2Icon,
+  FolderPlus,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useParams } from 'next/navigation'

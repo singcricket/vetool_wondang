@@ -45,3 +45,24 @@ export async function updateCollectionItems(collectionId: string, items: Partial
 
   if (error) throw error
 }
+
+export async function updateCollection(collectionId: string, payload: Partial<Collection>) {
+  const supabase = await createClient()
+  const { error } = await (supabase as any)
+    .from('resource_collections')
+    .update(payload)
+    .eq('collection_id', collectionId)
+
+  if (error) throw error
+}
+
+export async function deleteCollection(collectionId: string) {
+  const supabase = await createClient()
+  const { error } = await (supabase as any)
+    .from('resource_collections')
+    .delete()
+    .eq('collection_id', collectionId)
+
+  if (error) throw error
+}
+
