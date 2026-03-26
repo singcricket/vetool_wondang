@@ -28,8 +28,10 @@ import {
   CopyIcon,
   XIcon,
   Trash2Icon,
+  Share2Icon,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { useParams } from 'next/navigation'
 import { deleteNote } from '@/lib/services/notes/notes'
 import { toast } from 'sonner'
 import NotesEditor from '../notes-create/notes-editor'
@@ -37,6 +39,7 @@ import NotesCreateForm from '../notes-create/notes-create-form'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import NotesRelatedPanel from '../../notes-search/notes-related-panel'
 import { cn } from '@/lib/utils/utils'
+import ShareResourceDialog from '@/components/hospital/share/share-resource-dialog'
 
 interface Props {
   note: NoteWithAuthor
@@ -44,7 +47,10 @@ interface Props {
 }
 
 export default function NotesViewDialog({ note, children }: Props) {
+  const params = useParams()
+  const hosId = params.hos_id as string
   const [isOpen, setIsOpen] = useState(false)
+  const [isShareOpen, setIsShareOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
   /** 메인 뷰에 현재 표시 중인 노트. 우측 패널에서 교체 가능 */
@@ -163,6 +169,15 @@ export default function NotesViewDialog({ note, children }: Props) {
                 <Button 
                   variant="outline" 
                   size="sm" 
+                  className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-2 sm:px-4 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                  onClick={() => setIsShareOpen(true)}
+                >
+                  <Share2Icon size={14} />
+                  <span className="hidden sm:inline">공유하기</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
                   className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-2 sm:px-4"
                   onClick={handleEdit}
                 >
@@ -275,6 +290,15 @@ export default function NotesViewDialog({ note, children }: Props) {
             </div>
           </div>
         )}
+        
+        <ShareResourceDialog
+          isOpen={isShareOpen}
+          onOpenChange={setIsShareOpen}
+          resourceType="note"
+          resourceId={viewingNote.notes_id}
+          title={viewingNote.title}
+          hosId={hosId}
+        />
       </DialogContent>
     </Dialog>
   )

@@ -18,7 +18,7 @@ export default function MsHeaderRightButtons({
   const { session_id, patient } = msData
 
   return (
-    <div className="2xl:absolute 2xl:right-2 2xl:top-1.5 flex">
+    <div className="2xl:absolute 2xl:right-2 2xl:top-1.5 flex items-center gap-1">
       <MsAddTemplateDialog 
       hosId={hosId}
       msData={msData} />

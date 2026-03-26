@@ -69,6 +69,7 @@ export default function MsTemplateEdit({ hosId, isEdit, mstemplate, onOpenChange
         await insertMsTemplateChart(hosId, payload)
       }
       toast.success(`템플릿이 ${isEdit ? '수정' : '저장'}되었습니다`)
+      onOpenChange(false)
     } catch {
       toast.error('저장에 실패하였습니다')
     }
