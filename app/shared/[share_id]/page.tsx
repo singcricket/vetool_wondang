@@ -14,7 +14,7 @@ export default async function SharedResourcePage(props: { params: Promise<{ shar
     // 1. Fetch share record and validate using the ADMIN client (Bypasses RLS since this is a secret UUID based link)
     const adminSupabase = createAdminClient()
     
-    const { data: shareData, error } = await adminSupabase
+    const { data: shareData, error } = await (adminSupabase as any)
       .from('resource_shares')
       .select('*')
       .eq('id', shareId)
