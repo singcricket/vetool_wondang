@@ -1,3 +1,5 @@
+'use server'
+
 import { createClient } from '@/lib/supabase/server'
 import { Collection, CollectionItem } from '@/types/collections/collection-type'
 
