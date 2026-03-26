@@ -40,6 +40,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import NotesRelatedPanel from '../../notes-search/notes-related-panel'
 import { cn } from '@/lib/utils/utils'
 import ShareResourceDialog from '@/components/hospital/share/share-resource-dialog'
+import AddToCollectionDialog from '@/components/hospital/collections/add-to-collection-dialog'
+import { createClient } from '@/lib/supabase/client'
+import { useEffect } from 'react'
 
 interface Props {
   note: NoteWithAuthor
@@ -51,12 +54,22 @@ export default function NotesViewDialog({ note, children }: Props) {
   const hosId = params.hos_id as string
   const [isOpen, setIsOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isCollectionOpen, setIsCollectionOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
   /** 메인 뷰에 현재 표시 중인 노트. 우측 패널에서 교체 가능 */
   const [viewingNote, setViewingNote] = useState<NoteWithAuthor>(note)
   /** 연관 노트 패널에서 검색 중인 태그. null이면 패널 닫힘 */
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id)
+    })
+  }, [])
 
   const handleEdit = () => setIsEditing(true)
   const handleCopy = () => setIsCopying(true)
@@ -174,6 +187,15 @@ export default function NotesViewDialog({ note, children }: Props) {
                 >
                   <Share2Icon size={14} />
                   <span className="hidden sm:inline">공유하기</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-2 sm:px-4 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                  onClick={() => setIsCollectionOpen(true)}
+                >
+                  <FolderPlus size={14} />
+                  <span className="hidden sm:inline">컬렉션</span>
                 </Button>
                 <Button 
                   variant="outline" 
@@ -298,8 +320,22 @@ export default function NotesViewDialog({ note, children }: Props) {
           resourceId={viewingNote.notes_id}
           title={viewingNote.title}
           hosId={hosId}
+          userId={userId || undefined}
         />
+
+        {userId && (
+          <AddToCollectionDialog
+            isOpen={isCollectionOpen}
+            onOpenChange={setIsCollectionOpen}
+            hosId={hosId}
+            userId={userId}
+            resourceType="note"
+            resourceId={viewingNote.notes_id}
+            resourceTitle={viewingNote.title}
+          />
+        )}
       </DialogContent>
+
     </Dialog>
   )
 }

@@ -7,8 +7,8 @@ import {
   ListChecksIcon,
   NotebookPen,
   PawPrintIcon,
-  SliceIcon,
   SyringeIcon,
+  Folder,
 } from 'lucide-react'
 
 export const HOS_SIDEBAR_MENUS = [
@@ -59,6 +59,12 @@ export const HOS_SIDEBAR_MENUS = [
     path: 'analytics',
     isReady: false,
     icon: <BarChart4Icon />,
+  },
+  {
+    name: '컬렉션',
+    path: 'collections',
+    isReady: true,
+    icon: <Folder />,
   },
   {
     name: '벳툴',
