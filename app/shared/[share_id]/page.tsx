@@ -3,64 +3,77 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import SharedNoteView from './_components/shared-note-view'
-import SharedMonitoringView from './_components/shared-monitoring-view'
+import SharedMonitoringView from './_components/SharedMonitoringView'
+import { Suspense } from 'react'
 
 export default async function SharedResourcePage(props: { params: Promise<{ share_id: string }> }) {
-  const params = await props.params;
-  const shareId = params.share_id;
+  try {
+    const params = await props.params;
+    const shareId = params.share_id;
 
-  // 1. Fetch share record and validate using the normal client (Enforces RLS for share_target_id)
-  const userSupabase = await createClient()
-  
-  const { data: share, error } = await userSupabase
-    .from('resource_shares')
-    .select('*')
-    .eq('id', shareId)
-    .single()
+    // 1. Fetch share record and validate using the normal client (Enforces RLS for share_target_id)
+    const userSupabase = await createClient()
+    
+    const { data: share, error } = await (userSupabase as any)
+      .from('resource_shares')
+      .select('*')
+      .eq('id', shareId)
+      .single()
 
-  if (error || !share) {
-    return <InvalidShareView message="해당 공유 링크를 찾을 수 없습니다." />
+    if (error || !share) {
+      console.error('Share fetch error:', error)
+      return <InvalidShareView message="해당 공유 링크를 찾을 수 없거나 접근 권한이 없습니다." />
+    }
+
+    // 2. Validate expiration time
+    const now = new Date()
+    if (share.valid_until && new Date(share.valid_until) < now) {
+      return <InvalidShareView message="만료된 공유 링크입니다." />
+    }
+
+    if (share.valid_from && new Date(share.valid_from) > now) {
+      return <InvalidShareView message="아직 유효 시간이 도래하지 않은 링크입니다." />
+    }
+
+    // 3. Optional: Target validation for 'user' or 'hospital' targets could happen here if needed,
+    // but RLS should technically handle it if we are using authenticated client.
+    // Since this is server-side fetch without auth context yet, we skip manual target check 
+    // unless we force login. For 'public', it's open. For user/hospital, we assume RLS checks this.
+
+    // 4. Render content based on resource_type
+    return (
+      <main className="min-h-screen bg-slate-50 flex flex-col pt-8">
+        <div className="w-full max-w-5xl mx-auto px-4 lg:px-8 mb-4">
+          <header className="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-black tracking-tight text-slate-800">
+                Vetool 공유 문서
+              </h1>
+              <span className="bg-blue-100 text-blue-700 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">
+                {share.resource_type}
+              </span>
+            </div>
+            <Link href="/" className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
+              병원 홈으로 가기
+            </Link>
+          </header>
+
+          <Suspense fallback={<div className="p-12 text-center text-slate-400">문서를 불러오는 중...</div>}>
+            {share.resource_type === 'note' && <SharedNoteView resourceId={share.resource_id} restrictedData={share.restricted_data} />}
+            {share.resource_type === 'monitoring' && <SharedMonitoringView resourceId={share.resource_id} restrictedData={share.restricted_data} />}
+            {share.resource_type === 'icu' && <div className="p-12 text-center text-slate-500 bg-white rounded-xl shadow-sm border">ICU 뷰어는 준비 중입니다.</div>}
+          </Suspense>
+        </div>
+      </main>
+    )
+  } catch (e: any) {
+    console.error('Shared Page Render Error:', e)
+    return (
+      <InvalidShareView 
+        message={`서버 오류가 발생했습니다. (매니저에게 문의주세요)\n에러 내용: ${e.message || '환경 변수(SERVICE_ROLE_KEY) 설정 확인이 필요할 수 있습니다.'}`} 
+      />
+    )
   }
-
-  // 2. Validate expiration time
-  const now = new Date()
-  if (share.valid_until && new Date(share.valid_until) < now) {
-    return <InvalidShareView message="만료된 공유 링크입니다." />
-  }
-
-  if (share.valid_from && new Date(share.valid_from) > now) {
-    return <InvalidShareView message="아직 유효 시간이 도래하지 않은 링크입니다." />
-  }
-
-  // 3. Optional: Target validation for 'user' or 'hospital' targets could happen here if needed,
-  // but RLS should technically handle it if we are using authenticated client.
-  // Since this is server-side fetch without auth context yet, we skip manual target check 
-  // unless we force login. For 'public', it's open. For user/hospital, we assume RLS checks this.
-
-  // 4. Render content based on resource_type
-  return (
-    <main className="min-h-screen bg-slate-50 flex flex-col pt-8">
-      <div className="w-full max-w-5xl mx-auto px-4 lg:px-8 mb-4">
-        <header className="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-black tracking-tight text-slate-800">
-              Vetool 공유 문서
-            </h1>
-            <span className="bg-blue-100 text-blue-700 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">
-              {share.resource_type}
-            </span>
-          </div>
-          <Link href="/" className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
-            병원 홈으로 가기
-          </Link>
-        </header>
-
-        {share.resource_type === 'note' && <SharedNoteView resourceId={share.resource_id} restrictedData={share.restricted_data} />}
-        {share.resource_type === 'monitoring' && <SharedMonitoringView resourceId={share.resource_id} restrictedData={share.restricted_data} />}
-        {share.resource_type === 'icu' && <div className="p-12 text-center text-slate-500 bg-white rounded-xl shadow-sm border">ICU 뷰어는 준비 중입니다.</div>}
-      </div>
-    </main>
-  )
 }
 
 function InvalidShareView({ message }: { message: string }) {
