@@ -7,14 +7,16 @@ import { Button } from '@/components/ui/button'
 import NotesViewDialog from '@/components/hospital/notes/notes-body/notes-list/notes-view-dialog'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import MsReportContent from '@/components/hospital/monitoring/session-header/ms-report/ms-report-content'
+import { MonitoringHosDataProvider } from '@/providers/monitoring-hos-data-context-provider'
 
 interface Props {
   item: any
   resourceData: any
   hosId: string
+  msContextData: any
 }
 
-export default function CollectionItemRow({ item, resourceData, hosId }: Props) {
+export default function CollectionItemRow({ item, resourceData, hosId, msContextData }: Props) {
   const [isReportOpen, setIsReportOpen] = useState(false)
 
   const isNote = item.resource_type === 'note'
@@ -89,11 +91,13 @@ export default function CollectionItemRow({ item, resourceData, hosId }: Props) 
           <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
             <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0 rounded-[40px]">
               <div className="p-6 h-full overflow-y-auto bg-white">
-                <MsReportContent 
-                  msData={resourceData} 
-                  isSharedView={false} 
-                  onClose={() => setIsReportOpen(false)}
-                />
+                <MonitoringHosDataProvider msContextData={msContextData}>
+                  <MsReportContent 
+                    msData={resourceData} 
+                    isSharedView={false} 
+                    onClose={() => setIsReportOpen(false)}
+                  />
+                </MonitoringHosDataProvider>
               </div>
             </DialogContent>
           </Dialog>

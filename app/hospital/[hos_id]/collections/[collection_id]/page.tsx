@@ -5,7 +5,9 @@ import CollectionHeader from './_components/collection-header'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { fetchMsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
+import { fetchMsLayoutData as fetchLayout } from '@/lib/services/monitoring/monitoring-layout'
 import CollectionItemRow from './_components/collection-item-row'
+import { format } from 'date-fns'
 
 export default async function CollectionDetailPage(props: { params: Promise<{ hos_id: string; collection_id: string }> }) {
   const params = await props.params;
@@ -47,17 +49,26 @@ export default async function CollectionDetailPage(props: { params: Promise<{ ho
   const noteIds = items?.filter((i: any) => i.resource_type === 'note').map((i: any) => i.resource_id) || []
   const sessionIds = items?.filter((i: any) => i.resource_type === 'monitoring').map((i: any) => i.resource_id) || []
 
-  // Fetch full details for each resource
-  const [notesRes, sessionsData] = await Promise.all([
+  // Fetch full details for each resource and layout data for monitoring report context
+  const [notesRes, sessionsData, layoutRes] = await Promise.all([
     noteIds.length > 0 
       ? (supabase as any).from('notes').select('*, author:users(name, position)').in('notes_id', noteIds)
       : Promise.resolve({ data: [] }),
     sessionIds.length > 0
       ? Promise.all(sessionIds.map((id: string) => fetchMsWithPatientWithWeight(id)))
-      : Promise.resolve([])
+      : Promise.resolve([]),
+    fetchLayout(hos_id, format(new Date(), 'yyyy-MM-dd'))
   ])
 
   const notesData = notesRes?.data || []
+
+  // Map layout data to context structure
+  const msContextData = {
+    vetsListData: layoutRes.vetList,
+    groupListData: layoutRes.basicHosSettings.group_list,
+    plan: layoutRes.basicHosSettings.plan,
+    vitalRefRange: layoutRes.basicHosSettings.vital_ref_range,
+  }
 
   const resourceMap: Record<string, any> = {
     ...Object.fromEntries(notesData.map((n: any) => [n.notes_id, n])),
@@ -87,6 +98,7 @@ export default async function CollectionDetailPage(props: { params: Promise<{ ho
                 item={item}
                 resourceData={resourceMap[item.resource_id]}
                 hosId={hos_id}
+                msContextData={msContextData}
               />
             ))
           )}
