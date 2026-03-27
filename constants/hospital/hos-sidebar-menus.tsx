@@ -39,21 +39,21 @@ export const HOS_SIDEBAR_MENUS = [
   {
     name: '심초차트',
     path: 'echocardio',
-    isReady: false,
+    isReady: true,
     icon: <HeartPulseIcon />,
   },
-  {
-    name: '건강검진차트',
-    path: 'checkup',
-    isReady: false,
-    icon: <ListChecksIcon />,
-  },
-  {
-    name: '데이터분석',
-    path: 'analytics',
-    isReady: false,
-    icon: <BarChart4Icon />,
-  },
+  // {
+  //   name: '건강검진차트',
+  //   path: 'checkup',
+  //   isReady: false,
+  //   icon: <ListChecksIcon />,
+  // },
+  // {
+  //   name: '데이터분석',
+  //   path: 'analytics',
+  //   isReady: false,
+  //   icon: <BarChart4Icon />,
+  // },
   {
     name: '진료노트',
     path: 'notes',

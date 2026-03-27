@@ -1,6 +1,8 @@
-import UpgragePlanPromptModal from '@/components/hospital/common/upgrade-plan-prompt-modal'
 import { hasPermissions } from '@/constants/company/plans'
 import { getPlan } from '@/lib/services/auth/plan'
+import UpgragePlanPromptModal from '@/components/hospital/common/upgrade-plan-prompt-modal'
+import { redirect } from 'next/navigation'
+import { format } from 'date-fns'
 
 export default async function EchocardioPage(props: {
   params: Promise<{ hos_id: string }>
@@ -14,5 +16,7 @@ export default async function EchocardioPage(props: {
     return <UpgragePlanPromptModal />
   }
 
-  return <div>심장초음파차트</div>
+  redirect(
+    `/hospital/${params.hos_id}/echocardio/${format(new Date(), 'yyyy-MM-dd')}`,
+  )
 }
