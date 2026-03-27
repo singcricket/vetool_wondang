@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import MsReportContent from '@/components/hospital/monitoring/session-header/ms-report/ms-report-content'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
+import { fetchMsLayoutDataAdmin } from '@/lib/services/monitoring/monitoring-layout'
+import { MonitoringHosDataProvider } from '@/providers/monitoring-hos-data-context-provider'
 
 interface Props {
   resourceId: string
@@ -32,10 +34,22 @@ export default async function SharedMonitoringView({ resourceId, restrictedData 
 
     const msData = sessionData as unknown as MsWithPatientWithWeight
 
+    // 2. Fetch layout data for context (using session's due_date)
+    const layoutRes = await fetchMsLayoutDataAdmin(msData.hos_id, msData.due_date)
+
+    const msContextData = {
+      vetsListData: layoutRes.vetList,
+      groupListData: layoutRes.basicHosSettings.group_list,
+      plan: layoutRes.basicHosSettings.plan,
+      vitalRefRange: layoutRes.basicHosSettings.vital_ref_range,
+    }
+
     return (
       <div className="flex flex-col gap-4">
         <div className="bg-white border rounded-xl shadow-sm min-h-[500px]">
-          <MsReportContent msData={msData} isSharedView={true} onClose={undefined} onExportText={undefined} />
+          <MonitoringHosDataProvider msContextData={msContextData}>
+            <MsReportContent msData={msData} isSharedView={true} onClose={undefined} onExportText={undefined} />
+          </MonitoringHosDataProvider>
         </div>
         
         <div className="text-center py-4 text-xs text-slate-400">

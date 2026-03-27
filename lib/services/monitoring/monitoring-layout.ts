@@ -3,6 +3,7 @@
 import type { OrderFontSize } from '@/components/hospital/admin/icu-settings/order-font-size/order-font-size-setting'
 import type { Plan } from '@/constants/company/plans'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Hospital, IcuChart, IcuIo, Patient, Vet } from '@/types'
 import type { IcuOrderColors, VitalRefRange } from '@/types/adimin'
 import { redirect } from 'next/navigation'
@@ -73,6 +74,21 @@ export const fetchMsLayoutData = async (hosId: string, targetDate: string) => {
   if (error) {
     console.error('error from icu layout', error.message)
     redirect(`/error?message=${error.message}`)
+  }
+
+  return data as MsLayoutData
+}
+export const fetchMsLayoutDataAdmin = async (hosId: string, targetDate: string) => {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase.rpc('get_icu_layout_data', {
+    hos_id_input: hosId,
+    target_date_input: targetDate,
+  })
+
+  if (error) {
+    console.error('error from icu layout', error.message)
+    throw new Error(error.message)
   }
 
   return data as MsLayoutData
