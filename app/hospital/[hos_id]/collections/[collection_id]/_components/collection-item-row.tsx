@@ -20,6 +20,35 @@ export default function CollectionItemRow({ item, resourceData, hosId }: Props) 
   const isNote = item.resource_type === 'note'
   const displayTitle = resourceData?.title || (isNote ? '제목 없는 진료 기록' : '제목 없는 모니터링 세션')
 
+  // Handle missing resource data (e.g. deleted note/session)
+  if (!resourceData) {
+    return (
+      <div className="flex items-center gap-4 p-0 px-8 opacity-50 border-b last:border-0 group select-none">
+        <GripVertical size={20} className="text-slate-200" />
+        <div className="flex flex-1 items-center gap-4 p-5 px-0 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center shrink-0">
+            {isNote ? <FileText size={20} /> : <Activity size={20} />}
+          </div>
+          <div className="flex flex-col flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                {isNote ? '진료 노트' : '모니터링'} (삭제됨)
+              </span>
+            </div>
+            <span className="text-sm font-bold text-slate-300 italic truncate">
+              데이터를 찾을 수 없습니다. (삭제되었을 수 있습니다)
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl">
+            <Trash2 size={18} />
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   // Common inner content for the row
   const rowContent = (
     <div className="flex flex-1 items-center gap-4 p-5 px-0 min-w-0 cursor-pointer">
