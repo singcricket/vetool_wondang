@@ -68,3 +68,15 @@ export async function deleteCollection(collectionId: string) {
   if (error) throw error
 }
 
+export async function removeCollectionItem(collectionId: string, resourceType: string, resourceId: string) {
+  const supabase = await createClient()
+  const { error } = await (supabase as any)
+    .from('resource_collection_items')
+    .delete()
+    .eq('collection_id', collectionId)
+    .eq('resource_type', resourceType)
+    .eq('resource_id', resourceId)
+
+  if (error) throw error
+}
+

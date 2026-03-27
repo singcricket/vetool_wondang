@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, Activity, GripVertical, Trash2 } from 'lucide-react'
+import { FileText, Activity, GripVertical, Trash2, MinusCircle } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { Button } from '@/components/ui/button'
 import NotesViewDialog from '@/components/hospital/notes/notes-body/notes-list/notes-view-dialog'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import MsReportContent from '@/components/hospital/monitoring/session-header/ms-report/ms-report-content'
 import { MonitoringHosDataProvider } from '@/providers/monitoring-hos-data-context-provider'
+import { removeCollectionItem } from '@/lib/services/collections/collections'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 interface Props {
   item: any
@@ -17,10 +20,28 @@ interface Props {
 }
 
 export default function CollectionItemRow({ item, resourceData, hosId, msContextData }: Props) {
+  const router = useRouter()
   const [isReportOpen, setIsReportOpen] = useState(false)
+  const [isRemoving, setIsRemoving] = useState(false)
 
   const isNote = item.resource_type === 'note'
   const displayTitle = resourceData?.title || (isNote ? '제목 없는 진료 기록' : '제목 없는 모니터링 세션')
+
+  const handleRemove = async () => {
+    if (isRemoving) return
+    
+    setIsRemoving(true)
+    try {
+      await removeCollectionItem(item.collection_id, item.resource_type, item.resource_id)
+      toast.success('항목이 컬렉션에서 제외되었습니다.')
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      toast.error('제외 처리 중 오류가 발생했습니다.')
+    } finally {
+      setIsRemoving(false)
+    }
+  }
 
   // Handle missing resource data (e.g. deleted note/session)
   if (!resourceData) {
@@ -43,8 +64,14 @@ export default function CollectionItemRow({ item, resourceData, hosId, msContext
           </div>
         </div>
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl">
-            <Trash2 size={18} />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl"
+            onClick={handleRemove}
+            disabled={isRemoving}
+          >
+            <MinusCircle size={18} />
           </Button>
         </div>
       </div>
@@ -105,8 +132,14 @@ export default function CollectionItemRow({ item, resourceData, hosId, msContext
       )}
 
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl">
-          <Trash2 size={18} />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl"
+          onClick={handleRemove}
+          disabled={isRemoving}
+        >
+          <MinusCircle size={18} />
         </Button>
       </div>
     </div>
