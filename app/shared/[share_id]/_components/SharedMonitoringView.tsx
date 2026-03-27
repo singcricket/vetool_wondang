@@ -35,13 +35,23 @@ export default async function SharedMonitoringView({ resourceId, restrictedData 
     const msData = sessionData as unknown as MsWithPatientWithWeight
 
     // 2. Fetch layout data for context (using session's due_date)
+    if (!msData.hos_id || !msData.due_date) {
+      console.error('Missing hos_id or due_date in sessionData', msData)
+      throw new Error('필요한 병원 정보가 누락되었습니다.')
+    }
+
     const layoutRes = await fetchMsLayoutDataAdmin(msData.hos_id, msData.due_date)
+    
+    if (!layoutRes || !layoutRes.basicHosSettings) {
+      console.error('Failed to fetch layout data for shared view', { hos_id: msData.hos_id, date: msData.due_date })
+      throw new Error('병원 설정을 불러오는 데 실패했습니다.')
+    }
 
     const msContextData = {
-      vetsListData: layoutRes.vetList,
-      groupListData: layoutRes.basicHosSettings.group_list,
+      vetsListData: layoutRes.vetList || [],
+      groupListData: layoutRes.basicHosSettings.group_list || [],
       plan: layoutRes.basicHosSettings.plan,
-      vitalRefRange: layoutRes.basicHosSettings.vital_ref_range,
+      vitalRefRange: layoutRes.basicHosSettings.vital_ref_range || [],
     }
 
     return (

@@ -81,15 +81,19 @@ export const fetchMsLayoutData = async (hosId: string, targetDate: string) => {
 export const fetchMsLayoutDataAdmin = async (hosId: string, targetDate: string) => {
   const supabase = createAdminClient()
 
+  console.log('fetchMsLayoutDataAdmin calling RPC', { hosId, targetDate })
+
   const { data, error } = await supabase.rpc('get_icu_layout_data', {
     hos_id_input: hosId,
     target_date_input: targetDate,
   })
 
   if (error) {
-    console.error('error from icu layout', error.message)
+    console.error('error from icu layout admin', error.message)
     throw new Error(error.message)
   }
+
+  console.log('fetchMsLayoutDataAdmin RPC success', data ? 'data found' : 'no data')
 
   return data as MsLayoutData
 }
