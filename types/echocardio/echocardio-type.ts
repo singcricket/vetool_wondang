@@ -175,6 +175,10 @@ export type EchoChartWithPatient = EchoChart & {
     hos_patient_id: string
     birth: string
     gender: string
+    owner_name: string | null
+    hos_owner_id: string | null
+    microchip_no: string | null
+    memo: string | null
   }
   vet: { name: string; user_id: string } | null
   examiner: { name: string; user_id: string } | null

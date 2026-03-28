@@ -25,13 +25,16 @@ const getAutomaticTags = async (userTags: string[] | null, title?: string) => {
 
   if (!userTags || userTags.length === 0) return Array.from(resultSet)
 
-  // 2. "(" 앞글자만 추출하여 접두사 배열 생성
+  // 2. 유저가 선택한 태그들을 결과 셋에 추가
+  userTags.forEach(tag => resultSet.add(tag.trim()))
+
+  // 3. "(" 앞글자만 추출하여 접두사 배열 생성
   const prefixes = userTags.map(tag => {
     const bracketIndex = tag.indexOf('(')
     return bracketIndex > -1 ? tag.substring(0, bracketIndex).trim() : tag.trim()
   })
 
-  // 3. keywords 테이블에서 매칭되는 데이터 조회
+  // 4. keywords 테이블에서 매칭되는 데이터 조회
   const { data: keywordRows, error: keywordError } = await supabase
     .from('keywords')
     .select('tags')
@@ -42,7 +45,7 @@ const getAutomaticTags = async (userTags: string[] | null, title?: string) => {
     return Array.from(resultSet)
   }
 
-  // 4. # 구분자 분해 및 중복 제거
+  // 5. # 구분자 분해 및 중복 제거
   keywordRows?.forEach(row => {
     if (row.tags) {
       row.tags
@@ -140,7 +143,7 @@ export const getNotesByTag = async (hosId: string, tag: string) => {
     .from('notes')
     .select('*, author:users(name, position)')
     .eq('hos_id', hosId)
-    .contains('user_tags', [tag])
+    .contains('tags', [tag])
     .order('created_at', { ascending: false })
 
   if (error) throw error

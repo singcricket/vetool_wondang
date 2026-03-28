@@ -72,6 +72,11 @@ export default function NotesViewDialog({ note, children }: Props) {
     })
   }, [])
 
+  // 부모로부터 전달된 note 프로퍼티가 변경되면(예: 수정 후 리스트 갱신) 현재 표시 중인 노트 상태도 동기화
+  useEffect(() => {
+    setViewingNote(note)
+  }, [note])
+
   const handleEdit = () => setIsEditing(true)
   const handleCopy = () => setIsCopying(true)
   const handleCancel = () => {

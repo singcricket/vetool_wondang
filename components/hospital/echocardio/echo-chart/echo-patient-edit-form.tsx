@@ -39,63 +39,52 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils/utils'
 import { registerPatientFormSchema } from '@/lib/schemas/patient/patient-schema'
 import { CANINE_BREEDS, FELINE_BREEDS, SEX } from '@/constants/hospital/register/signalments'
-import { insertPatient, isHosPatientIdDuplicated } from '@/lib/services/patient/patient'
-import { registerEchoChart } from '@/lib/services/echocardio/register-echo'
+import { updatePatientFromPatientRoute } from '@/lib/services/patient/patient'
+import { upsertEchoResult } from '@/lib/services/echocardio/update-echo'
 import BirthDatePicker from '@/components/common/patients/form/birth-date-picker'
 import HelperTooltip from '@/components/common/helper-tooltip'
 import InputSuffix from '@/components/common/input-suffix'
 import RequiredFieldDot from '@/components/common/requied-field-dot'
 import SubmitButton from '@/components/common/submit-button'
+import { toast } from 'sonner'
+import type { EchoChartWithPatient } from '@/types/echocardio/echocardio-type'
 
 interface Props {
-  hosId: string
-  targetDate: string
-  setOpen: Dispatch<SetStateAction<boolean>>
-  onRegistered: () => void
+  patient: EchoChartWithPatient['patient']
+  patientId: string
+  echoId: string
+  patientWeight: string
+  setIsDialogOpen: Dispatch<SetStateAction<boolean>>
 }
 
-export default function EchoNewPatientTab({
-  hosId,
-  targetDate,
-  setOpen,
-  onRegistered,
+export default function EchoPatientEditForm({
+  patient,
+  patientId,
+  echoId,
+  patientWeight,
+  setIsDialogOpen,
 }: Props) {
-  const { push } = useRouter()
+  const { refresh } = useRouter()
   const [breedOpen, setBreedOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof registerPatientFormSchema>>({
-    resolver: zodResolver(
-      registerPatientFormSchema.refine(
-        async (data) => {
-          const isDuplicate = await isHosPatientIdDuplicated(
-            data.hos_patient_id,
-            hosId,
-          )
-          return !isDuplicate
-        },
-        {
-          message: '이 환자 번호는 이미 존재합니다',
-          path: ['hos_patient_id'],
-        },
-      ),
-    ),
+    resolver: zodResolver(registerPatientFormSchema),
     defaultValues: {
-      name: '',
-      hos_patient_id: '',
-      species: undefined,
-      breed: undefined,
-      gender: undefined,
-      birth: undefined,
-      microchip_no: '',
-      memo: '',
-      weight: '',
-      owner_name: '',
-      hos_owner_id: '',
+      name: patient.name,
+      hos_patient_id: patient.hos_patient_id,
+      species: patient.species as any,
+      breed: patient.breed ?? '',
+      gender: patient.gender,
+      birth: new Date(patient.birth),
+      microchip_no: patient.microchip_no ?? '',
+      memo: patient.memo ?? '',
+      weight: patientWeight ?? '',
+      owner_name: patient.owner_name ?? '',
+      hos_owner_id: patient.hos_owner_id ?? '',
     },
   })
 
@@ -107,61 +96,47 @@ export default function EchoNewPatientTab({
     if (watchBreed) setBreedOpen(false)
   }, [watchBreed])
 
-  const handleRegister = async (
-    values: z.infer<typeof registerPatientFormSchema>,
-  ) => {
+  const handleUpdate = async (values: z.infer<typeof registerPatientFormSchema>) => {
     setIsSubmitting(true)
 
-    const {
-      birth, breed, gender, hos_owner_id, hos_patient_id,
-      memo, microchip_no, name, species, owner_name, weight,
-    } = values
-
-    const formattedBirth = format(birth, 'yyyy-MM-dd')
-    const cleanBreed = breed.split('#')[0]
-
-    const patientId = await insertPatient(
+    await updatePatientFromPatientRoute(
       {
-        birth: formattedBirth,
-        breed: cleanBreed,
-        gender,
-        hos_patient_id,
-        memo,
-        microchip_no,
-        name,
-        species,
-        owner_name,
-        hos_owner_id,
-        weight,
+        birth: format(values.birth, 'yyyy-MM-dd'),
+        breed: values.breed.split('#')[0],
+        gender: values.gender,
+        hos_patient_id: values.hos_patient_id,
+        memo: values.memo,
+        microchip_no: values.microchip_no,
+        name: values.name,
+        species: values.species,
+        owner_name: values.owner_name,
+        hos_owner_id: values.hos_owner_id,
+        weight: values.weight,
       },
-      hosId,
+      patientId,
+      false,
     )
 
-    const echoId = await registerEchoChart({
-      hosId,
-      patientId,
-      examDate: targetDate,
-      patient: {
-        hos_patient_id,
-        hos_owner_id: hos_owner_id || null,
-        name,
-        species,
-        breed: cleanBreed,
-        gender,
-        birth: formattedBirth,
-      },
-    })
+    // 몸무게를 echo_results에도 BW_kg으로 저장
+    if (values.weight) {
+      await upsertEchoResult({
+        echoChartId: echoId,
+        keywordId: 'BW_kg',
+        value: values.weight,
+        allValues: { BW_kg: values.weight },
+      })
+    }
 
-    onRegistered()
-    setOpen(false)
-    push(`/hospital/${hosId}/echocardio/${targetDate}/${echoId}`)
+    toast.success('환자 정보를 수정하였습니다')
     setIsSubmitting(false)
+    setIsDialogOpen(false)
+    refresh()
   }
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(handleRegister)}
+        onSubmit={form.handleSubmit(handleUpdate)}
         className="grid grid-cols-2 gap-4"
       >
         {/* 환자 이름 */}
@@ -170,9 +145,7 @@ export default function EchoNewPatientTab({
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                환자 이름 <RequiredFieldDot />
-              </FormLabel>
+              <FormLabel>환자 이름 <RequiredFieldDot /></FormLabel>
               <FormControl>
                 <Input {...field} className="h-8" autoComplete="off" />
               </FormControl>
@@ -188,15 +161,11 @@ export default function EchoNewPatientTab({
           render={({ field }) => (
             <FormItem className="flex flex-col justify-end">
               <div className="flex items-center gap-2">
-                <FormLabel>
-                  환자 번호 <RequiredFieldDot />
-                </FormLabel>
-                <HelperTooltip side="right">
-                  메인차트에 등록되어있는 환자번호
-                </HelperTooltip>
+                <FormLabel>환자 번호 <RequiredFieldDot /></FormLabel>
+                <HelperTooltip side="right">메인차트에 등록되어있는 환자번호</HelperTooltip>
               </div>
               <FormControl>
-                <Input {...field} value={field.value || ''} className="h-8" />
+                <Input {...field} className="h-8" />
               </FormControl>
               <FormMessage className="text-xs" />
             </FormItem>
@@ -209,20 +178,13 @@ export default function EchoNewPatientTab({
           name="species"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                종 <RequiredFieldDot />
-              </FormLabel>
+              <FormLabel>종 <RequiredFieldDot /></FormLabel>
               <Select
-                onValueChange={(value) => {
-                  field.onChange(value)
-                  form.setValue('breed', '')
-                }}
+                onValueChange={(v) => { field.onChange(v); form.setValue('breed', '') }}
                 defaultValue={field.value}
               >
                 <FormControl>
-                  <SelectTrigger
-                    className={cn('h-8', !field.value && 'text-muted-foreground')}
-                  >
+                  <SelectTrigger className={cn('h-8', !field.value && 'text-muted-foreground')}>
                     <SelectValue placeholder="종을 선택해주세요" />
                   </SelectTrigger>
                 </FormControl>
@@ -243,9 +205,7 @@ export default function EchoNewPatientTab({
           render={({ field }) => (
             <FormItem className="flex flex-col justify-end">
               <div className="flex items-center gap-2">
-                <FormLabel>
-                  품종 <RequiredFieldDot />
-                </FormLabel>
+                <FormLabel>품종 <RequiredFieldDot /></FormLabel>
                 <HelperTooltip side="right">
                   <div className="flex items-center">
                     품종이 없을 경우 &apos;기타종&apos;으로 등록 후 피드백
@@ -265,28 +225,18 @@ export default function EchoNewPatientTab({
                         !field.value && 'text-muted-foreground',
                       )}
                     >
-                      {field.value
-                        ? field.value.split('#')[0]
-                        : watchSpecies
-                          ? '품종 선택'
-                          : '종 선택'}
+                      {field.value ? field.value.split('#')[0] : watchSpecies ? '품종 선택' : '종 선택'}
                       <CaretSortIcon className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent
-                  className="w-[var(--radix-popover-trigger-width)] p-0"
-                  align="start"
-                  side="bottom"
-                >
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start" side="bottom">
                   <Command>
                     <CommandInput placeholder="품종 검색" className="h-8 text-xs" />
                     <CommandList>
                       <ScrollArea className="h-64">
                         <CommandEmpty>
-                          <p className="py-4 text-center text-xs text-muted-foreground">
-                            품종 검색 결과 없음
-                          </p>
+                          <p className="py-4 text-center text-xs text-muted-foreground">품종 검색 결과 없음</p>
                         </CommandEmpty>
                         <CommandGroup>
                           {BREEDS.map((breed) => (
@@ -316,22 +266,16 @@ export default function EchoNewPatientTab({
           name="gender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                성별 <RequiredFieldDot />
-              </FormLabel>
+              <FormLabel>성별 <RequiredFieldDot /></FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger
-                    className={cn('h-8', !field.value && 'text-muted-foreground')}
-                  >
+                  <SelectTrigger className={cn('h-8', !field.value && 'text-muted-foreground')}>
                     <SelectValue placeholder="성별 선택" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {SEX.map((sex) => (
-                    <SelectItem key={sex.value} value={sex.value} className="text-xs">
-                      {sex.label}
-                    </SelectItem>
+                  {SEX.map((s) => (
+                    <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -341,7 +285,7 @@ export default function EchoNewPatientTab({
         />
 
         {/* 생년월일 */}
-        <BirthDatePicker form={form} birth={new Date()} />
+        <BirthDatePicker form={form} birth={new Date(patient.birth)} />
 
         {/* 마이크로칩 */}
         <FormField
@@ -350,9 +294,7 @@ export default function EchoNewPatientTab({
           render={({ field }) => (
             <FormItem>
               <FormLabel>마이크로칩 번호</FormLabel>
-              <FormControl>
-                <Input {...field} className="h-8" />
-              </FormControl>
+              <FormControl><Input {...field} className="h-8" /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -366,9 +308,7 @@ export default function EchoNewPatientTab({
             <FormItem>
               <FormLabel>몸무게</FormLabel>
               <div className="relative">
-                <FormControl>
-                  <Input {...field} className="h-8" />
-                </FormControl>
+                <FormControl><Input {...field} className="h-8" /></FormControl>
                 <InputSuffix text="kg" />
               </div>
               <FormMessage />
@@ -383,9 +323,7 @@ export default function EchoNewPatientTab({
           render={({ field }) => (
             <FormItem>
               <FormLabel>보호자 이름</FormLabel>
-              <FormControl>
-                <Input {...field} className="h-8" />
-              </FormControl>
+              <FormControl><Input {...field} className="h-8" /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -398,30 +336,11 @@ export default function EchoNewPatientTab({
           render={({ field }) => (
             <FormItem>
               <FormLabel>보호자 번호</FormLabel>
-              <FormControl>
-                <Input {...field} className="h-8" />
-              </FormControl>
+              <FormControl><Input {...field} className="h-8" /></FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
-        {/* 메모 */}
-        <div className="col-span-2">
-          <FormField
-            control={form.control}
-            name="memo"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>메모</FormLabel>
-                <FormControl>
-                  <Textarea className="resize-none" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
 
         {/* 버튼 */}
         <div className="col-span-2 flex items-center justify-end gap-2">
@@ -430,11 +349,11 @@ export default function EchoNewPatientTab({
             variant="outline"
             size="sm"
             disabled={isSubmitting}
-            onClick={() => setOpen(false)}
+            onClick={() => setIsDialogOpen(false)}
           >
             닫기
           </Button>
-          <SubmitButton buttonText="등록" isPending={isSubmitting} />
+          <SubmitButton buttonText="수정" isPending={isSubmitting} />
         </div>
       </form>
     </Form>

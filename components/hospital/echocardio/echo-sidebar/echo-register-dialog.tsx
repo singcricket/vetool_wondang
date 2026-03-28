@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils/utils'
 import { PlusIcon } from 'lucide-react'
 import EchoSearchPatientTab from './echo-search-patient-tab'
 import EchoNewPatientTab from './echo-new-patient-tab'
@@ -36,14 +37,14 @@ export default function EchoRegisterDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="w-full pr-4 text-sm">
+        <Button size="sm" className="shrink-0 pr-4 text-sm">
           <PlusIcon />
           심초차트 등록
         </Button>
       </DialogTrigger>
 
       <DialogContent
-        className="flex flex-col sm:max-w-[760px]"
+        className={cn('flex flex-col sm:max-w-[1200px]')}
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogTitle>심초차트 등록</DialogTitle>

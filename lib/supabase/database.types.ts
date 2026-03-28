@@ -102,6 +102,191 @@ export type Database = {
           },
         ]
       }
+      echo_charts: {
+        Row: {
+          created_at: string
+          exam_date: string
+          examiner_id: string | null
+          hos_id: string
+          id: string
+          memo: string | null
+          patient_id: string
+          tags: string | null
+          updated_at: string
+          user_tags: string | null
+          vet_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          exam_date: string
+          examiner_id?: string | null
+          hos_id: string
+          id?: string
+          memo?: string | null
+          patient_id: string
+          tags?: string | null
+          updated_at?: string
+          user_tags?: string | null
+          vet_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          exam_date?: string
+          examiner_id?: string | null
+          hos_id?: string
+          id?: string
+          memo?: string | null
+          patient_id?: string
+          tags?: string | null
+          updated_at?: string
+          user_tags?: string | null
+          vet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "echo_charts_examiner_id_fkey"
+            columns: ["examiner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "echo_charts_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "echo_charts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+          {
+            foreignKeyName: "echo_charts_vet_id_fkey"
+            columns: ["vet_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      echo_guide_images: {
+        Row: {
+          created_at: string
+          display_order: number
+          hos_id: string
+          id: string
+          image_url: string
+          mapped_keywords: Json
+          view_name: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          hos_id: string
+          id?: string
+          image_url: string
+          mapped_keywords?: Json
+          view_name: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          hos_id?: string
+          id?: string
+          image_url?: string
+          mapped_keywords?: Json
+          view_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "echo_guide_images_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
+      echo_results: {
+        Row: {
+          comment: string | null
+          created_at: string
+          echo_chart_id: string
+          id: string
+          keyword_id: string
+          result: string | null
+          value: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          echo_chart_id: string
+          id?: string
+          keyword_id: string
+          result?: string | null
+          value?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          echo_chart_id?: string
+          id?: string
+          keyword_id?: string
+          result?: string | null
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "echo_results_echo_chart_id_fkey"
+            columns: ["echo_chart_id"]
+            isOneToOne: false
+            referencedRelation: "echo_charts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      echo_settings: {
+        Row: {
+          active_items: Json
+          created_at: string
+          hos_id: string
+          id: string
+          item_order: Json
+          section_order: Json
+          updated_at: string
+        }
+        Insert: {
+          active_items?: Json
+          created_at?: string
+          hos_id: string
+          id?: string
+          item_order?: Json
+          section_order?: Json
+          updated_at?: string
+        }
+        Update: {
+          active_items?: Json
+          created_at?: string
+          hos_id?: string
+          id?: string
+          item_order?: Json
+          section_order?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "echo_settings_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: true
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
       hos_drugs: {
         Row: {
           caution: string
@@ -1050,6 +1235,143 @@ export type Database = {
           raw_drug_tags?: string | null
         }
         Relationships: []
+      }
+      resource_collection_items: {
+        Row: {
+          added_at: string | null
+          collection_id: string
+          order_index: number
+          resource_id: string
+          resource_title: string | null
+          resource_type: string
+        }
+        Insert: {
+          added_at?: string | null
+          collection_id: string
+          order_index?: number
+          resource_id: string
+          resource_title?: string | null
+          resource_type: string
+        }
+        Update: {
+          added_at?: string | null
+          collection_id?: string
+          order_index?: number
+          resource_id?: string
+          resource_title?: string | null
+          resource_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "resource_collections"
+            referencedColumns: ["collection_id"]
+          },
+        ]
+      }
+      resource_collections: {
+        Row: {
+          collection_id: string
+          created_at: string | null
+          description: string | null
+          hos_id: string
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          collection_id?: string
+          created_at?: string | null
+          description?: string | null
+          hos_id: string
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string | null
+          description?: string | null
+          hos_id?: string
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_collections_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "resource_collections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      resource_shares: {
+        Row: {
+          created_at: string | null
+          id: string
+          owner_hos_id: string
+          owner_user_id: string | null
+          permission_level: string | null
+          resource_id: string
+          resource_type: string
+          restricted_data: Json | null
+          share_target_type: string
+          target_id: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          owner_hos_id?: string
+          owner_user_id?: string | null
+          permission_level?: string | null
+          resource_id: string
+          resource_type: string
+          restricted_data?: Json | null
+          share_target_type: string
+          target_id?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          owner_hos_id?: string
+          owner_user_id?: string | null
+          permission_level?: string | null
+          resource_id?: string
+          resource_type?: string
+          restricted_data?: Json | null
+          share_target_type?: string
+          target_id?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_shares_owner_hos_id_fkey"
+            columns: ["owner_hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "resource_shares_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       todos: {
         Row: {

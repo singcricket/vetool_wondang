@@ -1,7 +1,12 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import SpeciesToIcon from '@/components/common/species-to-icon'
+import { Button } from '@/components/ui/button'
+import type { Species } from '@/constants/hospital/register/signalments'
+import { cn, convertPascalCased } from '@/lib/utils/utils'
 import type { EchoSidebarItem } from '@/types/echocardio/echocardio-type'
+import { StethoscopeIcon, UserIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface EchoPatientButtonProps {
   item: EchoSidebarItem
@@ -16,44 +21,51 @@ export default function EchoPatientButton({
   targetDate,
   isActive,
 }: EchoPatientButtonProps) {
-  const router = useRouter()
+  const { push } = useRouter()
 
   return (
-    <button
+    <Button
+      variant="outline"
+      className={cn(
+        isActive && 'border border-black bg-muted shadow-md',
+        'relative flex h-auto w-full flex-col gap-0 px-1.5 py-1',
+      )}
       onClick={() =>
-        router.push(
-          `/hospital/${hosId}/echocardio/${targetDate}/${item.id}`,
-        )
+        push(`/hospital/${hosId}/echocardio/${targetDate}/${item.id}`)
       }
-      className={`h-auto w-full rounded-md border px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted ${
-        isActive ? 'border-black bg-muted shadow-sm' : 'border-transparent'
-      }`}
     >
-      <div className="flex w-full flex-col gap-0.5">
-        {/* 환자명 + 종 */}
-        <div className="flex items-center justify-between gap-1">
-          <span className="truncate font-bold">{item.patient_name}</span>
-          <span className="shrink-0 text-muted-foreground">{item.species}</span>
+      {/* 환자명 + 차트번호 */}
+      <div className="flex w-full items-start justify-between gap-2">
+        <div className="flex items-center gap-1 text-sm">
+          <span className="font-bold">{item.patient_name}</span>
+          <span className="text-xs font-light">{item.hos_patient_id}</span>
         </div>
-
-        {/* 품종 + 차트번호 */}
-        <div className="flex items-center justify-between gap-1 text-muted-foreground">
-          <span className="truncate">{item.breed}</span>
-          <span className="shrink-0">{item.hos_patient_id}</span>
-        </div>
-
-        {/* 담당의 / 검사자 */}
-        {(item.vet_name || item.examiner_name) && (
-          <div className="mt-0.5 flex gap-1 text-muted-foreground">
-            {item.vet_name && (
-              <span className="truncate">담:{item.vet_name}</span>
-            )}
-            {item.examiner_name && (
-              <span className="truncate">검:{item.examiner_name}</span>
-            )}
-          </div>
-        )}
       </div>
-    </button>
+
+      {/* 담당의 + 검사자 */}
+      <div className="mt-1 flex w-full items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <UserIcon style={{ width: 15, height: 15 }} />
+          <div className="max-w-[60px] truncate text-xs">
+            {item.vet_name ?? '미지정'}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <StethoscopeIcon style={{ width: 15, height: 15 }} />
+          <div className="max-w-[60px] truncate text-xs">
+            {item.examiner_name ?? '미지정'}
+          </div>
+        </div>
+      </div>
+
+      {/* 종 + 품종 */}
+      <div className="mt-1 flex w-full items-center gap-1">
+        <SpeciesToIcon species={item.species as Species} size={15} />
+        <div className="max-w-[120px] truncate text-xs">
+          {convertPascalCased(item.breed)}
+        </div>
+      </div>
+    </Button>
   )
 }

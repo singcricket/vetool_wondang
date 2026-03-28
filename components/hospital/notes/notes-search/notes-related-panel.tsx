@@ -22,7 +22,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { getNotesByTag } from '@/lib/services/notes/notes'
+import { getNotesByTag, searchNotes } from '@/lib/services/notes/notes'
 import { NoteWithAuthor } from '@/types/notes/notes_index'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,7 +70,7 @@ export default function NotesRelatedPanel({ hosId, tag, currentNoteId, onClose, 
       setLoading(true)
       setExpandedId(null)
       try {
-        const result = await getNotesByTag(hosId, tag)
+        const result = await searchNotes(hosId, tag,'tags')
         // 현재 열람 중인 노트는 목록에서 제외
         setNotes(result.filter((n) => n.notes_id !== currentNoteId))
       } catch (e) {

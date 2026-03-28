@@ -66,7 +66,7 @@ export async function fetchEchoChartDetail(
     .select(
       `
       *,
-      patients!inner(name, species, breed, hos_patient_id, birth, gender),
+      patients!inner(name, species, breed, hos_patient_id, birth, gender, owner_name, hos_owner_id, microchip_no, memo),
       vet:users!echo_charts_vet_id_fkey(name, user_id),
       examiner:users!echo_charts_examiner_id_fkey(name, user_id),
       echo_results(*)
