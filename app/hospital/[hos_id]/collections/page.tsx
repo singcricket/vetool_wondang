@@ -5,6 +5,7 @@ import { Folder, ChevronRight, Plus, FolderPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
+import CreateCollectionButton from '@/components/hospital/collections/create-collection-button'
 
 export default async function CollectionsPage(props: { params: Promise<{ hos_id: string }> }) {
   const params = await props.params;
@@ -34,10 +35,8 @@ export default async function CollectionsPage(props: { params: Promise<{ hos_id:
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">컬렉션</h1>
           <p className="text-slate-500 text-sm">진료 노트와 모니터링 기록을 그룹화하여 관리하고 공유할 수 있습니다.</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700 font-bold gap-2">
-          <FolderPlus size={18} />
-          새 컬렉션
-        </Button>
+        <CreateCollectionButton hosId={hos_id} userId={user.id} />
+
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

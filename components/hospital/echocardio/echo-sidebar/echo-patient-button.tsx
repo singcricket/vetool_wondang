@@ -13,6 +13,7 @@ interface EchoPatientButtonProps {
   hosId: string
   targetDate: string
   isActive: boolean
+  onClick?: () => void
 }
 
 export default function EchoPatientButton({
@@ -20,6 +21,7 @@ export default function EchoPatientButton({
   hosId,
   targetDate,
   isActive,
+  onClick,
 }: EchoPatientButtonProps) {
   const { push } = useRouter()
 
@@ -30,9 +32,10 @@ export default function EchoPatientButton({
         isActive && 'border border-black bg-muted shadow-md',
         'relative flex h-auto w-full flex-col gap-0 px-1.5 py-1',
       )}
-      onClick={() =>
+      onClick={() => {
         push(`/hospital/${hosId}/echocardio/${targetDate}/${item.id}`)
-      }
+        onClick?.()
+      }}
     >
       {/* 환자명 + 차트번호 */}
       <div className="flex w-full items-start justify-between gap-2">

@@ -96,7 +96,7 @@ export default function MsReportContent({ msData, isSharedView = false, onExport
   }
 
   return (
-    <div className="flex flex-col w-full h-full px-2 sm:px-0">
+    <div className="flex flex-col w-full flex-1 min-h-0 px-2 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4 gap-4 pr-10 sm:pr-12">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-bold text-slate-800">
