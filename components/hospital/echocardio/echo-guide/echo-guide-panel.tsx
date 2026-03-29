@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import type { EchoGuideImage } from '@/types/echocardio/echocardio-type'
+import type { EchoTemplateGuideImage } from '@/types/echocardio/echocardio-type'
 
 interface EchoGuidePanelProps {
-  images: EchoGuideImage[]
+  images: EchoTemplateGuideImage[]
   highlightedKeywords: string[]
 }
 

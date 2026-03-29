@@ -1,6 +1,5 @@
 import { fetchEchoLayoutData } from '@/lib/services/echocardio/echo-layout'
-import { fetchEchoSettings } from '@/lib/services/echocardio/fetch-echo'
-import { fetchEchoSidebarData } from '@/lib/services/echocardio/fetch-echo'
+import { fetchActiveTemplate, fetchEchoTemplates, fetchEchoSidebarData } from '@/lib/services/echocardio/fetch-echo'
 import { getEchoTestUIMeta } from '@/constants/hospital/echocardio/echo-tests'
 import { EchoContextProvider } from '@/providers/echo-context-provider'
 import EchoSidebar from '@/components/hospital/echocardio/echo-sidebar/echo-sidebar'
@@ -13,9 +12,10 @@ export default async function EchoLayout(props: {
   const params = await props.params
   const { hos_id, target_date } = params
 
-  const [layoutData, settings, sidebarItems] = await Promise.all([
+  const [layoutData, template, templates, sidebarItems] = await Promise.all([
     fetchEchoLayoutData(hos_id),
-    fetchEchoSettings(hos_id),
+    fetchActiveTemplate(hos_id),
+    fetchEchoTemplates(hos_id),
     fetchEchoSidebarData(hos_id, target_date),
   ])
 
@@ -25,7 +25,8 @@ export default async function EchoLayout(props: {
     hosId: hos_id,
     targetDate: target_date,
     vetsList: layoutData.vetList,
-    settings,
+    template,
+    templates,
     testUIMeta,
   }
 

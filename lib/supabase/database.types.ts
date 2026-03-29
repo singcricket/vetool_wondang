@@ -173,44 +173,6 @@ export type Database = {
           },
         ]
       }
-      echo_guide_images: {
-        Row: {
-          created_at: string
-          display_order: number
-          hos_id: string
-          id: string
-          image_url: string
-          mapped_keywords: Json
-          view_name: string
-        }
-        Insert: {
-          created_at?: string
-          display_order?: number
-          hos_id: string
-          id?: string
-          image_url: string
-          mapped_keywords?: Json
-          view_name: string
-        }
-        Update: {
-          created_at?: string
-          display_order?: number
-          hos_id?: string
-          id?: string
-          image_url?: string
-          mapped_keywords?: Json
-          view_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "echo_guide_images_hos_id_fkey"
-            columns: ["hos_id"]
-            isOneToOne: false
-            referencedRelation: "hospitals"
-            referencedColumns: ["hos_id"]
-          },
-        ]
-      }
       echo_results: {
         Row: {
           comment: string | null
@@ -249,43 +211,85 @@ export type Database = {
           },
         ]
       }
-      echo_settings: {
+      echo_template_guide_images: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          mapped_keywords: string[]
+          template_id: string
+          view_name: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          mapped_keywords?: string[]
+          template_id: string
+          view_name: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          mapped_keywords?: string[]
+          template_id?: string
+          view_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "echo_template_guide_images_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "echo_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      echo_templates: {
         Row: {
           active_items: Json
           created_at: string
+          description: string | null
+          display_order: number
           hos_id: string
           id: string
+          is_default: boolean
           item_order: Json
-          section_order: Json
+          name: string
+          section_order: string[]
           updated_at: string
         }
         Insert: {
           active_items?: Json
           created_at?: string
+          description?: string | null
+          display_order?: number
           hos_id: string
           id?: string
+          is_default?: boolean
           item_order?: Json
-          section_order?: Json
+          name?: string
+          section_order?: string[]
           updated_at?: string
         }
         Update: {
           active_items?: Json
           created_at?: string
+          description?: string | null
+          display_order?: number
           hos_id?: string
           id?: string
+          is_default?: boolean
           item_order?: Json
-          section_order?: Json
+          name?: string
+          section_order?: string[]
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "echo_settings_hos_id_fkey"
-            columns: ["hos_id"]
-            isOneToOne: true
-            referencedRelation: "hospitals"
-            referencedColumns: ["hos_id"]
-          },
-        ]
+        Relationships: []
       }
       hos_drugs: {
         Row: {

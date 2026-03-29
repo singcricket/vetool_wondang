@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { useEchoRealtime } from '@/hooks/use-echo-realtime'
 import { cn } from '@/lib/utils/utils'
-import { BarChart2Icon, FileTextIcon, SearchIcon } from 'lucide-react'
+import { BarChart2Icon, BookmarkIcon, FileTextIcon, SearchIcon } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import EchoRealtimeStatus from './echo-realtime-status'
@@ -29,6 +29,11 @@ const FOOTER_MENUS = [
     value: 'stats',
     icon: <BarChart2Icon />,
   },
+  {
+    label: '템플릿',
+    value: 'template',
+    icon: <BookmarkIcon />,
+  },
 ] as const
 
 type FooterValue = (typeof FOOTER_MENUS)[number]['value']
@@ -44,7 +49,13 @@ export default function EchoFooter({ hosId, targetDate }: Props) {
   const sub = segments[5]
 
   const activeTab: FooterValue =
-    sub === 'search' ? 'search' : sub === 'stats' ? 'stats' : 'chart'
+    sub === 'search'
+      ? 'search'
+      : sub === 'stats'
+        ? 'stats'
+        : sub === 'template'
+          ? 'template'
+          : 'chart'
 
   useEffect(() => {
     if (isRealtimeReady) {
@@ -61,6 +72,8 @@ export default function EchoFooter({ hosId, targetDate }: Props) {
       push(`/hospital/${hosId}/echocardio/${targetDate}/${value}`)
     }
   }
+
+
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 flex h-[calc(2.5rem+env(safe-area-inset-bottom))] justify-between border-t bg-white 2xl:left-[200px]">

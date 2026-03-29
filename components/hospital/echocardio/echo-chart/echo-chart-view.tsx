@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import type {
   EchoChartDetail,
   EchoChartWithPatient,
-  EchoGuideImage,
+  EchoTemplateGuideImage,
   EchoResultMap,
   EchoSection,
 } from '@/types/echocardio/echocardio-type'
@@ -14,17 +14,19 @@ import { ECHO_SECTION_META } from '@/constants/hospital/echocardio/echo-sections
 import { upsertEchoResult, updateCalculatedResults } from '@/lib/services/echocardio/update-echo'
 import { getMmodeRef } from '@/constants/hospital/echocardio/mmode-ref-dog'
 import EchoSectionWrapper from '../echo-sections/echo-section-wrapper'
+import EchoInputField from '../echo-sections/echo-input-field'
 import EchoCompareTable from '../echo-compare/echo-compare-table'
 import EchoReport from '../echo-report/echo-report'
-import EchoGuidePanel from '../echo-guide/echo-guide-panel'
 import EchoInfoContainer from '../echo-info/echo-info-container'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/utils'
+import Image from 'next/image'
+import { LayoutGridIcon, ListIcon, ImageIcon } from 'lucide-react'
 
 interface EchoChartBodyProps {
   chartDetail: EchoChartDetail
   history: EchoChartWithPatient[]
-  guideImages: EchoGuideImage[]
+  guideImages: EchoTemplateGuideImage[]
   hosId: string
 }
 
@@ -43,10 +45,11 @@ export default function EchoChartBody({
   hosId,
 }: EchoChartBodyProps) {
   const { echoContextData, resultMap, setResultMap, updateResult } = useEchoContext()
-  const { settings, testUIMeta } = echoContextData
+  const { template: settings, testUIMeta } = echoContextData as any
   const { refresh } = useRouter()
 
   const [activeTab, setActiveTab] = useState<Tab>('input')
+  const [inputMode, setInputMode] = useState<'section' | 'flat' | 'guide'>('section')
   const [isSaving, startSaving] = useTransition()
   const [pendingSave, setPendingSave] = useState<Set<string>>(new Set())
 
@@ -140,11 +143,11 @@ export default function EchoChartBody({
 
   function getSectionItems(section: EchoSection) {
     const activeIds = settings.active_items[section]
-    const sectionMeta = testUIMeta.filter((m) => m.section === section)
-    const filtered = activeIds ? sectionMeta.filter((m) => activeIds.includes(m.keywordID)) : sectionMeta
+    const sectionMeta = (testUIMeta as any[]).filter((m) => m.section === section)
+    const filtered = activeIds ? sectionMeta.filter((m: any) => activeIds.includes(m.keywordID)) : sectionMeta
     const order = settings.item_order[section]
     if (!order || order.length === 0) return filtered
-    return [...filtered].sort((a, b) => {
+    return [...filtered].sort((a: any, b: any) => {
       const ai = order.indexOf(a.keywordID)
       const bi = order.indexOf(b.keywordID)
       if (ai === -1) return 1
@@ -153,12 +156,37 @@ export default function EchoChartBody({
     })
   }
 
+  // 모든 활성 항목을 flat하게 반환
+  // _flat 순서가 지정된 경우 해당 순서 우선, 없으면 섹션 순서대로
+  function getAllActiveItems() {
+    const allItems = (settings.section_order as EchoSection[]).flatMap((section) =>
+      getSectionItems(section),
+    )
+    const flatOrder: string[] = settings.item_order['_flat'] ?? []
+    if (flatOrder.length === 0) return allItems
+    return [...allItems].sort((a: any, b: any) => {
+      const ai = flatOrder.indexOf(a.keywordID)
+      const bi = flatOrder.indexOf(b.keywordID)
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+  }
+
+  const INPUT_MODES = [
+    { key: 'section' as const, label: '섹션', icon: <LayoutGridIcon className="h-3 w-3" /> },
+    { key: 'flat' as const, label: '목록', icon: <ListIcon className="h-3 w-3" /> },
+    { key: 'guide' as const, label: '가이드', icon: <ImageIcon className="h-3 w-3" /> },
+  ]
+
+  const sharedInputProps = { resultMap, computedResults, mmodeRefs, onItemChange: handleItemChange }
+
   return (
     <div className="mt-12 flex flex-col">
       {/* 담당의/검사자, 메모 */}
       <EchoInfoContainer chartDetail={chartDetail} />
 
-      {/* 탭 + 저장 버튼 */}
+      {/* 탭 + 입력모드 + 저장 버튼 */}
       <div className="flex items-center justify-between border-b bg-white px-4">
         <div className="flex">
           {TABS.map((t) => (
@@ -180,47 +208,163 @@ export default function EchoChartBody({
           ))}
         </div>
 
-        <Button
-          size="sm"
-          onClick={handleSave}
-          disabled={isSaving || pendingSave.size === 0}
-        >
-          {isSaving ? '저장 중...' : '저장'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* 입력 모드 전환 (검사 입력 탭일 때만) */}
+          {activeTab === 'input' && (
+            <div className="flex rounded border">
+              {INPUT_MODES.map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => setInputMode(m.key)}
+                  title={m.label}
+                  className={cn(
+                    'flex items-center gap-1 px-2 py-1 text-[10px] transition-colors first:rounded-l last:rounded-r',
+                    inputMode === m.key
+                      ? 'bg-black text-white'
+                      : 'text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  {m.icon}
+                  <span className="hidden sm:inline">{m.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <Button size="sm" onClick={handleSave} disabled={isSaving || pendingSave.size === 0}>
+            {isSaving ? '저장 중...' : '저장'}
+          </Button>
+        </div>
       </div>
 
       {/* 탭 콘텐츠 */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {activeTab === 'input' && (
-          <div className="flex flex-1 gap-4 overflow-hidden">
-            {guideImages.length > 0 && (
-              <div className="w-64 shrink-0 overflow-y-auto border-r p-3">
-                <EchoGuidePanel
-                  images={guideImages}
-                  highlightedKeywords={Object.keys(resultMap)}
-                />
+          <>
+            {/* ── 모드 1: 섹션별 ── */}
+            {inputMode === 'section' && (
+              <div className="flex-1 overflow-y-auto p-4 pb-32">
+                <div className="flex flex-col gap-3">
+                  {(settings.section_order as EchoSection[]).map((section) => {
+                    const items = getSectionItems(section)
+                    if (items.length === 0) return null
+                    return (
+                      <EchoSectionWrapper
+                        key={section}
+                        sectionLabel={ECHO_SECTION_META[section]?.label ?? section}
+                        items={items}
+                        {...sharedInputProps}
+                      />
+                    )
+                  })}
+                </div>
               </div>
             )}
-            <div className="flex-1 overflow-y-auto p-4 pb-32">
-              <div className="flex flex-col gap-3">
-                {settings.section_order.map((section) => {
-                  const items = getSectionItems(section)
-                  if (items.length === 0) return null
-                  return (
-                    <EchoSectionWrapper
-                      key={section}
-                      sectionLabel={ECHO_SECTION_META[section]?.label ?? section}
-                      items={items}
-                      resultMap={resultMap}
-                      computedResults={computedResults}
-                      mmodeRefs={mmodeRefs}
-                      onItemChange={handleItemChange}
+
+            {/* ── 모드 2: 목록형 (카테고리 구분 없이 나열) ── */}
+            {inputMode === 'flat' && (
+              <div className="flex-1 overflow-y-auto p-4 pb-32">
+                <div className="flex flex-col gap-2">
+                  {getAllActiveItems().map((item: any) => (
+                    <EchoInputField
+                      key={item.keywordID}
+                      item={item}
+                      value={resultMap[item.keywordID] ?? ''}
+                      computed={computedResults[item.keywordID]}
+                      mmodeRef={mmodeRefs[item.keywordID] ?? undefined}
+                      onChange={handleItemChange}
                     />
-                  )
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+
+            {/* ── 모드 3: 가이드 이미지 + 연결 항목 ── */}
+            {inputMode === 'guide' && (
+              <div className="flex-1 overflow-y-auto p-4 pb-32">
+                {guideImages.length === 0 ? (
+                  <p className="mt-8 text-center text-xs text-muted-foreground">
+                    설정에서 가이드 이미지를 추가하세요
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-6">
+                    {(() => {
+                      const allActiveItems = getAllActiveItems()
+                      const mappedKeywordIds = new Set(guideImages.flatMap((g) => g.mapped_keywords))
+                      const unmappedItems = allActiveItems.filter((item: any) => !mappedKeywordIds.has(item.keywordID))
+
+                      return (
+                        <>
+                          {guideImages.map((guide) => {
+                            const guideItems = allActiveItems.filter((item: any) =>
+                              guide.mapped_keywords.includes(item.keywordID),
+                            )
+                            return (
+                              <div key={guide.id} className="rounded-md border bg-white">
+                                <div className="border-b px-3 py-1.5">
+                                  <span className="text-xs font-bold">{guide.view_name}</span>
+                                </div>
+                                <div className="flex gap-4 p-3">
+                                  {/* 이미지 */}
+                                  <div className="relative h-40 w-40 shrink-0 overflow-hidden rounded border bg-muted">
+                                    <Image
+                                      src={guide.image_url}
+                                      alt={guide.view_name}
+                                      fill
+                                      className="object-contain"
+                                      sizes="160px"
+                                    />
+                                  </div>
+                                  {/* 연결 항목 입력 */}
+                                  <div className="flex flex-1 flex-col gap-2">
+                                    {guideItems.length === 0 ? (
+                                      <p className="text-[10px] text-muted-foreground">연결된 항목 없음</p>
+                                    ) : (
+                                      guideItems.map((item: any) => (
+                                        <EchoInputField
+                                          key={item.keywordID}
+                                          item={item}
+                                          value={resultMap[item.keywordID] ?? ''}
+                                          computed={computedResults[item.keywordID]}
+                                          mmodeRef={mmodeRefs[item.keywordID] ?? undefined}
+                                          onChange={handleItemChange}
+                                        />
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+
+                          {/* 가이드에 연결되지 않은 나머지 항목 */}
+                          {unmappedItems.length > 0 && (
+                            <div className="rounded-md border bg-white">
+                              <div className="border-b px-3 py-1.5">
+                                <span className="text-xs font-bold text-muted-foreground">기타 항목</span>
+                              </div>
+                              <div className="flex flex-col gap-2 p-3">
+                                {unmappedItems.map((item: any) => (
+                                  <EchoInputField
+                                    key={item.keywordID}
+                                    item={item}
+                                    value={resultMap[item.keywordID] ?? ''}
+                                    computed={computedResults[item.keywordID]}
+                                    mmodeRef={mmodeRefs[item.keywordID] ?? undefined}
+                                    onChange={handleItemChange}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {activeTab === 'compare' && (

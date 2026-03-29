@@ -1,24 +1,24 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { EchoGuideImage } from '@/types/echocardio/echocardio-type'
+import type { EchoTemplateGuideImage } from '@/types/echocardio/echocardio-type'
 
 // =============================================
-// 가이드 이미지 등록
+// 가이드 이미지 등록 (템플릿에 연결)
 // =============================================
 export async function insertEchoGuideImage(params: {
-  hosId: string
+  templateId: string
   viewName: string
   imageUrl: string
   mappedKeywords: string[]
   displayOrder: number
-}): Promise<EchoGuideImage> {
+}): Promise<EchoTemplateGuideImage> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('echo_guide_images')
+    .from('echo_template_guide_images')
     .insert({
-      hos_id: params.hosId,
+      template_id: params.templateId,
       view_name: params.viewName,
       image_url: params.imageUrl,
       mapped_keywords: params.mappedKeywords,
@@ -28,7 +28,7 @@ export async function insertEchoGuideImage(params: {
     .single()
 
   if (error) throw new Error(`insertEchoGuideImage: ${error.message}`)
-  return data as unknown as EchoGuideImage
+  return data as unknown as EchoTemplateGuideImage
 }
 
 // =============================================
@@ -41,7 +41,7 @@ export async function updateGuideImageMapping(
 ): Promise<void> {
   const supabase = await createClient()
   const { error } = await supabase
-    .from('echo_guide_images')
+    .from('echo_template_guide_images')
     .update({ mapped_keywords: mappedKeywords, view_name: viewName })
     .eq('id', imageId)
   if (error) throw new Error(`updateGuideImageMapping: ${error.message}`)
@@ -57,7 +57,7 @@ export async function updateGuideImageOrder(
   await Promise.all(
     updates.map(({ id, display_order }) =>
       supabase
-        .from('echo_guide_images')
+        .from('echo_template_guide_images')
         .update({ display_order })
         .eq('id', id),
     ),

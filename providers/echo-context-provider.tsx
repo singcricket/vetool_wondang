@@ -1,19 +1,20 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useTransition } from 'react'
 import type {
-  EchoSettings,
+  EchoTemplate,
   EchoTestUIMeta,
   EchoResultMap,
-  EchoSection,
 } from '@/types/echocardio/echocardio-type'
+import { setDefaultTemplate, upsertEchoTemplate } from '@/lib/services/echocardio/update-echo'
 import type { Vet } from '@/types'
 
 type EchoContextData = {
   hosId: string
   targetDate: string
   vetsList: Vet[]
-  settings: EchoSettings
+  template: EchoTemplate
+  templates: EchoTemplate[]
   testUIMeta: EchoTestUIMeta[]
 }
 
@@ -23,8 +24,11 @@ type EchoContextType = {
   resultMap: EchoResultMap
   setResultMap: (map: EchoResultMap) => void
   updateResult: (keywordId: string, value: string) => void
-  // 설정 업데이트 (로컬 상태)
-  updateSettings: (settings: Partial<EchoSettings>) => void
+  // 템플릿 업데이트 (로컬 상태 + DB)
+  updateTemplate: (updates: Partial<EchoTemplate>) => void
+  // 활성 템플릿 전환
+  setActiveTemplate: (templateId: string) => void
+  isSettingTemplate: boolean
 }
 
 const EchoContext = createContext<EchoContextType | undefined>(undefined)
@@ -38,33 +42,57 @@ export function useEchoContext() {
 }
 
 export function EchoContextProvider({
-  echoContextData,
+  echoContextData: initialData,
   children,
 }: {
   echoContextData: EchoContextData
   children: React.ReactNode
 }) {
   const [resultMap, setResultMap] = useState<EchoResultMap>({})
-  const [settings, setSettings] = useState<EchoSettings>(
-    echoContextData.settings,
-  )
+  const [template, setTemplate] = useState<EchoTemplate>(initialData.template)
+  const [templates, setTemplates] = useState<EchoTemplate[]>(initialData.templates)
+  const [isSettingTemplate, startTemplateTransition] = useTransition()
 
   const updateResult = useCallback((keywordId: string, value: string) => {
     setResultMap((prev) => ({ ...prev, [keywordId]: value }))
   }, [])
 
-  const updateSettings = useCallback((partial: Partial<EchoSettings>) => {
-    setSettings((prev) => ({ ...prev, ...partial }))
-  }, [])
+  const updateTemplate = useCallback((partial: Partial<EchoTemplate>) => {
+    setTemplate((prev) => ({ ...prev, ...partial }))
+    if (template.id) {
+      upsertEchoTemplate(template.id, partial as any)
+    }
+  }, [template.id])
+
+  const setActiveTemplate = useCallback((templateId: string) => {
+    startTemplateTransition(async () => {
+      await setDefaultTemplate(initialData.hosId, templateId)
+      const next = templates.find((t) => t.id === templateId)
+      if (next) {
+        setTemplate(next)
+        setTemplates((prev) =>
+          prev.map((t) => ({ ...t, is_default: t.id === templateId })),
+        )
+      }
+    })
+  }, [initialData.hosId, templates])
 
   return (
     <EchoContext.Provider
       value={{
-        echoContextData: { ...echoContextData, settings },
+        echoContextData: {
+          ...initialData,
+          template,
+          templates,
+          // settings alias for backward compat
+          settings: template,
+        } as any,
         resultMap,
         setResultMap,
         updateResult,
-        updateSettings,
+        updateTemplate,
+        setActiveTemplate,
+        isSettingTemplate,
       }}
     >
       {children}

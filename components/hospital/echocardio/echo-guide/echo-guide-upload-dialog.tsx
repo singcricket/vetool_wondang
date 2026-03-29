@@ -5,13 +5,13 @@ import { insertEchoGuideImage } from '@/lib/services/echocardio/echo-guide-image
 import { useEchoContext } from '@/providers/echo-context-provider'
 
 interface EchoGuideUploadDialogProps {
-  hosId: string
+  templateId: string
   onClose: () => void
   onUploaded: () => void
 }
 
 export default function EchoGuideUploadDialog({
-  hosId,
+  templateId,
   onClose,
   onUploaded,
 }: EchoGuideUploadDialogProps) {
@@ -47,7 +47,6 @@ export default function EchoGuideUploadDialog({
       // 이미지 업로드 API
       const formData = new FormData()
       formData.append('file', imageFile)
-      formData.append('hos_id', hosId)
       formData.append('folder', 'echo-guide')
 
       const res = await fetch('/api/images/upload', {
@@ -59,7 +58,7 @@ export default function EchoGuideUploadDialog({
 
       startTransition(async () => {
         await insertEchoGuideImage({
-          hosId,
+          templateId,
           viewName: viewName.trim(),
           imageUrl: url,
           mappedKeywords: selectedKeywords,

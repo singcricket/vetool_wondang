@@ -20,7 +20,7 @@ export async function deleteEchoChart(echoId: string): Promise<void> {
 export async function deleteEchoGuideImage(imageId: string): Promise<void> {
   const supabase = await createClient()
   const { error } = await supabase
-    .from('echo_guide_images')
+    .from('echo_template_guide_images')
     .delete()
     .eq('id', imageId)
   if (error) throw new Error(`deleteEchoGuideImage: ${error.message}`)

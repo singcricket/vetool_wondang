@@ -139,29 +139,42 @@ export type EchoResult = {
 }
 
 // =============================================
-// echo_settings 테이블 타입
+// echo_templates 테이블 타입
 // =============================================
-export type EchoSettings = {
+export type EchoTemplate = {
   id: string
   hos_id: string
+  name: string
+  description: string | null
   section_order: EchoSection[]
-  item_order: Partial<Record<EchoSection, string[]>>    // 섹션별 keywordID 순서
+  item_order: Record<string, string[]>    // 섹션별 keywordID 순서 + '_flat' 키로 목록 모드 전역 순서
   active_items: Partial<Record<EchoSection, string[]>>  // 섹션별 활성 keywordID 목록
+  is_default: boolean
+  display_order: number
   created_at: string
   updated_at: string
 }
 
 // =============================================
-// echo_guide_images 테이블 타입
+// echo_template_guide_images 테이블 타입
 // =============================================
-export type EchoGuideImage = {
+export type EchoTemplateGuideImage = {
   id: string
-  hos_id: string
+  template_id: string
   view_name: string
   image_url: string
   mapped_keywords: string[]  // keywordID 배열
   display_order: number
   created_at: string
+}
+
+// 하위 호환 alias
+export type EchoSettings = EchoTemplate
+export type EchoGuideImage = EchoTemplateGuideImage
+
+// 템플릿 + 가이드 이미지 복합 타입
+export type EchoTemplateWithImages = EchoTemplate & {
+  guide_images: EchoTemplateGuideImage[]
 }
 
 // =============================================

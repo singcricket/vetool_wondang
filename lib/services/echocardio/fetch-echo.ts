@@ -5,8 +5,8 @@ import type {
   EchoChartWithPatient,
   EchoChartDetail,
   EchoSidebarItem,
-  EchoSettings,
-  EchoGuideImage,
+  EchoTemplate,
+  EchoTemplateGuideImage,
 } from '@/types/echocardio/echocardio-type'
 import { DEFAULT_SECTION_ORDER } from '@/constants/hospital/echocardio/echo-sections'
 import { ITEMS_BY_SECTION } from '@/constants/hospital/echocardio/echo-tests'
@@ -88,21 +88,21 @@ export async function fetchEchoChartDetail(
 }
 
 // =============================================
-// 병원 설정 조회 (없으면 기본값 반환)
+// 활성 템플릿 조회 (is_default=true, 없으면 기본값 반환)
 // =============================================
-export async function fetchEchoSettings(
+export async function fetchActiveTemplate(
   hosId: string,
-): Promise<EchoSettings> {
+): Promise<EchoTemplate> {
   const supabase = await createClient()
 
   const { data } = await supabase
-    .from('echo_settings')
+    .from('echo_templates')
     .select('*')
     .eq('hos_id', hosId)
+    .eq('is_default', true)
     .single()
 
   if (!data) {
-    // 기본값: 전체 섹션/항목 활성화
     const defaultActiveItems = Object.fromEntries(
       Object.entries(ITEMS_BY_SECTION).map(([section, items]) => [
         section,
@@ -112,33 +112,86 @@ export async function fetchEchoSettings(
     return {
       id: '',
       hos_id: hosId,
+      name: '기본 템플릿',
+      description: null,
       section_order: DEFAULT_SECTION_ORDER,
       item_order: {},
       active_items: defaultActiveItems,
+      is_default: true,
+      display_order: 0,
       created_at: '',
       updated_at: '',
     }
   }
 
-  return data as unknown as EchoSettings
+  return data as unknown as EchoTemplate
 }
 
+// 하위 호환
+export const fetchEchoSettings = fetchActiveTemplate
+
 // =============================================
-// 가이드 이미지 목록 조회
+// 전체 템플릿 목록 조회
 // =============================================
-export async function fetchEchoGuideImages(
+export async function fetchEchoTemplates(
   hosId: string,
-): Promise<EchoGuideImage[]> {
+): Promise<EchoTemplate[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
-    .from('echo_guide_images')
+    .from('echo_templates')
     .select('*')
     .eq('hos_id', hosId)
     .order('display_order', { ascending: true })
 
-  if (error) throw new Error(`fetchEchoGuideImages: ${error.message}`)
-  return (data ?? []) as unknown as EchoGuideImage[]
+  if (error) throw new Error(`fetchEchoTemplates: ${error.message}`)
+  return (data ?? []) as unknown as EchoTemplate[]
+}
+
+// =============================================
+// 활성 템플릿의 가이드 이미지 조회
+// =============================================
+export async function fetchActiveTemplateGuideImages(
+  hosId: string,
+): Promise<EchoTemplateGuideImage[]> {
+  const supabase = await createClient()
+
+  const { data: template } = await supabase
+    .from('echo_templates')
+    .select('id')
+    .eq('hos_id', hosId)
+    .eq('is_default', true)
+    .single()
+
+  if (!template) return []
+
+  const { data, error } = await supabase
+    .from('echo_template_guide_images')
+    .select('*')
+    .eq('template_id', template.id)
+    .order('display_order', { ascending: true })
+
+  if (error) throw new Error(`fetchActiveTemplateGuideImages: ${error.message}`)
+  return (data ?? []) as unknown as EchoTemplateGuideImage[]
+}
+
+// 하위 호환
+export const fetchEchoGuideImages = fetchActiveTemplateGuideImages
+
+// =============================================
+// 특정 템플릿의 가이드 이미지 조회
+// =============================================
+export async function fetchTemplateGuideImages(
+  templateId: string,
+): Promise<EchoTemplateGuideImage[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('echo_template_guide_images')
+    .select('*')
+    .eq('template_id', templateId)
+    .order('display_order', { ascending: true })
+  if (error) throw new Error(`fetchTemplateGuideImages: ${error.message}`)
+  return (data ?? []) as unknown as EchoTemplateGuideImage[]
 }
 
 // =============================================

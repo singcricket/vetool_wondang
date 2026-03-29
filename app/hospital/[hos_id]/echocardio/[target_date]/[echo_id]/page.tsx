@@ -1,6 +1,4 @@
-import { fetchEchoChartDetail } from '@/lib/services/echocardio/fetch-echo'
-import { fetchPatientEchoHistory } from '@/lib/services/echocardio/fetch-echo'
-import { fetchEchoGuideImages } from '@/lib/services/echocardio/fetch-echo'
+import { fetchEchoChartDetail, fetchPatientEchoHistory, fetchActiveTemplateGuideImages } from '@/lib/services/echocardio/fetch-echo'
 import EchoChartHeader from '@/components/hospital/echocardio/echo-chart/echo-chart-header'
 import EchoChartBody from '@/components/hospital/echocardio/echo-chart/echo-chart-view'
 import { notFound } from 'next/navigation'
@@ -16,7 +14,7 @@ export default async function EchoChartPage(props: {
 
   const [history, guideImages] = await Promise.all([
     fetchPatientEchoHistory(chartDetail.patient_id, echo_id),
-    fetchEchoGuideImages(hos_id),
+    fetchActiveTemplateGuideImages(hos_id),
   ])
 
   return (

@@ -1,12 +1,13 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { ECHO_TESTS } from '@/constants/hospital/echocardio/echo-tests'
+import { ECHO_TESTS, ITEMS_BY_SECTION } from '@/constants/hospital/echocardio/echo-tests'
+import { DEFAULT_SECTION_ORDER } from '@/constants/hospital/echocardio/echo-sections'
 import { calculate, getRangeIndex } from '@/constants/hospital/echocardio/echo-calculators'
 import { judgeMmodeValue } from '@/constants/hospital/echocardio/mmode-ref-dog'
 import type {
   EchoResult,
-  EchoSettings,
+  EchoTemplate,
   EchoSection,
 } from '@/types/echocardio/echocardio-type'
 
@@ -191,8 +192,27 @@ export async function updateEchoVets(
 }
 
 // =============================================
-// 병원 설정 저장 (upsert)
+// 템플릿 설정 업데이트
 // =============================================
+export async function upsertEchoTemplate(
+  templateId: string,
+  updates: {
+    name?: string
+    description?: string | null
+    section_order?: EchoSection[]
+    item_order?: Record<string, string[]>
+    active_items?: Record<string, string[]>
+  },
+): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('echo_templates')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', templateId)
+  if (error) throw new Error(`upsertEchoTemplate: ${error.message}`)
+}
+
+// 하위 호환: hosId 기반으로 활성 템플릿 업데이트
 export async function upsertEchoSettings(
   hosId: string,
   settings: {
@@ -202,14 +222,101 @@ export async function upsertEchoSettings(
   },
 ): Promise<void> {
   const supabase = await createClient()
+  const { data } = await supabase
+    .from('echo_templates')
+    .select('id')
+    .eq('hos_id', hosId)
+    .eq('is_default', true)
+    .single()
+  if (!data) return
+  await upsertEchoTemplate(data.id, settings)
+}
 
-  const { error } = await supabase.from('echo_settings').upsert(
-    {
-      hos_id: hosId,
-      ...settings,
-    },
-    { onConflict: 'hos_id' },
+// =============================================
+// 새 템플릿 생성
+// =============================================
+export async function insertEchoTemplate(
+  hosId: string,
+  name: string,
+  description?: string,
+): Promise<EchoTemplate> {
+  const supabase = await createClient()
+
+  // 현재 활성 템플릿의 설정을 복사해서 새 템플릿 생성
+  const { data: activeTemplate } = await supabase
+    .from('echo_templates')
+    .select('section_order, item_order, active_items')
+    .eq('hos_id', hosId)
+    .eq('is_default', true)
+    .single()
+
+  // 병원에 템플릿이 하나도 없으면 첫 번째 템플릿을 기본값으로 설정
+  const { count } = await supabase
+    .from('echo_templates')
+    .select('id', { count: 'exact', head: true })
+    .eq('hos_id', hosId)
+
+  const isFirst = (count ?? 0) === 0
+
+  const defaultActiveItems = Object.fromEntries(
+    Object.entries(ITEMS_BY_SECTION).map(([section, items]) => [
+      section,
+      items.map((i) => i.keywordID),
+    ]),
   )
 
-  if (error) throw new Error(`upsertEchoSettings: ${error.message}`)
+  const { data, error } = await supabase
+    .from('echo_templates')
+    .insert({
+      hos_id: hosId,
+      name,
+      description: description ?? null,
+      section_order: activeTemplate?.section_order ?? DEFAULT_SECTION_ORDER,
+      item_order: activeTemplate?.item_order ?? {},
+      active_items: activeTemplate?.active_items ?? defaultActiveItems,
+      is_default: isFirst,
+      display_order: 0,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error(`insertEchoTemplate: ${error.message}`)
+  return data as unknown as EchoTemplate
+}
+
+// =============================================
+// 기본 템플릿 변경
+// =============================================
+export async function setDefaultTemplate(
+  hosId: string,
+  templateId: string,
+): Promise<void> {
+  const supabase = await createClient()
+
+  // 기존 default 해제
+  await supabase
+    .from('echo_templates')
+    .update({ is_default: false })
+    .eq('hos_id', hosId)
+    .eq('is_default', true)
+
+  // 새 default 설정
+  const { error } = await supabase
+    .from('echo_templates')
+    .update({ is_default: true, updated_at: new Date().toISOString() })
+    .eq('id', templateId)
+
+  if (error) throw new Error(`setDefaultTemplate: ${error.message}`)
+}
+
+// =============================================
+// 템플릿 삭제
+// =============================================
+export async function deleteEchoTemplate(templateId: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('echo_templates')
+    .delete()
+    .eq('id', templateId)
+  if (error) throw new Error(`deleteEchoTemplate: ${error.message}`)
 }
