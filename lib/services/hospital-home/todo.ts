@@ -41,12 +41,13 @@ export const fetchTodos = async (
 
 export const fetchMonthTodos = async (
   hosId: string,
-  selectedDate: Date,
+  selectedDate: string,
   activeFilter: 'all' | 'done' | 'not-done',
 ) => {
   const supabase = await createClient()
-  const start = format(startOfMonth(selectedDate), 'yyyy-MM-dd')
-  const end = format(endOfMonth(selectedDate), 'yyyy-MM-dd')
+  const refDate = new Date(selectedDate)
+  const start = format(startOfMonth(refDate), 'yyyy-MM-dd')
+  const end = format(endOfMonth(refDate), 'yyyy-MM-dd')
 
   let query = supabase
     .from('todos')

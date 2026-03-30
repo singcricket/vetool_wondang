@@ -16,10 +16,11 @@ export const useMonthTodos = (
 
   const getTodos = useCallback(async () => {
     setIsFetching(true)
-    const todosData = await fetchMonthTodos(hosId, currentMonth, activeFilter)
+    const dateString = format(currentMonth, 'yyyy-MM-dd')
+    const todosData = await fetchMonthTodos(hosId, dateString, activeFilter)
     setTodos(todosData)
     setIsFetching(false)
-  }, [activeFilter, hosId, monthKey])
+  }, [activeFilter, hosId, currentMonth])
 
   useEffect(() => {
     getTodos()
