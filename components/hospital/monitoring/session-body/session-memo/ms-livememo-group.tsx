@@ -18,7 +18,8 @@ import { updateMsMemo } from '@/lib/services/monitoring/update-ms'
 import SingleMsLiveMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-live-memo'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
-import { ActivityIcon } from 'lucide-react'
+import { ActivityIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 type Props = {
   memo: MsMemo[]
@@ -37,6 +38,7 @@ export default function MsLiveMemoGroup({
   const [sortedMemos, setSortedMemos] = useState<MsMemo[]>(memo ?? [])
   const [memoInput, setMemoInput] = useState('')
   const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[2])
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const lastMemoRef = useRef<HTMLLIElement>(null)
 
@@ -119,13 +121,27 @@ export default function MsLiveMemoGroup({
           <ActivityIcon size={16} className="text-emerald-600 shrink-0" />
           <span className="text-sm font-black text-emerald-700">{memoName}</span>
         </div>
-        <Badge
-          variant="secondary"
-          className="text-[10px] font-bold px-1.5 py-0 bg-emerald-100 text-emerald-600 border-emerald-200"
-        >
-          {liveMemos.length}건 기록됨
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="secondary"
+            className="text-[10px] font-bold px-1.5 py-0 bg-emerald-100 text-emerald-600 border-emerald-200"
+          >
+            {liveMemos.length}건 기록됨
+          </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-emerald-600 hover:bg-emerald-100"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title={isCollapsed ? '펼치기' : '접기'}
+          >
+            {isCollapsed ? <ChevronDownIcon size={16} /> : <ChevronUpIcon size={16} />}
+          </Button>
+        </div>
       </div>
+
+      {!isCollapsed && (
+        <>
 
       {/* Timeline List */}
       <ScrollArea className="h-56 bg-emerald-50/20 p-2">
@@ -161,7 +177,11 @@ export default function MsLiveMemoGroup({
         <ScrollBar orientation="vertical" />
       </ScrollArea>
 
-      {/* Input */}
+    
+        </>
+        
+      )}
+        {/* Input */}
       <div className="relative border-t-2 border-emerald-200">
         <Textarea
           disabled={isUpdating || isUploading}

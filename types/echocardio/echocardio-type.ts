@@ -28,6 +28,9 @@ export type EchoFormula =
   | 'EEm'
   | 'LAFS'
   | 'PG'
+  | 'EmAm'
+  | 'RApressure'
+  | 'PApressure'
 
 // 모든 테스트 항목의 공통 기본 필드
 type BaseTest = {

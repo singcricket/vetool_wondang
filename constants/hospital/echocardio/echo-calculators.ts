@@ -79,7 +79,7 @@ const CALCULATORS: Record<EchoFormula, (inputs: CalcInput) => number | null> =
       const e = parseFloat(MV_Ewave)
       const ivrt = parseFloat(IVRT)
       if (isNaN(e) || isNaN(ivrt) || ivrt === 0) return null
-      return e / ivrt
+      return e / (ivrt / 100)
     },
 
     // E/Em = MV_Ewave / Em (TDI)
@@ -105,6 +105,29 @@ const CALCULATORS: Record<EchoFormula, (inputs: CalcInput) => number | null> =
       const v = parseFloat(vel)
       if (isNaN(v)) return null
       return 4 * v * v
+    },
+
+    // Em / Am
+    EmAm: ({ Em, Am }) => {
+      const em = parseFloat(Em)
+      const am = parseFloat(Am)
+      if (isNaN(em) || isNaN(am) || am === 0) return null
+      return em / am
+    },
+    //Ra pressure //
+    RApressure : ({CVCcollapse}) => {
+      //"<20%","20-50%",">50%"
+      if(CVCcollapse === "<20%") return 5
+      if(CVCcollapse === ">50%") return 15
+      if(CVCcollapse === "20-50%") return 10
+      return null
+    },
+    //Pa pressure//
+    PApressure : ({RApressure,TRPG}) => {
+      const rap = parseFloat(RApressure)
+      const trpg = parseFloat(TRPG)
+      if (isNaN(rap) || isNaN(trpg) || trpg === 0) return null
+      return trpg + rap
     },
   }
 

@@ -899,6 +899,30 @@ export const ECHO_TESTS: Record<string, EchoTest> = {
     optResult: [],
     optComment: [],
   },
+   CVCcollapse:{
+        keywordID:'CVCcollapse',
+        keywordName:'CVC collapse',
+        section:'SpectralDoppler',
+        group:'CVC',
+        testType:'select',
+        options:['','<20%','20-50%','>50%'],
+        optResult:['','RA pressure < 5mmHg','RA pressure 10mmHg','RA pressure > 15mmHg'],
+        optComment:['','','',''],
+    },
+     RApressure:{
+       
+        section:'SpectralDoppler',
+        keywordID:'RApressure',
+        keywordName:'RA pressure',
+        unit:'mmHg',
+        group:'RA',
+        testType:'calculated',
+        formula:'RApressure',
+        dependencies:['CVCcollapse'],
+        thresholds:[6,15],
+        optResult:['decrease or normal','mild ~ moderate increase','marked increase'],
+        optComment:['','',''],
+    },
   SD_comment: {
     keywordID: 'SD_comment',
     keywordName: 'Spectral Doppler Comment',
@@ -913,6 +937,7 @@ export const ECHO_TESTS: Record<string, EchoTest> = {
     group: 'Comment',
     testType: 'textcomment',
   },
+
 
   // ============================================================
   // TDI 섹션
@@ -932,6 +957,30 @@ export const ECHO_TESTS: Record<string, EchoTest> = {
     group: 'MV',
     testType: 'other',
     unit: 'm/s',
+  },
+  Am: {
+    keywordID: 'Am',
+    keywordName: 'TDI Am',
+    section: 'TDI',
+    group: 'MV',
+    testType: 'other',
+    unit: 'm/s',
+  },
+  EmAm: {
+    keywordID: 'EmAm',
+    keywordName: 'Em/Am',
+    section: 'TDI',
+    group: 'MV',
+    testType: 'calculated',
+    unit: '',
+    formula: 'EmAm',
+    dependencies: ['Em', 'Am'],
+    thresholds: [1],
+    optResult: ['normal', 'increase'],
+    optComment: [
+      'normal',
+      'Impaired Relaxation',
+    ],
   },
   EEm: {
     keywordID: 'EEm',

@@ -43,6 +43,7 @@ export default function MsTxMemoGroup({
   const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[0])
   const [memoSchedule, setMemoSchedule] = useState<MsMemoSchedule | undefined>(undefined)
   const [isInputOpen, setIsInputOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const lastMemoRef = useRef<HTMLLIElement>(null)
 
@@ -159,8 +160,20 @@ export default function MsTxMemoGroup({
             {isInputOpen ? <ChevronUpIcon size={13} /> : <PlusIcon size={13} />}
             {isInputOpen ? '닫기' : '항목 추가'}
           </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-blue-600 hover:bg-blue-100"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            title={isCollapsed ? '펼치기' : '접기'}
+          >
+            {isCollapsed ? <ChevronDownIcon size={16} /> : <ChevronUpIcon size={16} />}
+          </Button>
         </div>
       </div>
+
+      {!isCollapsed && (
+        <>
 
       {/* Memo List */}
       <ScrollArea className="h-56 bg-blue-50/20 p-2">
@@ -234,6 +247,8 @@ export default function MsTxMemoGroup({
           />
         </div>
       </div>
+      )}
+        </>
       )}
     </div>
   )

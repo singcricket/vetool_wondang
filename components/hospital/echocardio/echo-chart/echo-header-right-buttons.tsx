@@ -40,17 +40,7 @@ export default function EchoHeaderRightButtons({
 
   return (
     <div className="flex items-center gap-1">
-      {/* 설정 버튼 */}
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-8 w-8"
-        onClick={() => setShowSettings(true)}
-      >
-        <Settings2Icon className="h-4 w-4" />
-      </Button>
-
-      {/* 차트 삭제 */}
+    
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
@@ -78,10 +68,7 @@ export default function EchoHeaderRightButtons({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 설정 패널 */}
-      {showSettings && (
-        <EchoSettingsPanel hosId={hosId} onClose={() => setShowSettings(false)} />
-      )}
+    
     </div>
   )
 }

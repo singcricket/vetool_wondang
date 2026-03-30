@@ -20,12 +20,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { todoSchema } from '@/lib/schemas/hospital-home/hospital-home-schemas'
 import { upsertTodo } from '@/lib/services/hospital-home/todo'
@@ -36,14 +44,17 @@ import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import {
   CalendarIcon,
+  Check,
   EditIcon,
   LoaderCircleIcon,
   PlusIcon,
+  X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { HospitalMetadata } from './todo'
 
 type Props = {
   hosId: string
@@ -51,6 +62,7 @@ type Props = {
   isEdit?: boolean
   refetch: () => Promise<void>
   todo?: ClientTodo
+  metadata?: HospitalMetadata
 }
 
 export default function UpsertTodoDialog({
@@ -59,10 +71,13 @@ export default function UpsertTodoDialog({
   isEdit,
   refetch,
   todo,
+  metadata,
 }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+  const [isUserSelectOpen, setIsUserSelectOpen] = useState(false)
+  const [inputValue, setInputValue] = useState('')
 
   const form = useForm<z.infer<typeof todoSchema>>({
     resolver: zodResolver(todoSchema),
@@ -72,6 +87,18 @@ export default function UpsertTodoDialog({
       targaet_date: date,
     },
   })
+
+  const selectedUsers = useMemo(() => {
+    const value = form.watch('target_user') || ''
+    return value ? value.split(',').filter(Boolean) : []
+  }, [form.watch('target_user')])
+
+  const options = useMemo(() => {
+    if (!metadata) return []
+    const groups = metadata.groups.map(g => ({ label: g, value: g, type: 'group' }))
+    const users = metadata.users.map(u => ({ label: u.name, value: u.name, type: 'user' }))
+    return [...groups, ...users]
+  }, [metadata])
 
   const handleUpsertTodo = async (values: z.infer<typeof todoSchema>) => {
     const { todo_title, target_user, targaet_date } = values
@@ -85,12 +112,23 @@ export default function UpsertTodoDialog({
       todo?.id,
     )
 
-    toast.success('TODO를 추가하였습니다')
+    toast.success('TODO를 저장하였습니다')
 
     setIsDialogOpen(false)
     setIsSubmitting(false)
 
     await refetch()
+  }
+
+  const toggleUser = (user: string) => {
+    const current = selectedUsers
+    let next
+    if (current.includes(user)) {
+      next = current.filter(u => u !== user)
+    } else {
+      next = [...current, user]
+    }
+    form.setValue('target_user', next.join(','))
   }
 
   const handleOpenChange = (open: boolean) => {
@@ -109,12 +147,7 @@ export default function UpsertTodoDialog({
       <DialogTrigger asChild>
         {isEdit ? (
           <Button size="icon" className="h-6 w-6" variant="ghost">
-            <EditIcon
-              style={{
-                width: '14px',
-                height: '14px',
-              }}
-            />
+            <EditIcon className="h-3.5 w-3.5" />
           </Button>
         ) : (
           <Button variant="default" size="icon">
@@ -184,6 +217,91 @@ export default function UpsertTodoDialog({
 
             <FormField
               control={form.control}
+              name="target_user"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>담당자</FormLabel>
+                  <Popover open={isUserSelectOpen} onOpenChange={setIsUserSelectOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <div className="flex flex-wrap gap-1 p-2 border rounded-md min-h-[40px] cursor-pointer hover:border-primary transition-colors">
+                          {selectedUsers.length > 0 ? (
+                            selectedUsers.map((user) => (
+                              <Badge key={user} variant="secondary" className="flex items-center gap-1 py-0.5">
+                                {user}
+                                <X 
+                                  className="h-3 w-3 cursor-pointer" 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toggleUser(user)
+                                  }}
+                                />
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted-foreground">담당자 선택 (복수 선택 가능, 미지정은 전체로 설정)</span>
+                          )}
+                        </div>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="담당자 또는 그룹 검색..." 
+                          value={inputValue}
+                          onValueChange={setInputValue}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            <Button 
+                              variant="ghost" 
+                              className="w-full justify-start text-xs h-8"
+                              onClick={() => {
+                                if (inputValue && !selectedUsers.includes(inputValue)) {
+                                  toggleUser(inputValue)
+                                  setInputValue('')
+                                }
+                              }}
+                            >
+                              <PlusIcon className="mr-2 h-3 w-3" />
+                              &quot;{inputValue}&quot; 직접 추가하기
+                            </Button>
+                          </CommandEmpty>
+                          <CommandGroup heading="그룹">
+                             {options.filter(o => o.type === 'group').map((opt) => (
+                                <CommandItem
+                                  key={opt.value}
+                                  onSelect={() => toggleUser(opt.value)}
+                                  className="text-sm"
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", selectedUsers.includes(opt.value) ? "opacity-100" : "opacity-0")} />
+                                  {opt.label}
+                                </CommandItem>
+                             ))}
+                          </CommandGroup>
+                          <CommandGroup heading="담당자">
+                             {options.filter(o => o.type === 'user').map((opt) => (
+                                <CommandItem
+                                  key={opt.value}
+                                  onSelect={() => toggleUser(opt.value)}
+                                  className="text-sm"
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", selectedUsers.includes(opt.value) ? "opacity-100" : "opacity-0")} />
+                                  {opt.label}
+                                </CommandItem>
+                             ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="todo_title"
               render={({ field }) => (
                 <FormItem>
@@ -198,25 +316,6 @@ export default function UpsertTodoDialog({
                       className="text-sm"
                       autoComplete="off"
                       placeholder="검체수거"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="target_user"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>담당자</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ''}
-                      className="h-8 text-sm"
-                      autoComplete="off"
-                      placeholder="간호팀"
                     />
                   </FormControl>
                   <FormMessage className="text-xs" />
@@ -240,7 +339,7 @@ export default function UpsertTodoDialog({
                   </Button>
                 </DialogClose>
                 <Button type="submit" className="ml-2" disabled={isSubmitting}>
-                  등록
+                  저장
                   <LoaderCircleIcon
                     className={cn(
                       isSubmitting ? 'ml-2 animate-spin' : 'hidden',

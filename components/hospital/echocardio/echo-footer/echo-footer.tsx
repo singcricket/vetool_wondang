@@ -18,21 +18,25 @@ const FOOTER_MENUS = [
     label: '차트 작성',
     value: 'chart',
     icon: <FileTextIcon />,
+    hideInMobile: false,
   },
   {
     label: '차트 검색',
     value: 'search',
     icon: <SearchIcon />,
+    hideInMobile: false,
   },
   {
     label: '통계',
     value: 'stats',
     icon: <BarChart2Icon />,
+    hideInMobile: true,
   },
   {
     label: '템플릿',
     value: 'template',
     icon: <BookmarkIcon />,
+    hideInMobile: false,
   },
 ] as const
 
@@ -76,14 +80,14 @@ export default function EchoFooter({ hosId, targetDate }: Props) {
 
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-40 flex h-[calc(2.5rem+env(safe-area-inset-bottom))] justify-between border-t bg-white 2xl:left-[200px]">
+    <footer className="fixed bottom-0 left-0 right-0 z-40 flex h-[calc(2.5rem+env(safe-area-inset-bottom))] justify-between border-t bg-white 2xl:left-10">
       <ul className="flex h-10 items-center gap-2">
         <li className="mx-2">
           <EchoRealtimeStatus />
         </li>
 
-        {FOOTER_MENUS.map(({ label, value, icon }) => (
-          <li key={value}>
+        {FOOTER_MENUS.map(({ label, value, icon, hideInMobile }) => (
+          <li key={value} className={hideInMobile ? 'hidden md:block' : 'block'}>
             <Button
               size="sm"
               variant="ghost"

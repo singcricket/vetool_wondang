@@ -412,12 +412,17 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
           <MenuButton
             onClick={() => {
               const previousUrl = editor.getAttributes('link').href
-              const url = window.prompt('URL을 입력하세요', previousUrl)
+              let url = window.prompt('URL을 입력하세요', previousUrl)
 
               if (url === null) return
               if (url === '') {
                 editor.chain().focus().extendMarkRange('link').unsetLink().run()
                 return
+              }
+
+              // 프로토콜이 없는 경우 https:// 추가 (상대 경로 방지)
+              if (url && !/^https?:\/\//i.test(url) && !/^mailto:/i.test(url) && !/^tel:/i.test(url)) {
+                url = `https://${url}`
               }
 
               editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()

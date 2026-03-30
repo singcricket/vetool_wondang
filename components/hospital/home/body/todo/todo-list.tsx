@@ -3,6 +3,7 @@ import NoResultSquirrel from '@/components/common/no-result-squirrel'
 import SingleTodo from '@/components/hospital/home/body/todo/single-todo'
 
 import type { ClientTodo } from '@/types/hospital/todo'
+import { HospitalMetadata } from './todo'
 
 type Props = {
   date: Date
@@ -10,6 +11,7 @@ type Props = {
   todos: ClientTodo[]
   refetch: () => Promise<void>
   activeFilter: 'all' | 'done' | 'not-done'
+  metadata: HospitalMetadata
 }
 
 export default function TodoList({
@@ -18,6 +20,7 @@ export default function TodoList({
   todos,
   refetch,
   activeFilter,
+  metadata,
 }: Props) {
   const filteredTodos = todos.filter((todo) => {
     if (activeFilter === 'all') return true
@@ -45,6 +48,7 @@ export default function TodoList({
               hosId={hosId}
               date={date}
               refetch={refetch}
+              metadata={metadata}
             />
           ))}
         </ul>

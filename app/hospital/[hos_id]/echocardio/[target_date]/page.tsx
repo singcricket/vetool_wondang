@@ -1,7 +1,16 @@
+'use client'
+
+import NoResultSquirrel from '@/components/common/no-result-squirrel'
+import useIsMobile from '@/hooks/use-is-mobile'
+
 export default function EchoDatePage() {
+  const isMobile = useIsMobile()
+
   return (
-    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-      좌측에서 환자를 선택하거나 새 차트를 등록하세요
-    </div>
+     <NoResultSquirrel
+         text={isMobile ? '👆 환자를 선택해주세요' : '👈 환자를 선택해주세요'}
+         className="h-screen flex-col"
+         size="lg"
+       />
   )
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getConsecutiveDays } from '@/lib/utils/utils'
+import { endOfMonth, format, startOfMonth } from 'date-fns'
 import { redirect } from 'next/navigation'
 
 export const fetchTodos = async (
@@ -36,6 +37,38 @@ export const fetchTodos = async (
     seletctedDayTodos: data.filter((todo) => todo.target_date === seletctedDay),
     dayAfterTodos: data.filter((todo) => todo.target_date === dayAfter),
   }
+}
+
+export const fetchMonthTodos = async (
+  hosId: string,
+  selectedDate: Date,
+  activeFilter: 'all' | 'done' | 'not-done',
+) => {
+  const supabase = await createClient()
+  const start = format(startOfMonth(selectedDate), 'yyyy-MM-dd')
+  const end = format(endOfMonth(selectedDate), 'yyyy-MM-dd')
+
+  let query = supabase
+    .from('todos')
+    .select('id, is_done, target_date, target_user, todo_title')
+    .match({ hos_id: hosId })
+    .gte('target_date', start)
+    .lte('target_date', end)
+
+  if (activeFilter === 'done') {
+    query = query.eq('is_done', true)
+  } else if (activeFilter === 'not-done') {
+    query = query.eq('is_done', false)
+  }
+
+  const { data, error } = await query.order('created_at')
+
+  if (error) {
+    console.error(error)
+    redirect(`/error?message=${error.message}`)
+  }
+
+  return data
 }
 
 export const upsertTodo = async (
@@ -83,5 +116,35 @@ export const deleteTodo = async (todoId: string) => {
   if (error) {
     console.error(error)
     redirect(`/error?message=${error.message}`)
+  }
+}
+
+export const fetchHospitalMetadata = async (hosId: string) => {
+  const supabase = await createClient()
+
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('user_id, name, avatar_url, position, group, is_vet')
+    .eq('hos_id', hosId)
+
+  if (usersError) {
+    console.error('fetchHospitalMetadata users error:', usersError)
+    throw new Error(usersError.message)
+  }
+
+  const { data: hospital, error: hospitalError } = await supabase
+    .from('hospitals')
+    .select('group_list')
+    .eq('hos_id', hosId)
+    .single()
+
+  if (hospitalError) {
+    console.error('fetchHospitalMetadata hospitals error:', hospitalError)
+    throw new Error(hospitalError.message)
+  }
+
+  return {
+    users: users || [],
+    groups: (hospital?.group_list as string[]) || [],
   }
 }
