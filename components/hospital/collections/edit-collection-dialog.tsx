@@ -125,37 +125,39 @@ export default function EditCollectionDialog({
                 />
               </div>
             </div>
-
-            <div className="pt-4 border-t border-slate-50">
-              <Button
-                variant="ghost"
-                onClick={() => setShowDeleteAlert(true)}
-                className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 font-bold gap-2 py-6 rounded-xl"
-              >
-                <Trash2 size={18} />
-                이 컬렉션 삭제하기
-              </Button>
-            </div>
           </div>
 
-          <DialogFooter className="p-4 bg-slate-50 border-t flex gap-2">
-            <Button variant="ghost" onClick={() => onOpenChange(false)} className="flex-1 font-bold">
-              취소
-            </Button>
-            <Button 
-              onClick={handleUpdate} 
-              disabled={isUpdating || !title.trim()}
-              className="flex-1 bg-slate-900 hover:bg-slate-800 font-bold"
+          <DialogFooter className="p-4 bg-slate-50 border-t flex items-center gap-2">
+            {/* 삭제 버튼을 푸터 왼쪽(중앙 버튼 옆)으로 이동 */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowDeleteAlert(true)}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-10 w-10 shrink-0"
+              title="컬렉션 삭제"
             >
-              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              저장하기
+              <Trash2 size={18} />
             </Button>
+            
+            <div className="flex-1 flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 font-bold h-10">
+                취소
+              </Button>
+              <Button 
+                onClick={handleUpdate} 
+                disabled={isUpdating || !title.trim()}
+                className="flex-[2] bg-slate-900 hover:bg-slate-800 font-bold h-10"
+              >
+                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                저장하기
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-        <AlertDialogContent className="rounded-3xl">
+        <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-black">정말로 컬렉션을 삭제할까요?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 mt-2">
@@ -163,11 +165,11 @@ export default function EditCollectionDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 flex gap-2">
-            <AlertDialogCancel className="font-bold rounded-xl border-2">취소</AlertDialogCancel>
+            <AlertDialogCancel className="font-bold rounded-xl border-2 flex-1">취소</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 font-bold rounded-xl"
+              className="bg-red-600 hover:bg-red-700 font-bold rounded-xl flex-1"
             >
               {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               네, 삭제하겠습니다

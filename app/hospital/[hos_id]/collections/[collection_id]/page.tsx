@@ -1,12 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { Folder } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
-import CollectionHeader from './_components/collection-header'
+import CollectionHeader from '@/components/hospital/collections/collection-detail/collection-header'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { fetchMsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { fetchMsLayoutData as fetchLayout } from '@/lib/services/monitoring/monitoring-layout'
-import CollectionItemRow from './_components/collection-item-row'
+import CollectionItemRow from '@/components/hospital/collections/collection-detail/collection-item-row'
 import { format } from 'date-fns'
 
 export default async function CollectionDetailPage(props: { params: Promise<{ hos_id: string; collection_id: string }> }) {

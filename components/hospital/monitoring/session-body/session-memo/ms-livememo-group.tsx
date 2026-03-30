@@ -20,6 +20,7 @@ import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-imag
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
 import { ActivityIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import useIsMobile from '@/hooks/use-is-mobile'
 
 type Props = {
   memo: MsMemo[]
@@ -38,7 +39,12 @@ export default function MsLiveMemoGroup({
   const [sortedMemos, setSortedMemos] = useState<MsMemo[]>(memo ?? [])
   const [memoInput, setMemoInput] = useState('')
   const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[2])
+  const isMobile = useIsMobile()
   const [isCollapsed, setIsCollapsed] = useState(false)
+
+  useEffect(() => {
+    setIsCollapsed(isMobile)
+  }, [isMobile])
 
   const lastMemoRef = useRef<HTMLLIElement>(null)
 

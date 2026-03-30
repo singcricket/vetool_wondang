@@ -23,6 +23,7 @@ import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-imag
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
 import MsMemoSchedulePicker from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-schedule-picker'
 import { MsMemoSchedule } from '@/types/monitoring/monitoring-type'
+import useIsMobile from '@/hooks/use-is-mobile'
 
 type Props = {
   memo: MsMemo[]
@@ -43,7 +44,12 @@ export default function MsTxMemoGroup({
   const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[0])
   const [memoSchedule, setMemoSchedule] = useState<MsMemoSchedule | undefined>(undefined)
   const [isInputOpen, setIsInputOpen] = useState(false)
+  const isMobile = useIsMobile()
   const [isCollapsed, setIsCollapsed] = useState(false)
+
+  useEffect(() => {
+    setIsCollapsed(isMobile)
+  }, [isMobile])
 
   const lastMemoRef = useRef<HTMLLIElement>(null)
 

@@ -35,7 +35,6 @@ export default function TodoCalendar({
 
   const handleDayClick = (date: Date) => {
     setSelectedDate(date)
-    // 우측에 리스트가 상시 노출되므로 다이얼로그는 이제 생략함
   }
 
   const getDayTodos = (date: Date): ClientTodo[] => {
@@ -44,7 +43,7 @@ export default function TodoCalendar({
   }
 
   return (
-    <div className="flex flex-col gap-4 relative min-h-[500px]">
+    <div className="flex flex-col gap-2 relative min-h-[400px]">
        {isFetching && (
         <div className="absolute inset-x-0 bottom-0 top-12 z-50 bg-white/40 backdrop-blur-[1px] flex items-center justify-center rounded-md pointer-events-none">
            <TodoSkeleton />
@@ -61,21 +60,22 @@ export default function TodoCalendar({
         }}
         month={currentMonth}
         onDayClick={handleDayClick}
-        className="rounded-md w-full h-full"
+        className="rounded-md w-full h-full p-2"
         classNames={{
           months: 'w-full',
-          month: 'w-full space-y-4',
-          table: 'w-full border-collapse space-y-1 table-fixed',
+          month: 'w-full space-y-2',
+          table: 'w-full border-collapse table-fixed',
           head_row: 'flex w-full',
-          head_cell: 'text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] py-2',
-          row: 'flex w-full mt-2',
-          cell: 'relative p-0 text-left text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md flex-1 h-40 border border-muted/50 min-w-0 overflow-hidden shadow-sm',
+          head_cell: 'text-muted-foreground rounded-md flex-1 font-normal text-[0.75rem] py-1',
+          row: 'flex w-full mt-1',
+          // FHD 화면 최적화를 위해 높이를 h-40에서 h-28로 축소 (약 112px)
+          cell: 'relative p-0 text-left text-xs focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md flex-1 h-28 border border-muted/30 min-w-0 overflow-hidden shadow-sm',
           day: cn(
-            "h-full w-full p-2 font-normal aria-selected:opacity-100 items-start justify-start flex flex-col gap-1 hover:bg-slate-50 transition-colors min-w-0"
+            "h-full w-full p-1.5 font-normal aria-selected:opacity-100 items-start justify-start flex flex-col gap-0.5 hover:bg-slate-50 transition-colors min-w-0"
           ),
-          day_today: 'bg-accent/50 text-accent-foreground font-bold outline outline-1 outline-primary/30',
-          day_selected: 'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary focus:bg-primary/20 focus:text-primary !opacity-100 ring-2 ring-primary ring-inset z-20',
-          day_outside: 'text-muted-foreground opacity-30',
+          day_today: 'bg-accent/30 text-accent-foreground font-bold outline outline-1 outline-primary/20',
+          day_selected: 'bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary !opacity-100 ring-1 ring-primary ring-inset z-20',
+          day_outside: 'text-muted-foreground opacity-20',
         }}
         components={{
           DayContent: ({ date }) => {
@@ -87,11 +87,11 @@ export default function TodoCalendar({
             const hasTodos = total > 0
 
             return (
-              <div className="flex flex-col items-start w-full h-full p-1 overflow-hidden min-w-0">
-                <div className="mb-1.5 flex w-full items-center justify-between px-1 min-w-0 border-b border-muted/30 pb-1">
+              <div className="flex flex-col items-start w-full h-full overflow-hidden min-w-0">
+                <div className="mb-0.5 flex w-full items-center justify-between px-1 min-w-0 border-b border-muted/20 pb-0.5">
                   <span
                     className={cn(
-                      'text-xs font-semibold',
+                      'text-[10px] sm:text-xs font-semibold',
                       isSameDay(date, new Date()) && 'text-primary font-bold',
                     )}
                   >
@@ -99,24 +99,24 @@ export default function TodoCalendar({
                   </span>
                   {hasTodos && (
                     <div className="flex items-center gap-1">
-                      <span className="font-mono text-[10px] text-muted-foreground bg-muted/30 px-1 rounded-sm">
+                      <span className="font-mono text-[9px] text-muted-foreground bg-muted/20 px-1 rounded-sm">
                         {total}
                       </span>
-                      {allDone && <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+                      {allDone && <div className="h-1 w-1 rounded-full bg-emerald-500" />}
                     </div>
                   )}
                 </div>
                 
-                <div className="w-full flex-grow overflow-y-auto overflow-x-hidden scrollbar-hide py-1">
+                <div className="w-full flex-grow overflow-y-auto overflow-x-hidden scrollbar-hide py-0.5">
                   <div className="flex w-full flex-col gap-0.5 pb-2 min-w-0 px-0.5">
                     {dayTodos.map((todo) => (
                       <div
                         key={todo.id}
                         className={cn(
-                          'w-0 min-w-full block truncate whitespace-nowrap overflow-hidden text-[10px] font-medium leading-[1.4] px-1.5 py-1 rounded-sm border-l-2 text-left',
+                          'w-0 min-w-full block truncate whitespace-nowrap overflow-hidden text-[9px] font-medium leading-tight px-1 py-0.5 rounded-sm border-l-2 text-left',
                           todo.is_done
-                            ? 'bg-slate-50 text-slate-400 border-slate-200 line-through'
-                            : 'bg-blue-50/80 text-blue-700 border-blue-400',
+                            ? 'bg-slate-50/50 text-slate-300 border-slate-100 line-through'
+                            : 'bg-blue-50/50 text-blue-600 border-blue-300',
                         )}
                         title={todo.todo_title}
                       >
@@ -127,8 +127,8 @@ export default function TodoCalendar({
                 </div>
 
                 {hasTodos && !allDone && (
-                  <div className="absolute bottom-1 right-1 pointer-events-none">
-                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                  <div className="absolute bottom-0.5 right-0.5 pointer-events-none">
+                    <div className="h-1 w-1 rounded-full bg-blue-400" />
                   </div>
                 )}
               </div>
