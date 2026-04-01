@@ -1,10 +1,17 @@
 'use client'
 
-import { useRef } from 'react'
-import { format, parseISO } from 'date-fns'
-import type { EchoChartDetail, EchoResultMap } from '@/types/echocardio/echocardio-type'
-import { ECHO_SECTION_META } from '@/constants/hospital/echocardio/echo-sections'
+import { useRef, useState, useMemo } from 'react'
+import type { EchoChartDetail, EchoResultMap, Species, EchoSection } from '@/types/echocardio/echocardio-type'
+import { ECHO_SECTION_META, DEFAULT_SECTION_ORDER } from '@/constants/hospital/echocardio/echo-sections'
+import { getEchoTestsBySpecies } from '@/constants/hospital/echocardio/echo-tests'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+
+// Sub-components
 import EchoReportExport from './echo-report-export'
+import EchoReportHeader from './echo-report-header'
+import EchoReportTable from './echo-report-table'
+import EchoReportSummary from './echo-report-summary'
+import EchoReportFooter from './echo-report-footer'
 
 interface EchoReportProps {
   chartDetail: EchoChartDetail
@@ -12,155 +19,173 @@ interface EchoReportProps {
   computedResults: Record<string, { result: string; comment: string }>
 }
 
+type ReportMode = 'section' | 'functional' | 'anatomic'
+
 export default function EchoReport({
   chartDetail,
   resultMap,
   computedResults,
 }: EchoReportProps) {
   const reportRef = useRef<HTMLDivElement>(null)
-  const { patient, vet, examiner, exam_date } = chartDetail
+  const [activeTab, setActiveTab] = useState<ReportMode>('section')
+  const { patient, exam_date } = chartDetail
 
-  // 이상 소견 수집 (comment가 있고 normal이 아닌 항목)
-  const findings = chartDetail.results
-    .filter((r) => {
-      const c = computedResults[r.keyword_id]
-      return (
-        c?.comment &&
-        c.comment.toLowerCase() !== 'normal' &&
-        c.comment !== ''
-      )
+  const species = (patient.species?.toLowerCase() === 'feline' ? 'feline' : 'canine') as Species
+  const testDefinitions = useMemo(() => getEchoTestsBySpecies(species), [species])
+
+  // 데이터 그룹화 로직
+  const reportData = useMemo(() => {
+    // 기본적으로 값이 있는 것들만 표시
+    const results = chartDetail.results.filter((r) => r.value)
+    
+    // 항상 노출해야 하는 항목들
+    const ALWAYS_EXPOSED_SECTIONS = ['MINE_SCORE', 'PosibilityOfPH', 'Pulmonary_Hypertension']
+    const alwaysExposedItems: any[] = []
+    
+    Object.values(testDefinitions).forEach(test => {
+      if (test.sections?.some(sec => ALWAYS_EXPOSED_SECTIONS.includes(sec))) {
+        // 이미 results에 포함되어 있는지 확인 (중복 방지)
+        if (!results.some(r => r.keyword_id === test.keywordID)) {
+          alwaysExposedItems.push({
+            keyword_id: test.keywordID,
+            value: resultMap[test.keywordID] || null, // resultMap에서 현재 세션 값을 가져옴
+            meta: test,
+            computed: computedResults[test.keywordID]
+          })
+        }
+      }
     })
-    .map((r) => ({
-      keyword_id: r.keyword_id,
-      value: r.value ?? '',
-      result: computedResults[r.keyword_id]?.result ?? '',
-      comment: computedResults[r.keyword_id]?.comment ?? '',
-    }))
+
+    const bySection: Record<string, { label: string; items: any[] }> = {}
+    const byFunctional: Record<string, { label: string; items: any[] }> = {}
+    const byAnatomic: Record<string, { label: string; items: any[] }> = {}
+
+    // 값 있는 항목들 처리
+    results.forEach((r) => {
+      const meta = testDefinitions[r.keyword_id]
+      if (!meta) return
+
+      const item = {
+        keyword_id: r.keyword_id,
+        value: r.value,
+        meta,
+        computed: computedResults[r.keyword_id]
+      }
+      
+      processItem(item)
+    })
+
+    // 항상 노출 항목들 처리
+    alwaysExposedItems.forEach(processItem)
+
+    function processItem(item: any) {
+      const { meta } = item
+      // 섹션별 그룹화
+      meta.sections?.forEach((sec: EchoSection) => {
+        if (!bySection[sec]) {
+          const sectionMeta = ECHO_SECTION_META[sec]
+          bySection[sec] = { 
+            label: sectionMeta?.label || sec, 
+            items: [] 
+          }
+        }
+        // 중복 방지
+        if (!bySection[sec].items.some(it => it.keyword_id === item.keyword_id)) {
+          bySection[sec].items.push(item)
+        }
+      })
+
+      // 기능별 그룹화
+      meta.functional_groups?.forEach((func: string) => {
+        if (!byFunctional[func]) {
+          byFunctional[func] = { 
+            label: func.replace(/_/g, ' '), 
+            items: [] 
+          }
+        }
+        if (!byFunctional[func].items.some(it => it.keyword_id === item.keyword_id)) {
+          byFunctional[func].items.push(item)
+        }
+      })
+
+      // 구조별 그룹화
+      meta.anatomic_groups?.forEach((anat: string) => {
+        if (!byAnatomic[anat]) {
+          byAnatomic[anat] = { 
+            label: anat.replace(/_/g, ' '), 
+            items: [] 
+          }
+        }
+        if (!byAnatomic[anat].items.some(it => it.keyword_id === item.keyword_id)) {
+          byAnatomic[anat].items.push(item)
+        }
+      })
+    }
+
+    return { bySection, byFunctional, byAnatomic }
+  }, [chartDetail.results, testDefinitions, computedResults, resultMap, species])
+
+  // 섹션 뷰의 경우 정의된 순서대로 정렬
+  const sortedSections = useMemo(() => {
+    return DEFAULT_SECTION_ORDER.filter(sec => reportData.bySection[sec])
+  }, [reportData.bySection])
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 출력 버튼 */}
-      <div className="flex justify-end gap-2">
+      {/* 뷰 선택 탭 (화면용) */}
+      <div className="flex items-center justify-between print:hidden">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportMode)} className="w-[400px]">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="section">섹션별</TabsTrigger>
+            <TabsTrigger value="functional">기능별</TabsTrigger>
+            <TabsTrigger value="anatomic">구조별</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <EchoReportExport reportRef={reportRef} patientName={patient.name} />
       </div>
 
-      {/* 리포트 본문 */}
+      {/* 리포트 본문 (출력 영역) */}
       <div
         ref={reportRef}
-        className="flex flex-col gap-4 rounded-md border bg-white p-6"
+        className="flex flex-col gap-6 rounded-md border bg-white p-8 shadow-sm print:border-none print:p-0 print:shadow-none"
       >
         {/* 헤더 */}
-        <div className="border-b pb-3">
-          <h2 className="text-base font-bold">심장초음파 검사 결과</h2>
-          <div className="mt-1 flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <span>
-              환자:{' '}
-              <strong className="text-foreground">{patient.name}</strong>
-            </span>
-            <span>
-              차트번호:{' '}
-              <strong className="text-foreground">
-                {patient.hos_patient_id}
-              </strong>
-            </span>
-            <span>
-              {patient.species} · {patient.breed}
-            </span>
-            <span>검사일: {format(parseISO(exam_date), 'yyyy년 MM월 dd일')}</span>
-            {vet && <span>담당의: {vet.name}</span>}
-            {examiner && <span>검사자: {examiner.name}</span>}
-          </div>
-        </div>
+        <EchoReportHeader chartDetail={chartDetail} />
 
-        {/* 이상 소견 요약 */}
-        {findings.length > 0 ? (
-          <div>
-            <h3 className="mb-2 text-xs font-bold">이상 소견</h3>
-            <ul className="flex flex-col gap-1">
-              {findings.map((f) => (
-                <li key={f.keyword_id} className="flex gap-2 text-xs">
-                  <span className="text-red-500">•</span>
-                  <span>{f.comment}</span>
-                  {f.value && (
-                    <span className="text-muted-foreground">({f.value})</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            이상 소견 없음 (정상 범위)
-          </p>
-        )}
+        {/* 본문: 그룹별 테이블 */}
+        <div className="flex flex-col gap-8">
+          {activeTab === 'section' && sortedSections.map(sec => (
+            <EchoReportTable 
+              key={sec} 
+              label={reportData.bySection[sec].label} 
+              items={reportData.bySection[sec].items} 
+            />
+          ))}
 
-        {/* 전체 결과 표 */}
-        <div>
-          <h3 className="mb-2 text-xs font-bold">전체 검사 결과</h3>
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="border px-2 py-1 text-left text-[10px] font-semibold">
-                  항목
-                </th>
-                <th className="border px-2 py-1 text-center text-[10px] font-semibold">
-                  측정값
-                </th>
-                <th className="border px-2 py-1 text-center text-[10px] font-semibold">
-                  판정
-                </th>
-                <th className="border px-2 py-1 text-left text-[10px] font-semibold">
-                  소견
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {chartDetail.results
-                .filter((r) => r.value)
-                .map((r) => {
-                  const c = computedResults[r.keyword_id]
-                  const isAbnormal =
-                    c?.result &&
-                    c.result !== 'normal' &&
-                    c.result !== 'Normal' &&
-                    c.result !== ''
-                  return (
-                    <tr
-                      key={r.keyword_id}
-                      className={isAbnormal ? 'bg-red-50/50' : ''}
-                    >
-                      <td className="border px-2 py-1 text-[10px] text-muted-foreground">
-                        {r.keyword_id}
-                      </td>
-                      <td className="border px-2 py-1 text-center">
-                        {r.value}
-                      </td>
-                      <td className="border px-2 py-1 text-center text-[10px]">
-                        <span
-                          className={
-                            isAbnormal ? 'text-red-600' : 'text-green-700'
-                          }
-                        >
-                          {c?.result || '—'}
-                        </span>
-                      </td>
-                      <td className="border px-2 py-1 text-[10px] text-muted-foreground">
-                        {c?.comment || '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
-            </tbody>
-          </table>
+          {activeTab === 'functional' && Object.entries(reportData.byFunctional).map(([key, group]) => (
+            <EchoReportTable 
+              key={key} 
+              label={group.label} 
+              items={group.items} 
+              isUppercase 
+            />
+          ))}
+
+          {activeTab === 'anatomic' && Object.entries(reportData.byAnatomic).map(([key, group]) => (
+            <EchoReportTable 
+              key={key} 
+              label={group.label} 
+              items={group.items} 
+              isUppercase 
+            />
+          ))}
         </div>
 
         {/* 종합 소견 */}
-        {chartDetail.memo && (
-          <div>
-            <h3 className="mb-1 text-xs font-bold">종합 소견</h3>
-            <p className="whitespace-pre-wrap text-xs">{chartDetail.memo}</p>
-          </div>
-        )}
+        <EchoReportSummary memo={chartDetail.memo} />
+
+        {/* 푸터 */}
+        <EchoReportFooter />
       </div>
     </div>
   )

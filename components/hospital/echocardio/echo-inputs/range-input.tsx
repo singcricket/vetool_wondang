@@ -77,7 +77,7 @@ export default function RangeInput({
           <span className="w-10 text-right text-[9px] text-muted-foreground">
             {refMin}
           </span>
-          <div className="relative h-1.5 flex-1 rounded-full bg-muted">
+          <div className="relative h-1.5 w-64 rounded-full bg-muted">
             {/* 정상 범위 표시 */}
             <div className="absolute inset-0 rounded-full bg-green-100" />
             {/* 현재값 마커 */}

@@ -1,1062 +1,119 @@
-// =============================================
-// 심장초음파 검사 항목 정의 (서버 전용)
-//
-// 보안 원칙: 이 파일은 서버 컴포넌트 / 서버 액션에서만 import할 것
-// 클라이언트에는 EchoTestUIMeta 형태의 경량 데이터만 전달
-//
-// keywordID: 유일 식별자 → DB 저장키, 절대 변경 금지
-// keywordName: 표시용 → 자유롭게 변경 가능
-// thresholds: 경계값 배열 → 인덱스 기반 판정
-//   ex) thresholds:[50,70], value=32 → index 0 → optResult[0]
-// =============================================
-
 import type {
   EchoTest,
-  EchoSection,
   EchoTestUIMeta,
+  Species,
 } from '@/types/echocardio/echocardio-type'
+import { ECHO_TESTS_CANINE } from './echo-tests-canine'
+import { ECHO_TESTS_FELINE } from './echo-tests-feline'
 
-export const ECHO_TESTS: Record<string, EchoTest> = {
-  // ============================================================
-  // PE 섹션 - 신체검사
-  // ============================================================
-  BW_kg: {
-    keywordID: 'BW_kg',
-    keywordName: 'BW (kg)',
-    section: 'PE',
-    group: 'PE',
-    testType: 'other',
-    unit: 'kg',
-  },
-  BP: {
-    keywordID: 'BP',
-    keywordName: 'Blood Pressure',
-    section: 'PE',
-    group: 'PE',
-    testType: 'range',
-    unit: 'mmHg',
-    thresholds: [80, 150],
-    optResult: ['hypotension', 'normal', 'hypertension'],
-    optComment: ['', '', ''],
-  },
-  BT: {
-    keywordID: 'BT',
-    keywordName: 'Body Temp.',
-    section: 'PE',
-    group: 'PE',
-    testType: 'range',
-    unit: '°C',
-    thresholds: [38, 39.2],
-    optResult: ['hypothermia', 'normal', 'hyperthermia'],
-    optComment: ['', '', ''],
-  },
-  HR: {
-    keywordID: 'HR',
-    keywordName: 'Heart Rate',
-    section: 'PE',
-    group: 'PE',
-    testType: 'range',
-    unit: 'bpm',
-    thresholds: [80, 160],
-    optResult: ['bradycardia', 'normal', 'tachycardia'],
-    optComment: ['', '', ''],
-  },
-  RR: {
-    keywordID: 'RR',
-    keywordName: 'Respi. Rate',
-    section: 'PE',
-    group: 'PE',
-    testType: 'range',
-    unit: 'rr/min',
-    thresholds: [10, 30, 40, 60],
-    optResult: ['hypopnea', 'normal', 'tachypnea', 'tachypnea', 'tachypnea'],
-    optComment: ['', '', '', '', ''],
-  },
-  HS: {
-    keywordID: 'HS',
-    keywordName: 'Heart Sound',
-    section: 'PE',
-    group: 'PE',
-    testType: 'textcomment',
-  },
-  PE_comment: {
-    keywordID: 'PE_comment',
-    keywordName: 'P.E. comment',
-    section: 'PE',
-    group: 'PE',
-    testType: 'textcomment',
-  },
+export { ECHO_TESTS_CANINE, ECHO_TESTS_FELINE }
 
-  // ============================================================
-  // Radio 섹션 - 방사선
-  // ============================================================
-  VHS: {
-    keywordID: 'VHS',
-    keywordName: 'VHS',
-    section: 'Radio',
-    group: 'Thorax',
-    testType: 'range',
-    unit: '',
-    thresholds: [8.5, 11, 12, 13],
-    optResult: [
-      'decrease',
-      'normal',
-      'mild increase',
-      'moderate increase',
-      'severe increase',
-    ],
-    optComment: [
-      'microcardia',
-      'normal',
-      'mild cardiomegaly',
-      'moderate cardiomegaly',
-      'severe cardiomegaly',
-    ],
-  },
-  VLAS: {
-    keywordID: 'VLAS',
-    keywordName: 'VLAS',
-    section: 'Radio',
-    group: 'Thorax',
-    testType: 'range',
-    unit: '',
-    thresholds: [3],
-    optResult: ['normal', 'increase'],
-    optComment: ['normal', 'LA cardiomegaly'],
-  },
-  Radio_comment: {
-    keywordID: 'Radio_comment',
-    keywordName: 'Radiology comment',
-    section: 'Radio',
-    group: 'Comment',
-    testType: 'textcomment',
-  },
-
-  // ============================================================
-  // Bmode 섹션
-  // ============================================================
-  MV_leafletTipThickening: {
-    keywordID: 'MV_leafletTipThickening',
-    keywordName: 'MV Leaflet Tip Thickening',
-    section: 'Bmode',
-    group: 'MV',
-    testType: 'select',
-    options: ['', 'none', 'anterior', 'posterior', 'anterior & posterior'],
-    optResult: [
-      '',
-      'normal',
-      'MV anterior leaflet tip thickening',
-      'MV posterior leaflet tip thickening',
-      'MV anterior & posterior leaflet tip thickening',
-    ],
-    optComment: ['', 'normal', 'MMVD', 'MMVD', 'MMVD'],
-  },
-  MV_prolapse: {
-    keywordID: 'MV_prolapse',
-    keywordName: 'MV Prolapse',
-    section: 'Bmode',
-    group: 'MV',
-    testType: 'select',
-    options: ['', 'none', 'anterior', 'posterior', 'anterior & posterior'],
-    optResult: [
-      '',
-      'normal',
-      'MV prolapse(anterior)',
-      'MV prolapse(posterior)',
-      'MV prolapse(anterior & posterior)',
-    ],
-    optComment: ['', 'normal', 'MMVD', 'MMVD', 'MMVD'],
-  },
-  MV_flailmovement: {
-    keywordID: 'MV_flailmovement',
-    keywordName: 'MV Flail Movement',
-    section: 'Bmode',
-    group: 'MV',
-    testType: 'select',
-    options: ['', 'none', 'anterior', 'posterior', 'anterior & posterior'],
-    optResult: [
-      '',
-      'normal',
-      'MV flail movement(anterior)',
-      'MV flail movement(posterior)',
-      'MV flail movement(anterior & posterior)',
-    ],
-    optComment: ['', 'normal', 'MMVD', 'MMVD', 'MMVD'],
-  },
-  MV_SAM: {
-    keywordID: 'MV_SAM',
-    keywordName: 'Systolic Anterior Motion (SAM)',
-    section: 'Bmode',
-    group: 'MV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'none', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  IVS_flattening: {
-    keywordID: 'IVS_flattening',
-    keywordName: 'IVS Flattening',
-    section: 'Bmode',
-    group: 'IVS',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', 'RV enlargement'],
-  },
-  IVS_paradoxicalMV: {
-    keywordID: 'IVS_paradoxicalMV',
-    keywordName: 'IVS Paradoxical Movement',
-    section: 'Bmode',
-    group: 'IVS',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  TV_leafletTipThickening: {
-    keywordID: 'TV_leafletTipThickening',
-    keywordName: 'TV Leaflet Tip Thickening',
-    section: 'Bmode',
-    group: 'TV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'TV leaflet tip thickening'],
-    optComment: ['', 'normal', 'TVI'],
-  },
-  TV_prolapse: {
-    keywordID: 'TV_prolapse',
-    keywordName: 'TV Prolapse',
-    section: 'Bmode',
-    group: 'TV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'TV prolapse'],
-    optComment: ['', 'normal', 'TVI'],
-  },
-  TV_flailmovement: {
-    keywordID: 'TV_flailmovement',
-    keywordName: 'TV Flail Movement',
-    section: 'Bmode',
-    group: 'TV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'TV flail movement'],
-    optComment: ['', 'normal', 'TVI'],
-  },
-  AV_flattening: {
-    keywordID: 'AV_flattening',
-    keywordName: 'Aortic Valve Flattening',
-    section: 'Bmode',
-    group: 'AV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  AV_poststenoticdilation: {
-    keywordID: 'AV_poststenoticdilation',
-    keywordName: 'AV Post-stenotic Dilation',
-    section: 'Bmode',
-    group: 'AV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  LVOT_obstruction: {
-    keywordID: 'LVOT_obstruction',
-    keywordName: 'LVOT Obstruction',
-    section: 'Bmode',
-    group: 'LVOT',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  PV_thickening: {
-    keywordID: 'PV_thickening',
-    keywordName: 'PV Thickening',
-    section: 'Bmode',
-    group: 'PV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  PV_changeOfdimension: {
-    keywordID: 'PV_changeOfdimension',
-    keywordName: 'PV Change of Dimension',
-    section: 'Bmode',
-    group: 'PV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  PericardialEffusion: {
-    keywordID: 'PericardialEffusion',
-    keywordName: 'Pericardial Effusion',
-    section: 'Bmode',
-    group: 'Effusion',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  PericardialEffusion_vol: {
-    keywordID: 'PericardialEffusion_vol',
-    keywordName: 'Pericardial Effusion (vol.)',
-    section: 'Bmode',
-    group: 'Effusion',
-    testType: 'other',
-    unit: 'ml',
-  },
-  PleuralEffusion: {
-    keywordID: 'PleuralEffusion',
-    keywordName: 'Pleural Effusion',
-    section: 'Bmode',
-    group: 'Effusion',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  PleuralEffusion_vol: {
-    keywordID: 'PleuralEffusion_vol',
-    keywordName: 'Pleural Effusion (vol.)',
-    section: 'Bmode',
-    group: 'Effusion',
-    testType: 'other',
-    unit: 'mm',
-  },
-  VTI: {
-    keywordID: 'VTI',
-    keywordName: 'Systemic VTI',
-    section: 'Bmode',
-    group: 'LV',
-    testType: 'other',
-    unit: '',
-  },
-  LVEIO: {
-    keywordID: 'LVEIO',
-    keywordName: 'LVEIO',
-    section: 'Bmode',
-    group: 'LV',
-    testType: 'calculated',
-    unit: '',
-    formula: 'LVEIO',
-    dependencies: ['MV_Ewave', 'VTI'],
-    thresholds: [13.26],
-    optResult: ['decrease', 'normal'],
-    optComment: ['CHF risk', 'normal'],
-  },
-  Bmode_comment: {
-    keywordID: 'Bmode_comment',
-    keywordName: 'B-mode Comment',
-    section: 'Bmode',
-    group: 'Comment',
-    testType: 'textcomment',
-  },
-
-  // ============================================================
-  // Mmode 섹션
-  // ============================================================
-  VSd: {
-    keywordID: 'VSd',
-    keywordName: 'IVS-d',
-    section: 'Mmode',
-    group: 'IVS',
-    testType: 'mmode_range',
-    unit: 'mm',
-    refTable: 'mmoderef_dog',
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['', '', ''],
-  },
-  LVd: {
-    keywordID: 'LVd',
-    keywordName: 'LV-d',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'mmode_range',
-    unit: 'mm',
-    refTable: 'mmoderef_dog',
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['', '', ''],
-  },
-  LVWd: {
-    keywordID: 'LVWd',
-    keywordName: 'LVW-d',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'mmode_range',
-    unit: 'mm',
-    refTable: 'mmoderef_dog',
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['', '', ''],
-  },
-  VSs: {
-    keywordID: 'VSs',
-    keywordName: 'IVS-s',
-    section: 'Mmode',
-    group: 'IVS',
-    testType: 'mmode_range',
-    unit: 'mm',
-    refTable: 'mmoderef_dog',
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['', '', ''],
-  },
-  LVs: {
-    keywordID: 'LVs',
-    keywordName: 'LV-s',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'mmode_range',
-    unit: 'mm',
-    refTable: 'mmoderef_dog',
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['', '', ''],
-  },
-  LVWs: {
-    keywordID: 'LVWs',
-    keywordName: 'LVW-s',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'mmode_range',
-    unit: 'mm',
-    refTable: 'mmoderef_dog',
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['', '', ''],
-  },
-  LVFS: {
-    keywordID: 'LVFS',
-    keywordName: 'FS',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'calculated',
-    unit: '%',
-    formula: 'LVFS',
-    dependencies: ['LVd', 'LVs'],
-    thresholds: [20, 28, 45, 55],
-    optResult: ['decrease', 'decrease', 'normal', 'increase', 'increase'],
-    optComment: [
-      'severe myocardial systolic failure(suggestive)',
-      '',
-      'normal',
-      '',
-      'hyperdynamic LV function(would be consider)',
-    ],
-  },
-  EF: {
-    keywordID: 'EF',
-    keywordName: 'EF',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'range',
-    unit: '%',
-    thresholds: [40],
-    optResult: ['decrease', 'normal'],
-    optComment: ['LV contractility decrease', ''],
-  },
-  LVIDDN: {
-    keywordID: 'LVIDDN',
-    keywordName: 'LVIDDN',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'calculated',
-    unit: '',
-    formula: 'LVIDDN',
-    dependencies: ['LVd', 'BW_kg'],
-    thresholds: [1.7],
-    optResult: ['normal', 'increase'],
-    optComment: ['normal', 'increased LV preload (ACVIM B2?)'],
-  },
-  ESV: {
-    keywordID: 'ESV',
-    keywordName: 'ESV',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'other',
-    unit: 'ml',
-  },
-  ESVI: {
-    keywordID: 'ESVI',
-    keywordName: 'Systolic Index (ESVI)',
-    section: 'Mmode',
-    group: 'LV',
-    testType: 'calculated',
-    unit: 'ml/m²',
-    formula: 'ESVI',
-    dependencies: ['ESV', 'BW_kg'],
-    thresholds: [30, 70, 100],
-    optResult: ['normal', 'increase', 'increase', 'increase'],
-    optComment: [
-      'normal myocardial function',
-      'mild myocardial failure',
-      'moderate myocardial failure',
-      'severe myocardial failure',
-    ],
-  },
-  LAdMax: {
-    keywordID: 'LAdMax',
-    keywordName: 'LAd Max',
-    section: 'Mmode',
-    group: 'LA',
-    testType: 'other',
-    unit: 'mm',
-  },
-  LAdMin: {
-    keywordID: 'LAdMin',
-    keywordName: 'LAd Min',
-    section: 'Mmode',
-    group: 'LA',
-    testType: 'other',
-    unit: 'mm',
-  },
-  LAFS: {
-    keywordID: 'LAFS',
-    keywordName: 'LA FS',
-    section: 'Mmode',
-    group: 'LA',
-    testType: 'calculated',
-    unit: '%',
-    formula: 'LAFS',
-    dependencies: ['LAdMax', 'LAdMin'],
-    thresholds: [19, 30],
-    optResult: ['decrease', 'decrease', 'normal'],
-    optComment: ['CHF risk', 'increased LA pressure', 'normal'],
-  },
-  LA: {
-    keywordID: 'LA',
-    keywordName: 'LA',
-    section: 'Mmode',
-    group: 'LA',
-    testType: 'mmode_range',
-    unit: 'mm',
-    refTable: 'mmoderef_dog',
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['decreased LA dia.', 'normal', 'LA remodelling'],
-  },
-  AO: {
-    keywordID: 'AO',
-    keywordName: 'AO',
-    section: 'Mmode',
-    group: 'AO',
-    testType: 'mmode_range',
-    unit: 'mm',
-    refTable: 'mmoderef_dog',
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['decreased AO diameter', 'normal', 'increased AO diameter'],
-  },
-  LAAOratio: {
-    keywordID: 'LAAOratio',
-    keywordName: 'LA:AO Ratio',
-    section: 'Mmode',
-    group: 'LA',
-    testType: 'calculated',
-    unit: '',
-    formula: 'LAAOratio',
-    dependencies: ['LA', 'AO'],
-    thresholds: [0.8, 1.3, 1.6, 2.0],
-    optResult: [
-      'decrease',
-      'normal',
-      'mild increase',
-      'moderate increase',
-      'marked increase',
-    ],
-    optComment: [
-      '',
-      'normal',
-      'LA vol. mild increase',
-      'LA vol. moderate increase (ACVIM >B2)',
-      'LA vol. severe increase',
-    ],
-  },
-
-  // ============================================================
-  // ColorDoppler 섹션
-  // ============================================================
-  MV_turbulentJet: {
-    keywordID: 'MV_turbulentJet',
-    keywordName: 'MV Turbulent Jet',
-    section: 'ColorDoppler',
-    group: 'MV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', 'MV regurgitation'],
-  },
-  MV_turbulentJetRange: {
-    keywordID: 'MV_turbulentJetRange',
-    keywordName: 'MV Turbulent Jet Range',
-    section: 'ColorDoppler',
-    group: 'MV',
-    testType: 'range',
-    unit: '%',
-    thresholds: [10, 30, 70],
-    optResult: ['normal', 'Mild', 'Moderate', 'Severe'],
-    optComment: [
-      '',
-      'mild MV regurgitation',
-      'moderate MV regurgitation',
-      'severe MV regurgitation',
-    ],
-  },
-  TV_turbulentJet: {
-    keywordID: 'TV_turbulentJet',
-    keywordName: 'TV Turbulent Jet',
-    section: 'ColorDoppler',
-    group: 'TV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', 'TV regurgitation'],
-  },
-  TV_turbulentJetRange: {
-    keywordID: 'TV_turbulentJetRange',
-    keywordName: 'TV Turbulent Jet Range',
-    section: 'ColorDoppler',
-    group: 'TV',
-    testType: 'range',
-    unit: '%',
-    thresholds: [10, 30, 70],
-    optResult: ['normal', 'Mild', 'Moderate', 'Severe'],
-    optComment: [
-      '',
-      'mild TV regurgitation',
-      'moderate TV regurgitation',
-      'severe TV regurgitation',
-    ],
-  },
-  AV_turbulentJet: {
-    keywordID: 'AV_turbulentJet',
-    keywordName: 'AV Turbulent Jet',
-    section: 'ColorDoppler',
-    group: 'AV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  PV_turbulentJet: {
-    keywordID: 'PV_turbulentJet',
-    keywordName: 'PV Turbulent Jet',
-    section: 'ColorDoppler',
-    group: 'PV',
-    testType: 'select',
-    options: ['', 'none', 'yes'],
-    optResult: ['', 'normal', 'abnormal'],
-    optComment: ['', '', ''],
-  },
-  CD_comment: {
-    keywordID: 'CD_comment',
-    keywordName: 'Color Doppler Comment',
-    section: 'ColorDoppler',
-    group: 'Comment',
-    testType: 'textcomment',
-  },
-
-  // ============================================================
-  // SpectralDoppler 섹션
-  // ============================================================
-  MV_Ewave: {
-    keywordID: 'MV_Ewave',
-    keywordName: 'MV E Wave',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'range',
-    unit: 'm/s',
-    thresholds: [1.08, 1.25],
-    optResult: ['normal', 'mild increase', 'increase'],
-    optComment: ['normal', 'monitoring', 'increased LA pressure'],
-  },
-  MV_Awave: {
-    keywordID: 'MV_Awave',
-    keywordName: 'MV A Wave',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'other',
-    unit: 'm/s',
-  },
-  MV_EAratio: {
-    keywordID: 'MV_EAratio',
-    keywordName: 'MV E:A Ratio',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'calculated',
-    unit: '',
-    formula: 'MV_EAratio',
-    dependencies: ['MV_Ewave', 'MV_Awave'],
-    thresholds: [1, 1.85],
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['diastolic dysfunction', 'normal', 'CHF suspect'],
-  },
-  IVRT: {
-    keywordID: 'IVRT',
-    keywordName: 'IVRT',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'range',
-    unit: 'ms',
-    thresholds: [50, 70],
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: [
-      'LAP increase, CHF risk',
-      'normal',
-      'impaired relaxation susp.',
-    ],
-  },
-  EIVRT: {
-    keywordID: 'EIVRT',
-    keywordName: 'E/IVRT',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'calculated',
-    unit: '',
-    formula: 'EIVRT',
-    dependencies: ['MV_Ewave', 'IVRT'],
-    thresholds: [2.2],
-    optResult: ['normal', 'increase'],
-    optComment: ['normal', 'increased LA pressure, CHF risk'],
-  },
-  DT: {
-    keywordID: 'DT',
-    keywordName: 'Deceleration Time (DT)',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'range',
-    unit: 'ms',
-    thresholds: [80, 100],
-    optResult: ['decrease', 'normal', 'increase'],
-    optComment: ['increased LA pressure', 'normal', ''],
-  },
-  MR: {
-    keywordID: 'MR',
-    keywordName: 'MV Regurgitation',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'select',
-    options: ['', 'none', 'mild', 'moderate', 'severe'],
-    optResult: ['', 'normal', 'mild MR', 'moderate MR', 'severe MR'],
-    optComment: ['', '', 'mild MR', 'moderate MR', 'severe MR'],
-  },
-  MR_vel: {
-    keywordID: 'MR_vel',
-    keywordName: 'MR Velocity',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'other',
-    unit: 'm/s',
-  },
-  MRPG: {
-    keywordID: 'MRPG',
-    keywordName: 'MR PG',
-    section: 'SpectralDoppler',
-    group: 'MV',
-    testType: 'calculated',
-    unit: 'mmHg',
-    formula: 'PG',
-    dependencies: ['MR_vel'],
-    thresholds: [],
-    optResult: [],
-    optComment: [],
-  },
-  TV_Ewave: {
-    keywordID: 'TV_Ewave',
-    keywordName: 'TV E Wave',
-    section: 'SpectralDoppler',
-    group: 'TV',
-    testType: 'other',
-    unit: 'm/s',
-  },
-  TR: {
-    keywordID: 'TR',
-    keywordName: 'TR Regurgitation',
-    section: 'SpectralDoppler',
-    group: 'TV',
-    testType: 'select',
-    options: ['', 'none', 'mild', 'moderate', 'severe'],
-    optResult: ['', 'normal', 'mild TR', 'moderate TR', 'severe TR'],
-    optComment: ['', '', 'mild TR', 'moderate TR', 'severe TR'],
-  },
-  TR_vel: {
-    keywordID: 'TR_vel',
-    keywordName: 'TR Velocity',
-    section: 'SpectralDoppler',
-    group: 'TV',
-    testType: 'range',
-    unit: 'm/s',
-    thresholds: [3],
-    optResult: ['normal', 'increase'],
-    optComment: ['', 'increased PA pressure?'],
-  },
-  TRPG: {
-    keywordID: 'TRPG',
-    keywordName: 'TR PG',
-    section: 'SpectralDoppler',
-    group: 'TV',
-    testType: 'calculated',
-    unit: 'mmHg',
-    formula: 'PG',
-    dependencies: ['TR_vel'],
-    thresholds: [],
-    optResult: [],
-    optComment: [],
-  },
-  PA_velocity: {
-    keywordID: 'PA_velocity',
-    keywordName: 'PA Velocity',
-    section: 'SpectralDoppler',
-    group: 'PA',
-    testType: 'other',
-    unit: 'm/s',
-  },
-  PR: {
-    keywordID: 'PR',
-    keywordName: 'PA Regurgitation',
-    section: 'SpectralDoppler',
-    group: 'PA',
-    testType: 'select',
-    options: ['', 'none', 'mild', 'moderate', 'severe'],
-    optResult: ['', 'normal', 'mild PR', 'moderate PR', 'severe PR'],
-    optComment: ['', '', 'mild PR', 'moderate PR', 'severe PR'],
-  },
-  PR_vel: {
-    keywordID: 'PR_vel',
-    keywordName: 'PR Velocity',
-    section: 'SpectralDoppler',
-    group: 'PA',
-    testType: 'range',
-    unit: 'm/s',
-    thresholds: [2.5],
-    optResult: ['normal', 'increase'],
-    optComment: ['', ''],
-  },
-  PRPG: {
-    keywordID: 'PRPG',
-    keywordName: 'PR PG',
-    section: 'SpectralDoppler',
-    group: 'PA',
-    testType: 'calculated',
-    unit: 'mmHg',
-    formula: 'PG',
-    dependencies: ['PR_vel'],
-    thresholds: [],
-    optResult: [],
-    optComment: [],
-  },
-  AV_velocity: {
-    keywordID: 'AV_velocity',
-    keywordName: 'AV Velocity',
-    section: 'SpectralDoppler',
-    group: 'AV',
-    testType: 'range',
-    unit: 'm/s',
-    thresholds: [1.5, 2.2, 3.5, 4.5],
-    optResult: [
-      'decrease',
-      'normal',
-      'mild increase',
-      'moderate increase',
-      'severe increase',
-    ],
-    optComment: [
-      'Systolic Dysfunction? hypovolemic?',
-      'normal',
-      'SAS?',
-      'SAS susp.',
-      'SAS susp.',
-    ],
-  },
-  AR: {
-    keywordID: 'AR',
-    keywordName: 'AR Regurgitation',
-    section: 'SpectralDoppler',
-    group: 'AV',
-    testType: 'select',
-    options: ['', 'none', 'mild', 'moderate', 'severe'],
-    optResult: ['', 'normal', 'mild AR', 'moderate AR', 'severe AR'],
-    optComment: ['', '', 'mild AR', 'moderate AR', 'severe AR'],
-  },
-  AR_vel: {
-    keywordID: 'AR_vel',
-    keywordName: 'AR Velocity',
-    section: 'SpectralDoppler',
-    group: 'AV',
-    testType: 'other',
-    unit: 'm/s',
-  },
-  ARPG: {
-    keywordID: 'ARPG',
-    keywordName: 'AR PG',
-    section: 'SpectralDoppler',
-    group: 'AV',
-    testType: 'calculated',
-    unit: 'mmHg',
-    formula: 'PG',
-    dependencies: ['AR_vel'],
-    thresholds: [],
-    optResult: [],
-    optComment: [],
-  },
-   CVCcollapse:{
-        keywordID:'CVCcollapse',
-        keywordName:'CVC collapse',
-        section:'SpectralDoppler',
-        group:'CVC',
-        testType:'select',
-        options:['','<20%','20-50%','>50%'],
-        optResult:['','RA pressure < 5mmHg','RA pressure 10mmHg','RA pressure > 15mmHg'],
-        optComment:['','','',''],
-    },
-     RApressure:{
-       
-        section:'SpectralDoppler',
-        keywordID:'RApressure',
-        keywordName:'RA pressure',
-        unit:'mmHg',
-        group:'RA',
-        testType:'calculated',
-        formula:'RApressure',
-        dependencies:['CVCcollapse'],
-        thresholds:[6,15],
-        optResult:['decrease or normal','mild ~ moderate increase','marked increase'],
-        optComment:['','',''],
-    },
-  SD_comment: {
-    keywordID: 'SD_comment',
-    keywordName: 'Spectral Doppler Comment',
-    section: 'SpectralDoppler',
-    group: 'Comment',
-    testType: 'textcomment',
-  },
-  PH_comment: {
-    keywordID: 'PH_comment',
-    keywordName: 'PH Comment',
-    section: 'SpectralDoppler',
-    group: 'Comment',
-    testType: 'textcomment',
-  },
-
-
-  // ============================================================
-  // TDI 섹션
-  // ============================================================
-  Sm: {
-    keywordID: 'Sm',
-    keywordName: 'TDI Sm',
-    section: 'TDI',
-    group: 'MV',
-    testType: 'other',
-    unit: 'm/s',
-  },
-  Em: {
-    keywordID: 'Em',
-    keywordName: 'TDI Em',
-    section: 'TDI',
-    group: 'MV',
-    testType: 'other',
-    unit: 'm/s',
-  },
-  Am: {
-    keywordID: 'Am',
-    keywordName: 'TDI Am',
-    section: 'TDI',
-    group: 'MV',
-    testType: 'other',
-    unit: 'm/s',
-  },
-  EmAm: {
-    keywordID: 'EmAm',
-    keywordName: 'Em/Am',
-    section: 'TDI',
-    group: 'MV',
-    testType: 'calculated',
-    unit: '',
-    formula: 'EmAm',
-    dependencies: ['Em', 'Am'],
-    thresholds: [1],
-    optResult: ['normal', 'increase'],
-    optComment: [
-      'normal',
-      'Impaired Relaxation',
-    ],
-  },
-  EEm: {
-    keywordID: 'EEm',
-    keywordName: 'E/Em',
-    section: 'TDI',
-    group: 'MV',
-    testType: 'calculated',
-    unit: '',
-    formula: 'EEm',
-    dependencies: ['MV_Ewave', 'Em'],
-    thresholds: [6, 9, 12],
-    optResult: ['normal', 'increase', 'increase', 'increase'],
-    optComment: [
-      'normal',
-      'increased LA pressure(??)',
-      'increased LA pressure(>20mmHg)',
-      'CHF risk',
-    ],
-  },
-  TDI_comment: {
-    keywordID: 'TDI_comment',
-    keywordName: 'TDI Comment',
-    section: 'TDI',
-    group: 'Comment',
-    testType: 'textcomment',
-  },
-  Last_comment: {
-    keywordID: 'Last_comment',
-    keywordName: 'General Review',
-    section: 'TDI',
-    group: 'Comment',
-    testType: 'textcomment',
-  },
+/**
+ * 종(species)에 맞는 전체 테스트 항목 반환
+ */
+export function getEchoTestsBySpecies(species: Species): Record<string, EchoTest> {
+  if (species === 'feline') return ECHO_TESTS_FELINE
+  return ECHO_TESTS_CANINE
 }
 
-// =============================================
-// 섹션별 항목 목록 (데이터에서 자동 생성)
-// =============================================
-export const ITEMS_BY_SECTION = Object.values(ECHO_TESTS).reduce(
-  (acc, item) => {
-    if (!acc[item.section]) acc[item.section] = []
-    acc[item.section].push(item)
-    return acc
-  },
-  {} as Record<EchoSection, EchoTest[]>,
-)
+/**
+ * 특정 키워드에 대해 종별 테스트 정의 반환
+ */
+export function getEchoTest(
+  keywordId: string,
+  species: Species = 'canine',
+): EchoTest | undefined {
+  const tests = getEchoTestsBySpecies(species)
+  return tests[keywordId]
+}
 
-// =============================================
-// 클라이언트 전달용 경량 UI 메타데이터 생성
-// thresholds, optResult, optComment 제외
-// =============================================
-export function getEchoTestUIMeta(): EchoTestUIMeta[] {
-  return Object.values(ECHO_TESTS).map((item) => {
-    const base: EchoTestUIMeta = {
-      keywordID: item.keywordID,
-      keywordName: item.keywordName,
-      section: item.section,
-      group: item.group,
-      testType: item.testType,
-    }
+/**
+ * 모든 항목 합집합 (검색/매핑용)
+ */
+export const ECHO_TESTS_ALL: Record<string, EchoTest> = {
+  ...ECHO_TESTS_CANINE,
+  ...ECHO_TESTS_FELINE,
+}
 
-    if (item.testType === 'select') {
-      base.options = item.options
-    }
-    if (
-      item.testType === 'range' ||
-      item.testType === 'mmode_range' ||
-      item.testType === 'other'
-    ) {
-      base.unit = item.unit
-    }
-    if (item.testType === 'calculated') {
-      base.unit = item.unit
-      base.dependencies = item.dependencies
-    }
+/**
+ * 구형 코드 호환성용 (기본값 개 기준)
+ */
+export const ECHO_TESTS = ECHO_TESTS_CANINE
 
-    return base
+/**
+ * UI 전달용 경량 메타데이터 생성
+ */
+export function getEchoTestUIMeta(species: Species): EchoTestUIMeta[] {
+  const tests = getEchoTestsBySpecies(species)
+  return Object.values(tests).map((t) => ({
+    keywordID: t.keywordID,
+    keywordName: t.keywordName,
+    species: t.species,
+    testType: t.testType,
+    unit: 'unit' in t ? t.unit : undefined,
+    options: t.testType === 'select' ? t.options : undefined,
+    sections: t.sections,
+    groups: t.groups,
+    testref: t.testref,
+    testinfo: t.testinfo,
+    anatomic_groups: t.anatomic_groups,
+    functional_groups: t.functional_groups,
+  }))
+}
+
+/**
+ * 모든 종의 테스트를 합쳐서 UI 메타데이터 생성 (종별 필터링은 클라이언트에서 수행)
+ */
+export function getAllEchoTestUIMeta(): EchoTestUIMeta[] {
+  const merged: Record<string, EchoTestUIMeta> = {}
+
+  // 모든 종의 테스트 합치기
+  const allTests = [
+    ...Object.values(ECHO_TESTS_CANINE),
+    ...Object.values(ECHO_TESTS_FELINE),
+  ]
+
+  allTests.forEach((t) => {
+    if (!merged[t.keywordID]) {
+      merged[t.keywordID] = {
+        keywordID: t.keywordID,
+        keywordName: t.keywordName,
+        species: [...t.species],
+        testType: t.testType,
+        unit: 'unit' in t ? t.unit : undefined,
+        options: t.testType === 'select' ? t.options : undefined,
+        sections: t.sections,
+        groups: t.groups,
+        testref: t.testref,
+        testinfo: t.testinfo,
+        anatomic_groups: t.anatomic_groups,
+        functional_groups: t.functional_groups,
+      }
+    } else {
+      // 종(species) 정보 병합
+      t.species.forEach((s) => {
+        if (!merged[t.keywordID].species.includes(s)) {
+          merged[t.keywordID].species.push(s)
+        }
+      })
+    }
   })
+
+  return Object.values(merged)
 }
+
+/**
+ * 섹션별 항목 그룹화 (하위 호환 및 템플릿 초기화용)
+ */
+export const ITEMS_BY_SECTION: Record<string, EchoTest[]> = {}
+Object.values(ECHO_TESTS_ALL).forEach((test) => {
+  test.sections?.forEach((section) => {
+    if (!ITEMS_BY_SECTION[section]) {
+      ITEMS_BY_SECTION[section] = []
+    }
+    // 중복 방지 (여러 종에 걸쳐 있는 항목)
+    if (!ITEMS_BY_SECTION[section].some((t) => t.keywordID === test.keywordID)) {
+      ITEMS_BY_SECTION[section].push(test)
+    }
+  })
+})

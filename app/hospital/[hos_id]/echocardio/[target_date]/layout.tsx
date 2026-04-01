@@ -1,6 +1,6 @@
 import { fetchEchoLayoutData } from '@/lib/services/echocardio/echo-layout'
 import { fetchActiveTemplate, fetchEchoTemplates } from '@/lib/services/echocardio/fetch-echo'
-import { getEchoTestUIMeta } from '@/constants/hospital/echocardio/echo-tests'
+import { getAllEchoTestUIMeta } from '@/constants/hospital/echocardio/echo-tests'
 import { EchoContextProvider } from '@/providers/echo-context-provider'
 import EchoSidebar from '@/components/hospital/echocardio/echo-sidebar/echo-sidebar'
 import EchoFooter from '@/components/hospital/echocardio/echo-footer/echo-footer'
@@ -18,7 +18,7 @@ export default async function EchoLayout(props: {
     fetchEchoTemplates(hos_id),
   ])
 
-  const testUIMeta = getEchoTestUIMeta()
+  const testUIMeta = getAllEchoTestUIMeta()
 
   const echoContextData = {
     hosId: hos_id,

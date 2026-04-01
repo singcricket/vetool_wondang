@@ -10,9 +10,11 @@ import type {
   EchoSection,
 } from '@/types/echocardio/echocardio-type'
 import { useEchoContext } from '@/providers/echo-context-provider'
-import { ECHO_SECTION_META } from '@/constants/hospital/echocardio/echo-sections'
+import { ECHO_SECTION_META, DEFAULT_SECTION_ORDER } from '@/constants/hospital/echocardio/echo-sections'
 import { upsertEchoResult, updateCalculatedResults } from '@/lib/services/echocardio/update-echo'
-import { getMmodeRef } from '@/constants/hospital/echocardio/mmode-ref-dog'
+import { LAYOUT_CANINE, LAYOUT_FELINE } from '@/constants/hospital/echocardio/echo-layouts'
+import { getDogMmodeRef, getCatMmodeRef } from '@/constants/hospital/echocardio/echo-mmode-ref'
+import type { Species } from '@/types/echocardio/echocardio-type'
 import EchoSectionWrapper from '../echo-sections/echo-section-wrapper'
 import EchoInputField from '../echo-sections/echo-input-field'
 import EchoCompareTable from '../echo-compare/echo-compare-table'
@@ -30,12 +32,12 @@ interface EchoChartBodyProps {
   hosId: string
 }
 
-type Tab = 'input' | 'compare' | 'report'
+type Tab = 'input' | 'report' | 'compare'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'input', label: '검사 입력' },
-  { key: 'compare', label: '비교' },
   { key: 'report', label: '리포트' },
+  { key: 'compare', label: '비교' },
 ]
 
 export default function EchoChartBody({
@@ -74,12 +76,22 @@ export default function EchoChartBody({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resultsKey, setResultMap])
 
-  const bwKg = parseFloat(resultMap['BW_kg'] ?? '0')
+  const species: Species =
+    chartDetail.patient.species?.toLowerCase() === 'cat' ||
+    chartDetail.patient.species?.toLowerCase() === 'feline'
+      ? 'feline'
+      : 'canine'
+
+  const bwVal = resultMap['BW_kg']
+  const bwKg = !bwVal || bwVal === '' ? 0 : parseFloat(bwVal)
 
   const mmodeRefs: Record<string, [number, number] | null> = {}
   if (bwKg > 0) {
     ;['VSd', 'LVd', 'LVWd', 'VSs', 'LVs', 'LVWs', 'LA', 'AO'].forEach((id) => {
-      mmodeRefs[id] = getMmodeRef(bwKg, id)
+      mmodeRefs[id] =
+        species === 'feline'
+          ? getCatMmodeRef(id as any, bwKg)
+          : getDogMmodeRef(id as any, bwKg)
     })
   }
 
@@ -102,13 +114,26 @@ export default function EchoChartBody({
   const doSave = useCallback(async () => {
     const pending = pendingSaveRef.current
     if (pending.size === 0) return
-    const allValues = { ...resultMapRef.current }
+
+    const currentValues: EchoResultMap & { species: Species } = {
+      ...resultMapRef.current,
+      species,
+    }
+    const bwVal = currentValues['BW_kg']
+    const bw = !bwVal || bwVal === '' ? 0 : parseFloat(bwVal)
+
+    // 체중 필수 입력 검증 (NaN 또는 0 이하 방지)
+    if (isNaN(bw) || bw <= 0) {
+      console.warn('체중(BW_kg)입력이 필요하여 저장을 중단합니다.')
+      return
+    }
+
     const saves = Array.from(pending)
     setPendingSave(new Set())
     for (const keywordId of saves) {
-      const value = allValues[keywordId] ?? ''
-      await upsertEchoResult({ echoChartId: chartDetail.id, keywordId, value, allValues })
-      await updateCalculatedResults({ echoChartId: chartDetail.id, changedKeywordId: keywordId, allValues })
+      const value = currentValues[keywordId] ?? ''
+      await upsertEchoResult({ echoChartId: chartDetail.id, keywordId, value, allValues: currentValues })
+      await updateCalculatedResults({ echoChartId: chartDetail.id, changedKeywordId: keywordId, allValues: currentValues })
     }
     // 저장 완료 후 서버 데이터(computedResults 등) 갱신
     startTransition(() => refresh())
@@ -141,13 +166,42 @@ export default function EchoChartBody({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [doSave])
 
+  const speciesLayout = species === 'feline' ? LAYOUT_FELINE : LAYOUT_CANINE
+
+  // 구형 섹션 명칭 -> 신형 섹션 명칭 매핑 (DB 싱크용)
+  const SECTION_MAPPING: Record<string, string> = {
+    Mmode: 'Objective_Evaluation',
+    'Objective Evaluation': 'Objective_Evaluation',
+    'Pulmonary Hypertension': 'Pulmonary_Hypertension',
+    'MINE SCORE': 'MINE_SCORE',
+    'HCM Evaluation': 'HCM_Evaluation',
+  }
+
   function getSectionItems(section: EchoSection) {
-    const activeIds = settings.active_items[section]
-    const sectionMeta = (testUIMeta as any[]).filter((m) => m.section === section)
-    const filtered = activeIds ? sectionMeta.filter((m: any) => activeIds.includes(m.keywordID)) : sectionMeta
-    const order = settings.item_order[section]
-    if (!order || order.length === 0) return filtered
-    return [...filtered].sort((a: any, b: any) => {
+    const targetSection = SECTION_MAPPING[section] || section
+    const activeIds = settings.active_items[targetSection]
+
+    const sectionMeta = (testUIMeta as any[]).filter(
+      (m) =>
+        (m.sections || []).includes(targetSection) &&
+        (m.sections || []).length > 0 &&
+        (m.groups || []).length > 0,
+    )
+
+    const filteredBySpecies = sectionMeta.filter((m) =>
+      m.species.includes(species),
+    )
+
+    const filteredByActive = activeIds
+      ? filteredBySpecies.filter((m) => activeIds.includes(m.keywordID))
+      : filteredBySpecies
+
+    const order = settings.item_order[targetSection]
+    if (!order || order.length === 0) return filteredByActive
+
+    // 만약 activeIds가 정의되어 있다면 해당 항목만 필터링하지만, 
+    // 새로운 기능 추가를 위해 filteredByActive를 기본으로 사용함
+    return [...filteredByActive].sort((a, b) => {
       const ai = order.indexOf(a.keywordID)
       const bi = order.indexOf(b.keywordID)
       if (ai === -1) return 1
@@ -157,14 +211,30 @@ export default function EchoChartBody({
   }
 
   // 모든 활성 항목을 flat하게 반환
-  // _flat 순서가 지정된 경우 해당 순서 우선, 없으면 섹션 순서대로
   function getAllActiveItems() {
-    const allItems = (settings.section_order as EchoSection[]).flatMap((section) =>
-      getSectionItems(section),
+    const sectionOrderFromSettings = (settings.section_order as EchoSection[]) || []
+    // DEFAULT_SECTION_ORDER에 있는 섹션 중 settings에 없는 것이 있다면 추가 (새 섹션 대응)
+    const combinedSectionOrder = Array.from(new Set([...sectionOrderFromSettings, ...DEFAULT_SECTION_ORDER]))
+
+    const sectionOrder = combinedSectionOrder.filter(
+      (s) => {
+        // 해당 종에 유효한 섹션인지 확인 (speciesLayout 기반)
+        const targetSection = SECTION_MAPPING[s] || s
+        return speciesLayout.sections.some((ls) => ls.sectionID === targetSection)
+      },
     )
+
+    const allItems = sectionOrder.flatMap((section) => getSectionItems(section))
+
+    // 중복 제거 (keywordID 기준)
+    const uniqueItems = Array.from(
+      new Map(allItems.map((item: any) => [item.keywordID, item])).values(),
+    )
+
     const flatOrder: string[] = settings.item_order['_flat'] ?? []
-    if (flatOrder.length === 0) return allItems
-    return [...allItems].sort((a: any, b: any) => {
+    if (flatOrder.length === 0) return uniqueItems
+
+    return [...uniqueItems].sort((a: any, b: any) => {
       const ai = flatOrder.indexOf(a.keywordID)
       const bi = flatOrder.indexOf(b.keywordID)
       if (ai === -1) return 1
@@ -186,55 +256,66 @@ export default function EchoChartBody({
       {/* 담당의/검사자, 메모 */}
       <EchoInfoContainer chartDetail={chartDetail} />
 
-      {/* 탭 + 입력모드 + 저장 버튼 */}
-      <div className="flex items-center justify-between border-b bg-white px-4">
-        <div className="flex">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={cn(
-                'px-3 py-2 text-xs transition-colors',
-                activeTab === t.key
-                  ? 'border-b-2 border-black font-bold'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
+      {/* 상단 고정 네비게이션 영역 */}
+      <div className="sticky top-12 z-20 bg-white shadow-sm">
+        {/* 메인 탭 네비게이션 */}
+        <div className="flex items-center justify-between border-b px-4">
+          <div className="flex">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={cn(
+                  'px-3 py-2 text-xs transition-colors',
+                  activeTab === t.key
+                    ? 'border-b-2 border-black font-bold text-black'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {t.label}
+                {t.key === 'input' && pendingSave.size > 0 && (
+                  <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-orange-400" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {(isNaN(bwKg) || bwKg <= 0) && pendingSave.size > 0 && (
+              <span className="text-xs font-bold text-destructive animate-pulse">
+                체중을 먼저 입력해주세요 *
+              </span>
+            )}
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={isSaving || pendingSave.size === 0 || isNaN(bwKg) || bwKg <= 0}
             >
-              {t.label}
-              {t.key === 'input' && pendingSave.size > 0 && (
-                <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-orange-400" />
-              )}
-            </button>
-          ))}
+              {isSaving ? '저장 중...' : '저장'}
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* 입력 모드 전환 (검사 입력 탭일 때만) */}
-          {activeTab === 'input' && (
-            <div className="flex rounded border">
-              {INPUT_MODES.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setInputMode(m.key)}
-                  title={m.label}
-                  className={cn(
-                    'flex items-center gap-1 px-2 py-1 text-[10px] transition-colors first:rounded-l last:rounded-r',
-                    inputMode === m.key
-                      ? 'bg-black text-white'
-                      : 'text-muted-foreground hover:bg-muted',
-                  )}
-                >
-                  {m.icon}
-                  <span className="hidden sm:inline">{m.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <Button size="sm" onClick={handleSave} disabled={isSaving || pendingSave.size === 0}>
-            {isSaving ? '저장 중...' : '저장'}
-          </Button>
-        </div>
+        {/* 서브 네비게이션 (검사 입력 하위 모드) */}
+        {activeTab === 'input' && (
+          <div className="flex items-center gap-1 border-b bg-muted/30 px-4 py-1">
+            {INPUT_MODES.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setInputMode(m.key)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-all',
+                  inputMode === m.key
+                    ? 'bg-white text-black shadow-sm ring-1 ring-black/5'
+                    : 'text-muted-foreground hover:bg-white/50 hover:text-foreground',
+                )}
+              >
+                {m.icon}
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 탭 콘텐츠 */}
@@ -245,18 +326,23 @@ export default function EchoChartBody({
             {inputMode === 'section' && (
               <div className="flex-1 overflow-y-auto p-4 pb-32">
                 <div className="flex flex-col gap-3">
-                  {(settings.section_order as EchoSection[]).map((section) => {
-                    const items = getSectionItems(section)
-                    if (items.length === 0) return null
-                    return (
-                      <EchoSectionWrapper
-                        key={section}
-                        sectionLabel={ECHO_SECTION_META[section]?.label ?? section}
-                        items={items}
-                        {...sharedInputProps}
-                      />
-                    )
-                  })}
+                  {(() => {
+                    const sectionOrderFromSettings = (settings.section_order as EchoSection[]) || []
+                    const combinedSectionOrder = Array.from(new Set([...sectionOrderFromSettings, ...DEFAULT_SECTION_ORDER]))
+                    
+                    return combinedSectionOrder.map((section) => {
+                      const items = getSectionItems(section)
+                      if (items.length === 0) return null
+                      return (
+                        <EchoSectionWrapper
+                          key={section}
+                          sectionLabel={ECHO_SECTION_META[section]?.label ?? section}
+                          items={items}
+                          {...sharedInputProps}
+                        />
+                      )
+                    })
+                  })()}
                 </div>
               </div>
             )}

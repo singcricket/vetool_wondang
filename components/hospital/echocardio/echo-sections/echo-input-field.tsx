@@ -6,6 +6,9 @@ import RangeInput from '../echo-inputs/range-input'
 import TextInput from '../echo-inputs/text-input'
 import CalculatedField from '../echo-inputs/calculated-field'
 
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
+import { HelpCircle } from 'lucide-react'
+
 interface EchoInputFieldProps {
   item: EchoTestUIMeta
   value: string
@@ -23,10 +26,24 @@ export default function EchoInputField({
 }: EchoInputFieldProps) {
   return (
     <div className="flex items-start gap-3">
-      {/* 항목명 */}
-      <span className="w-40 shrink-0 pt-1 text-xs text-muted-foreground">
-        {item.keywordName}
-      </span>
+      {/* 항목명 및 툴팁 */}
+      <div className="flex w-40 shrink-0 items-center gap-1.5 pt-1">
+        <span className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+          {item.keywordName}
+        </span>
+        {item.testinfo && (
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-3.5 w-3.5 shrink-0 cursor-help text-muted-foreground/50 transition-colors hover:text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[200px]">
+                <p className="text-[11px] font-normal leading-relaxed">{item.testinfo}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
 
       {/* 입력 컴포넌트 */}
       <div className="flex-1">
@@ -53,7 +70,7 @@ export default function EchoInputField({
           />
         )}
 
-        {item.testType === 'calculated' && (
+        {(item.testType === 'calculated' || item.testType === 'calculated_string') && (
           <CalculatedField
             keywordId={item.keywordID}
             unit={item.unit}

@@ -24,15 +24,14 @@ export default function EchoSectionWrapper({
 }: EchoSectionWrapperProps) {
   const [isOpen, setIsOpen] = useState(true)
 
-  // 그룹별 묶기
-  const groups = items.reduce(
-    (acc, item) => {
-      if (!acc[item.group]) acc[item.group] = []
-      acc[item.group].push(item)
-      return acc
-    },
-    {} as Record<string, EchoTestUIMeta[]>,
-  )
+  // 그룹별 묶기 (한 항목이 여러 그룹에 속할 수 있음)
+  const groupMap: Record<string, EchoTestUIMeta[]> = {}
+  items.forEach((item) => {
+    item.groups.forEach((g) => {
+      if (!groupMap[g]) groupMap[g] = []
+      groupMap[g].push(item)
+    })
+  })
 
   return (
     <div className="rounded-md border bg-white">
@@ -51,7 +50,7 @@ export default function EchoSectionWrapper({
 
       {isOpen && (
         <div className="border-t px-3 py-2">
-          {Object.entries(groups).map(([group, groupItems]) => (
+          {Object.entries(groupMap).map(([group, groupItems]) => (
             <div key={group} className="mb-3 last:mb-0">
               {/* 그룹명 (Comment, PE 등 단일 그룹은 숨김) */}
               {group !== 'PE' && group !== 'Comment' && group !== 'Thorax' && (

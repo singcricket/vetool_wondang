@@ -20,10 +20,11 @@ export const ECHO_SECTION_META: Record<
     label: 'B-mode',
     description: '이차원 초음파 - 판막 형태 이상, 삼출액 평가',
   },
-  Mmode: {
-    label: 'M-mode',
+  Objective_Evaluation: {
+    label: 'Objective Evaluation',
     description: 'M-mode 측정값 및 파생 지수 (FS, EF, LA:AO 등)',
   },
+  
   ColorDoppler: {
     label: 'Color Doppler',
     description: '색 도플러 - 역류 및 난류 제트 평가',
@@ -36,14 +37,46 @@ export const ECHO_SECTION_META: Record<
     label: 'TDI',
     description: '조직 도플러 영상 - 심근 기능 평가',
   },
+  HCM_Evaluation: {
+    label: 'HCM Evaluation',
+    description: '고양이 HCM 진단 및 평가 항목',
+  },
+   Pulmonary_Hypertension: {
+    label: 'Pulmonary Hypertension',
+    description: 'Pulmonary Hypertension 관련 지표 인자',
+  },
+ 
+  PosibilityOfPH: {
+    label: 'Posibility Of Pulmonary Hypertension',
+    description: 'Posibility Of PH',
+  },
+   MINE_SCORE: {
+    label: 'MINE SCORE',
+    description: 'MINE SCORE',
+  },
+  ACVIM: {
+    label: 'ACVIM',
+    description: 'ACVIM',
+  },
+  
+  General_Review: {
+    label: 'General Review',
+    description: '종합평가',
+  },
 }
 
 export const DEFAULT_SECTION_ORDER: EchoSection[] = [
   'PE',
   'Radio',
   'Bmode',
-  'Mmode',
+  'Objective_Evaluation',
   'ColorDoppler',
   'SpectralDoppler',
   'TDI',
+  'Pulmonary_Hypertension',
+  'PosibilityOfPH',
+  'ACVIM',
+  'HCM_Evaluation',
+  'MINE_SCORE',
+  'General_Review'
 ]

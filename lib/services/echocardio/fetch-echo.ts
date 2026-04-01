@@ -106,7 +106,7 @@ export async function fetchActiveTemplate(
     const defaultActiveItems = Object.fromEntries(
       Object.entries(ITEMS_BY_SECTION).map(([section, items]) => [
         section,
-        items.map((i) => i.keywordID),
+        (items as any[]).map((i) => i.keywordID),
       ]),
     )
     return {

@@ -119,17 +119,33 @@ export const MMODE_REF_DOG: Record<number, MmodeRefEntry> = {
  * @param keywordId 항목 ID (VSd, LVd, LVWd, VSs, LVs, LVWs, AO, LA)
  * @returns [min, max] 또는 null (범위 외)
  */
+// export function getMmodeRef(
+//   bwKg: number,
+//   keywordId: string,
+// ): [number, number] | null {
+//   const weight = Math.min(99, Math.max(1, Math.round(bwKg)))
+//   const entry = MMODE_REF_DOG[weight]
+//   if (!entry) return null
+//   const ref = entry[keywordId as MmodeRefKey]
+//   return ref ?? null
+// }
 export function getMmodeRef(
-  bwKg: number,
+  bwKg: number, // 입력은 여전히 kg로 받는 경우
   keywordId: string,
 ): [number, number] | null {
-  const weight = Math.min(99, Math.max(1, Math.round(bwKg)))
-  const entry = MMODE_REF_DOG[weight]
-  if (!entry) return null
-  const ref = entry[keywordId as MmodeRefKey]
-  return ref ?? null
-}
+  // 1. kg를 lbs로 변환 (1kg = 2.20462 lbs)
+  const lbs_weight = bwKg * 2.20462;
 
+  // 2. lbs_weight를 반올림하고 1~99 범위로 제한
+  const weight = Math.min(99, Math.max(1, Math.round(lbs_weight)));
+
+  // 3. Mmode 참조 데이터에서 해당 lbs 무게의 데이터 추출
+  const entry = MMODE_REF_DOG[weight];
+  if (!entry) return null;
+
+  const ref = entry[keywordId as MmodeRefKey];
+  return ref ?? null;
+}
 /**
  * M-mode 값 판정
  * @returns 'decrease' | 'normal' | 'increase' | null
@@ -145,4 +161,40 @@ export function judgeMmodeValue(
   if (value < min) return 'decrease'
   if (value > max) return 'increase'
   return 'normal'
+}
+
+// 고양이 M-mode allometric formula 타입
+export type CatMmodeFormulaEntry = {
+  a: number;  // 비례상수
+  b: number;  // allometric exponent
+};
+
+export type CatMmodeRefFormula = {
+  VSd:  CatMmodeFormulaEntry;
+  LVd:  CatMmodeFormulaEntry;
+  LVWd: CatMmodeFormulaEntry;
+  VSs:  CatMmodeFormulaEntry;
+  LVs:  CatMmodeFormulaEntry;
+  LVWs: CatMmodeFormulaEntry;
+  AO:   CatMmodeFormulaEntry;
+  LA:   CatMmodeFormulaEntry;
+};
+// 고양이 M-mode: allometric scaling으로 정상 범위 계산
+export const MMODE_REF_CAT_FORMULA : CatMmodeRefFormula = {
+  VSd:  { a: 2.83,  b: 0.204 },  // IVSd
+  LVd:  { a: 6.80,  b: 0.294 },  // LVIDd
+  LVWd: { a: 2.77,  b: 0.204 },  // LVPWd (IVSd보다 약간 얇음)
+  VSs:  { a: 4.77,  b: 0.191 },
+  LVs:  { a: 3.70,  b: 0.236 },
+  LVWs: { a: 4.62,  b: 0.181 },
+  AO:   { a: 8.00,  b: 0.296 },
+  LA:   { a: 8.40,  b: 0.296 },
+};
+
+// 정상 범위 계산 함수
+export function getCatMmodeRef(param: keyof CatMmodeRefFormula, bw: number): [number, number] {
+  const { a, b } = MMODE_REF_CAT_FORMULA[param];
+  const mean = a * Math.pow(bw, b);
+  // 95% PI는 논문의 Sxy값이 필요하지만, 근사적으로 ±15~20% 적용
+  return [mean * 0.82, mean * 1.18];
 }

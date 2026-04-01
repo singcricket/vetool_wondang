@@ -1,14 +1,15 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { ECHO_TESTS, ITEMS_BY_SECTION } from '@/constants/hospital/echocardio/echo-tests'
+import { getEchoTest, getEchoTestsBySpecies, ITEMS_BY_SECTION } from '@/constants/hospital/echocardio/echo-tests'
 import { DEFAULT_SECTION_ORDER } from '@/constants/hospital/echocardio/echo-sections'
-import { calculate, getRangeIndex } from '@/constants/hospital/echocardio/echo-calculators'
-import { judgeMmodeValue } from '@/constants/hospital/echocardio/mmode-ref-dog'
+import { calculate, getRangeIndex, getRangeIndexString } from '@/constants/hospital/echocardio/echo-calculators'
+import { getDogMmodeRef, getCatMmodeRef } from '@/constants/hospital/echocardio/echo-mmode-ref'
 import type {
   EchoResult,
   EchoTemplate,
   EchoSection,
+  Species,
 } from '@/types/echocardio/echocardio-type'
 
 // =============================================
@@ -18,8 +19,9 @@ function judgeResult(
   keywordId: string,
   value: string,
   allValues: Record<string, string>,
+  species: Species = 'canine',
 ): { result: string; comment: string } {
-  const test = ECHO_TESTS[keywordId]
+  const test = getEchoTest(keywordId, species)
   if (!test) return { result: '', comment: '' }
 
   if (test.testType === 'select') {
@@ -41,13 +43,20 @@ function judgeResult(
     }
   }
 
-  if (test.testType === 'mmode_range') {
+  if (test.testType === 'mmode_range' || test.testType === 'mmode_formula') {
     const num = parseFloat(value)
     const bw = parseFloat(allValues['BW_kg'] ?? '')
-    if (isNaN(num) || isNaN(bw)) return { result: '', comment: '' }
-    const judgment = judgeMmodeValue(num, bw, keywordId)
-    if (!judgment) return { result: '', comment: '' }
-    const idx = ['decrease', 'normal', 'increase'].indexOf(judgment)
+    if (isNaN(num) || isNaN(bw) || bw <= 0) return { result: '', comment: '' }
+
+    let ref: [number, number] | null = null
+    if (species === 'feline' && test.testType === 'mmode_formula') {
+      ref = getCatMmodeRef(keywordId as any, bw)
+    } else {
+      ref = getDogMmodeRef(keywordId as any, bw)
+    }
+
+    if (!ref) return { result: '', comment: '' }
+    const idx = getRangeIndex(num, [ref[0], ref[1]])
     return {
       result: test.optResult[idx] ?? '',
       comment: test.optComment[idx] ?? '',
@@ -56,9 +65,26 @@ function judgeResult(
 
   if (test.testType === 'calculated') {
     const num = parseFloat(value)
-    if (isNaN(num) || test.thresholds.length === 0)
-      return { result: '', comment: '' }
+    if (isNaN(num)) return { result: '', comment: '' }
+    const isEmptyThresholds = test.thresholds.length === 0
+    if (isEmptyThresholds) return { result: value, comment: '' }
+
     const idx = getRangeIndex(num, test.thresholds)
+    return {
+      result: test.optResult[idx] ?? '',
+      comment: test.optComment[idx] ?? '',
+    }
+  }
+
+  if (test.testType === 'calculated_string') {
+    if (value === '') return { result: '', comment: '' }
+    const isEmptyThresholds =
+      test.thresholds.length === 0 ||
+      (test.thresholds.length === 1 && test.thresholds[0] === '')
+
+    if (isEmptyThresholds) return { result: value, comment: '' }
+
+    const idx = getRangeIndexString(value, test.thresholds as string[])
     return {
       result: test.optResult[idx] ?? '',
       comment: test.optComment[idx] ?? '',
@@ -83,6 +109,7 @@ export async function upsertEchoResult(params: {
     params.keywordId,
     params.value,
     params.allValues,
+    params.allValues['species'] as Species,
   )
 
   const { data, error } = await supabase
@@ -104,60 +131,87 @@ export async function upsertEchoResult(params: {
   return data as unknown as EchoResult
 }
 
-// =============================================
-// 계산 항목 자동 업데이트
-// 의존 필드 값이 변경될 때 호출
-// =============================================
 export async function updateCalculatedResults(params: {
   echoChartId: string
   changedKeywordId: string
   allValues: Record<string, string>
 }): Promise<void> {
   const supabase = await createClient()
+  const visited = new Set<string>()
+  const queue = [params.changedKeywordId]
+  const currentValues = { ...params.allValues }
+  const species = params.allValues['species'] as Species || 'canine'
+  const ECHO_TESTS = getEchoTestsBySpecies(species)
 
-  // 변경된 keywordId를 dependency로 갖는 calculated 항목 찾기
-  const dependents = Object.values(ECHO_TESTS).filter(
-    (test) =>
-      test.testType === 'calculated' &&
-      test.dependencies.includes(params.changedKeywordId),
-  )
+  // 무한 루프 방지 및 연쇄 계산을 위한 큐 방식 처리
+  while (queue.length > 0) {
+    const currentId = queue.shift()!
+    if (visited.has(currentId)) continue
+    visited.add(currentId)
 
-  if (dependents.length === 0) return
+    // 현재 currentId를 의존성으로 가지는 항목들 찾기
+    const dependents = Object.values(ECHO_TESTS as any).filter((test: any) => {
+      const isCalc =
+        test.testType === 'calculated' || test.testType === 'calculated_string'
+      return isCalc && test.dependencies.includes(currentId)
+    })
 
-  const upsertRows = dependents
-    .map((test) => {
-      if (test.testType !== 'calculated') return null
+    if (dependents.length === 0) continue
 
-      const depInputs = Object.fromEntries(
-        test.dependencies.map((dep) => [dep, params.allValues[dep] ?? '']),
+    const upsertRows = []
+
+    for (const testObj of dependents) {
+      const test = testObj as any
+      if (
+        test.testType !== 'calculated' &&
+        test.testType !== 'calculated_string'
       )
-      const calcValue = calculate(test.formula, depInputs)
-      if (calcValue === null) return null
+        continue
 
-      const valueStr = String(calcValue)
+      // 계산에 필요한 모든 의존성 값 준비
+      const depInputs = Object.fromEntries(
+        (test.dependencies as string[]).map((dep) => [dep, currentValues[dep] ?? '']),
+      )
+
+      const calcValue = calculate(test.formula, depInputs)
+      const valueStr = calcValue === null ? '' : String(calcValue)
+
+      // 기존 값과 동일하면 더 이상 연쇄시키지 않음
+      if (currentValues[test.keywordID] === valueStr) continue
+
+      // 로컬 값 업데이트 (다음 단계를 위해)
+      currentValues[test.keywordID] = valueStr
+
       const { result, comment } = judgeResult(
         test.keywordID,
         valueStr,
-        params.allValues,
+        currentValues,
+        species,
       )
 
-      return {
+      upsertRows.push({
         echo_chart_id: params.echoChartId,
         keyword_id: test.keywordID,
         value: valueStr,
         result,
         comment,
-      }
-    })
-    .filter(Boolean)
+      })
 
-  if (upsertRows.length === 0) return
+      // 이 항목이 업데이트되었으니, 얘를 의존하는 또 다른 애들도 계산해야 함
+      queue.push(test.keywordID)
+    }
 
-  const { error } = await supabase
-    .from('echo_results')
-    .upsert(upsertRows as any[], { onConflict: 'echo_chart_id,keyword_id' })
+    if (upsertRows.length > 0) {
+      const { error } = await supabase
+        .from('echo_results')
+        .upsert(upsertRows, { onConflict: 'echo_chart_id,keyword_id' })
 
-  if (error) throw new Error(`updateCalculatedResults: ${error.message}`)
+      if (error)
+        throw new Error(
+          `updateCalculatedResults recursive error: ${error.message}`,
+        )
+    }
+  }
 }
 
 // =============================================
@@ -258,10 +312,10 @@ export async function insertEchoTemplate(
 
   const isFirst = (count ?? 0) === 0
 
-  const defaultActiveItems = Object.fromEntries(
-    Object.entries(ITEMS_BY_SECTION).map(([section, items]) => [
+  const defaultActiveItems: Record<string, string[]> = Object.fromEntries(
+    Object.entries(ITEMS_BY_SECTION as any).map(([section, items]) => [
       section,
-      items.map((i) => i.keywordID),
+      (items as any[]).map((i) => i.keywordID),
     ]),
   )
 

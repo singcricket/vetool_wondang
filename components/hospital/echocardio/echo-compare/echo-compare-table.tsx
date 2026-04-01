@@ -32,10 +32,17 @@ export default function EchoCompareTable({
     if (r.value) currentMap[r.keyword_id] = r.value
   })
 
+  const species =
+    current.patient.species?.toLowerCase() === 'cat' ||
+    current.patient.species?.toLowerCase() === 'feline'
+      ? 'feline'
+      : 'canine'
+
   // 값이 존재하는 항목만 표시
   const activeKeywords = testUIMeta.filter(
     (m) =>
       m.testType !== 'textcomment' &&
+      m.species.includes(species) &&
       (currentMap[m.keywordID] ||
         history.some((h: any) =>
           h.echo_results?.some(
