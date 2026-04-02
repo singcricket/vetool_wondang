@@ -1057,6 +1057,8 @@ export type Database = {
           notice_color: string | null
           notice_order: number
           notice_text: string
+          target_date: Json | null
+          target_user: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1067,6 +1069,8 @@ export type Database = {
           notice_color?: string | null
           notice_order: number
           notice_text?: string
+          target_date?: Json | null
+          target_user?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1077,6 +1081,8 @@ export type Database = {
           notice_color?: string | null
           notice_order?: number
           notice_text?: string
+          target_date?: Json | null
+          target_user?: string | null
           updated_at?: string | null
           user_id?: string
         }

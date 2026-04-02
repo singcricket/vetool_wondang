@@ -1,3 +1,6 @@
+'use client'
+'use no memo'
+
 import { Button } from '@/components/ui/button'
 import { deleteNotice } from '@/lib/services/hospital-home/notice'
 import { useRouter } from 'next/navigation'

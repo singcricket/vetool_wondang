@@ -6,14 +6,19 @@ import type { NoticeWithUser } from '@/types/hospital/notice'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ReactSortable, Sortable } from 'react-sortablejs'
+import { HospitalMetadata } from '../todo/todo'
 import SingleNotice from './single-notice'
 
 export default function DragAndDropNoticeList({
   noticesData,
   hosId,
+  metadata,
+  onRefresh,
 }: {
   noticesData: NoticeWithUser[]
   hosId: string
+  metadata: HospitalMetadata
+  onRefresh?: () => void
 }) {
   const [sortableNotice, setSortableNotice] = useState(noticesData)
   const { refresh } = useRouter()
@@ -27,7 +32,11 @@ export default function DragAndDropNoticeList({
     const item = noticeIds.splice(event.oldIndex as number, 1)[0]
     noticeIds.splice(event.newIndex as number, 0, item)
     reorderNotices(noticeIds)
-    refresh()
+    if (onRefresh) {
+      onRefresh()
+    } else {
+      refresh()
+    }
   }
 
   return (
@@ -38,13 +47,19 @@ export default function DragAndDropNoticeList({
         <ReactSortable
           list={sortableNotice}
           setList={setSortableNotice}
-          className="flex flex-col gap-2"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
           animation={250}
           handle=".handle"
           onEnd={handleReorder}
         >
           {sortableNotice.map((notice) => (
-            <SingleNotice hosId={hosId} notice={notice} key={notice.id} />
+            <SingleNotice
+              hosId={hosId}
+              notice={notice}
+              metadata={metadata}
+              key={notice.id}
+              onRefresh={onRefresh}
+            />
           ))}
         </ReactSortable>
       )}

@@ -11,11 +11,17 @@ export const noticeSchema = z.object({
   color: z.enum(NOTICE_COLORS, {
     required_error: '색상을 선택해주세요',
   }),
+  start_date: z.date({
+    required_error: '시작 날짜를 선택해주세요',
+  }),
+  end_date: z.date().optional().nullable(),
+  target_user: z.string().optional().nullable(),
+  is_done: z.boolean().default(false),
 })
 
 /* 투두 */
 export const todoSchema = z.object({
-  targaet_date: z.date({
+  target_date: z.date({
     required_error: '날짜을 선택해주세요',
   }),
   todo_title: z

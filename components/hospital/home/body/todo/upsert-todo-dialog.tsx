@@ -84,7 +84,7 @@ export default function UpsertTodoDialog({
     defaultValues: {
       todo_title: todo?.todo_title ?? '',
       target_user: todo?.target_user ?? '',
-      targaet_date: date,
+      target_date: date,
     },
   })
 
@@ -101,13 +101,13 @@ export default function UpsertTodoDialog({
   }, [metadata])
 
   const handleUpsertTodo = async (values: z.infer<typeof todoSchema>) => {
-    const { todo_title, target_user, targaet_date } = values
+    const { todo_title, target_user, target_date } = values
     setIsSubmitting(true)
 
     await upsertTodo(
       todo_title,
       target_user,
-      formatDateToISOString(targaet_date),
+      formatDateToISOString(target_date),
       hosId,
       todo?.id,
     )
@@ -136,7 +136,7 @@ export default function UpsertTodoDialog({
       form.reset({
         todo_title: todo?.todo_title ?? '',
         target_user: todo?.target_user ?? '',
-        targaet_date: date,
+        target_date: date,
       })
     }
     setIsDialogOpen(open)
@@ -169,7 +169,7 @@ export default function UpsertTodoDialog({
           >
             <FormField
               control={form.control}
-              name="targaet_date"
+              name="target_date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>

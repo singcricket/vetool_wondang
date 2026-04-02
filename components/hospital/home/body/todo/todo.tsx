@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useEffect, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
 import TodoFilter from './todo-filter'
 import TodoCalendar from './todo-calendar'
 import UpsertTodoDialog from './upsert-todo-dialog'
@@ -17,24 +17,34 @@ export type HospitalMetadata = {
     user_id: string
     name: string
     avatar_url: string | null
-    position: string | null
-    group: string | null
+    position: string
+    group: string[] | null
     is_vet: boolean
   }[]
   groups: string[]
 }
 
-export default function Todo({ hosId }: { hosId: string }) {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'done' | 'not-done'>(
-    'all',
-  )
+type TodoProps = {
+  hosId: string
+  activeFilter: 'all' | 'done' | 'not-done'
+  setActiveFilter: Dispatch<SetStateAction<'all' | 'done' | 'not-done'>>
+  selectedUserFilter: string[]
+  setSelectedUserFilter: Dispatch<SetStateAction<string[]>>
+}
+
+export default function Todo({
+  hosId,
+  activeFilter,
+  setActiveFilter,
+  selectedUserFilter,
+  setSelectedUserFilter,
+}: TodoProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
   const [metadata, setMetadata] = useState<HospitalMetadata>({
     users: [],
     groups: [],
   })
-  const [selectedUserFilter, setSelectedUserFilter] = useState<string[]>([])
-  
+
   // 날짜 선택 상태를 부모에서 관리하여 달력과 리스트를 동기화함
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 

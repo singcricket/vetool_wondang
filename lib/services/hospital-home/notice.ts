@@ -15,6 +15,8 @@ export const getNotices = async (hosId: string) => {
         notice_text, 
         notice_order, 
         created_at,
+        target_date,
+        target_user,
         user_id(
           user_id,
           name,
@@ -37,6 +39,9 @@ export const createNotice = async (
   noticeInput: string,
   colorInput: string,
   hosId: string,
+  startDate: Date,
+  endDate?: Date | null,
+  targetUserId?: string | null,
 ) => {
   const supabase = await createClient()
   const { error } = await supabase.from('notices').insert({
@@ -44,6 +49,12 @@ export const createNotice = async (
     notice_color: colorInput,
     notice_text: noticeInput,
     notice_order: 0,
+    target_date: {
+      start: startDate.toISOString(),
+      end: endDate ? endDate.toISOString() : null,
+      is_done: false,
+    },
+    target_user: targetUserId,
   })
 
   if (error) {
@@ -56,6 +67,10 @@ export const updateNotice = async (
   noticeId: string,
   noticeInput: string,
   colorInput: string,
+  startDate: Date,
+  endDate?: Date | null,
+  targetUserId?: string | null,
+  isDone?: boolean,
 ) => {
   const supabase = await createClient()
   const { error } = await supabase
@@ -63,6 +78,12 @@ export const updateNotice = async (
     .update({
       notice_color: colorInput,
       notice_text: noticeInput,
+      target_date: {
+        start: startDate.toISOString(),
+        end: endDate ? endDate.toISOString() : null,
+        is_done: isDone ?? false,
+      },
+      target_user: targetUserId,
     })
     .match({ id: noticeId })
 
