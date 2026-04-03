@@ -18,7 +18,7 @@ export default async function EchoChartPage(props: {
   ])
 
   return (
-    <div className="relative flex flex-col">
+    <div className="relative flex flex-col h-desktop overflow-hidden">
       <EchoChartHeader
         hosId={hos_id}
         targetDate={target_date}

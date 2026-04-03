@@ -96,7 +96,7 @@ export default function EchoVets({
               <SelectContent>
                 <SelectItem value="none">선택 안 함</SelectItem>
                 {vetsList.map((v) => (
-                  <SelectItem key={v.user_id} value={v.user_id} className="text-xs">
+                  <SelectItem key={v.user_id} value={v.user_id} className="text-sm">
                     {v.name}
                   </SelectItem>
                 ))}

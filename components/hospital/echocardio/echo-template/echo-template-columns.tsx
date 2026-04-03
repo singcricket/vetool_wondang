@@ -8,6 +8,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { ArrowUpDownIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { cn } from '@/lib/utils/utils'
 import DeleteEchoTemplateDialog from './delete-echo-template-dialog'
 import UpsertEchoTemplateDialog from './upsert-echo-template-dialog'
 
@@ -61,6 +62,19 @@ export const echoTemplateColumns = (hosId: string, testUIMeta: any[]): ColumnDef
         <ArrowUpDownIcon className="ml-2 h-4 w-4" />
       </Button>
     ),
+  },
+  {
+    accessorKey: 'target_species',
+    header: '종',
+    size: 50,
+    cell: ({ row }) => (
+      <span className={cn(
+        "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+        row.original.target_species === 'feline' ? "bg-orange-50 text-orange-600" : "bg-blue-50 text-blue-600"
+      )}>
+        {row.original.target_species === 'feline' ? 'CAT' : 'DOG'}
+      </span>
+    )
   },
   {
     accessorKey: 'description',

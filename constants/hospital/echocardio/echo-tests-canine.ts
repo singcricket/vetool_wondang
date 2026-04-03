@@ -5,7 +5,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   BW_kg: {
     keywordID: 'BW_kg',
     keywordName: 'BW (kg)',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PE'],
     groups: ['PE'],
     testType: 'other',
@@ -17,7 +17,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   BP: {
     keywordID: 'BP',
     keywordName: 'Blood Pressure',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PE'],
     groups: ['PE'],
     testType: 'range',
@@ -33,7 +33,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   BT: {
     keywordID: 'BT',
     keywordName: 'Body Temp.',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PE'],
     groups: ['PE'],
     testType: 'range',
@@ -49,7 +49,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   HR: {
     keywordID: 'HR',
     keywordName: 'Heart Rate',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PE'],
     groups: ['PE'],
     testType: 'range',
@@ -65,7 +65,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   RR: {
     keywordID: 'RR',
     keywordName: 'Respi. Rate',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PE'],
     groups: ['PE'],
     testType: 'range',
@@ -81,7 +81,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   HS: {
     keywordID: 'HS',
     keywordName: 'Heart Sound',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PE'],
     groups: ['PE'],
     testType: 'textcomment',
@@ -92,7 +92,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PE_comment: {
     keywordID: 'PE_comment',
     keywordName: 'P.E. comment',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PE'],
     groups: ['PE'],
     testType: 'textcomment',
@@ -107,7 +107,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_SAM: {
     keywordID: 'MV_SAM',
     keywordName: 'Systolic Anterior Motion (SAM)',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['MV'],
     testType: 'select',
@@ -121,7 +121,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_leafletTipThickening: {
     keywordID: 'MV_leafletTipThickening',
     keywordName: 'MV Leaflet Tip Thickening',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['MV'],
     testType: 'select',
@@ -141,7 +141,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_prolapse: {
     keywordID: 'MV_prolapse',
     keywordName: 'MV Prolapse',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['MV'],
     testType: 'select',
@@ -161,7 +161,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_flailmovement: {
     keywordID: 'MV_flailmovement',
     keywordName: 'MV Flail Movement',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['MV'],
     testType: 'select',
@@ -183,7 +183,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   IVS_flattening: {
     keywordID: 'IVS_flattening',
     keywordName: 'IVS Flattening',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode', 'PosibilityOfPH'],
     groups: ['IVS'],
     testType: 'select',
@@ -197,7 +197,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   IVS_paradoxicalMV: {
     keywordID: 'IVS_paradoxicalMV',
     keywordName: 'IVS Paradoxical Movement',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['IVS'],
     testType: 'select',
@@ -213,7 +213,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TV_leafletTipThickening: {
     keywordID: 'TV_leafletTipThickening',
     keywordName: 'TV Leaflet Tip Thickening',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['TV'],
     testType: 'select',
@@ -227,7 +227,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TV_prolapse: {
     keywordID: 'TV_prolapse',
     keywordName: 'TV Prolapse',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['TV'],
     testType: 'select',
@@ -241,7 +241,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TV_flailmovement: {
     keywordID: 'TV_flailmovement',
     keywordName: 'TV Flail Movement',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['TV'],
     testType: 'select',
@@ -257,7 +257,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   RVhypertrophy: {
     keywordID: 'RVhypertrophy',
     keywordName: 'RV hypertrophy',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode', 'PosibilityOfPH'],
     groups: ['RV'],
     testType: 'select',
@@ -271,7 +271,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   RVsystolicDysfunction: {
     keywordID: 'RVsystolicDysfunction',
     keywordName: 'RV systolic dysfunction',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode', 'PosibilityOfPH'],
     groups: ['RV'],
     testType: 'select',
@@ -285,7 +285,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   RAenlargement: {
     keywordID: 'RAenlargement',
     keywordName: 'RA enlargement',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode', 'PosibilityOfPH'],
     groups: ['RA'],
     testType: 'select',
@@ -299,7 +299,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   CVCenlargement: {
     keywordID: 'CVCenlargement',
     keywordName: 'CVC enlargement',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode', 'PosibilityOfPH'],
     groups: ['CVC'],
     testType: 'select',
@@ -315,7 +315,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   AV_flattening: {
     keywordID: 'AV_flattening',
     keywordName: 'Aortic Valve Flattening',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['AV'],
     testType: 'select',
@@ -329,7 +329,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   AV_poststenoticdilation: {
     keywordID: 'AV_poststenoticdilation',
     keywordName: 'AV Post-stenotic Dilation',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['AV'],
     testType: 'select',
@@ -343,7 +343,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   LVOT_obstruction: {
     keywordID: 'LVOT_obstruction',
     keywordName: 'LVOT Obstruction',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['LVOT'],
     testType: 'select',
@@ -359,7 +359,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PV_thickening: {
     keywordID: 'PV_thickening',
     keywordName: 'PV Thickening',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['PV'],
     testType: 'select',
@@ -373,7 +373,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PV_changeOfdimension: {
     keywordID: 'PV_changeOfdimension',
     keywordName: 'PV Change of Dimension',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['PV'],
     testType: 'select',
@@ -389,7 +389,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PericardialEffusion: {
     keywordID: 'PericardialEffusion',
     keywordName: 'Pericardial Effusion',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['Effusion'],
     testType: 'select',
@@ -403,7 +403,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PericardialEffusion_vol: {
     keywordID: 'PericardialEffusion_vol',
     keywordName: 'Pericardial Effusion (vol.)',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['Effusion'],
     testType: 'other',
@@ -415,7 +415,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PleuralEffusion: {
     keywordID: 'PleuralEffusion',
     keywordName: 'Pleural Effusion',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['Effusion'],
     testType: 'select',
@@ -429,7 +429,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PleuralEffusion_vol: {
     keywordID: 'PleuralEffusion_vol',
     keywordName: 'Pleural Effusion (vol.)',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['Effusion'],
     testType: 'other',
@@ -441,7 +441,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   Bmode_comment: {
     keywordID: 'Bmode_comment',
     keywordName: 'B-mode Comment',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Bmode'],
     groups: ['Comment'],
     testType: 'textcomment',
@@ -454,7 +454,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   EF: {
     keywordID: 'EF',
     keywordName: 'EF',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Objective_Evaluation'],
     groups: ['Mmode'],
     testType: 'range',
@@ -470,7 +470,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   ESV: {
     keywordID: 'ESV',
     keywordName: 'ESV',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Objective_Evaluation'],
     groups: ['Mmode'],
     testType: 'other',
@@ -482,7 +482,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   LAdMax: {
     keywordID: 'LAdMax',
     keywordName: 'LAd Max',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Objective_Evaluation'],
     groups: ['LA FS'],
     testType: 'other',
@@ -494,7 +494,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   LAdMin: {
     keywordID: 'LAdMin',
     keywordName: 'LAd Min',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Objective_Evaluation'],
     groups: ['LA FS'],
     testType: 'other',
@@ -506,7 +506,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   LAFS: {
     keywordID: 'LAFS',
     keywordName: 'LA FS',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Objective_Evaluation'],
     groups: ['LA FS'],
     testType: 'calculated',
@@ -526,7 +526,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_turbulentJet: {
     keywordID: 'MV_turbulentJet',
     keywordName: 'MV Turbulent Jet',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['ColorDoppler'],
     groups: ['MV'],
     testType: 'select',
@@ -540,7 +540,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_turbulentJetRange: {
     keywordID: 'MV_turbulentJetRange',
     keywordName: 'MV Turbulent Jet Range',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['ColorDoppler'],
     groups: ['MV'],
     testType: 'range',
@@ -556,7 +556,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TV_turbulentJet: {
     keywordID: 'TV_turbulentJet',
     keywordName: 'TV Turbulent Jet',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['ColorDoppler'],
     groups: ['TV'],
     testType: 'select',
@@ -570,7 +570,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TV_turbulentJetRange: {
     keywordID: 'TV_turbulentJetRange',
     keywordName: 'TV Turbulent Jet Range',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['ColorDoppler'],
     groups: ['TV'],
     testType: 'range',
@@ -586,7 +586,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   AV_turbulentJet: {
     keywordID: 'AV_turbulentJet',
     keywordName: 'AV Turbulent Jet',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['ColorDoppler'],
     groups: ['AV'],
     testType: 'select',
@@ -600,7 +600,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PV_turbulentJet: {
     keywordID: 'PV_turbulentJet',
     keywordName: 'PV Turbulent Jet',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['ColorDoppler'],
     groups: ['PV'],
     testType: 'select',
@@ -614,7 +614,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   CD_comment: {
     keywordID: 'CD_comment',
     keywordName: 'Color Doppler Comment',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['ColorDoppler'],
     groups: ['Comment'],
     testType: 'textcomment',
@@ -627,7 +627,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_Ewave: {
     keywordID: 'MV_Ewave',
     keywordName: 'MV E Wave',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'range',
@@ -643,7 +643,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_Awave: {
     keywordID: 'MV_Awave',
     keywordName: 'MV A Wave',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'other',
@@ -655,7 +655,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MV_EAratio: {
     keywordID: 'MV_EAratio',
     keywordName: 'MV E:A Ratio',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'calculated',
@@ -673,7 +673,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   IVRT: {
     keywordID: 'IVRT',
     keywordName: 'IVRT',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'range',
@@ -689,7 +689,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   EIVRT: {
     keywordID: 'EIVRT',
     keywordName: 'E/IVRT',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'calculated',
@@ -707,7 +707,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   DT: {
     keywordID: 'DT',
     keywordName: 'Deceleration Time (DT)',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'range',
@@ -723,7 +723,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MR: {
     keywordID: 'MR',
     keywordName: 'MV Regurgitation',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'select',
@@ -737,7 +737,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MR_vel: {
     keywordID: 'MR_vel',
     keywordName: 'MR Velocity',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'other',
@@ -749,7 +749,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   MRPG: {
     keywordID: 'MRPG',
     keywordName: 'MR PG',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['MV'],
     testType: 'calculated',
@@ -768,7 +768,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TV_Ewave: {
     keywordID: 'TV_Ewave',
     keywordName: 'TV E Wave',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['TV'],
     testType: 'other',
@@ -780,7 +780,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TR: {
     keywordID: 'TR',
     keywordName: 'TR Regurgitation',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['TV'],
     testType: 'select',
@@ -794,7 +794,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TR_vel: {
     keywordID: 'TR_vel',
     keywordName: 'TR Velocity',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler','PosibilityOfPH'],
     groups: ['TV'],
     testType: 'range',
@@ -810,7 +810,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   TRPG: {
     keywordID: 'TRPG',
     keywordName: 'TR PG',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['TV'],
     testType: 'calculated',
@@ -829,7 +829,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PA_velocity: {
     keywordID: 'PA_velocity',
     keywordName: 'PA Velocity',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['PA'],
     testType: 'other',
@@ -841,7 +841,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PR: {
     keywordID: 'PR',
     keywordName: 'PA Regurgitation',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['PA'],
     testType: 'select',
@@ -855,7 +855,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PR_vel: {
     keywordID: 'PR_vel',
     keywordName: 'PR Velocity',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['PA'],
     testType: 'range',
@@ -871,7 +871,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PRPG: {
     keywordID: 'PRPG',
     keywordName: 'PR PG',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['PA'],
     testType: 'calculated',
@@ -890,7 +890,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   AV_velocity: {
     keywordID: 'AV_velocity',
     keywordName: 'AV Velocity',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['AV'],
     testType: 'range',
@@ -912,7 +912,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   AR: {
     keywordID: 'AR',
     keywordName: 'AR Regurgitation',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['AV'],
     testType: 'select',
@@ -926,7 +926,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   AR_vel: {
     keywordID: 'AR_vel',
     keywordName: 'AR Velocity',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['AV'],
     testType: 'other',
@@ -938,7 +938,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   ARPG: {
     keywordID: 'ARPG',
     keywordName: 'AR PG',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['AV'],
     testType: 'calculated',
@@ -955,7 +955,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   SD_comment: {
     keywordID: 'SD_comment',
     keywordName: 'Spectral Doppler Comment',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['SpectralDoppler'],
     groups: ['Comment'],
     testType: 'textcomment',
@@ -968,7 +968,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   CVCcollapse: {
     keywordID: 'CVCcollapse',
     keywordName: 'CVC collapse',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Pulmonary_Hypertension'],
     testType: 'select',
@@ -982,7 +982,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   RApressure: {
     keywordID: 'RApressure',
     keywordName: 'RA pressure',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Pulmonary_Hypertension'],
     testType: 'calculated',
@@ -1000,7 +1000,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PApressure: {
     keywordID: 'PApressure',
     keywordName: 'PA pressure',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Pulmonary_Hypertension'],
     testType: 'calculated',
@@ -1018,7 +1018,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PA: {
     keywordID: 'PA',
     keywordName: 'PA',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Pulmonary_Hypertension'],
     testType: 'range',
@@ -1033,7 +1033,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   PAAO: {
     keywordID: 'PAAO',
     keywordName: 'PA/AO',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Pulmonary_Hypertension'],
     testType: 'calculated',
@@ -1051,7 +1051,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   AT: {
     keywordID: 'AT',
     keywordName: 'AT',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Pulmonary_Hypertension'],
     testType: 'range',
@@ -1067,7 +1067,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   ET: {
     keywordID: 'ET',
     keywordName: 'ET',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Pulmonary_Hypertension'],
     testType: 'range',
@@ -1082,7 +1082,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   ATET: {
     keywordID: 'ATET',
     keywordName: 'AT/ET',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Pulmonary_Hypertension'],
     testType: 'calculated',
@@ -1100,7 +1100,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   SystolicNotch: {
     keywordID: 'SystolicNotch',
     keywordName: 'Systolic Notching',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension', 'PosibilityOfPH'],
     groups: ['PA'],
     testType: 'select',
@@ -1114,7 +1114,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   RPAmax: {
     keywordID: 'RPAmax',
     keywordName: 'RPA max',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['RPADi'],
     testType: 'range',
@@ -1129,7 +1129,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   RPAmin: {
     keywordID: 'RPAmin',
     keywordName: 'RPA min',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['RPADi'],
     testType: 'range',
@@ -1144,7 +1144,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
   RPADi: {
     keywordID: 'RPADi',
     keywordName: 'RPADi',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['RPADi'],
     testType: 'calculated',
@@ -1162,7 +1162,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
 PH_comment: {
     keywordID: 'PH_comment',
     keywordName: 'PH Comment',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Pulmonary_Hypertension'],
     groups: ['Comment'],
     testType: 'textcomment',
@@ -1173,7 +1173,7 @@ PH_comment: {
   anatomic_PAAO: {
     keywordID: 'anatomic_PAAO',
     keywordName: 'Pulmonary artery enlargement',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PosibilityOfPH'],
     groups: ['Anatomic site'],
     testType: 'calculated_string',
@@ -1190,7 +1190,7 @@ PH_comment: {
   anatomic_PR_vel: {
     keywordID: 'anatomic_PR_vel',
     keywordName: 'PR velocity > 2.5',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PosibilityOfPH'],
     groups: ['Anatomic site'],
     testType: 'calculated_string',
@@ -1207,7 +1207,7 @@ PH_comment: {
   anatomic_RPADi: {
     keywordID: 'anatomic_RPADi',
     keywordName: 'RPADi < 30%',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PosibilityOfPH'],
     groups: ['Anatomic site'],
     testType: 'calculated_string',
@@ -1224,7 +1224,7 @@ PH_comment: {
   anatomic_AT: {
     keywordID: 'anatomic_AT',
     keywordName: 'AT < 52',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PosibilityOfPH'],
     groups: ['Anatomic site'],
     testType: 'calculated_string',
@@ -1241,7 +1241,7 @@ PH_comment: {
   anatomic_ATET: {
     keywordID: 'anatomic_ATET',
     keywordName: 'AT/ET < 0.3',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PosibilityOfPH'],
     groups: ['Anatomic site'],
     testType: 'calculated_string',
@@ -1258,8 +1258,8 @@ PH_comment: {
   anatomic_number1: {
     keywordID: 'anatomic_number1',
     keywordName: 'Number of anatomic sites1',
-    species: ['canine', 'feline'],
-    sections: ['PosibilityOfPH'],
+    species: ['canine'],
+    sections: [],
     groups: ['Anatomic site'],
     testType: 'calculated',
     unit: '',
@@ -1275,8 +1275,8 @@ PH_comment: {
   anatomic_number2: {
     keywordID: 'anatomic_number2',
     keywordName: 'Number of anatomic sites2',
-    species: ['canine', 'feline'],
-    sections: ['PosibilityOfPH'],
+    species: ['canine'],
+    sections: [],
     groups: ['Anatomic site'],
     testType: 'calculated',
     unit: '',
@@ -1292,8 +1292,8 @@ PH_comment: {
   anatomic_number3: {
     keywordID: 'anatomic_number3',
     keywordName: 'Number of anatomic sites3',
-    species: ['canine', 'feline'],
-    sections: ['PosibilityOfPH'],
+    species: ['canine'],
+    sections: [],
     groups: ['Anatomic site'],
     testType: 'calculated',
     unit: '',
@@ -1309,7 +1309,7 @@ PH_comment: {
   anatomic_number: {
     keywordID: 'anatomic_number',
     keywordName: 'Number of anatomic sites',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PosibilityOfPH'],
     groups: ['Result'],
     testType: 'calculated',
@@ -1326,7 +1326,7 @@ PH_comment: {
   PHprob: {
     keywordID: 'PHprob',
     keywordName: 'Probability of PH',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['PosibilityOfPH'],
     groups: ['Result'],
     testType: 'calculated',
@@ -1347,7 +1347,7 @@ PH_comment: {
   Em: {
     keywordID: 'Em',
     keywordName: 'TDI Em',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['TDI'],
     groups: ['MV'],
     testType: 'other',
@@ -1359,7 +1359,7 @@ PH_comment: {
   Am: {
     keywordID: 'Am',
     keywordName: 'TDI Am',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['TDI'],
     groups: ['MV'],
     testType: 'other',
@@ -1371,7 +1371,7 @@ PH_comment: {
   Sm: {
     keywordID: 'Sm',
     keywordName: 'TDI Sm',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['TDI'],
     groups: ['MV'],
     testType: 'other',
@@ -1383,7 +1383,7 @@ PH_comment: {
   EmAm: {
     keywordID: 'EmAm',
     keywordName: 'Em/Am',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['TDI'],
     groups: ['MV'],
     testType: 'calculated',
@@ -1401,7 +1401,7 @@ PH_comment: {
   EEm: {
     keywordID: 'EEm',
     keywordName: 'E/Em',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['TDI'],
     groups: ['MV'],
     testType: 'calculated',
@@ -1424,7 +1424,7 @@ PH_comment: {
   TDI_comment: {
     keywordID: 'TDI_comment',
     keywordName: 'TDI Comment',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['TDI'],
     groups: ['Comment'],
     testType: 'textcomment',
@@ -1471,7 +1471,7 @@ PH_comment: {
    Radio_comment: {
     keywordID: 'Radio_comment',
     keywordName: 'Radiology comment',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['Radio'],
     groups: ['Comment'],
     testType: 'textcomment',
@@ -1737,7 +1737,7 @@ PH_comment: {
   Last_comment: {
     keywordID: 'Last_comment',
     keywordName: 'General Review',
-    species: ['canine', 'feline'],
+    species: ['canine'],
     sections: ['General_Review'],
     groups: ['Test Review'],
     testType: 'textcomment',

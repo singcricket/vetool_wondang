@@ -54,10 +54,6 @@ export const ECHO_SECTION_META: Record<
     label: 'MINE SCORE',
     description: 'MINE SCORE',
   },
-  ACVIM: {
-    label: 'ACVIM',
-    description: 'ACVIM',
-  },
   
   General_Review: {
     label: 'General Review',
@@ -75,7 +71,6 @@ export const DEFAULT_SECTION_ORDER: EchoSection[] = [
   'TDI',
   'Pulmonary_Hypertension',
   'PosibilityOfPH',
-  'ACVIM',
   'HCM_Evaluation',
   'MINE_SCORE',
   'General_Review'

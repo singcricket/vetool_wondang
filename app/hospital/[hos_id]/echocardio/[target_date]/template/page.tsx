@@ -2,7 +2,7 @@ import MobileTitle from '@/components/common/mobile-title'
 import EchoTemplateEntry from '@/components/hospital/echocardio/echo-template/echo-template-entry'
 import UpsertEchoTemplateDialog from '@/components/hospital/echocardio/echo-template/upsert-echo-template-dialog'
 import { fetchEchoTemplates } from '@/lib/services/echocardio/fetch-echo'
-import { getEchoTestUIMeta } from '@/constants/hospital/echocardio/echo-tests'
+import { getAllEchoTestUIMeta } from '@/constants/hospital/echocardio/echo-tests'
 import { BookmarkIcon } from 'lucide-react'
 
 export default async function EchoTemplatePage(props: {
@@ -11,7 +11,7 @@ export default async function EchoTemplatePage(props: {
   const { hos_id } = await props.params
   const [templates, testUIMeta] = await Promise.all([
     fetchEchoTemplates(hos_id),
-    Promise.resolve(getEchoTestUIMeta()),
+    Promise.resolve(getAllEchoTestUIMeta()),
   ])
 
   return (

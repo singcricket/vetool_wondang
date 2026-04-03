@@ -64,7 +64,7 @@ export default function SingleNotice({
     <div
       className={cn(
         'group relative flex flex-col p-5 w-[310px] h-[310px] transition-all duration-300 transform',
-        'shadow-[2px_2px_5px_rgba(0,0,0,0.1)] hover:shadow-[5px_5px_15px_rgba(0,0,0,0.15)] hover:-translate-y-1',
+        'shadow-[2px_2px_5px_rgba(0,0,0,0.1)] hover:shadow-[5px_5px_15px_rgba(0,0,0,0.15)] hover:-translate-y-1 hover:z-50',
         isDone ? 'opacity-60 grayscale-[0.3]' : 'rotate-[0.3deg] hover:rotate-0',
       )}
       style={{

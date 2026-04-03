@@ -24,13 +24,12 @@ export default function EchoSectionWrapper({
 }: EchoSectionWrapperProps) {
   const [isOpen, setIsOpen] = useState(true)
 
-  // 그룹별 묶기 (한 항목이 여러 그룹에 속할 수 있음)
+  // 그룹별 묶기 (한 항목이 여러 그룹에 속하더라도 섹션 내에서는 한 번만 출력되도록 첫 번째 그룹 사용)
   const groupMap: Record<string, EchoTestUIMeta[]> = {}
   items.forEach((item) => {
-    item.groups.forEach((g) => {
-      if (!groupMap[g]) groupMap[g] = []
-      groupMap[g].push(item)
-    })
+    const groupName = item.groups[0] || '기본'
+    if (!groupMap[groupName]) groupMap[groupName] = []
+    groupMap[groupName].push(item)
   })
 
   return (
@@ -38,24 +37,24 @@ export default function EchoSectionWrapper({
       {/* 섹션 헤더 */}
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-3 py-2 hover:bg-muted/50"
+        className="flex w-full items-center justify-between px-3 py-2.5 hover:bg-muted/50"
       >
-        <span className="text-xs font-bold">{sectionLabel}</span>
+        <span className="text-sm font-bold">{sectionLabel}</span>
         {isOpen ? (
-          <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
 
       {isOpen && (
         <div className="border-t px-3 py-2">
           {Object.entries(groupMap).map(([group, groupItems]) => (
-            <div key={group} className="mb-3 last:mb-0">
+            <div key={group} className="mb-4 last:mb-0">
               {/* 그룹명 (Comment, PE 등 단일 그룹은 숨김) */}
               {group !== 'PE' && group !== 'Comment' && group !== 'Thorax' && (
-                <div className="mb-1.5 border-b pb-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="mb-2 border-b pb-0.5">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     {group}
                   </span>
                 </div>

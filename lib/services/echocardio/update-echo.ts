@@ -256,6 +256,7 @@ export async function upsertEchoTemplate(
     section_order?: EchoSection[]
     item_order?: Record<string, string[]>
     active_items?: Record<string, string[]>
+    target_species?: Species
   },
 ): Promise<void> {
   const supabase = await createClient()
@@ -292,6 +293,7 @@ export async function upsertEchoSettings(
 export async function insertEchoTemplate(
   hosId: string,
   name: string,
+  targetSpecies: Species,
   description?: string,
 ): Promise<EchoTemplate> {
   const supabase = await createClient()
@@ -301,6 +303,7 @@ export async function insertEchoTemplate(
     .from('echo_templates')
     .select('section_order, item_order, active_items')
     .eq('hos_id', hosId)
+    .eq('target_species', targetSpecies)
     .eq('is_default', true)
     .single()
 
@@ -324,6 +327,7 @@ export async function insertEchoTemplate(
     .insert({
       hos_id: hosId,
       name,
+      target_species: targetSpecies,
       description: description ?? null,
       section_order: activeTemplate?.section_order ?? DEFAULT_SECTION_ORDER,
       item_order: activeTemplate?.item_order ?? {},

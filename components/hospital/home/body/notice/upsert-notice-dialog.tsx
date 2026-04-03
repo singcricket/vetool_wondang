@@ -552,6 +552,7 @@ export default function UpsertNoticeDialog({
                   <DeleteNoticeButton
                     noticeId={oldNoticeId!}
                     setIsDialogOpen={setIsDialogOpen}
+                    onDeleteSuccess={onSubmitSuccess}
                   />
                 )}
                 <Button

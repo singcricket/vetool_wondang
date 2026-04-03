@@ -27,18 +27,18 @@ export default function EchoInputField({
   return (
     <div className="flex items-start gap-3">
       {/* 항목명 및 툴팁 */}
-      <div className="flex w-40 shrink-0 items-center gap-1.5 pt-1">
-        <span className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+      <div className="flex w-44 shrink-0 items-center gap-1.5 pt-1">
+        <span className="text-sm text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
           {item.keywordName}
         </span>
         {item.testinfo && (
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <HelpCircle className="h-3.5 w-3.5 shrink-0 cursor-help text-muted-foreground/50 transition-colors hover:text-muted-foreground" />
+                <HelpCircle className="h-4 w-4 shrink-0 cursor-help text-muted-foreground/50 transition-colors hover:text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-[200px]">
-                <p className="text-[11px] font-normal leading-relaxed">{item.testinfo}</p>
+                <p className="text-xs font-normal leading-relaxed">{item.testinfo}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

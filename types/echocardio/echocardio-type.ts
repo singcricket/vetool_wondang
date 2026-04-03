@@ -15,7 +15,6 @@ export const ECHO_SECTION_LIST = [
   'TDI',
   'MINE_SCORE',
   'PosibilityOfPH',
-  'ACVIM',
   'HCM_Evaluation', // 고양이 전용 섹션 추가
   'General_Review'
 ] as const
@@ -74,7 +73,8 @@ export const FUNCTIONAL_GROUP_META: Record<FunctionalGroup, {
   priority: number
   description: string
 }> = {
-  MMVD_staging:     { label: 'MMVD Staging',          priority: 1,  description: 'MMVD 병기 평가 (MINE score, ACVIM)' },
+  MMVD_staging:     { label: 'MMVD Staging',         
+  priority: 1,  description: 'MMVD 병기 평가 (MINE score, ACVIM)' },
   HCM_evaluation:   { label: 'HCM Evaluation',        priority: 1,  description: '고양이 HCM 진단 및 평가' },
   LA_size:          { label: 'LA Size',                priority: 2,  description: '좌심방 크기' },
   LA_pressure:      { label: 'LA Pressure',            priority: 3,  description: '좌심방압 상승 여부' },
@@ -261,6 +261,7 @@ export type EchoTestUIMeta = {
   testinfo?: string // 검사항목 설명
   options?: string[] // select 타입용
   dependencies?: string[] // calculated 타입용 (의존 필드 렌더링)
+  formula?: EchoFormula
   anatomic_groups?: AnatomicGroup[]
   functional_groups?: FunctionalGroup[]
   refTable?: string
@@ -281,8 +282,6 @@ export type SectionConfig = {
   label: string
   groups: GroupConfig[]
 }
-
-export type TabType = 'section' | 'anatomic' | 'functional'
 
 export type LayoutConfig = {
   species: Species
@@ -328,6 +327,7 @@ export type EchoTemplate = {
   id: string
   hos_id: string
   name: string
+  target_species: Species
   description: string | null
   section_order: EchoSection[]
   item_order: Record<string, string[]>    // 섹션별 keywordID 순서 + '_flat' 키로 목록 모드 전역 순서
@@ -350,10 +350,6 @@ export type EchoTemplateGuideImage = {
   display_order: number
   created_at: string
 }
-
-// 하위 호환 alias
-export type EchoSettings = EchoTemplate
-export type EchoGuideImage = EchoTemplateGuideImage
 
 // 템플릿 + 가이드 이미지 복합 타입
 export type EchoTemplateWithImages = EchoTemplate & {

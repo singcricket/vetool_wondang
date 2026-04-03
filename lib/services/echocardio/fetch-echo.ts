@@ -7,6 +7,7 @@ import type {
   EchoSidebarItem,
   EchoTemplate,
   EchoTemplateGuideImage,
+  Species,
 } from '@/types/echocardio/echocardio-type'
 import { DEFAULT_SECTION_ORDER } from '@/constants/hospital/echocardio/echo-sections'
 import { ITEMS_BY_SECTION } from '@/constants/hospital/echocardio/echo-tests'
@@ -92,6 +93,7 @@ export async function fetchEchoChartDetail(
 // =============================================
 export async function fetchActiveTemplate(
   hosId: string,
+  species: Species = 'canine',
 ): Promise<EchoTemplate> {
   const supabase = await createClient()
 
@@ -99,6 +101,7 @@ export async function fetchActiveTemplate(
     .from('echo_templates')
     .select('*')
     .eq('hos_id', hosId)
+    .eq('target_species', species)
     .eq('is_default', true)
     .single()
 
@@ -106,13 +109,16 @@ export async function fetchActiveTemplate(
     const defaultActiveItems = Object.fromEntries(
       Object.entries(ITEMS_BY_SECTION).map(([section, items]) => [
         section,
-        (items as any[]).map((i) => i.keywordID),
+        (items as any[])
+          .filter((i) => i.species?.includes(species))
+          .map((i) => i.keywordID),
       ]),
     )
     return {
       id: '',
       hos_id: hosId,
-      name: '기본 템플릿',
+      name: `기본 템플릿 (${species === 'feline' ? '고양이' : '개'})`,
+      target_species: species,
       description: null,
       section_order: DEFAULT_SECTION_ORDER,
       item_order: {},

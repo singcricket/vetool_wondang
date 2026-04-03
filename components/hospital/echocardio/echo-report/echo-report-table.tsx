@@ -21,7 +21,7 @@ export default function EchoReportTable({
       <h3 className={`border-l-4 border-primary pl-2 text-sm font-bold ${isUppercase ? 'uppercase' : ''}`}>
         {label}
       </h3>
-      <table className="w-full border-collapse text-[10px] print:text-[9px]">
+      <table className="w-full border-collapse text-xs print:text-[10px]">
         <thead>
           <tr className="bg-muted/30">
             <th className="border px-2 py-1 text-left font-semibold w-1/4">항목</th>

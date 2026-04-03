@@ -46,19 +46,20 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
 
   return (
     <div className="flex w-full flex-col gap-2 p-2 pt-6">
-      <Tabs defaultValue="todo" className="w-full">
+      <Tabs defaultValue="notice" className="w-full">
         <TabsList className="grid h-12 w-full grid-cols-3 rounded-xl bg-muted/40 p-1.5 shadow-inner">
-          <TabsTrigger
-            value="todo"
-            className="rounded-lg text-sm font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
-            할일
-          </TabsTrigger>
+         
           <TabsTrigger
             value="notice"
             className="rounded-lg text-sm font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
           >
             메모/공지
+          </TabsTrigger>
+          <TabsTrigger
+            value="todo"
+            className="rounded-lg text-sm font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
+          >
+            할일
           </TabsTrigger>
           <TabsTrigger
             value="schedule"

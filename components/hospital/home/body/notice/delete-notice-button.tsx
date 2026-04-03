@@ -9,10 +9,12 @@ import { type Dispatch, type SetStateAction } from 'react'
 type DeleteNoticeButtonProps = {
   noticeId: string
   setIsDialogOpen: Dispatch<SetStateAction<boolean>>
+  onDeleteSuccess?: () => void
 }
 export default function DeleteNoticeButton({
   noticeId,
   setIsDialogOpen,
+  onDeleteSuccess,
 }: DeleteNoticeButtonProps) {
   const { refresh } = useRouter()
 
@@ -21,7 +23,11 @@ export default function DeleteNoticeButton({
 
     await deleteNotice(noticeId)
 
-    refresh()
+    if (onDeleteSuccess) {
+      onDeleteSuccess()
+    } else {
+      refresh()
+    }
   }
 
   return (

@@ -11,13 +11,17 @@ import TodoFilter from '../todo/todo-filter'
 import DragAndDropNoticeList from './drag-and-drop-notice-list'
 import { HospitalMetadata } from '../todo/todo'
 import { useNotices } from '@/hooks/use-notices'
+import { useMonthTodos } from '@/hooks/use-month-todo'
+import TodoMobile from '../todo/todo-mobile'
 import {
   addDays,
   format,
   isAfter,
   isBefore,
   isSameDay,
+  isSameMonth,
   startOfDay,
+  startOfMonth,
   subDays,
 } from 'date-fns'
 import { Button } from '@/components/ui/button'
@@ -59,9 +63,29 @@ export default function Notice({
   const {
     notices: noticesData,
     isFetching: isNoticesLoading,
-    refetch,
+    refetch: refetchNotices,
   } = useNotices(hosId)
+
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
+  const {
+    todosByDate,
+    refetch: refetchTodos,
+    isFetching: isTodosLoading,
+  } = useMonthTodos(hosId, currentMonth, activeFilter)
+
+  // 선택된 날짜와 현재 보는 달이 동기화되도록 관리하여 "되감기" 버그 방지
+  useEffect(() => {
+    if (!isSameMonth(selectedDate, currentMonth)) {
+      setCurrentMonth(startOfMonth(selectedDate))
+    }
+  }, [selectedDate, currentMonth])
+
   const [isMetaLoading, setIsMetaLoading] = useState(true)
+
+  const refetch = () => {
+    refetchNotices()
+    refetchTodos()
+  }
 
   useEffect(() => {
     const loadMetadata = async () => {
@@ -205,15 +229,37 @@ export default function Notice({
       </CardHeader>
 
       <CardContent className="p-4">
-        {isLoading ? (
-          <NoticeSkeleton />
-        ) : (
-          <DragAndDropNoticeList
-            hosId={hosId}
-            noticesData={filteredNotices}
-            metadata={metadata}
-          />
-        )}
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1">
+            {isLoading ? (
+              <NoticeSkeleton />
+            ) : (
+              <DragAndDropNoticeList
+                hosId={hosId}
+                noticesData={filteredNotices}
+                metadata={metadata}
+              />
+            )}
+          </div>
+
+          <div className="hidden lg:block flex-[0.4] bg-white p-4 rounded-sm border shadow-sm min-w-[200px]">
+            <div className="mb-4 flex items-center gap-2 border-b pb-2">
+              <h4 className="text-sm font-bold text-slate-800">📋 오늘 할일(ToDo)</h4>
+            </div>
+            <TodoMobile
+              hosId={hosId}
+              activeFilter={activeFilter}
+              todosByDate={todosByDate}
+              selectedUserFilter={selectedUserFilter}
+              refetch={refetchTodos}
+              currentMonth={currentMonth}
+              setCurrentMonth={setCurrentMonth}
+              metadata={metadata}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

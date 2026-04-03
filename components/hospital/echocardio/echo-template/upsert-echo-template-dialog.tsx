@@ -16,7 +16,7 @@ import { fetchTemplateGuideImages } from '@/lib/services/echocardio/fetch-echo'
 import { insertEchoGuideImage, updateGuideImageMapping } from '@/lib/services/echocardio/echo-guide-image'
 import { uploadEchoGuideImage } from '@/lib/services/echocardio/upload-echo-guide-image'
 import { deleteEchoGuideImage } from '@/lib/services/echocardio/delete-echo'
-import type { EchoTemplate, EchoSection, EchoTemplateGuideImage } from '@/types/echocardio/echocardio-type'
+import type { EchoTemplate, EchoSection, EchoTemplateGuideImage, Species } from '@/types/echocardio/echocardio-type'
 import { Edit2Icon, GripVertical, ImageIcon, PlusIcon, Trash2Icon, UploadIcon } from 'lucide-react'
 import { ReactSortable } from 'react-sortablejs'
 import { useRouter } from 'next/navigation'
@@ -39,6 +39,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
 
   // 항목 설정 상태
   const [name, setName] = useState(template?.name ?? '')
+  const [targetSpecies, setTargetSpecies] = useState<Species>(template?.target_species ?? 'canine')
   const [description, setDescription] = useState(template?.description ?? '')
   const [activeItems, setActiveItems] = useState<Partial<Record<EchoSection, string[]>>>(
     template?.active_items ?? {},
@@ -55,15 +56,15 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
   const [isLoadingGuide, setIsLoadingGuide] = useState(false)
 
   const sectionOrder: EchoSection[] = template?.section_order ?? (Object.keys(ECHO_SECTION_META) as EchoSection[])
-  const sectionItems = testUIMeta.filter((m: any) => m.section === activeSection)
-  const nonCommentMeta = testUIMeta.filter((m: any) => m.testType !== 'textcomment')
+  const sectionItems = testUIMeta.filter((m: any) => m.sections?.includes(activeSection) && m.species?.includes(targetSpecies))
+  const nonCommentMeta = testUIMeta.filter((m: any) => m.testType !== 'textcomment' && m.species?.includes(targetSpecies))
   const activeIds = activeItems[activeSection] ?? sectionItems.map((m: any) => m.keywordID)
 
   // 현재 활성 항목 전체 (섹션 순서 기준 기본 순서)
   function getDefaultFlatItems() {
     return sectionOrder.flatMap((section) => {
-      const ids = activeItems[section] ?? testUIMeta.filter((m: any) => m.section === section).map((m: any) => m.keywordID)
-      return testUIMeta.filter((m: any) => ids.includes(m.keywordID) && m.section === section)
+      const ids = activeItems[section] ?? []
+      return testUIMeta.filter((m: any) => ids.includes(m.keywordID) && m.sections?.includes(section) && m.species?.includes(targetSpecies))
     })
   }
 
@@ -105,6 +106,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
   function handleOpenChange(open: boolean) {
     if (open) {
       setName(template?.name ?? '')
+      setTargetSpecies(template?.target_species ?? 'canine')
       setDescription(template?.description ?? '')
       setActiveItems(template?.active_items ?? {})
       setActiveSection((template?.section_order?.[0] ?? 'PE') as EchoSection)
@@ -122,6 +124,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
       if (isEdit) {
         await upsertEchoTemplate(template.id, {
           name: name.trim(),
+          target_species: targetSpecies,
           description: description.trim() || null,
           section_order: template.section_order,
           item_order: { ...template.item_order, _flat: flatOrder },
@@ -129,7 +132,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
         })
         toast.success('템플릿을 수정하였습니다')
       } else {
-        await insertEchoTemplate(hosId, name.trim(), description.trim() || undefined)
+        await insertEchoTemplate(hosId, name.trim(), targetSpecies, description.trim() || undefined)
         toast.success('템플릿을 생성하였습니다')
       }
       setIsOpen(false)
@@ -185,14 +188,33 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
           {/* ── 항목 설정 탭 ── */}
           {tab === 'items' && (
             <div className="flex flex-col gap-3">
-              {/* 이름 / 설명 */}
+              {/* 이름 / 대상 종 / 설명 */}
               <div className="flex flex-col gap-2 rounded border bg-muted/30 p-3">
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="템플릿 이름 *"
-                  className="rounded border bg-white px-2 py-1.5 text-sm font-medium"
-                />
+                <div className="flex gap-2">
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="템플릿 이름 *"
+                    className="flex-1 rounded border bg-white px-2 py-1.5 text-sm font-medium"
+                  />
+                  <div className="flex shrink-0 gap-0.5 rounded border bg-white p-0.5">
+                    {(['canine', 'feline'] as const).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setTargetSpecies(s)}
+                        className={cn(
+                          'rounded px-2 py-1 text-[10px] font-semibold transition-all',
+                          targetSpecies === s
+                            ? 'bg-black text-white'
+                            : 'text-muted-foreground hover:bg-muted',
+                        )}
+                      >
+                        {s === 'canine' ? 'DOG 개' : 'CAT 고양이'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <input
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}

@@ -29,11 +29,30 @@ export function getEchoTest(
 
 /**
  * 모든 항목 합집합 (검색/매핑용)
+ * 종별 정보(species, sections, groups)를 유실 없이 병합
  */
-export const ECHO_TESTS_ALL: Record<string, EchoTest> = {
-  ...ECHO_TESTS_CANINE,
-  ...ECHO_TESTS_FELINE,
+function mergeTests(): Record<string, EchoTest> {
+  const merged: Record<string, EchoTest> = { ...ECHO_TESTS_CANINE }
+  
+  Object.values(ECHO_TESTS_FELINE).forEach((fTest) => {
+    const cTest = merged[fTest.keywordID]
+    if (cTest) {
+      merged[fTest.keywordID] = {
+        ...cTest,
+        ...fTest,
+        species: Array.from(new Set([...cTest.species, ...fTest.species])),
+        sections: Array.from(new Set([...(cTest.sections || []), ...(fTest.sections || [])])),
+        groups: Array.from(new Set([...(cTest.groups || []), ...(fTest.groups || [])])),
+      }
+    } else {
+      merged[fTest.keywordID] = fTest
+    }
+  })
+  
+  return merged
 }
+
+export const ECHO_TESTS_ALL: Record<string, EchoTest> = mergeTests()
 
 /**
  * 구형 코드 호환성용 (기본값 개 기준)
@@ -58,6 +77,9 @@ export function getEchoTestUIMeta(species: Species): EchoTestUIMeta[] {
     testinfo: t.testinfo,
     anatomic_groups: t.anatomic_groups,
     functional_groups: t.functional_groups,
+    // 계산 공식 정보 추가
+    formula: 'formula' in t ? (t as any).formula : undefined,
+    dependencies: 'dependencies' in t ? (t as any).dependencies : undefined,
   }))
 }
 
@@ -65,41 +87,23 @@ export function getEchoTestUIMeta(species: Species): EchoTestUIMeta[] {
  * 모든 종의 테스트를 합쳐서 UI 메타데이터 생성 (종별 필터링은 클라이언트에서 수행)
  */
 export function getAllEchoTestUIMeta(): EchoTestUIMeta[] {
-  const merged: Record<string, EchoTestUIMeta> = {}
-
-  // 모든 종의 테스트 합치기
-  const allTests = [
-    ...Object.values(ECHO_TESTS_CANINE),
-    ...Object.values(ECHO_TESTS_FELINE),
-  ]
-
-  allTests.forEach((t) => {
-    if (!merged[t.keywordID]) {
-      merged[t.keywordID] = {
-        keywordID: t.keywordID,
-        keywordName: t.keywordName,
-        species: [...t.species],
-        testType: t.testType,
-        unit: 'unit' in t ? t.unit : undefined,
-        options: t.testType === 'select' ? t.options : undefined,
-        sections: t.sections,
-        groups: t.groups,
-        testref: t.testref,
-        testinfo: t.testinfo,
-        anatomic_groups: t.anatomic_groups,
-        functional_groups: t.functional_groups,
-      }
-    } else {
-      // 종(species) 정보 병합
-      t.species.forEach((s) => {
-        if (!merged[t.keywordID].species.includes(s)) {
-          merged[t.keywordID].species.push(s)
-        }
-      })
-    }
-  })
-
-  return Object.values(merged)
+  return Object.values(ECHO_TESTS_ALL).map((t) => ({
+    keywordID: t.keywordID,
+    keywordName: t.keywordName,
+    species: t.species,
+    testType: t.testType,
+    unit: 'unit' in t ? t.unit : undefined,
+    options: t.testType === 'select' ? t.options : undefined,
+    sections: t.sections,
+    groups: t.groups,
+    testref: t.testref,
+    testinfo: t.testinfo,
+    anatomic_groups: t.anatomic_groups,
+    functional_groups: t.functional_groups,
+    // 계산 공식 정보 추가
+    formula: 'formula' in t ? (t as any).formula : undefined,
+    dependencies: 'dependencies' in t ? (t as any).dependencies : undefined,
+  }))
 }
 
 /**

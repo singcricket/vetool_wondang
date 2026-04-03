@@ -24,7 +24,7 @@ export default function SelectInput({
       <select
         value={value}
         onChange={(e) => onChange(item.keywordID, e.target.value)}
-        className="w-40 rounded border px-1.5 py-1 text-xs"
+        className="w-44 rounded border px-1.5 py-1 text-sm outline-none focus:ring-1 focus:ring-black/5"
       >
         {item.options.map((opt, i) => (
           <option key={i} value={opt}>
@@ -35,7 +35,7 @@ export default function SelectInput({
 
       {resultLabel && (
         <span
-          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+          className={`rounded px-1.5 py-0.5 text-xs font-medium ${
             isAbnormal
               ? 'bg-red-50 text-red-600'
               : 'bg-green-50 text-green-700'
@@ -46,7 +46,7 @@ export default function SelectInput({
       )}
 
       {commentLabel && isAbnormal && (
-        <span className="text-[10px] text-muted-foreground">{commentLabel}</span>
+        <span className="text-xs text-muted-foreground">{commentLabel}</span>
       )}
     </div>
   )

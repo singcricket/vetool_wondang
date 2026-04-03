@@ -47,8 +47,16 @@ export default function EchoChartBody({
   hosId,
 }: EchoChartBodyProps) {
   const { echoContextData, resultMap, setResultMap, updateResult } = useEchoContext()
-  const { template: settings, testUIMeta } = echoContextData as any
+  const { templatesSpecies, testUIMeta } = echoContextData as any
   const { refresh } = useRouter()
+
+  const species: Species =
+    chartDetail.patient.species?.toLowerCase() === 'cat' ||
+    chartDetail.patient.species?.toLowerCase() === 'feline'
+      ? 'feline'
+      : 'canine'
+
+  const settings = templatesSpecies?.[species] || (echoContextData as any).template
 
   const [activeTab, setActiveTab] = useState<Tab>('input')
   const [inputMode, setInputMode] = useState<'section' | 'flat' | 'guide'>('section')
@@ -75,12 +83,6 @@ export default function EchoChartBody({
     setResultMap(map)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resultsKey, setResultMap])
-
-  const species: Species =
-    chartDetail.patient.species?.toLowerCase() === 'cat' ||
-    chartDetail.patient.species?.toLowerCase() === 'feline'
-      ? 'feline'
-      : 'canine'
 
   const bwVal = resultMap['BW_kg']
   const bwKg = !bwVal || bwVal === '' ? 0 : parseFloat(bwVal)
@@ -179,28 +181,27 @@ export default function EchoChartBody({
 
   function getSectionItems(section: EchoSection) {
     const targetSection = SECTION_MAPPING[section] || section
-    const activeIds = settings.active_items[targetSection]
+    const activeIds = settings.active_items?.[targetSection]
 
+    // 1. 해당 섹션에 속하고, 종(species)이 맞으며, 최소 하나 이상의 섹션 정보가 있는 항목들 추출 (Requirement 3)
     const sectionMeta = (testUIMeta as any[]).filter(
       (m) =>
         (m.sections || []).includes(targetSection) &&
         (m.sections || []).length > 0 &&
-        (m.groups || []).length > 0,
+        m.species.includes(species),
     )
 
-    const filteredBySpecies = sectionMeta.filter((m) =>
-      m.species.includes(species),
-    )
+    // 2. 템플릿 설정(active_items)이 있으면 해당 항목만 필터링, 없으면 해당 섹션 전체 노출 (Requirement 1)
+    // 결과값(resultMap) 유무와 관계없이 항목 리스트(sectionMeta)를 기준으로 함 (Requirement 2)
+    const filteredByActive =
+      activeIds && Array.isArray(activeIds)
+        ? sectionMeta.filter((m) => activeIds.includes(m.keywordID))
+        : sectionMeta
 
-    const filteredByActive = activeIds
-      ? filteredBySpecies.filter((m) => activeIds.includes(m.keywordID))
-      : filteredBySpecies
-
-    const order = settings.item_order[targetSection]
+    // 3. 순서 정렬
+    const order = settings.item_order?.[targetSection]
     if (!order || order.length === 0) return filteredByActive
 
-    // 만약 activeIds가 정의되어 있다면 해당 항목만 필터링하지만, 
-    // 새로운 기능 추가를 위해 filteredByActive를 기본으로 사용함
     return [...filteredByActive].sort((a, b) => {
       const ai = order.indexOf(a.keywordID)
       const bi = order.indexOf(b.keywordID)
@@ -210,29 +211,29 @@ export default function EchoChartBody({
     })
   }
 
-  // 모든 활성 항목을 flat하게 반환
+  // 모든 활성 항목을 flat하게 반환 (목록형 및 가이드 모드용)
   function getAllActiveItems() {
     const sectionOrderFromSettings = (settings.section_order as EchoSection[]) || []
-    // DEFAULT_SECTION_ORDER에 있는 섹션 중 settings에 없는 것이 있다면 추가 (새 섹션 대응)
-    const combinedSectionOrder = Array.from(new Set([...sectionOrderFromSettings, ...DEFAULT_SECTION_ORDER]))
-
-    const sectionOrder = combinedSectionOrder.filter(
-      (s) => {
-        // 해당 종에 유효한 섹션인지 확인 (speciesLayout 기반)
-        const targetSection = SECTION_MAPPING[s] || s
-        return speciesLayout.sections.some((ls) => ls.sectionID === targetSection)
-      },
+    const combinedSectionOrder = Array.from(
+      new Set([...sectionOrderFromSettings, ...DEFAULT_SECTION_ORDER]),
     )
 
-    const allItems = sectionOrder.flatMap((section) => getSectionItems(section))
+    const sectionOrder = combinedSectionOrder
+      .map((s) => SECTION_MAPPING[s] || s)
+      .filter((targetSection, index, self) => {
+        const isValid = speciesLayout.sections.some((ls) => ls.sectionID === targetSection)
+        return isValid && self.indexOf(targetSection) === index
+      })
 
-    // 중복 제거 (keywordID 기준)
+    const allItems = sectionOrder.flatMap((section) => getSectionItems(section as EchoSection))
+
+    // 중복 제거 (여러 섹션에 걸쳐 있는 항목 대응)
     const uniqueItems = Array.from(
       new Map(allItems.map((item: any) => [item.keywordID, item])).values(),
     )
 
-    const flatOrder: string[] = settings.item_order['_flat'] ?? []
-    if (flatOrder.length === 0) return uniqueItems
+    const flatOrder: string[] = settings.item_order?.['_flat'] ?? []
+    if (!flatOrder || flatOrder.length === 0) return uniqueItems
 
     return [...uniqueItems].sort((a: any, b: any) => {
       const ai = flatOrder.indexOf(a.keywordID)
@@ -244,15 +245,15 @@ export default function EchoChartBody({
   }
 
   const INPUT_MODES = [
-    { key: 'section' as const, label: '섹션', icon: <LayoutGridIcon className="h-3 w-3" /> },
-    { key: 'flat' as const, label: '목록', icon: <ListIcon className="h-3 w-3" /> },
-    { key: 'guide' as const, label: '가이드', icon: <ImageIcon className="h-3 w-3" /> },
+    { key: 'section' as const, label: '섹션', icon: <LayoutGridIcon className="h-3.5 w-3.5" /> },
+    { key: 'flat' as const, label: '목록', icon: <ListIcon className="h-3.5 w-3.5" /> },
+    { key: 'guide' as const, label: '가이드', icon: <ImageIcon className="h-3.5 w-3.5" /> },
   ]
 
   const sharedInputProps = { resultMap, computedResults, mmodeRefs, onItemChange: handleItemChange }
 
   return (
-    <div className="mt-12 flex flex-col">
+    <div className="flex flex-col flex-1 overflow-hidden min-h-0">
       {/* 담당의/검사자, 메모 */}
       <EchoInfoContainer chartDetail={chartDetail} />
 
@@ -266,7 +267,7 @@ export default function EchoChartBody({
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
                 className={cn(
-                  'px-3 py-2 text-xs transition-colors',
+                  'px-3 py-2 text-sm transition-colors',
                   activeTab === t.key
                     ? 'border-b-2 border-black font-bold text-black'
                     : 'text-muted-foreground hover:text-foreground',
@@ -304,7 +305,7 @@ export default function EchoChartBody({
                 key={m.key}
                 onClick={() => setInputMode(m.key)}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-all',
+                  'flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-all',
                   inputMode === m.key
                     ? 'bg-white text-black shadow-sm ring-1 ring-black/5'
                     : 'text-muted-foreground hover:bg-white/50 hover:text-foreground',
@@ -329,8 +330,11 @@ export default function EchoChartBody({
                   {(() => {
                     const sectionOrderFromSettings = (settings.section_order as EchoSection[]) || []
                     const combinedSectionOrder = Array.from(new Set([...sectionOrderFromSettings, ...DEFAULT_SECTION_ORDER]))
-                    
-                    return combinedSectionOrder.map((section) => {
+                    const targetSections = combinedSectionOrder
+                      .map((s) => (SECTION_MAPPING[s] || s) as EchoSection)
+                      .filter((s, index, self) => self.indexOf(s) === index)
+
+                    return targetSections.map((section) => {
                       const items = getSectionItems(section)
                       if (items.length === 0) return null
                       return (

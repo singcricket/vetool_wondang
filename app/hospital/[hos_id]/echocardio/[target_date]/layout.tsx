@@ -12,9 +12,10 @@ export default async function EchoLayout(props: {
   const params = await props.params
   const { hos_id, target_date } = params
 
-  const [layoutData, template, templates] = await Promise.all([
+  const [layoutData, templateCanine, templateFeline, templates] = await Promise.all([
     fetchEchoLayoutData(hos_id),
-    fetchActiveTemplate(hos_id),
+    fetchActiveTemplate(hos_id, 'canine'),
+    fetchActiveTemplate(hos_id, 'feline'),
     fetchEchoTemplates(hos_id),
   ])
 
@@ -24,7 +25,11 @@ export default async function EchoLayout(props: {
     hosId: hos_id,
     targetDate: target_date,
     vetsList: layoutData.vetList,
-    template,
+    template: templateCanine, // 하위 호환을 위해 하나 남겨둠
+    templatesSpecies: {
+      canine: templateCanine,
+      feline: templateFeline,
+    },
     templates,
     testUIMeta,
   }

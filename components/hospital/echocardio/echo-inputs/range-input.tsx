@@ -42,11 +42,11 @@ export default function RangeInput({
             type="number"
             value={value}
             onChange={(e) => onChange(keywordId, e.target.value)}
-            className="w-24 rounded border px-2 py-1 text-xs"
+            className="w-24 rounded border px-2 py-1 text-sm"
             step="any"
           />
           {unit && (
-            <span className="ml-1 text-[10px] text-muted-foreground">
+            <span className="ml-1 text-xs text-muted-foreground">
               {unit}
             </span>
           )}
@@ -54,7 +54,7 @@ export default function RangeInput({
 
         {resultLabel && (
           <span
-            className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+            className={`rounded px-1.5 py-0.5 text-xs font-medium ${
               isAbnormal
                 ? 'bg-red-50 text-red-600'
                 : 'bg-green-50 text-green-700'
@@ -65,7 +65,7 @@ export default function RangeInput({
         )}
 
         {commentLabel && isAbnormal && (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {commentLabel}
           </span>
         )}
@@ -74,7 +74,7 @@ export default function RangeInput({
       {/* M-mode 참조범위 바 */}
       {hasRef && !isNaN(num) && (
         <div className="flex items-center gap-1">
-          <span className="w-10 text-right text-[9px] text-muted-foreground">
+          <span className="w-10 text-right text-[10px] text-muted-foreground">
             {refMin}
           </span>
           <div className="relative h-1.5 w-64 rounded-full bg-muted">
@@ -88,7 +88,7 @@ export default function RangeInput({
               style={{ left: `${barPercent}%` }}
             />
           </div>
-          <span className="w-10 text-[9px] text-muted-foreground">{refMax}</span>
+          <span className="w-10 text-[10px] text-muted-foreground">{refMax}</span>
         </div>
       )}
     </div>
