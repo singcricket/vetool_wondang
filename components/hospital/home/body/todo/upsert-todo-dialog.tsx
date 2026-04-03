@@ -221,7 +221,7 @@ export default function UpsertTodoDialog({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>담당자</FormLabel>
-                  <Popover open={isUserSelectOpen} onOpenChange={setIsUserSelectOpen}>
+                  <Popover open={isUserSelectOpen} onOpenChange={setIsUserSelectOpen} modal={false}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <div className="flex flex-wrap gap-1 p-2 border rounded-md min-h-[40px] cursor-pointer hover:border-primary transition-colors">
@@ -244,14 +244,17 @@ export default function UpsertTodoDialog({
                         </div>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="start">
-                      <Command>
+                    <PopoverContent className="w-[400px] p-0 max-h-[350px] overflow-auto" align="start">
+                      <Command className="h-full max-h-[300px]">
                         <CommandInput 
                           placeholder="담당자 또는 그룹 검색..." 
                           value={inputValue}
                           onValueChange={setInputValue}
                         />
-                        <CommandList>
+                        <CommandList 
+                          className="max-h-[300px] overflow-y-auto scrollbar-thin"
+                          onWheel={(e) => e.stopPropagation()}
+                        >
                           <CommandEmpty>
                             <Button 
                               variant="ghost" 

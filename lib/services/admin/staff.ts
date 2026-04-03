@@ -15,7 +15,7 @@ type StaffsData = Pick<
   | 'is_vet'
   | 'avatar_url'
 > & {
-  hos_id: Pick<Hospital, 'master_user_id' | 'group_list'>
+  hos_id: Pick<Hospital, 'master_user_id' | 'group_list' | 'schedule_setting'>
 }
 
 export const getStaffs = async (hosId: string) => {
@@ -35,7 +35,8 @@ export const getStaffs = async (hosId: string) => {
         avatar_url,
         hos_id(
           master_user_id, 
-          group_list
+          group_list,
+          schedule_setting
         )
       `,
     )
@@ -199,5 +200,22 @@ export const deleteStaff = async (userId: string) => {
   if (deleteUserInApproval) {
     console.error(deleteUserInApproval)
     redirect(`/error/?message=${deleteUserInApproval.message}` as any)
+  }
+}
+
+export const updateHospitalScheduleSetting = async (
+  hosId: string,
+  scheduleSetting: any,
+) => {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('hospitals')
+    .update({ schedule_setting: scheduleSetting })
+    .match({ hos_id: hosId })
+
+  if (error) {
+    console.error(error)
+    redirect(`/error/?message=${error.message}` as any)
   }
 }

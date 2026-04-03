@@ -359,6 +359,7 @@ export default function UpsertNoticeDialog({
                   <Popover
                     open={isUserSelectOpen}
                     onOpenChange={setIsUserSelectOpen}
+                    modal={false}
                   >
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -388,15 +389,18 @@ export default function UpsertNoticeDialog({
                         </div>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="start">
-                      <Command>
+                    <PopoverContent className="w-[400px] p-0 max-h-[350px] overflow-auto" align="start">
+                      <Command className="h-full max-h-[300px]">
                         <CommandInput
                           placeholder="담당자 또는 그룹 검색..."
                           value={inputValue}
                           onValueChange={setInputValue}
                           className="h-8"
                         />
-                        <CommandList>
+                        <CommandList 
+                          className="max-h-[300px] overflow-y-auto scrollbar-thin"
+                          onWheel={(e) => e.stopPropagation()}
+                        >
                           <CommandEmpty className="p-2 text-xs">
                              <Button 
                               variant="ghost" 

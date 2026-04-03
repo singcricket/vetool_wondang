@@ -395,6 +395,7 @@ export type Database = {
           order_color: Json | null
           order_font_size: number
           plan: string
+          schedule_setting: Json | null
           show_orderer: boolean
           show_tx_user: boolean
           time_guidelines: number[]
@@ -416,6 +417,7 @@ export type Database = {
           order_color?: Json | null
           order_font_size?: number
           plan?: string
+          schedule_setting?: Json | null
           show_orderer?: boolean
           show_tx_user?: boolean
           time_guidelines?: number[]
@@ -437,6 +439,7 @@ export type Database = {
           order_color?: Json | null
           order_font_size?: number
           plan?: string
+          schedule_setting?: Json | null
           show_orderer?: boolean
           show_tx_user?: boolean
           time_guidelines?: number[]

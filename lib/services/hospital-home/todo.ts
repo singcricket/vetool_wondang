@@ -135,7 +135,7 @@ export const fetchHospitalMetadata = async (hosId: string) => {
 
   const { data: hospital, error: hospitalError } = await supabase
     .from('hospitals')
-    .select('group_list')
+    .select('group_list, schedule_setting')
     .eq('hos_id', hosId)
     .single()
 
@@ -144,8 +144,19 @@ export const fetchHospitalMetadata = async (hosId: string) => {
     throw new Error(hospitalError.message)
   }
 
+  const additionalStaffs =
+    (hospital?.schedule_setting as any)?.additional_staffs || []
+  const formattedAdditionalUsers = additionalStaffs.map((staff: any) => ({
+    user_id: `additional-${staff.name}`,
+    name: staff.name,
+    avatar_url: null,
+    position: staff.position,
+    group: [staff.group],
+    is_vet: false,
+  }))
+
   return {
-    users: users || [],
+    users: [...(users || []), ...formattedAdditionalUsers],
     groups: (hospital?.group_list as string[]) || [],
   }
 }
