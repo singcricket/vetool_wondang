@@ -86,13 +86,13 @@ export default function Todo({
       result[date] = todos.filter((todo) => {
         const targets = (todo.target_user || '').split(',').filter(Boolean)
         
-        // 담당자가 없는 경우 '전체' 필터가 켜져 있으면 포함
+        // 담당자가 없는 경우 '미지정' 필터가 켜져 있으면 포함
         if (targets.length === 0) {
-          return selectedUserFilter.includes('전체')
+          return selectedUserFilter.includes('미정') || selectedUserFilter.includes('미지정')
         }
         
-        // '전체'가 선택되어 있으면 무조건 포함하거나, 혹은 특정 담당자와 매칭되는지 확인
-        return selectedUserFilter.includes('전체') || targets.some((t) => selectedUserFilter.includes(t))
+        // 특정 담당자와 매칭되는지 확인
+        return targets.some((t) => selectedUserFilter.includes(t))
       })
     })
     return result

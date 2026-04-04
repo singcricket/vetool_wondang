@@ -1386,6 +1386,65 @@ export type Database = {
           },
         ]
       }
+      schedules: {
+        Row: {
+          category: string | null
+          color: string | null
+          content: string | null
+          created_at: string
+          created_by: string | null
+          end_time: string
+          hos_id: string
+          id: string
+          is_all_day: boolean
+          location: string | null
+          start_time: string
+          target_users: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          color?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_time: string
+          hos_id: string
+          id?: string
+          is_all_day?: boolean
+          location?: string | null
+          start_time: string
+          target_users?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          color?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          end_time?: string
+          hos_id?: string
+          id?: string
+          is_all_day?: boolean
+          location?: string | null
+          start_time?: string
+          target_users?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
       todos: {
         Row: {
           created_at: string

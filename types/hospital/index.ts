@@ -11,8 +11,26 @@ export type AdditionalStaff = {
   memo?: string
 }
 
+export type TimeTemplate = {
+  id: string
+  name: string
+  title?: string
+  category?: string
+  is_all_day?: boolean
+  start_time: string
+  end_time: string
+}
+
+export type ScheduleCategory = {
+  id: string
+  name: string
+  color: string
+}
+
 export type ScheduleSetting = {
   additional_staffs: AdditionalStaff[]
+  time_templates?: TimeTemplate[]
+  schedule_categories?: ScheduleCategory[]
 }
 
 export type ParsedError = {

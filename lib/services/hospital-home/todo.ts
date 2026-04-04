@@ -160,3 +160,19 @@ export const fetchHospitalMetadata = async (hosId: string) => {
     groups: (hospital?.group_list as string[]) || [],
   }
 }
+export const fetchScheduleSetting = async (hosId: string) => {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('hospitals')
+    .select('schedule_setting')
+    .eq('hos_id', hosId)
+    .single()
+
+  if (error) {
+    console.error('fetchScheduleSetting error:', error)
+    throw new Error(error.message)
+  }
+
+  return (data.schedule_setting as any) || {}
+}

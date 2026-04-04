@@ -130,12 +130,9 @@ export default function Notice({
       result = result.filter((notice) => {
         const targets = (notice.target_user || '').split(',').filter(Boolean)
         if (targets.length === 0) {
-          return selectedUserFilter.includes('전체')
+          return selectedUserFilter.includes('미지정')
         }
-        return (
-          selectedUserFilter.includes('전체') ||
-          targets.some((t) => selectedUserFilter.includes(t))
-        )
+        return targets.some((t) => selectedUserFilter.includes(t))
       })
     }
 

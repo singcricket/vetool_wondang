@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Notice from './notice/notice'
 import Todo from './todo/todo'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import TimeTable from './schedule/time-table'
 
 export default function HospitalHomeBody({ hosId }: { hosId: string }) {
   // 공유 필터 상태 정의
@@ -41,14 +42,16 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
   }, [activeFilter, SHARED_FILTER_KEY])
 
   useEffect(() => {
-    localStorage.setItem(SHARED_USER_FILTER_KEY, JSON.stringify(selectedUserFilter))
+    localStorage.setItem(
+      SHARED_USER_FILTER_KEY,
+      JSON.stringify(selectedUserFilter),
+    )
   }, [selectedUserFilter, SHARED_USER_FILTER_KEY])
 
   return (
     <div className="flex w-full flex-col gap-2 p-2 pt-6">
       <Tabs defaultValue="notice" className="w-full">
         <TabsList className="grid h-12 w-full grid-cols-3 rounded-xl bg-muted/40 p-1.5 shadow-inner">
-         
           <TabsTrigger
             value="notice"
             className="rounded-lg text-sm font-bold transition-all data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
@@ -69,8 +72,8 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="todo" className="mt-4">
-          <Todo 
-            hosId={hosId} 
+          <Todo
+            hosId={hosId}
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}
             selectedUserFilter={selectedUserFilter}
@@ -78,8 +81,8 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
           />
         </TabsContent>
         <TabsContent value="notice" className="mt-4">
-          <Notice 
-            hosId={hosId} 
+          <Notice
+            hosId={hosId}
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}
             selectedUserFilter={selectedUserFilter}
@@ -87,9 +90,11 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
           />
         </TabsContent>
         <TabsContent value="schedule" className="mt-4">
-          <div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed bg-muted/30 text-sm text-muted-foreground">
-            준비 중인 기능입니다.
-          </div>
+          <TimeTable
+            hosId={hosId}
+            selectedUserFilter={selectedUserFilter}
+            setSelectedUserFilter={setSelectedUserFilter}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -18,7 +18,7 @@ import {
 import { cn } from '@/lib/utils/utils'
 import { Check, Filter, Plus, UsersIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { HospitalMetadata } from './todo'
+import { HospitalMetadata } from '../todo/todo'
 
 type Props = {
   metadata: HospitalMetadata
@@ -26,7 +26,7 @@ type Props = {
   onSelectionChange: (values: string[]) => void
 }
 
-export default function TodoUserFilter({
+export default function ScheduleUserFilter({
   metadata,
   selectedValues,
   onSelectionChange,
@@ -58,19 +58,16 @@ export default function TodoUserFilter({
 
   const isCustomValue = useMemo(() => {
     if (!searchValue.trim()) return false
-    // '전체'는 고정 옵션이므로 커스텀 값으로 취급하지 않음
     if (searchValue.trim() === '미지정') return false
-    return !options.some((o) => o.label.toLowerCase() === searchValue.toLowerCase().trim())
+    return !options.some(
+      (o) => o.label.toLowerCase() === searchValue.toLowerCase().trim(),
+    )
   }, [searchValue, options])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 border-dashed"
-        >
+        <Button variant="outline" size="sm" className="h-8 border-dashed">
           {selectedValues.length > 0 && (
             <>
               <div className="hidden space-x-1 lg:flex items-center">
@@ -102,29 +99,27 @@ export default function TodoUserFilter({
               <div className="mx-2 h-4 border-l" />
             </>
           )}
-          
+
           <Filter className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">
-            {selectedValues.length > 0 ? '담당자' : '모두보기'}
+            {selectedValues.length > 0 ? '대상자' : '모두보기'}
           </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0" align="start">
         <Command>
-          <CommandInput 
-            placeholder="검색하거나 선택하세요..." 
+          <CommandInput
+            placeholder="검색하거나 선택하세요..."
             value={searchValue}
             onValueChange={setSearchValue}
           />
           <CommandList>
-            <CommandEmpty>결과는 없지만 "직접 지정"으로 추가할 수 있습니다.</CommandEmpty>
-            
-            {/* 고정 '전체(미지정)' 옵션 */}
+            <CommandEmpty>
+              결과는 없지만 "직접 지정"으로 추가할 수 있습니다.
+            </CommandEmpty>
+
             <CommandGroup heading="기본">
-               <CommandItem
-                 onSelect={() => toggleValue('미지정')}
-                className="font-medium"
-              >
+              <CommandItem onSelect={() => toggleValue('미지정')}>
                 <div
                   className={cn(
                     'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
@@ -174,7 +169,7 @@ export default function TodoUserFilter({
                   </CommandItem>
                 ))}
             </CommandGroup>
-            
+
             <CommandGroup heading="사용자">
               {options
                 .filter((o) => o.type === 'user')
@@ -198,33 +193,12 @@ export default function TodoUserFilter({
                 ))}
             </CommandGroup>
 
-            {selectedValues.filter(val => val !== '미지정' && !options.some(o => o.value === val)).length > 0 && (
-              <CommandGroup heading="기타 필터">
-                {selectedValues
-                  .filter(val => val !== '미지정' && !options.some(o => o.value === val))
-                  .map(val => (
-                    <CommandItem
-                      key={val}
-                      onSelect={() => toggleValue(val)}
-                    >
-                      <div className="mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary bg-primary text-primary-foreground">
-                        <Check className="h-4 w-4" />
-                      </div>
-                      <span>{val}</span>
-                    </CommandItem>
-                  ))}
-              </CommandGroup>
-            )}
-
             {selectedValues.length > 0 && (
               <>
                 <div className="h-px bg-border" />
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => {
-                        onSelectionChange([])
-                        setSearchValue('')
-                    }}
+                    onSelect={() => onSelectionChange([])}
                     className="justify-center text-center text-red-500 font-medium hover:text-red-600"
                   >
                     필터 초기화
