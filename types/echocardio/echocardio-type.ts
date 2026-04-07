@@ -327,7 +327,7 @@ export type EchoTemplate = {
   id: string
   hos_id: string
   name: string
-  target_species: Species
+  template_species: Species
   description: string | null
   section_order: EchoSection[]
   item_order: Record<string, string[]>    // 섹션별 keywordID 순서 + '_flat' 키로 목록 모드 전역 순서

@@ -10,7 +10,8 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { cn } from '@/lib/utils/utils'
 import DeleteEchoTemplateDialog from './delete-echo-template-dialog'
-import UpsertEchoTemplateDialog from './upsert-echo-template-dialog'
+import UpsertEchoCanineTemplateDialog from './upsert-echo-canine-template-dialog'
+import UpsertEchoFelineTemplateDialog from './upsert-echo-feline-template-dialog'
 
 function ActiveCell({ template, hosId }: { template: EchoTemplate; hosId: string }) {
   const { refresh } = useRouter()
@@ -64,15 +65,15 @@ export const echoTemplateColumns = (hosId: string, testUIMeta: any[]): ColumnDef
     ),
   },
   {
-    accessorKey: 'target_species',
+    accessorKey: 'template_species',
     header: '종',
     size: 50,
     cell: ({ row }) => (
       <span className={cn(
         "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-        row.original.target_species === 'feline' ? "bg-orange-50 text-orange-600" : "bg-blue-50 text-blue-600"
+        row.original.template_species === 'feline' ? "bg-orange-50 text-orange-600" : "bg-blue-50 text-blue-600"
       )}>
-        {row.original.target_species === 'feline' ? 'CAT' : 'DOG'}
+        {row.original.template_species === 'feline' ? 'CAT' : 'DOG'}
       </span>
     )
   },
@@ -114,14 +115,27 @@ export const echoTemplateColumns = (hosId: string, testUIMeta: any[]): ColumnDef
     id: 'edit',
     header: '수정',
     size: 50,
-    cell: ({ row }) => (
-      <UpsertEchoTemplateDialog
-        isEdit
-        hosId={hosId}
-        template={row.original}
-        testUIMeta={testUIMeta}
-      />
-    ),
+    cell: ({ row }) => {
+      const template = row.original
+      if (template.template_species === 'feline') {
+        return (
+          <UpsertEchoFelineTemplateDialog
+            isEdit
+            hosId={hosId}
+            template={template}
+            testUIMeta={testUIMeta}
+          />
+        )
+      }
+      return (
+        <UpsertEchoCanineTemplateDialog
+          isEdit
+          hosId={hosId}
+          template={template}
+          testUIMeta={testUIMeta}
+        />
+      )
+    },
   },
   {
     id: 'delete',

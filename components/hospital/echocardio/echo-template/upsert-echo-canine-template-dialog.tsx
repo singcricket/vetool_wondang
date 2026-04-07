@@ -31,15 +31,19 @@ type Props =
   | { isEdit: false; hosId: string; template?: undefined; testUIMeta: any[] }
   | { isEdit: true; hosId: string; template: EchoTemplate; testUIMeta: any[] }
 
-export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, testUIMeta }: Props) {
+/**
+ * 개(Canine) 전용 심장초음파 템플릿 생성/수정 다이얼로그
+ */
+export default function UpsertEchoCanineTemplateDialog({ isEdit, hosId, template, testUIMeta }: Props) {
   const { refresh } = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [tab, setTab] = useState<DialogTab>('items')
 
+  const SPECIES: Species = 'canine'
+
   // 항목 설정 상태
   const [name, setName] = useState(template?.name ?? '')
-  const [targetSpecies, setTargetSpecies] = useState<Species>(template?.target_species ?? 'canine')
   const [description, setDescription] = useState(template?.description ?? '')
   const [activeItems, setActiveItems] = useState<Partial<Record<EchoSection, string[]>>>(
     template?.active_items ?? {},
@@ -56,15 +60,16 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
   const [isLoadingGuide, setIsLoadingGuide] = useState(false)
 
   const sectionOrder: EchoSection[] = template?.section_order ?? (Object.keys(ECHO_SECTION_META) as EchoSection[])
-  const sectionItems = testUIMeta.filter((m: any) => m.sections?.includes(activeSection) && m.species?.includes(targetSpecies))
-  const nonCommentMeta = testUIMeta.filter((m: any) => m.testType !== 'textcomment' && m.species?.includes(targetSpecies))
+  const sectionItems = testUIMeta.filter((m: any) => m.sections?.includes(activeSection) && m.species?.includes(SPECIES))
+  const nonCommentMeta = testUIMeta.filter((m: any) => m.testType !== 'textcomment' && m.species?.includes(SPECIES))
   const activeIds = activeItems[activeSection] ?? sectionItems.map((m: any) => m.keywordID)
 
   // 현재 활성 항목 전체 (섹션 순서 기준 기본 순서)
   function getDefaultFlatItems() {
     return sectionOrder.flatMap((section) => {
-      const ids = activeItems[section] ?? []
-      return testUIMeta.filter((m: any) => ids.includes(m.keywordID) && m.sections?.includes(section) && m.species?.includes(targetSpecies))
+      const sectionItemsForThis = testUIMeta.filter((m: any) => m.sections?.includes(section) && m.species?.includes(SPECIES))
+      const ids = activeItems[section] ?? sectionItemsForThis.map((m: any) => m.keywordID)
+      return testUIMeta.filter((m: any) => ids.includes(m.keywordID) && m.sections?.includes(section) && m.species?.includes(SPECIES))
     })
   }
 
@@ -106,7 +111,6 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
   function handleOpenChange(open: boolean) {
     if (open) {
       setName(template?.name ?? '')
-      setTargetSpecies(template?.target_species ?? 'canine')
       setDescription(template?.description ?? '')
       setActiveItems(template?.active_items ?? {})
       setActiveSection((template?.section_order?.[0] ?? 'PE') as EchoSection)
@@ -124,7 +128,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
       if (isEdit) {
         await upsertEchoTemplate(template.id, {
           name: name.trim(),
-          target_species: targetSpecies,
+          template_species: SPECIES,
           description: description.trim() || null,
           section_order: template.section_order,
           item_order: { ...template.item_order, _flat: flatOrder },
@@ -132,7 +136,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
         })
         toast.success('템플릿을 수정하였습니다')
       } else {
-        await insertEchoTemplate(hosId, name.trim(), targetSpecies, description.trim() || undefined)
+        await insertEchoTemplate(hosId, name.trim(), SPECIES, description.trim() || undefined)
         toast.success('템플릿을 생성하였습니다')
       }
       setIsOpen(false)
@@ -146,17 +150,27 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
-          size="icon"
+          size={isEdit ? 'icon' : 'sm'}
           variant={isEdit ? 'ghost' : 'default'}
-          className={isEdit ? '' : 'fixed bottom-16 right-6 rounded-full'}
+          className={cn(isEdit ? '' : 'h-8 px-3 text-xs')}
         >
-          {isEdit ? <Edit2Icon size={16} /> : <PlusIcon />}
+          {isEdit ? (
+            <Edit2Icon size={16} />
+          ) : (
+            <>
+              <PlusIcon className="mr-1 h-3.5 w-3.5" />
+              템플릿 추가
+            </>
+          )}
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col overflow-hidden p-0">
-        <DialogHeader className="px-4 pt-4">
-          <DialogTitle>{isEdit ? '템플릿 수정' : '새 템플릿 만들기'}</DialogTitle>
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col overflow-hidden p-0 border-blue-200">
+        <DialogHeader className="px-4 pt-4 bg-blue-50/50">
+          <DialogTitle className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500" />
+            {isEdit ? '개 템플릿 수정' : '새 개(DOG) 템플릿 만들기'}
+          </DialogTitle>
           <VisuallyHidden>
             <DialogDescription />
           </VisuallyHidden>
@@ -175,7 +189,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
               className={cn(
                 'px-3 py-2 text-xs transition-colors',
                 tab === t.key
-                  ? 'border-b-2 border-black font-bold'
+                  ? 'border-b-2 border-blue-600 font-bold text-blue-600'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -188,52 +202,32 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
           {/* ── 항목 설정 탭 ── */}
           {tab === 'items' && (
             <div className="flex flex-col gap-3">
-              {/* 이름 / 대상 종 / 설명 */}
-              <div className="flex flex-col gap-2 rounded border bg-muted/30 p-3">
-                <div className="flex gap-2">
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="템플릿 이름 *"
-                    className="flex-1 rounded border bg-white px-2 py-1.5 text-sm font-medium"
-                  />
-                  <div className="flex shrink-0 gap-0.5 rounded border bg-white p-0.5">
-                    {(['canine', 'feline'] as const).map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setTargetSpecies(s)}
-                        className={cn(
-                          'rounded px-2 py-1 text-[10px] font-semibold transition-all',
-                          targetSpecies === s
-                            ? 'bg-black text-white'
-                            : 'text-muted-foreground hover:bg-muted',
-                        )}
-                      >
-                        {s === 'canine' ? 'DOG 개' : 'CAT 고양이'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div className="flex flex-col gap-2 rounded border bg-muted/30 p-3 shadow-inner">
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="템플릿 이름 *"
+                  className="w-full rounded border bg-white px-2 py-1.5 text-sm font-medium focus:ring-1 focus:ring-blue-500 outline-none"
+                />
                 <input
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="설명 (선택)"
-                  className="rounded border bg-white px-2 py-1.5 text-xs text-muted-foreground"
+                  className="rounded border bg-white px-2 py-1.5 text-xs text-muted-foreground focus:ring-1 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               {/* 섹션별 항목 선택 */}
-              <div className="flex gap-3 rounded border p-3" style={{ height: '320px' }}>
+              <div className="flex gap-3 rounded border p-3 bg-white" style={{ height: '320px' }}>
                 <div className="flex w-28 shrink-0 flex-col gap-1 overflow-y-auto border-r pr-2">
                   {sectionOrder.map((section) => (
                     <button
                       key={section}
                       onClick={() => setActiveSection(section)}
                       className={cn(
-                        'rounded px-2 py-1.5 text-left text-xs',
+                        'rounded px-2 py-1.5 text-left text-xs transition-colors',
                         activeSection === section
-                          ? 'bg-muted font-bold'
+                          ? 'bg-blue-50 text-blue-700 font-bold'
                           : 'text-muted-foreground hover:bg-muted/50',
                       )}
                     >
@@ -248,13 +242,13 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
                   {sectionItems.map((item: any) => (
                     <label
                       key={item.keywordID}
-                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-muted"
+                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-muted transition-colors"
                     >
                       <input
                         type="checkbox"
                         checked={activeIds.includes(item.keywordID)}
                         onChange={() => toggleItem(item.keywordID)}
-                        className="h-3 w-3"
+                        className="h-3 w-3 accent-blue-600"
                       />
                       <span className="text-xs">{item.keywordName}</span>
                       <span className="ml-auto text-[10px] text-muted-foreground">{item.testType}</span>
@@ -263,10 +257,10 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>취소</Button>
-                <Button size="sm" onClick={handleSubmit} disabled={isPending || !name.trim()}>
-                  {isPending ? <Spinner /> : isEdit ? '저장' : '생성'}
+                <Button size="sm" onClick={handleSubmit} disabled={isPending || !name.trim()} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  {isPending ? <Spinner className="text-white" /> : isEdit ? '수정 완료' : '템플릿 생성'}
                 </Button>
               </div>
             </div>
@@ -278,7 +272,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
               <p className="text-[10px] text-muted-foreground">
                 항목을 드래그하여 목록 모드에서 표시될 순서를 지정합니다
               </p>
-              <div className="flex flex-col overflow-hidden rounded border">
+              <div className="flex flex-col overflow-hidden rounded border bg-white">
                 <ReactSortable
                   list={getSortedFlatItems().map((item: any) => ({ ...item, id: item.keywordID }))}
                   setList={(newList) => setFlatOrder(newList.map((item) => item.id))}
@@ -287,21 +281,21 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
                   className="flex max-h-[400px] flex-col overflow-y-auto"
                 >
                   {getSortedFlatItems().map((item: any, index: number) => (
-                    <div key={item.keywordID} className="flex items-center gap-2 border-b px-3 py-1.5 last:border-b-0">
-                      <GripVertical className="drag-handle h-3 w-3 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing" />
+                    <div key={item.keywordID} className="flex items-center gap-2 border-b px-3 py-1.5 last:border-b-0 hover:bg-slate-50 transition-colors">
+                      <GripVertical className="drag-handle h-3 w-3 cursor-grab text-muted-foreground hover:text-blue-600 active:cursor-grabbing" />
                       <span className="w-5 shrink-0 text-center text-[10px] text-muted-foreground">{index + 1}</span>
                       <span className="flex-1 text-xs">{item.keywordName}</span>
-                      <span className="text-[10px] text-muted-foreground">{item.section}</span>
+                      <span className="text-[10px] text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">{item.section}</span>
                     </div>
                   ))}
                 </ReactSortable>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between pt-2">
                 <Button variant="outline" size="sm" onClick={() => setFlatOrder([])}>
-                  초기화
+                  순서 초기화
                 </Button>
-                <Button size="sm" onClick={handleSubmit} disabled={isPending}>
-                  {isPending ? <Spinner /> : '저장'}
+                <Button size="sm" onClick={handleSubmit} disabled={isPending} className="bg-blue-600 hover:bg-blue-700">
+                  {isPending ? <Spinner className="text-white" /> : '순서 저장'}
                 </Button>
               </div>
             </div>
@@ -316,6 +310,7 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
                 isLoading={isLoadingGuide}
                 nonCommentMeta={nonCommentMeta}
                 onRefresh={loadGuideImages}
+                speciesColor="blue"
               />
             ) : (
               <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
@@ -323,8 +318,8 @@ export default function UpsertEchoTemplateDialog({ isEdit, hosId, template, test
                 <p className="text-xs text-muted-foreground">
                   템플릿을 먼저 생성한 후<br />수정 버튼에서 가이드 이미지를 추가할 수 있습니다
                 </p>
-                <Button size="sm" onClick={handleSubmit} disabled={isPending || !name.trim()}>
-                  {isPending ? <Spinner /> : '템플릿 생성'}
+                <Button size="sm" onClick={handleSubmit} disabled={isPending || !name.trim()} className="bg-blue-600 hover:bg-blue-700">
+                  {isPending ? <Spinner className="text-white" /> : '템플릿 먼저 생성'}
                 </Button>
               </div>
             )
@@ -344,12 +339,14 @@ function GuideImagesTab({
   isLoading,
   nonCommentMeta,
   onRefresh,
+  speciesColor,
 }: {
   template: EchoTemplate
   guideImages: EchoTemplateGuideImage[]
   isLoading: boolean
   nonCommentMeta: any[]
   onRefresh: () => void
+  speciesColor: 'blue' | 'orange'
 }) {
   const [showAddForm, setShowAddForm] = useState(false)
 
@@ -370,6 +367,7 @@ function GuideImagesTab({
           image={img}
           nonCommentMeta={nonCommentMeta}
           onRefresh={onRefresh}
+          speciesColor={speciesColor}
         />
       ))}
 
@@ -380,12 +378,13 @@ function GuideImagesTab({
           nonCommentMeta={nonCommentMeta}
           onDone={() => { setShowAddForm(false); onRefresh() }}
           onCancel={() => setShowAddForm(false)}
+          speciesColor={speciesColor}
         />
       ) : (
         <Button
           variant="outline"
           size="sm"
-          className="w-full"
+          className={cn("w-full border-dashed", speciesColor === 'blue' ? "hover:border-blue-500 hover:text-blue-600" : "hover:border-orange-500 hover:text-orange-600")}
           onClick={() => setShowAddForm(true)}
         >
           <UploadIcon className="mr-1 h-3 w-3" />
@@ -403,10 +402,12 @@ function GuideImageRow({
   image,
   nonCommentMeta,
   onRefresh,
+  speciesColor,
 }: {
   image: EchoTemplateGuideImage
   nonCommentMeta: any[]
   onRefresh: () => void
+  speciesColor: 'blue' | 'orange'
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -437,7 +438,7 @@ function GuideImageRow({
   }
 
   return (
-    <div className="rounded border bg-white">
+    <div className="rounded border bg-white shadow-sm overflow-hidden">
       <div className="flex items-center gap-3 p-2">
         {/* 썸네일 */}
         <div className="h-14 w-14 shrink-0 overflow-hidden rounded border bg-muted">
@@ -446,44 +447,46 @@ function GuideImageRow({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-medium">{image.view_name}</p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="truncate text-xs font-bold text-slate-700">{image.view_name}</p>
+          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <span className={cn("w-1.5 h-1.5 rounded-full", speciesColor === 'blue' ? "bg-blue-400" : "bg-orange-400")} />
             연결 항목 {image.mapped_keywords.length}개
           </p>
         </div>
 
         <div className="flex shrink-0 gap-1">
-          <Button variant="ghost" size="icon" onClick={() => setIsEditing((v) => !v)}>
-            <Edit2Icon size={14} />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsEditing((v) => !v)}>
+            <Edit2Icon className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
             onClick={handleDelete}
             disabled={isDeleting}
           >
-            {isDeleting ? <Spinner className="h-4 w-4" /> : <Trash2Icon size={14} />}
+            {isDeleting ? <Spinner className="h-3.5 w-3.5" /> : <Trash2Icon className="h-3.5 w-3.5" />}
           </Button>
         </div>
       </div>
 
       {/* 인라인 편집 */}
       {isEditing && (
-        <div className="border-t p-2 flex flex-col gap-2">
+        <div className="border-t bg-slate-50/50 p-2 flex flex-col gap-2">
           <input
             value={viewName}
             onChange={(e) => setViewName(e.target.value)}
             placeholder="뷰 이름"
-            className="w-full rounded border px-2 py-1 text-xs"
+            className="w-full rounded border bg-white px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
           />
-          <div className="max-h-36 overflow-y-auto rounded border p-1">
+          <div className="max-h-36 overflow-y-auto rounded border bg-white p-1">
             {nonCommentMeta.map((m: any) => (
               <label key={m.keywordID} className="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-muted">
                 <input
                   type="checkbox"
                   checked={selectedKeywords.includes(m.keywordID)}
                   onChange={() => toggleKeyword(m.keywordID)}
-                  className="h-3 w-3"
+                  className={cn("h-3 w-3", speciesColor === 'blue' ? "accent-blue-600" : "accent-orange-600")}
                 />
                 <span className="text-[10px]">
                   {m.keywordName}
@@ -493,9 +496,9 @@ function GuideImageRow({
             ))}
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>취소</Button>
-            <Button size="sm" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Spinner /> : '저장'}
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => setIsEditing(false)}>취소</Button>
+            <Button size="sm" className={cn("h-7 text-[10px]", speciesColor === 'blue' ? "bg-blue-600" : "bg-orange-600")} onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Spinner className="text-white" /> : '저장'}
             </Button>
           </div>
         </div>
@@ -512,11 +515,13 @@ function GuideImageAddForm({
   nonCommentMeta,
   onDone,
   onCancel,
+  speciesColor,
 }: {
   templateId: string
   nonCommentMeta: any[]
   onDone: () => void
   onCancel: () => void
+  speciesColor: 'blue' | 'orange'
 }) {
   const [viewName, setViewName] = useState('')
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
@@ -562,37 +567,44 @@ function GuideImageAddForm({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded border bg-muted/30 p-3">
-      <p className="text-xs font-medium">새 가이드 이미지 추가</p>
+    <div className="flex flex-col gap-2 rounded border bg-slate-50 p-3 shadow-inner">
+      <p className="text-xs font-bold text-slate-700">새 가이드 이미지 추가</p>
 
       <input
         type="text"
         value={viewName}
         onChange={(e) => setViewName(e.target.value)}
         placeholder="뷰 이름 *  (예: 5chamber long axis)"
-        className="rounded border bg-white px-2 py-1 text-xs"
+        className="rounded border bg-white px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
       />
 
       <div className="flex flex-col gap-1">
-        <label className="text-[10px] text-muted-foreground">이미지 파일 *</label>
-        <input type="file" accept="image/*" onChange={handleFileChange} className="text-xs" />
+        <label className="text-[10px] font-medium text-muted-foreground italic">이미지 파일 *</label>
+        <div className="relative group">
+          <input 
+            type="file" 
+            accept="image/*" 
+            onChange={handleFileChange} 
+            className="text-[10px] w-full file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer" 
+          />
+        </div>
         {previewUrl && (
-          <div className="relative mt-1 aspect-video w-full overflow-hidden rounded border bg-muted">
+          <div className="relative mt-1 aspect-video w-full overflow-hidden rounded border bg-black/5 flex items-center justify-center">
             <img src={previewUrl} alt="preview" className="h-full w-full object-contain" />
           </div>
         )}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-[10px] font-medium">연결할 측정 항목</label>
+        <label className="text-[10px] font-medium text-muted-foreground italic">연결할 측정 항목</label>
         <div className="max-h-36 overflow-y-auto rounded border bg-white p-1">
           {nonCommentMeta.map((m: any) => (
-            <label key={m.keywordID} className="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-muted">
+            <label key={m.keywordID} className="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-muted transition-colors">
               <input
                 type="checkbox"
                 checked={selectedKeywords.includes(m.keywordID)}
                 onChange={() => toggleKeyword(m.keywordID)}
-                className="h-3 w-3"
+                className={cn("h-3 w-3", speciesColor === 'blue' ? "accent-blue-600" : "accent-orange-600")}
               />
               <span className="text-[10px]">
                 {m.keywordName}
@@ -603,14 +615,15 @@ function GuideImageAddForm({
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={onCancel}>취소</Button>
+      <div className="flex justify-end gap-2 pt-1">
+        <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={onCancel}>취소</Button>
         <Button
           size="sm"
+          className={cn("h-7 text-[10px]", speciesColor === 'blue' ? "bg-blue-600" : "bg-orange-600")}
           onClick={handleUpload}
           disabled={isUploading || !imageFile || !viewName.trim()}
         >
-          {isUploading ? <Spinner /> : '업로드'}
+          {isUploading ? <Spinner className="text-white" /> : '파일 업로드'}
         </Button>
       </div>
     </div>

@@ -261,6 +261,7 @@ export type Database = {
           item_order: Json
           name: string
           section_order: string[]
+          template_species: string | null
           updated_at: string
         }
         Insert: {
@@ -274,6 +275,7 @@ export type Database = {
           item_order?: Json
           name?: string
           section_order?: string[]
+          template_species?: string | null
           updated_at?: string
         }
         Update: {
@@ -287,6 +289,7 @@ export type Database = {
           item_order?: Json
           name?: string
           section_order?: string[]
+          template_species?: string | null
           updated_at?: string
         }
         Relationships: []

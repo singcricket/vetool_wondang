@@ -101,7 +101,7 @@ export async function fetchActiveTemplate(
     .from('echo_templates')
     .select('*')
     .eq('hos_id', hosId)
-    .eq('target_species', species)
+    .eq('template_species', species)
     .eq('is_default', true)
     .single()
 
@@ -118,7 +118,7 @@ export async function fetchActiveTemplate(
       id: '',
       hos_id: hosId,
       name: `기본 템플릿 (${species === 'feline' ? '고양이' : '개'})`,
-      target_species: species,
+      template_species: species,
       description: null,
       section_order: DEFAULT_SECTION_ORDER,
       item_order: {},
