@@ -83,6 +83,7 @@ export default function GuideImageRow({
     <div className="rounded border bg-white shadow-sm overflow-hidden">
       <div className="flex items-center gap-3 p-2">
         {/* 썸네일 */}
+        <GripVertical className="drag-handle-row h-4 w-4 shrink-0 cursor-grab text-muted-foreground/40 hover:text-slate-600 active:cursor-grabbing" />
         <div className="h-14 w-14 shrink-0 overflow-hidden rounded border bg-muted">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={image.image_url} alt={image.view_name} className="h-full w-full object-contain" />
