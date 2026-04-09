@@ -1,6 +1,14 @@
 import Image from 'next/image'
 import EchoInputField from '../../echo-sections/echo-input-field'
 import { EchoTemplateGuideImage } from '@/types/echocardio/echocardio-type'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { SearchIcon } from 'lucide-react'
 
 interface Props {
   guideImages: EchoTemplateGuideImage[]
@@ -40,21 +48,45 @@ export default function EchoInputGuideMode({
             guide.mapped_keywords.includes(item.keywordID),
           )
           return (
-            <div key={guide.id} className="rounded-md border bg-white">
-              <div className="border-b px-3 py-1.5">
-                <span className="text-xs font-bold">{guide.view_name}</span>
+            <div key={guide.id} className="rounded-md border bg-white shadow-sm overflow-hidden">
+              <div className="bg-slate-50 border-b px-3 py-1.5 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700">{guide.view_name}</span>
+                <span className="text-[10px] text-muted-foreground italic">이미지 클릭 시 확대</span>
               </div>
-              <div className="flex gap-4 p-3">
-                {/* 이미지 */}
-                <div className="relative h-40 w-40 shrink-0 overflow-hidden rounded border bg-muted">
-                  <Image
-                    src={guide.image_url}
-                    alt={guide.view_name}
-                    fill
-                    className="object-contain"
-                    sizes="160px"
-                  />
-                </div>
+              <div className="flex gap-4 p-4">
+                {/* 이미지 (다이얼로그 확대 기능 추가) */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <div className="group relative h-60 w-80 shrink-0 cursor-zoom-in overflow-hidden rounded border bg-muted shadow-sm ring-offset-background transition-all hover:ring-2 hover:ring-blue-500/50">
+                      <Image
+                        src={guide.image_url}
+                        alt={guide.view_name}
+                        fill
+                        className="object-contain transition-transform group-hover:scale-105"
+                        sizes="320px"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/10">
+                        <SearchIcon className="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                      </div>
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none sm:max-w-[90vw]">
+                    <DialogHeader className="hidden">
+                      <DialogTitle />
+                    </DialogHeader>
+                    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black/90 p-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={guide.image_url}
+                        alt={guide.view_name}
+                        className="h-full w-full object-contain"
+                      />
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+                        {guide.view_name}
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 {/* 연결 항목 입력 */}
                 <div className="flex flex-1 flex-col gap-2">
                   {guideItems.length === 0 ? (

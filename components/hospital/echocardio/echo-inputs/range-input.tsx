@@ -72,25 +72,27 @@ export default function RangeInput({
       </div>
 
       {/* M-mode 참조범위 바 */}
-      {hasRef && !isNaN(num) && (
-        <div className="flex items-center gap-1">
-          <span className="w-10 text-right text-[10px] text-muted-foreground">
-            {refMin}
-          </span>
-          <div className="relative h-1.5 w-64 rounded-full bg-muted">
-            {/* 정상 범위 표시 */}
-            <div className="absolute inset-0 rounded-full bg-green-100" />
-            {/* 현재값 마커 */}
-            <div
-              className={`absolute top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full ${
-                resultLabel === 'normal' ? 'bg-green-500' : 'bg-red-500'
-              }`}
-              style={{ left: `${barPercent}%` }}
-            />
-          </div>
-          <span className="w-10 text-[10px] text-muted-foreground">{refMax}</span>
-        </div>
-      )}
+      {
+      // hasRef && !isNaN(num) && (
+      //   <div className="flex items-center gap-1">
+      //     <span className="w-10 text-right text-[10px] text-muted-foreground">
+      //       {refMin}
+      //     </span>
+      //     <div className="relative h-1.5 w-64 rounded-full bg-muted">
+      //       {/* 정상 범위 표시 */}
+      //       <div className="absolute inset-0 rounded-full bg-green-100" />
+      //       {/* 현재값 마커 */}
+      //       <div
+      //         className={`absolute top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full ${
+      //           resultLabel === 'normal' ? 'bg-green-500' : 'bg-red-500'
+      //         }`}
+      //         style={{ left: `${barPercent}%` }}
+      //       />
+      //     </div>
+      //     <span className="w-10 text-[10px] text-muted-foreground">{refMax}</span>
+      //   </div>
+      // )
+      }
     </div>
   )
 }
