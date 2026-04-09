@@ -379,3 +379,92 @@ export async function deleteEchoTemplate(templateId: string): Promise<void> {
     .eq('id', templateId)
   if (error) throw new Error(`deleteEchoTemplate: ${error.message}`)
 }
+
+// =============================================
+// 태그 업데이트 (user_tags, tags)
+// =============================================
+export async function updateEchoTag(
+  echoId: string,
+  userTags: string,
+  preTagsArray: string[],
+  hosPatientId: string,
+  hosOwnerId: string,
+  patientName: string,
+  patientGender: string,
+  patientSpecies: string,
+  patientBreed: string,
+  ageInDays: string,
+): Promise<boolean> {
+  const supabase = await createClient()
+
+  // 1. keywords 테이블에서 매칭되는 행들 가져오기
+  const { data: keywordRows, error: keywordError } = await supabase
+    .from('keywords')
+    .select('tags')
+    .in('keyword', preTagsArray)
+
+  if (keywordError) {
+    console.error('Keyword fetch failed:', keywordError.message)
+    return false
+  }
+
+  // 2. 검색된 tags 합치기 (#으로 시작하는 구조)
+  let combinedTagsSet = new Set<string>()
+
+  keywordRows?.forEach((row) => {
+    if (row.tags) {
+      row.tags
+        .split('#')
+        .filter((t) => t.trim().length > 0)
+        .forEach((tag) => {
+          combinedTagsSet.add(tag)
+        })
+    }
+  })
+
+  // 3. 현재 입력된 사용자 태그 추가
+  if (userTags.length > 0) {
+    userTags.split(',').forEach((tag) => {
+      combinedTagsSet.add(tag.trim())
+    })
+  }
+
+  // 4. 최종 tags 문자열 생성 (#tag1#tag2...)
+  const _finalTagsString = Array.from(combinedTagsSet)
+    .map((tag) => `#${tag}`)
+    .join('')
+
+  const finalTagsString =
+    _finalTagsString +
+    '#' +
+    hosPatientId +
+    '#' +
+    (hosOwnerId ?? '') +
+    '#' +
+    patientName +
+    '#' +
+    patientSpecies +
+    '#' +
+    patientBreed +
+    '#' +
+    patientGender +
+    '#' +
+    ageInDays
+
+  // 6. DB 업데이트
+  const { error } = await supabase
+    .from('echo_charts')
+    .update({
+      user_tags: userTags,
+      tags: finalTagsString,
+    })
+    .eq('id', echoId)
+
+  if (error) {
+    console.error('Update failed:', error.message)
+    return false
+  }
+
+  return true
+}
+

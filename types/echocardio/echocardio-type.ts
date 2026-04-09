@@ -303,6 +303,7 @@ export type EchoChart = {
   memo: string | null
   user_tags: string | null
   tags: string | null
+  template_id: string | null
   created_at: string
   updated_at: string
 }

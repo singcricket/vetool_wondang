@@ -97,11 +97,16 @@ export const LAYOUT_CANINE: LayoutConfig = {
       ],
     },
     {
-      sectionID: 'ACVIM',
-      label: 'ACVIM Staging',
+      sectionID: 'MINE_SCORE',
+      label: 'MINE_SCORE',
+      groups: [{ groupID: 'MINE_SCORE', label: 'MINE SCORE' }],
+    },
+    {
+      sectionID: 'General_Review',
+      label: 'General Review',
       groups: [
         { groupID: 'ACVIM', label: 'ACVIM Stage' },
-        { groupID: 'MINE_SCORE', label: 'MINE Score' },
+        { groupID: 'Test Review', label: 'Test Review' },
       ],
     },
   ],
@@ -244,14 +249,14 @@ export const LAYOUT_FELINE: LayoutConfig = {
       ],
     },
     {
-      sectionID: 'PosibilityOfPH',
-      label: 'Posibility of PH',
+      sectionID: 'General_Review',
+      label: 'General Review',
       groups: [
-        { groupID: 'Anatomic site', label: 'Anatomic Sites' },
-        { groupID: 'Result', label: 'Result' },
+        { groupID: 'ACVIM', label: 'ACVIM Stage' },
+        { groupID: 'Test Review', label: 'Test Review' },
       ],
     },
-    // ACVIM / MINE 없음
+    //  MINE 없음
   ],
 
   // ============================================================

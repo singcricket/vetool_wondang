@@ -75,6 +75,11 @@ export function useEchoRealtime(hosId: string) {
         { event: 'UPDATE', schema: 'public', table: 'echo_results' },
         handleChange,
       )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'echo_results' },
+        handleChange,
+      )
 
     subscriptionRef.current = channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {

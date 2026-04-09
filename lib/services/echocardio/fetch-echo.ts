@@ -159,15 +159,22 @@ export async function fetchEchoTemplates(
 // =============================================
 export async function fetchActiveTemplateGuideImages(
   hosId: string,
+  species?: Species,
 ): Promise<EchoTemplateGuideImage[]> {
   const supabase = await createClient()
 
-  const { data: template } = await supabase
+  let query = supabase
     .from('echo_templates')
     .select('id')
     .eq('hos_id', hosId)
     .eq('is_default', true)
-    .single()
+
+  if (species) {
+    query = query.eq('template_species', species)
+  }
+
+  const { data: templates } = await query.limit(1)
+  const template = templates?.[0]
 
   if (!template) return []
 

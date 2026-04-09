@@ -112,6 +112,7 @@ export type Database = {
           memo: string | null
           patient_id: string
           tags: string | null
+          template_id: string | null
           updated_at: string
           user_tags: string | null
           vet_id: string | null
@@ -125,6 +126,7 @@ export type Database = {
           memo?: string | null
           patient_id: string
           tags?: string | null
+          template_id?: string | null
           updated_at?: string
           user_tags?: string | null
           vet_id?: string | null
@@ -138,6 +140,7 @@ export type Database = {
           memo?: string | null
           patient_id?: string
           tags?: string | null
+          template_id?: string | null
           updated_at?: string
           user_tags?: string | null
           vet_id?: string | null
@@ -163,6 +166,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "patients"
             referencedColumns: ["patient_id"]
+          },
+          {
+            foreignKeyName: "echo_charts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "echo_templates"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "echo_charts_vet_id_fkey"

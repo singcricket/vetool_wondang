@@ -1525,7 +1525,7 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     optResult: ['decrease', 'normal', 'increase'],
     optComment: ['IVS 두께 감소. 심근 위축 또는 저혈량 가능성', '정상', 'IVS 비후. HCM 진단 기준(≥6mm 또는 체중 보정값 초과) 평가 필요'],
     anatomic_groups: ['LV'],
-    testinfo: "이완기 심실중격 두께. 고양이 체중 기반 allometric formula(Y = a × BW^b)로 정상 범위 계산. HCM 진단 기준: IVSd ≥6mm(일부 기준 5.5mm). 체중이 작거나 큰 고양이는 체중 보정값 기준 적용 권장.",
+    testinfo: "이완기 심실중격 두께. 고양이 체중 기반 allometric formula(Y = a x BW^b)로 정상 범위 계산. HCM 진단 기준: IVSd ≥6mm(일부 기준 5.5mm). 체중이 작거나 큰 고양이는 체중 보정값 기준 적용 권장.",
     functional_groups: ['LV_size', 'HCM_evaluation'],
   },
   LVd: {

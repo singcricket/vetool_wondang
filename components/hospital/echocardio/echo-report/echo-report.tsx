@@ -4,6 +4,7 @@ import { useRef, useState, useMemo } from 'react'
 import type { EchoChartDetail, EchoResultMap, Species, EchoSection } from '@/types/echocardio/echocardio-type'
 import { ECHO_SECTION_META, DEFAULT_SECTION_ORDER } from '@/constants/hospital/echocardio/echo-sections'
 import { getEchoTestsBySpecies } from '@/constants/hospital/echocardio/echo-tests'
+import { LAYOUT_CANINE, LAYOUT_FELINE } from '@/constants/hospital/echocardio/echo-layouts'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 // Sub-components
@@ -37,18 +38,23 @@ export default function EchoReport({
   const reportData = useMemo(() => {
     // 기본적으로 값이 있는 것들만 표시
     const results = chartDetail.results.filter((r) => r.value)
+    const speciesLayout = species === 'feline' ? LAYOUT_FELINE : LAYOUT_CANINE
+    const allowedSections = new Set(speciesLayout.sections.map((s) => s.sectionID))
+    const sectionLabels = Object.fromEntries(speciesLayout.sections.map((s) => [s.sectionID, s.label]))
+
+    // 항상 노출해야 하는 항목들 (종별 레이아웃에 포함된 섹션만)
+    const GLOBAL_ALWAYS_EXPOSED = ['General_Review']
+    const alwaysExposedSections = GLOBAL_ALWAYS_EXPOSED.filter(sec => allowedSections.has(sec))
     
-    // 항상 노출해야 하는 항목들
-    const ALWAYS_EXPOSED_SECTIONS = ['MINE_SCORE', 'PosibilityOfPH', 'Pulmonary_Hypertension']
     const alwaysExposedItems: any[] = []
     
     Object.values(testDefinitions).forEach(test => {
-      if (test.sections?.some(sec => ALWAYS_EXPOSED_SECTIONS.includes(sec))) {
+      if (test.sections?.some(sec => alwaysExposedSections.includes(sec))) {
         // 이미 results에 포함되어 있는지 확인 (중복 방지)
         if (!results.some(r => r.keyword_id === test.keywordID)) {
           alwaysExposedItems.push({
             keyword_id: test.keywordID,
-            value: resultMap[test.keywordID] || null, // resultMap에서 현재 세션 값을 가져옴
+            value: resultMap[test.keywordID] || null,
             meta: test,
             computed: computedResults[test.keywordID]
           })
@@ -82,10 +88,11 @@ export default function EchoReport({
       const { meta } = item
       // 섹션별 그룹화
       meta.sections?.forEach((sec: EchoSection) => {
+        if (!allowedSections.has(sec)) return
+
         if (!bySection[sec]) {
-          const sectionMeta = ECHO_SECTION_META[sec]
           bySection[sec] = { 
-            label: sectionMeta?.label || sec, 
+            label: sectionLabels[sec] || ECHO_SECTION_META[sec]?.label || sec, 
             items: [] 
           }
         }
@@ -127,8 +134,11 @@ export default function EchoReport({
 
   // 섹션 뷰의 경우 정의된 순서대로 정렬
   const sortedSections = useMemo(() => {
-    return DEFAULT_SECTION_ORDER.filter(sec => reportData.bySection[sec])
-  }, [reportData.bySection])
+    const defaultOrder = (species === 'feline' ? LAYOUT_FELINE : LAYOUT_CANINE).sections.map(
+      (s: any) => s.sectionID as EchoSection,
+    )
+    return defaultOrder.filter((sec: EchoSection) => reportData.bySection[sec])
+  }, [reportData.bySection, species])
 
   return (
     <div className="flex flex-col gap-4">
@@ -154,7 +164,7 @@ export default function EchoReport({
 
         {/* 본문: 그룹별 테이블 */}
         <div className="flex flex-col gap-8">
-          {activeTab === 'section' && sortedSections.map(sec => (
+          {activeTab === 'section' && sortedSections.map((sec: EchoSection) => (
             <EchoReportTable 
               key={sec} 
               label={reportData.bySection[sec].label} 

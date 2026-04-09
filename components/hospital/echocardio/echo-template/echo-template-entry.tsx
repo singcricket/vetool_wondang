@@ -25,13 +25,13 @@ export default function EchoTemplateEntry({
     <div className="p-2 pt-0">
       <Tabs defaultValue="canine" className="w-full">
         <TabsList className="grid w-half grid-cols-2 bg-muted/50 max-w-sm mb-4">
-          <TabsTrigger value="canine">DOG 개</TabsTrigger>
-          <TabsTrigger value="feline">CAT 고양이</TabsTrigger>
+          <TabsTrigger value="canine" className="text-sm">DOG 개</TabsTrigger>
+          <TabsTrigger value="feline" className="text-sm">CAT 고양이</TabsTrigger>
         </TabsList>
 
         <TabsContent value="canine" className="mt-0 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+            <h3 className="text-base font-bold text-muted-foreground flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
               개 (DOG) 전용 템플릿
             </h3>
@@ -51,7 +51,7 @@ export default function EchoTemplateEntry({
 
         <TabsContent value="feline" className="mt-0 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+            <h3 className="text-base font-bold text-muted-foreground flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-orange-500" />
               고양이 (CAT) 전용 템플릿
             </h3>

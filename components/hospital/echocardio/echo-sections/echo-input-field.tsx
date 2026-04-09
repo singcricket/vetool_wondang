@@ -57,7 +57,7 @@ export default function EchoInputField({
           />
         )}
 
-        {(item.testType === 'range' || item.testType === 'mmode_range') && (
+        {(item.testType === 'range' || item.testType === 'mmode_range' || item.testType === 'mmode_formula') && (
           <RangeInput
             keywordId={item.keywordID}
             unit={item.unit}

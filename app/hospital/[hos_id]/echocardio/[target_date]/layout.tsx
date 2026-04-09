@@ -43,7 +43,7 @@ export default async function EchoLayout(props: {
         />
 
         {/* 메인 콘텐츠 */}
-      <div className="ml-0 w-screen flex-1 overflow-y-auto h-desktop 2xl:ml-96 2xl:w-auto">
+      <div className="ml-0 w-screen flex-1 overflow-y-auto h-desktop 2xl:ml-[200px] 2xl:w-auto">
           {props.children}
         </div>
       </div>
