@@ -213,7 +213,7 @@ export async function fetchTemplateGuideImages(
 export async function fetchPatientEchoHistory(
   patientId: string,
   excludeEchoId?: string,
-): Promise<EchoChartWithPatient[]> {
+): Promise<EchoChartDetail[]> {
   const supabase = await createClient()
 
   let query = supabase
@@ -223,7 +223,8 @@ export async function fetchPatientEchoHistory(
       *,
       patients!inner(name, species, breed, hos_patient_id, birth, gender),
       vet:users!echo_charts_vet_id_fkey(name, user_id),
-      examiner:users!echo_charts_examiner_id_fkey(name, user_id)
+      examiner:users!echo_charts_examiner_id_fkey(name, user_id),
+      echo_results(*)
     `,
     )
     .eq('patient_id', patientId)
@@ -241,5 +242,6 @@ export async function fetchPatientEchoHistory(
     patient: row.patients,
     vet: row.vet ?? null,
     examiner: row.examiner ?? null,
+    results: row.echo_results ?? [],
   }))
 }

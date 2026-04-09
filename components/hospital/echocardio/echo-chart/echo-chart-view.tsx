@@ -29,7 +29,7 @@ import EchoInputGuideMode from './echo-chart-input-mode/echo-input-guide-mode'
 
 interface EchoChartBodyProps {
   chartDetail: EchoChartDetail
-  history: EchoChartWithPatient[]
+  history: EchoChartDetail[]
   guideImages: EchoTemplateGuideImage[]
   hosId: string
 }
@@ -331,49 +331,73 @@ export default function EchoChartBody({
       {/* 탭 콘텐츠 */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {activeTab === 'input' && (
-          <>
-            {/* ── 모드 1: 섹션별 ── */}
-            {inputMode === 'section' && (
-              <EchoInputSectionMode
-                species={species}
-                settings={settings}
-                getSectionItems={getSectionItems}
-                SECTION_MAPPING={SECTION_MAPPING}
-                sharedInputProps={{
-                  ...sharedInputProps,
-                  onItemChange: handleItemChange,
-                }}
-              />
-            )}
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 flex-col overflow-hidden">
+              {/* ── 모드 1: 섹션별 ── */}
+              {inputMode === 'section' && (
+                <EchoInputSectionMode
+                  species={species}
+                  settings={settings}
+                  getSectionItems={getSectionItems}
+                  SECTION_MAPPING={SECTION_MAPPING}
+                  sharedInputProps={{
+                    ...sharedInputProps,
+                    onItemChange: handleItemChange,
+                  }}
+                />
+              )}
 
-            {/* ── 모드 2: 목록형 (카테고리 구분 없이 나열) ── */}
-            {inputMode === 'flat' && (
-              <EchoInputFlatMode
-                allItems={getAllActiveItems()}
-                resultMap={resultMap}
-                computedResults={computedResults}
-                mmodeRefs={mmodeRefs}
-                onChange={handleItemChange}
-              />
-            )}
+              {/* ── 모드 2: 목록형 (카테고리 구분 없이 나열) ── */}
+              {inputMode === 'flat' && (
+                <EchoInputFlatMode
+                  allItems={getAllActiveItems()}
+                  resultMap={resultMap}
+                  computedResults={computedResults}
+                  mmodeRefs={mmodeRefs}
+                  onChange={handleItemChange}
+                />
+              )}
 
-            {/* ── 모드 3: 가이드 이미지 + 연결 항목 ── */}
-            {inputMode === 'guide' && (
-              <EchoInputGuideMode
-                guideImages={guideImages}
-                allActiveItems={getAllActiveItems()}
-                resultMap={resultMap}
-                computedResults={computedResults}
-                mmodeRefs={mmodeRefs}
-                onChange={handleItemChange}
-              />
+              {/* ── 모드 3: 가이드 이미지 + 연결 항목 ── */}
+              {inputMode === 'guide' && (
+                <EchoInputGuideMode
+                  guideImages={guideImages}
+                  allActiveItems={getAllActiveItems()}
+                  resultMap={resultMap}
+                  computedResults={computedResults}
+                  mmodeRefs={mmodeRefs}
+                  onChange={handleItemChange}
+                />
+              )}
+            </div>
+
+            {/* 과거 이력 비교 사이드 패널 (PC/태블릿) */}
+            {history.length > 0 && (
+              <div className="hidden sm:flex w-[450px] xl:w-[550px] shrink-0 flex-col border-l bg-slate-50/30 overflow-hidden">
+                <div className="border-b bg-white px-4 py-2 text-xs font-bold text-slate-500">
+                  이력 비교
+                </div>
+                <div className="flex-1 overflow-auto p-4">
+                  <EchoCompareTable
+                    current={chartDetail}
+                    history={history}
+                    testUIMeta={testUIMeta}
+                    settings={settings}
+                  />
+                </div>
+              </div>
             )}
-          </>
+          </div>
         )}
 
         {activeTab === 'compare' && (
           <div className="flex-1 overflow-auto p-4 pb-32">
-            <EchoCompareTable current={chartDetail} history={history} testUIMeta={testUIMeta} />
+            <EchoCompareTable
+              current={chartDetail}
+              history={history}
+              testUIMeta={testUIMeta}
+              settings={settings}
+            />
           </div>
         )}
 

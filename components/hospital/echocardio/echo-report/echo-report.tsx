@@ -151,7 +151,16 @@ export default function EchoReport({
             <TabsTrigger value="anatomic">구조별</TabsTrigger>
           </TabsList>
         </Tabs>
-        <EchoReportExport reportRef={reportRef} patientName={patient.name} />
+        <EchoReportExport 
+          reportRef={reportRef} 
+          patientName={patient.name} 
+          chartDetail={chartDetail}
+          resultMap={resultMap}
+          computedResults={computedResults}
+          testDefinitions={testDefinitions}
+          sortedSections={sortedSections}
+          reportData={reportData}
+        />
       </div>
 
       {/* 리포트 본문 (출력 영역) */}

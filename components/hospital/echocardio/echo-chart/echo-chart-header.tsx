@@ -18,7 +18,7 @@ export default function EchoChartHeader({ hosId, targetDate, chartDetail }: Prop
       <EchoHeaderRightButtons
         hosId={hosId}
         targetDate={targetDate}
-        echoId={chartDetail.id}
+        chartDetail={chartDetail}
       />
     </header>
   )

@@ -14,61 +14,30 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { LoaderCircleIcon, Settings2Icon, Trash2Icon } from 'lucide-react'
-import { deleteEchoChart } from '@/lib/services/echocardio/delete-echo'
+import type { EchoChartDetail } from '@/types/echocardio/echocardio-type'
 import EchoSettingsPanel from '../echo-settings/echo-settings-panel'
+import DeleteEchoChartDialog from './delete-echo-chart-dialog'
 
 type Props = {
   hosId: string
   targetDate: string
-  echoId: string
+  chartDetail: EchoChartDetail
 }
 
 export default function EchoHeaderRightButtons({
   hosId,
   targetDate,
-  echoId,
+  chartDetail,
 }: Props) {
-  const { push } = useRouter()
-  const [isDeleting, setIsDeleting] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    await deleteEchoChart(echoId)
-    push(`/hospital/${hosId}/echocardio/${targetDate}`)
-  }
 
   return (
     <div className="flex items-center gap-1">
-    
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
-            <Trash2Icon className="h-4 w-4" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent className="gap-0">
-          <AlertDialogHeader>
-            <AlertDialogTitle>심초차트 삭제</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription>
-            이 차트와 모든 검사 결과가 삭제됩니다. 계속하시겠습니까?
-          </AlertDialogDescription>
-          <AlertDialogFooter className="pt-8">
-            <AlertDialogCancel>닫기</AlertDialogCancel>
-            <Button
-              variant="destructive"
-              disabled={isDeleting}
-              className="w-16"
-              onClick={handleDelete}
-            >
-              {isDeleting ? <LoaderCircleIcon className="animate-spin" /> : '삭제'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-    
+      <DeleteEchoChartDialog
+        chartDetail={chartDetail}
+        hosId={hosId}
+        targetDate={targetDate}
+      />
     </div>
   )
 }

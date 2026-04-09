@@ -2,15 +2,29 @@
 
 import { useState } from 'react'
 import { Download } from 'lucide-react'
+import type { EchoChartDetail, EchoResultMap, EchoSection } from '@/types/echocardio/echocardio-type'
+import EchoReportTxtExport from './echo-report-txt-export'
 
 interface EchoReportExportProps {
   reportRef: React.RefObject<HTMLDivElement | null>
   patientName: string
+  chartDetail: EchoChartDetail
+  resultMap: EchoResultMap
+  computedResults: Record<string, { result: string; comment: string }>
+  testDefinitions: any
+  sortedSections: EchoSection[]
+  reportData: any
 }
 
 export default function EchoReportExport({
   reportRef,
   patientName,
+  chartDetail,
+  resultMap: _resultMap,
+  computedResults: _computedResults,
+  testDefinitions: _testDefinitions,
+  sortedSections,
+  reportData,
 }: EchoReportExportProps) {
   const [isExporting, setIsExporting] = useState(false)
 
@@ -73,6 +87,15 @@ export default function EchoReportExport({
 
   return (
     <div className="flex gap-2">
+      {/* 텍스트 내보내기 컴포넌트 */}
+      <EchoReportTxtExport 
+        patientName={patientName}
+        chartDetail={chartDetail}
+        sortedSections={sortedSections}
+        reportData={reportData}
+      />
+
+      {/* 이미지/PDF 내보내기 버튼 */}
       <button
         onClick={handleExportPng}
         disabled={isExporting}

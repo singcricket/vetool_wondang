@@ -110,7 +110,7 @@ export default function EchoInputGuideMode({
         })}
 
         {/* 가이드에 연결되지 않은 나머지 항목 */}
-        {unmappedItems.length > 0 && (
+        {/* {unmappedItems.length > 0 && (
           <div className="rounded-md border bg-white">
             <div className="border-b px-3 py-1.5">
               <span className="text-xs font-bold text-muted-foreground">기타 항목</span>
@@ -128,7 +128,7 @@ export default function EchoInputGuideMode({
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   )
