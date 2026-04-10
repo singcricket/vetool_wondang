@@ -7,11 +7,11 @@ import { useSafeRefresh } from '@/hooks/use-safe-refresh'
 import { cn } from '@/lib/utils/utils'
 import { DashboardIcon } from '@radix-ui/react-icons'
 import {
-  BarChartHorizontalIcon,
-  BookmarkIcon,
-  ClipboardListIcon,
-  ListChecksIcon,
-  SearchIcon,
+  BarChartHorizontal,
+  Bookmark,
+  ClipboardList,
+  ListChecks,
+  Search,
 } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -85,35 +85,35 @@ const FOOTER_MAIN_VIEW_MENUS = [
   {
     label: '처치표',
     route: 'tx-table',
-    icon: <ListChecksIcon />,
+    icon: <ListChecks />,
     hideInMobile: false,
     vetOnly: false,
   },
   {
     label: '입원차트',
     route: 'chart',
-    icon: <ClipboardListIcon />,
+    icon: <ClipboardList />,
     hideInMobile: false,
     vetOnly: true,
   },
   {
     label: '검색',
     route: 'search',
-    icon: <SearchIcon />,
+    icon: <Search />,
     hideInMobile: true,
     vetOnly: true,
   },
   {
     label: '템플릿',
     route: 'template',
-    icon: <BookmarkIcon />,
+    icon: <Bookmark />,
     hideInMobile: true,
     vetOnly: true,
   },
   {
     label: '통계',
     route: 'analysis',
-    icon: <BarChartHorizontalIcon />,
+    icon: <BarChartHorizontal />,
     hideInMobile: true,
     vetOnly: true,
   },

@@ -86,13 +86,11 @@ export default async function IcuPageLayout(
         </div>
       </BasicHosDataProvider>
 
-      {/*
       <IcuRoleGuard
         isVet={isVet}
         hosId={hos_id}
         targetDate={target_date}
       />
-      */}
 
       <IcuFooter hosId={hos_id} targetDate={target_date} isVet={isVet} />
     </>

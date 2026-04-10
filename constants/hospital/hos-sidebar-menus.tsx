@@ -1,13 +1,13 @@
 import {
   Activity,
-  BarChart4Icon,
-  BuildingIcon,
-  HeartPulseIcon,
-  HomeIcon,
-  ListChecksIcon,
+  BarChart4,
+  Building,
+  HeartPulse,
+  Home,
+  ListChecks,
   NotebookPen,
-  PawPrintIcon,
-  SyringeIcon,
+  PawPrint,
+  Syringe,
   Folder,
 } from 'lucide-react'
 
@@ -17,21 +17,21 @@ export const HOS_SIDEBAR_MENUS = [
     path: '',
     isReady: true,
     isVetOnly: false,
-    icon: <HomeIcon />,
+    icon: <Home />,
   },
   {
     name: '환자목록',
     path: 'patients',
     isReady: true,
     isVetOnly: false,
-    icon: <PawPrintIcon />,
+    icon: <PawPrint />,
   },
   {
     name: '입원차트',
     path: 'icu',
     isReady: true,
     isVetOnly: false,
-    icon: <SyringeIcon />,
+    icon: <Syringe />,
   },
   {
     name: '모니터링',
@@ -45,7 +45,7 @@ export const HOS_SIDEBAR_MENUS = [
     path: 'echocardio',
     isReady: true,
     isVetOnly: true,
-    icon: <HeartPulseIcon />,
+    icon: <HeartPulse />,
   },
   {
     name: '진료노트',
@@ -66,6 +66,6 @@ export const HOS_SIDEBAR_MENUS = [
     path: 'super',
     isReady: true,
     isVetOnly: true,
-    icon: <BuildingIcon />,
+    icon: <Building />,
   },
 ] as const
