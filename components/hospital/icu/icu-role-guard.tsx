@@ -9,7 +9,7 @@ interface Props {
   targetDate: string
 }
 
-export function IcuRoleGuard({ isVet, hosId, targetDate }: Props) {
+export default function IcuRoleGuard({ isVet, hosId, targetDate }: Props) {
   const pathname = usePathname()
   const router = useRouter()
 

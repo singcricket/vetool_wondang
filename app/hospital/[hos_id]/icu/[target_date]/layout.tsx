@@ -3,7 +3,7 @@ import IcuSidebar from '@/components/hospital/icu/sidebar/icu-sidebar'
 import { fetchIcuLayoutData } from '@/lib/services/icu/icu-layout'
 import { BasicHosDataProvider } from '@/providers/basic-hos-data-context-provider'
 import { getVetoolUserData } from '@/lib/services/auth/authorization'
-import { IcuRoleGuard } from '@/components/hospital/icu/icu-role-guard'
+import IcuRoleGuard from '@/components/hospital/icu/icu-role-guard'
 
 export default async function IcuPageLayout(
   props: LayoutProps<'/hospital/[hos_id]/icu/[target_date]'>,
@@ -86,11 +86,13 @@ export default async function IcuPageLayout(
         </div>
       </BasicHosDataProvider>
 
+      {/*
       <IcuRoleGuard
         isVet={isVet}
         hosId={hos_id}
         targetDate={target_date}
       />
+      */}
 
       <IcuFooter hosId={hos_id} targetDate={target_date} isVet={isVet} />
     </>
