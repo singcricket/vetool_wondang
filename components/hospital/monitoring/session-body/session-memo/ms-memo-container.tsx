@@ -8,8 +8,10 @@ import { useEffect, useState } from 'react'
 
 export default function MsMemoContainer({
   msData,
+  isVet,
 }: {
   msData: MsWithPatientWithWeight
+  isVet: boolean
 }) {
   const [memos, setMemos] = useState<MsMemo[]>(msData.memo_tx)
 
@@ -19,24 +21,27 @@ export default function MsMemoContainer({
       const timeB = b.done_timestamp ? new Date(b.done_timestamp).getTime() : 0
       return timeB - timeA
     })
-    
+
     setMemos(sorted)
   }, [msData.memo_tx])
 
   return (
     <div className="flex flex-wrap gap-3">
       {/* 처치 계획 패널 */}
-      <div className="w-full md:w-[calc(50%-0.375rem)]">
-        <MsTxMemoGroup
-          memo={memos}
-          sessionId={msData.session_id}
-          memoName="처치 계획"
-          msData={msData}
-        />
-      </div>
+      
+        <div className="w-full md:w-[calc(50%-0.375rem)]">
+          <MsTxMemoGroup
+            memo={memos}
+            sessionId={msData.session_id}
+            memoName="처치 계획"
+            msData={msData}
+            isVet={isVet}
+          />
+        </div>
+      
 
       {/* 실시간 기록 패널 */}
-      <div className="w-full md:w-[calc(50%-0.375rem)]">
+      <div className={isVet ? 'w-full md:w-[calc(50%-0.375rem)]' : 'w-full'}>
         <MsLiveMemoGroup
           memo={memos}
           sessionId={msData.session_id}

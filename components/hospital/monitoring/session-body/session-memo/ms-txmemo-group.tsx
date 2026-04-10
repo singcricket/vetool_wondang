@@ -30,6 +30,7 @@ type Props = {
   sessionId: string
   memoName: string
   msData: MsWithPatientWithWeight
+  isVet: boolean
 }
 
 export default function MsTxMemoGroup({
@@ -37,6 +38,7 @@ export default function MsTxMemoGroup({
   sessionId,
   memoName,
   msData,
+  isVet,
 }: Props) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [sortedMemos, setSortedMemos] = useState<MsMemo[]>(memo ?? [])
@@ -158,14 +160,20 @@ export default function MsTxMemoGroup({
           >
             완료 {doneCount}
           </Badge>
-          <button
-            onClick={() => setIsInputOpen((v) => !v)}
-            title={isInputOpen ? '입력창 닫기' : '항목 추가'}
-            className="ml-1 flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-blue-600 hover:bg-blue-100 transition-colors"
-          >
-            {isInputOpen ? <ChevronUpIcon size={13} /> : <PlusIcon size={13} />}
-            {isInputOpen ? '닫기' : '항목 추가'}
-          </button>
+          {isVet && (
+            <button
+              onClick={() => setIsInputOpen((v) => !v)}
+              title={isInputOpen ? '입력창 닫기' : '항목 추가'}
+              className="ml-1 flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-blue-600 hover:bg-blue-100 transition-colors"
+            >
+              {isInputOpen ? (
+                <ChevronUpIcon size={13} />
+              ) : (
+                <PlusIcon size={13} />
+              )}
+              {isInputOpen ? '닫기' : '항목 추가'}
+            </button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -191,7 +199,7 @@ export default function MsTxMemoGroup({
           animation={250}
           handle=".handle"
           onEnd={handleReorderMemo}
-          disabled={isUpdating}
+          disabled={isUpdating || !isVet}
         >
           {planMemos.length === 0 ? (
             <NoResultSquirrel
@@ -209,6 +217,7 @@ export default function MsTxMemoGroup({
                 handleEditMemo={handleEditMemo}
                 onDelete={() => handleDeleteMemo(memo.id)}
                 msData={msData}
+                isVet={isVet}
               />
             ))
           )}
@@ -217,7 +226,7 @@ export default function MsTxMemoGroup({
       </ScrollArea>
 
       {/* Input — 기본 숨김, 토글로 표시 */}
-      {isInputOpen && (
+      {isInputOpen && isVet && (
       <div className="relative border-t-2 border-blue-200">
         <Textarea
           disabled={isUpdating || isUploading}

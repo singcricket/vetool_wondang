@@ -21,7 +21,9 @@ export default async function DesktopSidebar({
   return (
     <aside className="item-center fixed z-50 hidden h-screen w-10 flex-col justify-between border-r py-1 2xl:flex">
       <ul className="flex flex-col items-center gap-1">
-        {HOS_SIDEBAR_MENUS.map(({ icon, isReady, name, path }) => (
+        {HOS_SIDEBAR_MENUS.filter(
+          (menu) => !menu.isVetOnly || vetoolUser.is_vet || vetoolUser.is_super,
+        ).map(({ icon, isReady, name, path }) => (
           <DesktopSidebarItem
             hosId={hosId}
             name={name}

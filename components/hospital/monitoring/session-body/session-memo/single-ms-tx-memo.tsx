@@ -24,10 +24,11 @@ type Props = {
   memoIndex: string
   isMemoNameSetting?: boolean
   msData: MsWithPatientWithWeight
+  isVet: boolean
 }
 
 const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
-  ({ memo, onDelete, handleEditMemo, memoIndex, isMemoNameSetting, msData }, ref) => {
+  ({ memo, onDelete, handleEditMemo, memoIndex, isMemoNameSetting, msData, isVet }, ref) => {
     const [isEditMode, setIsEditMode] = useState(false)
     const [editedMemo, setEditedMemo] = useState(memo.memo)
     const [editedMemoColor, setEditedMemoColor] = useState(memo.color)
@@ -191,7 +192,7 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
           className={cn(
             'z-20 mt-0.5 h-4 w-4 shrink-0 rounded-sm border-2',
             isDone
-              ? 'border-muted-foreground/40 bg-muted-foreground/20'
+              ? 'border-muted-foreground/40 bg-muted-foreground/20 text-muted-foreground'
               : 'border-blue-400 bg-white',
           )}
         />
@@ -216,7 +217,7 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
               <div className="text-xs font-medium text-blue-400">대기중</div>
             )}
 
-            {!isEditMode && (
+            {!isEditMode && isVet && (
               <div
                 className={cn(
                   'flex cursor-pointer items-center gap-2 text-muted-foreground opacity-0 transition duration-300 group-hover:opacity-100',

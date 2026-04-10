@@ -2,6 +2,8 @@ import IcuFooter from '@/components/hospital/icu/footer/icu-footer'
 import IcuSidebar from '@/components/hospital/icu/sidebar/icu-sidebar'
 import { fetchIcuLayoutData } from '@/lib/services/icu/icu-layout'
 import { BasicHosDataProvider } from '@/providers/basic-hos-data-context-provider'
+import { getVetoolUserData } from '@/lib/services/auth/authorization'
+import { IcuRoleGuard } from '@/components/hospital/icu/icu-role-guard'
 
 export default async function IcuPageLayout(
   props: LayoutProps<'/hospital/[hos_id]/icu/[target_date]'>,
@@ -24,8 +26,8 @@ export default async function IcuPageLayout(
   //     )
   // )
   // 일단 아래 코드 비활성화
-  // const vetoolUser = await getVetoolUserData()
-  // redirectToOwnHospital(vetoolUser, params.hos_id, vetoolUser.is_super)
+  const vetoolUser = await getVetoolUserData()
+  const isVet = vetoolUser.is_vet || vetoolUser.is_super
 
   const { hos_id, target_date } = await props.params
 
@@ -84,7 +86,13 @@ export default async function IcuPageLayout(
         </div>
       </BasicHosDataProvider>
 
-      <IcuFooter hosId={hos_id} targetDate={target_date} />
+      <IcuRoleGuard
+        isVet={isVet}
+        hosId={hos_id}
+        targetDate={target_date}
+      />
+
+      <IcuFooter hosId={hos_id} targetDate={target_date} isVet={isVet} />
     </>
   )
 }

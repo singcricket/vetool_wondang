@@ -12,12 +12,14 @@ type Props = {
   hosId: string
   targetDate: string
   msData: MsWithPatientWithWeight
+  isVet: boolean
 }
 
 export default function SessionHeader({
   hosId,
   targetDate,
   msData,
+  isVet,
 }: Props) {
   const { end_time, start_time } = msData
 
@@ -37,13 +39,13 @@ export default function SessionHeader({
         msData={msData}
       />
 
-      
+      {isVet && (
         <MsHeaderRightButtons
           msData={msData}
           hosId={hosId}
           targetDate={targetDate}
         />
-      
+      )}
     </header>
   )
 }

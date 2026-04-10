@@ -15,7 +15,7 @@ export type VetoolUser = Pick<
   | 'user_id'
   | 'hos_id'
   | 'is_super'
-  | 'is_admin'
+  | 'is_vet'
 >
 
 export const getVetoolUserData = cache(async () => {
@@ -45,7 +45,7 @@ export const getVetoolUserData = cache(async () => {
         user_id, 
         hos_id, 
         is_super, 
-        is_admin
+        is_vet
       `,
     )
     .eq('user_id', supabaseClaims.sub)

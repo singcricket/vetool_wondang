@@ -52,7 +52,9 @@ export default function MobileSidebar({ hosId, vetoolUser, plan }: Props) {
         </VisuallyHidden>
 
         <ul className="z-50">
-          {HOS_SIDEBAR_MENUS.map(({ icon, isReady, name, path }) => (
+          {HOS_SIDEBAR_MENUS.filter(
+            (menu) => !menu.isVetOnly || vetoolUser.is_vet || vetoolUser.is_super,
+          ).map(({ icon, isReady, name, path }) => (
             <MobileSidebarItem
               key={name}
               isReady={isReady}

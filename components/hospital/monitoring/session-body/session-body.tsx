@@ -5,18 +5,23 @@ import MsInfoContainer from '@/components/hospital/monitoring/session-body/sessi
 import MsMemoContainer from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-container'
 import MsClContainer from '@/components/hospital/monitoring/session-body/session-checklist/ms-cl-container'
 type Props = {
-  msData : MsWithPatientWithWeight
+  msData: MsWithPatientWithWeight
   targetDate: string
   hosId: string
+  isVet: boolean
 }
 
-export default function SessionBody({ msData, targetDate, hosId }: Props) {
- 
+export default function SessionBody({
+  msData,
+  targetDate,
+  hosId,
+  isVet,
+}: Props) {
   return (
     <div className="mt-12 flex w-full flex-col gap-2 p-2 pb-32">
-        <MsInfoContainer msData={msData} />
-        <MsMemoContainer msData={msData} />
-        <MsClContainer msData={msData} />
+      <MsInfoContainer msData={msData} />
+      <MsMemoContainer msData={msData} isVet={isVet} />
+      <MsClContainer msData={msData} />
     </div>
   )
 }

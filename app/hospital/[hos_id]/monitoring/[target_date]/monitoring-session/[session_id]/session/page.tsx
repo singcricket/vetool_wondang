@@ -4,6 +4,8 @@ import SessionBody from '@/components/hospital/monitoring/session-body/session-b
 import SessionHeader from '@/components/hospital/monitoring/session-header/session-header'
 import { fetchMsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { ClipboardListIcon } from 'lucide-react'
+import { getVetoolUserData } from '@/lib/services/auth/authorization'
+
 export default async function SessionMainPage(props: {
   params: Promise<{
     hos_id: string
@@ -12,38 +14,41 @@ export default async function SessionMainPage(props: {
   }>
 }) {
   const { session_id, target_date, hos_id } = await props.params
+  const vetoolUser = await getVetoolUserData()
+  const isVet = vetoolUser.is_vet || vetoolUser.is_super
 
   const msData = await fetchMsWithPatientWithWeight(session_id)
 
   if (!msData) {
     return (
       <>
-      <MobileTitle icon={ClipboardListIcon} title="모니터링" />
-      <NoResultSquirrel
-        text="모니터링 세션이 없습니다"
-        className="mt-40 flex-col"
-        size="lg"
-      />
+        <MobileTitle icon={ClipboardListIcon} title="모니터링" />
+        <NoResultSquirrel
+          text="모니터링 세션이 없습니다"
+          className="mt-40 flex-col"
+          size="lg"
+        />
       </>
     )
   }
 
   return (
     <>
-    <div className="relative flex flex-col">
-      <MobileTitle icon={ClipboardListIcon} title="모니터링" />
-      <SessionHeader
-        hosId={hos_id}
-        targetDate={target_date}
-        msData={msData}
-      />
-    <SessionBody 
-      hosId={hos_id} 
-      targetDate={target_date} 
-      msData={msData} 
-    />
-     
-    </div>
+      <div className="relative flex flex-col">
+        <MobileTitle icon={ClipboardListIcon} title="모니터링" />
+        <SessionHeader
+          hosId={hos_id}
+          targetDate={target_date}
+          msData={msData}
+          isVet={isVet}
+        />
+        <SessionBody
+          hosId={hos_id}
+          targetDate={target_date}
+          msData={msData}
+          isVet={isVet}
+        />
+      </div>
     </>
   )
 }

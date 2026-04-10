@@ -18,9 +18,14 @@ import { usePathname, useRouter } from 'next/navigation'
 type IcuFooterProps = {
   hosId: string
   targetDate: string
+  isVet: boolean
 }
 
-export default function IcuFooter({ hosId, targetDate }: IcuFooterProps) {
+export default function IcuFooter({
+  hosId,
+  targetDate,
+  isVet,
+}: IcuFooterProps) {
   const safeRefresh = useSafeRefresh()
 
   const { push } = useRouter()
@@ -35,10 +40,14 @@ export default function IcuFooter({ hosId, targetDate }: IcuFooterProps) {
     safeRefresh()
   }
 
+  const filteredMenus = FOOTER_MAIN_VIEW_MENUS.filter(
+    (menu) => !menu.vetOnly || isVet,
+  )
+
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 flex h-[calc(2.5rem+env(safe-area-inset-bottom))] justify-between border-t bg-white px-1 2xl:left-10">
       <ul className="flex h-10 items-center gap-1">
-        {FOOTER_MAIN_VIEW_MENUS.map(({ label, route, icon, hideInMobile }) => (
+        {filteredMenus.map(({ label, route, icon, hideInMobile }) => (
           <li
             key={route}
             className={hideInMobile ? 'hidden md:block' : 'block'}
@@ -71,41 +80,41 @@ const FOOTER_MAIN_VIEW_MENUS = [
     route: 'summary',
     icon: <DashboardIcon />,
     hideInMobile: false,
+    vetOnly: true,
   },
   {
     label: '처치표',
     route: 'tx-table',
     icon: <ListChecksIcon />,
     hideInMobile: false,
+    vetOnly: false,
   },
   {
     label: '입원차트',
     route: 'chart',
     icon: <ClipboardListIcon />,
     hideInMobile: false,
+    vetOnly: true,
   },
-  // {
-  //   label: '퇴원/면회',
-  //   route: 'out-and-visit',
-  //   icon: <LogOutIcon />,
-  //   hideInMobile: true,
-  // },
   {
     label: '검색',
     route: 'search',
     icon: <SearchIcon />,
     hideInMobile: true,
+    vetOnly: true,
   },
   {
     label: '템플릿',
     route: 'template',
     icon: <BookmarkIcon />,
     hideInMobile: true,
+    vetOnly: true,
   },
   {
     label: '통계',
     route: 'analysis',
     icon: <BarChartHorizontalIcon />,
     hideInMobile: true,
+    vetOnly: true,
   },
 ] as const
