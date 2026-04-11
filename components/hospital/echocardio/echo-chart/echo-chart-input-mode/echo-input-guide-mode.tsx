@@ -53,11 +53,11 @@ export default function EchoInputGuideMode({
                 <span className="text-xs font-bold text-slate-700">{guide.view_name}</span>
                 <span className="text-[10px] text-muted-foreground italic">이미지 클릭 시 확대</span>
               </div>
-              <div className="flex gap-4 p-4">
+              <div className="flex flex-col md:flex-row gap-4 p-4">
                 {/* 이미지 (다이얼로그 확대 기능 추가) */}
                 <Dialog>
                   <DialogTrigger asChild>
-                    <div className="group relative h-60 w-80 shrink-0 cursor-zoom-in overflow-hidden rounded border bg-muted shadow-sm ring-offset-background transition-all hover:ring-2 hover:ring-blue-500/50">
+                    <div className="group relative aspect-video w-full md:h-60 md:w-80 shrink-0 cursor-zoom-in overflow-hidden rounded border bg-muted shadow-sm ring-offset-background transition-all hover:ring-2 hover:ring-blue-500/50">
                       <Image
                         src={guide.image_url}
                         alt={guide.view_name}

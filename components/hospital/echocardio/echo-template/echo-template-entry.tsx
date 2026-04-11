@@ -24,9 +24,19 @@ export default function EchoTemplateEntry({
   return (
     <div className="p-2 pt-0">
       <Tabs defaultValue="canine" className="w-full">
-        <TabsList className="grid w-half grid-cols-2 bg-muted/50 max-w-sm mb-4">
-          <TabsTrigger value="canine" className="text-sm">DOG 개</TabsTrigger>
-          <TabsTrigger value="feline" className="text-sm">CAT 고양이</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-slate-100/50 p-1 max-w-[280px] mb-6 rounded-lg border border-slate-200 shadow-sm">
+          <TabsTrigger
+            value="canine"
+            className="px-4 py-1.5 text-xs font-bold transition-all rounded-md data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-500 hover:text-blue-600"
+          >
+            DOG 개
+          </TabsTrigger>
+          <TabsTrigger
+            value="feline"
+            className="px-4 py-1.5 text-xs font-bold transition-all rounded-md data-[state=active]:bg-orange-600 data-[state=active]:text-white text-slate-500 hover:text-orange-600"
+          >
+            CAT 고양이
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="canine" className="mt-0 space-y-4">

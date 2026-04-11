@@ -18,7 +18,7 @@ export default function CalculatedField({
   const isAbnormal = resultLabel && !isNormal
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {/* 읽기 전용 계산값 */}
       <div className="flex min-w-24 items-center rounded border bg-muted/50 px-2 py-1">
         <span className="text-sm">

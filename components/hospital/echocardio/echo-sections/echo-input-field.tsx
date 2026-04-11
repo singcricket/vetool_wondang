@@ -25,9 +25,9 @@ export default function EchoInputField({
   onChange,
 }: EchoInputFieldProps) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex flex-col md:flex-row md:items-start gap-1 md:gap-3">
       {/* 항목명 및 툴팁 */}
-      <div className="flex w-44 shrink-0 items-center gap-1.5 pt-1">
+      <div className="flex w-full md:w-44 shrink-0 items-center gap-1.5 pt-1">
         <span className="text-sm text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
           {item.keywordName}
         </span>

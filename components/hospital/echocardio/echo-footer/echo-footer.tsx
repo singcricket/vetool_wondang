@@ -26,12 +26,12 @@ const FOOTER_MENUS = [
     icon: <SearchIcon />,
     hideInMobile: false,
   },
-  {
-    label: '통계',
-    value: 'stats',
-    icon: <BarChart2Icon />,
-    hideInMobile: true,
-  },
+  // {
+  //   label: '통계',
+  //   value: 'stats',
+  //   icon: <BarChart2Icon />,
+  //   hideInMobile: true,
+  // },
   {
     label: '템플릿',
     value: 'template',
@@ -55,8 +55,8 @@ export default function EchoFooter({ hosId, targetDate }: Props) {
   const activeTab: FooterValue =
     sub === 'search'
       ? 'search'
-      : sub === 'stats'
-        ? 'stats'
+      // : sub === 'stats'
+      //   ? 'stats'
         : sub === 'template'
           ? 'template'
           : 'chart'

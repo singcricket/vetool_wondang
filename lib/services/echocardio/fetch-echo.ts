@@ -245,3 +245,28 @@ export async function fetchPatientEchoHistory(
     results: row.echo_results ?? [],
   }))
 }
+// =============================================
+// 전체 차트 목록 조회 (검색용)
+// =============================================
+export async function getEchoCharts(
+  hosId: string,
+): Promise<EchoChartWithPatient[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('echo_charts')
+    .select(
+      `
+      *,
+      patient:patients(*),
+      vet:users!echo_charts_vet_id_fkey(name, user_id),
+      examiner:users!echo_charts_examiner_id_fkey(name, user_id)
+    `,
+    )
+    .eq('hos_id', hosId)
+    .order('exam_date', { ascending: false })
+
+  if (error) throw new Error(`getEchoCharts: ${error.message}`)
+
+  return data as EchoChartWithPatient[]
+}

@@ -20,7 +20,7 @@ export default function SelectInput({
   const isAbnormal = resultLabel && resultLabel !== 'normal' && resultLabel !== ''
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <select
         value={value}
         onChange={(e) => onChange(item.keywordID, e.target.value)}

@@ -116,27 +116,57 @@ export default function GuideImageAddForm({
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-muted-foreground italic">연결할 측정 항목</label>
         
-        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* 항목 추가 리스트 */}
+          <div className="flex-1 flex flex-col gap-1 min-w-0">
+            <p className="text-[10px] font-bold text-muted-foreground ml-1 italic">항목 추가</p>
+            <div className="rounded border bg-white p-1 max-h-60 overflow-y-auto">
+              {availableItems.map((m: any) => (
+                <label
+                  key={m.keywordID}
+                  className="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-muted transition-colors"
+                >
+                  <div className="w-3" /> {/* GripVertical 더미 */}
+                  <input
+                    type="checkbox"
+                    checked={false}
+                    onChange={() => toggleKeyword(m.keywordID)}
+                    className={cn('h-3 w-3', accentCheckbox)}
+                  />
+                  <span className="text-xs truncate flex-1">
+                    {m.keywordName}
+                    <span className="ml-1 text-[10px] text-muted-foreground">({m.section})</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* 선택된 항목 (순서 조정 가능) */}
           {selectedKeywords.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-bold text-muted-foreground ml-1 italic">선택된 항목 (드래그하여 순서 조정)</p>
-              <div className="rounded border bg-white p-1">
+            <div className="flex-1 flex flex-col gap-1 min-w-0">
+              <p className="text-[10px] font-bold text-muted-foreground ml-1 italic">
+                선택된 항목 (드래그하여 순서 조정)
+              </p>
+              <div className="rounded border bg-white p-1 max-h-60 overflow-y-auto">
                 <ReactSortable
                   list={selectedItems}
-                  setList={(newList) => setSelectedKeywords(newList.map(item => item.id))}
+                  setList={(newList) => setSelectedKeywords(newList.map((item) => item.id))}
                   animation={200}
                   handle=".drag-handle"
                   className="flex flex-col gap-0.5"
                 >
                   {selectedItems.map((m: any) => (
-                    <div key={m.keywordID} className="flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-muted transition-colors group">
+                    <div
+                      key={m.keywordID}
+                      className="flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-muted transition-colors group"
+                    >
                       <GripVertical className="drag-handle h-3 w-3 cursor-grab text-muted-foreground hover:text-blue-600 group-active:cursor-grabbing" />
                       <input
                         type="checkbox"
                         checked={true}
                         onChange={() => toggleKeyword(m.keywordID)}
-                        className={cn("h-3 w-3", accentCheckbox)}
+                        className={cn('h-3 w-3', accentCheckbox)}
                       />
                       <span className="text-xs truncate flex-1">
                         {m.keywordName}
@@ -148,28 +178,6 @@ export default function GuideImageAddForm({
               </div>
             </div>
           )}
-
-          {/* 항목 추가 리스트 */}
-          <div className="flex flex-col gap-1">
-            <p className="text-[10px] font-bold text-muted-foreground ml-1 italic">항목 추가</p>
-            <div className="rounded border bg-white p-1 max-h-40 overflow-y-auto">
-              {availableItems.map((m: any) => (
-                <label key={m.keywordID} className="flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 hover:bg-muted transition-colors">
-                  <div className="w-3" /> {/* GripVertical 더미 */}
-                  <input
-                    type="checkbox"
-                    checked={false}
-                    onChange={() => toggleKeyword(m.keywordID)}
-                    className={cn("h-3 w-3", accentCheckbox)}
-                  />
-                  <span className="text-xs truncate flex-1">
-                    {m.keywordName}
-                    <span className="ml-1 text-[10px] text-muted-foreground">({m.section})</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
