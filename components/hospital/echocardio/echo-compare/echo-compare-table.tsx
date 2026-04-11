@@ -65,6 +65,58 @@ export default function EchoCompareTable({
 
   return (
     <div className="flex flex-col gap-8 pb-32">
+      {/* 종합 소견 비교 섹션 */}
+      <div className="flex flex-col gap-2">
+        <h3 className="border-l-4 border-blue-500 pl-2 text-sm font-bold text-slate-700">
+          종합 소견 및 약물
+        </h3>
+        <div className="overflow-x-auto rounded border border-slate-200 shadow-sm bg-white">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-slate-50">
+                <th className="sticky left-0 z-10 border-b border-r bg-slate-50 px-2 py-2 text-left text-xs font-bold text-slate-500 w-[110px] shrink-0">
+                  항목
+                </th>
+                {allCharts.map((chart) => {
+                  const isCurrent = chart.id === current.id
+                  return (
+                    <th
+                      key={chart.id}
+                      className={`border-b px-3 py-2 text-center text-xs font-bold shrink-0 w-24 ${
+                        isCurrent ? 'bg-blue-50 text-blue-700' : 'text-slate-400'
+                      }`}
+                    >
+                      {format(parseISO(chart.exam_date), 'yy.MM.dd')}
+                      {isCurrent && <span className="ml-1 text-[9px] opacity-80">(현재)</span>}
+                    </th>
+                  )
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="sticky left-0 z-10 border-r bg-white px-2 py-3 text-xs font-medium text-slate-600">
+                  General Review
+                </td>
+                {allCharts.map((chart) => {
+                  const isCurrent = chart.id === current.id
+                  return (
+                    <td 
+                      key={chart.id} 
+                      className={`px-3 py-3 text-left align-top w-24 shrink-0 ${isCurrent ? 'bg-blue-50/10' : ''}`}
+                    >
+                      <p className={`whitespace-pre-wrap ${isCurrent ? 'text-xs font-medium text-blue-900' : 'text-xs text-slate-600'}`}>
+                        {chart.memo || <span className="text-slate-300">—</span>}
+                      </p>
+                    </td>
+                  )
+                })}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {targetSectionsOrder.map((sectionId) => {
         // 해당 섹션의 아이템들 중 값이 하나라도 존재하는 것들 필터링
         const items = testUIMeta.filter(m => 
@@ -149,57 +201,6 @@ export default function EchoCompareTable({
           </div>
         )
       })}
-      {/* 종합 소견 비교 섹션 */}
-      <div className="flex flex-col gap-2">
-        <h3 className="border-l-4 border-blue-500 pl-2 text-sm font-bold text-slate-700">
-          종합 소견 및 약물
-        </h3>
-        <div className="overflow-x-auto rounded border border-slate-200 shadow-sm bg-white">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-slate-50">
-                <th className="sticky left-0 z-10 border-b border-r bg-slate-50 px-2 py-2 text-left text-xs font-bold text-slate-500 w-[110px] shrink-0">
-                  항목
-                </th>
-                {allCharts.map((chart) => {
-                  const isCurrent = chart.id === current.id
-                  return (
-                    <th
-                      key={chart.id}
-                      className={`border-b px-3 py-2 text-center text-xs font-bold shrink-0 w-48 ${
-                        isCurrent ? 'bg-blue-50 text-blue-700' : 'text-slate-400'
-                      }`}
-                    >
-                      {format(parseISO(chart.exam_date), 'yy.MM.dd')}
-                      {isCurrent && <span className="ml-1 text-[9px] opacity-80">(현재)</span>}
-                    </th>
-                  )
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="sticky left-0 z-10 border-r bg-white px-2 py-3 text-xs font-medium text-slate-600">
-                  General Review
-                </td>
-                {allCharts.map((chart) => {
-                  const isCurrent = chart.id === current.id
-                  return (
-                    <td 
-                      key={chart.id} 
-                      className={`px-3 py-3 text-left align-top min-w-[200px] ${isCurrent ? 'bg-blue-50/10' : ''}`}
-                    >
-                      <p className={`whitespace-pre-wrap ${isCurrent ? 'text-xs font-medium text-blue-900' : 'text-xs text-slate-600'}`}>
-                        {chart.memo || <span className="text-slate-300">—</span>}
-                      </p>
-                    </td>
-                  )
-                })}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   )
 }

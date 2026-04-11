@@ -38,11 +38,16 @@ export async function updateGuideImageMapping(
   imageId: string,
   mappedKeywords: string[],
   viewName: string,
+  imageUrl?: string,
 ): Promise<void> {
   const supabase = await createClient()
   const { error } = await supabase
     .from('echo_template_guide_images')
-    .update({ mapped_keywords: mappedKeywords, view_name: viewName })
+    .update({ 
+      mapped_keywords: mappedKeywords, 
+      view_name: viewName,
+      ...(imageUrl !== undefined && { image_url: imageUrl })
+    })
     .eq('id', imageId)
   if (error) throw new Error(`updateGuideImageMapping: ${error.message}`)
 }

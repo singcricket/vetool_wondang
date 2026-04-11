@@ -60,11 +60,15 @@ export default function GuideImageAddForm({
   }
 
   async function handleUpload() {
-    if (!imageFile || !viewName.trim()) return
+    if (!viewName.trim()) return
     setIsUploading(true)
     try {
-      const { url, error: uploadError } = await uploadEchoGuideImage(imageFile, templateId)
-      if (!url || uploadError) throw new Error(uploadError ?? '이미지 업로드 실패')
+      let url = ''
+      if (imageFile) {
+        const { url: uploadUrl, error: uploadError } = await uploadEchoGuideImage(imageFile, templateId)
+        if (!uploadUrl || uploadError) throw new Error(uploadError ?? '이미지 업로드 실패')
+        url = uploadUrl
+      }
 
       await insertEchoGuideImage({
         templateId,
@@ -73,11 +77,11 @@ export default function GuideImageAddForm({
         mappedKeywords: selectedKeywords,
         displayOrder: 0,
       })
-      toast.success('가이드 이미지를 추가하였습니다')
+      toast.success('가이드 항목을 추가하였습니다')
       onDone()
     } catch (e) {
       console.error(e)
-      toast.error('업로드 실패')
+      toast.error('저장 실패')
     } finally {
       setIsUploading(false)
     }
@@ -96,7 +100,7 @@ export default function GuideImageAddForm({
       />
 
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground italic">이미지 파일 *</label>
+        <label className="text-xs font-medium text-muted-foreground italic">이미지 파일 (선택)</label>
         <div className="relative group">
           <input 
             type="file" 
@@ -105,10 +109,16 @@ export default function GuideImageAddForm({
             className="text-xs w-full file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer" 
           />
         </div>
-        {previewUrl && (
+        {previewUrl ? (
           <div className="relative mt-1 aspect-video w-full overflow-hidden rounded border bg-black/5 flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={previewUrl} alt="preview" className="h-full w-full object-contain" />
+          </div>
+        ) : (
+          <div className="relative mt-1 aspect-video w-full overflow-hidden rounded border bg-slate-200/40 flex flex-col items-center justify-center gap-1 border-dashed">
+            <span className="text-xs font-bold text-slate-400">
+              {viewName || '이미지 미리보기'}
+            </span>
           </div>
         )}
       </div>
@@ -187,9 +197,9 @@ export default function GuideImageAddForm({
           size="sm"
           className={cn("h-7 text-xs text-white", buttonColor)}
           onClick={handleUpload}
-          disabled={isUploading || !imageFile || !viewName.trim()}
+          disabled={isUploading || !viewName.trim()}
         >
-          {isUploading ? <Spinner className="text-white" /> : '파일 업로드'}
+          {isUploading ? <Spinner className="text-white" /> : (imageFile ? '파일 업로드 및 저장' : '저장')}
         </Button>
       </div>
     </div>

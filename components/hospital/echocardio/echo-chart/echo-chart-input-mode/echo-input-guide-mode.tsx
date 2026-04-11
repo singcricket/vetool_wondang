@@ -58,33 +58,47 @@ export default function EchoInputGuideMode({
                 <Dialog>
                   <DialogTrigger asChild>
                     <div className="group relative aspect-video w-full md:h-60 md:w-80 shrink-0 cursor-zoom-in overflow-hidden rounded border bg-muted shadow-sm ring-offset-background transition-all hover:ring-2 hover:ring-blue-500/50">
-                      <Image
-                        src={guide.image_url}
-                        alt={guide.view_name}
-                        fill
-                        className="object-contain transition-transform group-hover:scale-105"
-                        sizes="320px"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/10">
-                        <SearchIcon className="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" />
-                      </div>
+                      {guide.image_url ? (
+                        <>
+                          <Image
+                            src={guide.image_url}
+                            alt={guide.view_name}
+                            fill
+                            className="object-contain transition-transform group-hover:scale-105"
+                            sizes="320px"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/10">
+                            <SearchIcon className="h-6 w-6 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-slate-200/50">
+                          <span className="text-sm font-bold text-slate-400">{guide.view_name}</span>
+                        </div>
+                      )}
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl border-none bg-transparent p-0 shadow-none sm:max-w-[90vw]">
-                    <DialogHeader className="hidden">
-                      <DialogTitle />
+                  <DialogContent className={guide.image_url ? "max-w-4xl border-none bg-transparent p-0 shadow-none sm:max-w-[90vw]" : "max-w-md"}>
+                    <DialogHeader className={guide.image_url ? "hidden" : ""}>
+                      <DialogTitle>{guide.view_name}</DialogTitle>
                     </DialogHeader>
-                    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black/90 p-4">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={guide.image_url}
-                        alt={guide.view_name}
-                        className="h-full w-full object-contain"
-                      />
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
-                        {guide.view_name}
+                    {guide.image_url ? (
+                      <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black/90 p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={guide.image_url}
+                          alt={guide.view_name}
+                          className="h-full w-full object-contain"
+                        />
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+                          {guide.view_name}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="p-6 text-center text-sm text-muted-foreground">
+                        이 항목은 가이드 이미지가 등록되어 있지 않습니다.
+                      </div>
+                    )}
                   </DialogContent>
                 </Dialog>
                 {/* 연결 항목 입력 */}

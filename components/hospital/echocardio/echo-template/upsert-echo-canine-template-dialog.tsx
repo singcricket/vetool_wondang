@@ -208,7 +208,7 @@ export default function UpsertEchoCanineTemplateDialog({ isEdit, hosId, template
           {([
             { key: 'items' as const, label: '항목 설정' },
             { key: 'order' as const, label: '목록 순서' },
-            { key: 'guide' as const, label: '가이드 이미지' },
+            { key: 'guide' as const, label: '가이드' },
           ] as const).map((t) => (
             <button
               key={t.key}
