@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import type { EchoChartDetail, EchoSection } from '@/types/echocardio/echocardio-type'
+import { getMmodeRef, getCatMmodeRef } from '@/constants/hospital/echocardio/mmode-ref-dog'
 
 interface EchoReportTxtExportProps {
   patientName: string
@@ -37,8 +38,11 @@ export default function EchoReportTxtExport({
     lines.push(`[심초음파 결과지 - ${patientName}]`)
     lines.push(`검사일: ${chartDetail.exam_date}`)
     
-    const bw = chartDetail.results.find(r => r.keyword_id === 'BW_kg')?.value
-    if (bw) lines.push(`체중: ${bw} kg`)
+    const bwVal = chartDetail.results.find(r => r.keyword_id === 'BW_kg')?.value
+    const bwKg = bwVal ? parseFloat(bwVal) : 0
+    const species = (chartDetail.patient.species?.toLowerCase() === 'feline' ? 'feline' : 'canine') as 'canine' | 'feline'
+
+    if (bwKg > 0) lines.push(`체중: ${bwKg} kg`)
     
     lines.push('')
     lines.push('----------------------------------')
@@ -49,13 +53,26 @@ export default function EchoReportTxtExport({
 
       lines.push(`■ ${group.label}`)
       group.items.forEach((it: any) => {
-        const { meta, value, computed } = it
+        const { meta, value, computed, keyword_id } = it
         const unit = meta.unit ? ` ${meta.unit}` : ''
         const resultText = computed?.result ? ` [${computed.result}]` : ''
         const commentText = (computed?.comment && computed.comment !== computed.result) 
           ? ` (${computed.comment})` 
           : ''
-        lines.push(`  - ${meta.keywordName}: ${value}${unit}${resultText}${commentText}`)
+
+        // M-mode 참조값 동적 계산
+        let displayRef = ''
+        if (bwKg > 0) {
+          if (meta.testType === 'mmode_range' && meta.refTable === 'mmoderef_dog' && species === 'canine') {
+            const ref = getMmodeRef(bwKg, keyword_id)
+            if (ref) displayRef = ` (Ref: ${ref[0]} - ${ref[1]})`
+          } else if (meta.testType === 'mmode_formula' && species === 'feline') {
+            const ref = getCatMmodeRef(keyword_id as any, bwKg)
+            if (ref) displayRef = ` (Ref: ${ref[0].toFixed(2)} - ${ref[1].toFixed(2)})`
+          }
+        }
+
+        lines.push(`  - ${meta.keywordName}: ${value}${unit}${displayRef}${resultText}${commentText}`)
       })
       lines.push('')
     })

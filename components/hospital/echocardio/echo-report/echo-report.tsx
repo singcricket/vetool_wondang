@@ -178,6 +178,8 @@ export default function EchoReport({
               key={sec} 
               label={reportData.bySection[sec].label} 
               items={reportData.bySection[sec].items} 
+              bwKg={parseFloat(resultMap['BW_kg'] || '0')}
+              species={species}
             />
           ))}
 
@@ -187,6 +189,8 @@ export default function EchoReport({
               label={group.label} 
               items={group.items} 
               isUppercase 
+              bwKg={parseFloat(resultMap['BW_kg'] || '0')}
+              species={species}
             />
           ))}
 
@@ -196,6 +200,8 @@ export default function EchoReport({
               label={group.label} 
               items={group.items} 
               isUppercase 
+              bwKg={parseFloat(resultMap['BW_kg'] || '0')}
+              species={species}
             />
           ))}
         </div>

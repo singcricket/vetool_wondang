@@ -1770,15 +1770,15 @@ PH_comment: {
     functional_groups: ['MMVD_staging'],
   },
   
-  Last_comment: {
-    keywordID: 'Last_comment',
-    keywordName: 'General Review',
-    species: ['canine'],
-    sections: ['General_Review'],
-    groups: ['Test Review'],
-    testType: 'textcomment',
-    anatomic_groups: ['General'],
-    testinfo: "심장 초음파 전체 소견에 대한 종합 평가 및 임상 의견 기록란.",
-    functional_groups: [],
-  },
+  // Last_comment: {
+  //   keywordID: 'Last_comment',
+  //   keywordName: 'General Review',
+  //   species: ['canine'],
+  //   sections: ['General_Review'],
+  //   groups: ['Test Review'],
+  //   testType: 'textcomment',
+  //   anatomic_groups: ['General'],
+  //   testinfo: "심장 초음파 전체 소견에 대한 종합 평가 및 임상 의견 기록란.",
+  //   functional_groups: [],
+  // },
 };

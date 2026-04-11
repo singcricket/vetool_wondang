@@ -1482,17 +1482,17 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     testinfo: "고양이 ACVIM 심근병증(HCM 등) 병기. B2 기준: LA/Ao > 1.5 또는 LA max > 16mm. B2부터 Clopidogrel 등 항혈전 요법 고려. C단계부터 이뇨제 필수.",
     functional_groups: ['HCM_evaluation'],
   },
-  Last_comment: {
-    keywordID: 'Last_comment',
-    keywordName: 'General Review',
-    species: ['feline'],
-    sections: ['General_Review'],
-    groups: ['Test Review'],
-    testType: 'textcomment',
-    anatomic_groups: ['General'],
-    testinfo: "심장 초음파 전체 소견에 대한 종합 평가 및 임상 의견 기록란.",
-    functional_groups: [],
-  },
+  // Last_comment: {
+  //   keywordID: 'Last_comment',
+  //   keywordName: 'General Review',
+  //   species: ['feline'],
+  //   sections: ['General_Review'],
+  //   groups: ['Test Review'],
+  //   testType: 'textcomment',
+  //   anatomic_groups: ['General'],
+  //   testinfo: "심장 초음파 전체 소견에 대한 종합 평가 및 임상 의견 기록란.",
+  //   functional_groups: [],
+  // },
 
   // ---- Radio (고양이 기준) ----
   VHS: {

@@ -43,7 +43,7 @@ const CALCULATORS: Record<EchoFormula, (inputs: CalcInput) => number | string | 
       const d = parseFloat(LVd)
       const bw = parseFloat(BW_kg)
       if (isNaN(d) || isNaN(bw) || bw <= 0) return null
-      return d / Math.pow(bw, 0.294)
+      return (d/10) / Math.pow(bw, 0.294)
     },
 
     // ESVI = ESV / BSA  (BSA = 0.1 × BW^0.67 for dogs)
