@@ -64,7 +64,7 @@ export type FunctionalGroup =
   | 'PA_flow'
   | 'RV_function'
   | 'Effusion'
-  | 'Hemodynamics'
+  | 'Physical_Exam'
   | 'Cardiomegaly'
 
 // Functional Group 메타데이터 (Functional 탭 렌더링 순서 및 레이블)
@@ -90,7 +90,7 @@ export const FUNCTIONAL_GROUP_META: Record<FunctionalGroup, {
   PA_flow:          { label: 'PA Flow Pattern',        priority: 13, description: 'PA 혈류 패턴 이상' },
   RV_function:      { label: 'RV Function',            priority: 14, description: '우심실 기능 / 형태' },
   Effusion:         { label: 'Effusion',               priority: 15, description: '심낭 / 흉강 삼출액' },
-  Hemodynamics:     { label: 'Hemodynamics',           priority: 16, description: '전신 활력징후' },
+  Physical_Exam:    { label: 'Physical Exam',          priority: 16, description: '전신 활력징후' },
   Cardiomegaly:     { label: 'Cardiomegaly',           priority: 17, description: '방사선상 심비대' },
 }
 
@@ -159,6 +159,7 @@ type BaseTest = {
   testinfo?: string // 검사 항목 설명 (툴팁용)
   anatomic_groups?: AnatomicGroup[]
   functional_groups?: FunctionalGroup[]
+  priority?: number // 노출 우선순위 (낮을수록 상단)
 }
 
 // 옵션 선택형 (예: none/anterior/posterior)
@@ -264,6 +265,7 @@ export type EchoTestUIMeta = {
   formula?: EchoFormula
   anatomic_groups?: AnatomicGroup[]
   functional_groups?: FunctionalGroup[]
+  priority?: number
   refTable?: string
   refFormula?: string
 }

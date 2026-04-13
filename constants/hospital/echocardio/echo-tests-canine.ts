@@ -12,7 +12,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     unit: 'kg',
     anatomic_groups: ['General'],
     testinfo: "체중은 M-mode 정상 참고치 산출 및 LVIDDN, ESVI 계산의 기준값으로 사용됩니다.",
-    functional_groups: ['Hemodynamics', 'LV_size'],
+    functional_groups: ['Physical_Exam', 'LV_size'],
   },
   BP: {
     keywordID: 'BP',
@@ -28,7 +28,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     optComment: ['전신 저혈압 의심. 쇼크, 심부전, 약물 등 원인 평가 필요', '', '전신 고혈압. 신장질환, 부신피질기능항진증 등 원인 평가 필요'],
     anatomic_groups: ['General'],
     testinfo: "수축기 혈압 기준. 80mmHg 미만은 저혈압, 150mmHg 초과는 고혈압으로 분류. 고혈압은 이차성 장기 손상(망막, 신장, 심장) 위험 증가.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   BT: {
     keywordID: 'BT',
@@ -44,7 +44,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     optComment: ['저체온증. 쇼크, 패혈증, 마취 후 회복 지연 등 평가 필요', '', '발열. 감염, 염증, 열사병 등 원인 평가 필요'],
     anatomic_groups: ['General'],
     testinfo: "개의 정상 체온은 38.0~39.2°C. 저체온은 심박출량 감소 및 심부정맥 위험을 높이며, 발열은 심박수 증가와 심근 산소 요구량 증가를 초래할 수 있음.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   HR: {
     keywordID: 'HR',
@@ -60,7 +60,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     optComment: ['서맥. 방실차단, 미주신경 항진, 약물 등 원인 평가 필요', '', '빈맥. 통증, 흥분, 빈혈, 심부전, 부정맥 등 원인 평가 필요'],
     anatomic_groups: ['General'],
     testinfo: "개의 정상 심박수는 80~160bpm (소형견은 더 높을 수 있음). 서맥은 심박출량 감소를 유발하며, 빈맥은 심근 충전 시간 단축으로 심박출량을 저하시킬 수 있음.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   RR: {
     keywordID: 'RR',
@@ -76,7 +76,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     optComment: ['호흡 감소. 진정, 마취, 신경계 이상 평가 필요', '', '경도 빈호흡. 스트레스, 통증, 경도 폐부종 등 평가 필요', '중등도 빈호흡. 폐부종, 흉수, 기흉 등 평가 필요', '심한 빈호흡. 응급 처치 필요. 폐부종, CHF 등 평가 필요'],
     anatomic_groups: ['General'],
     testinfo: "개의 정상 호흡수는 10~30회/분. 빈호흡(특히 안정 시 30회 초과)은 CHF로 인한 폐부종의 초기 징후일 수 있으며, ACVIM 지침에서 중요한 모니터링 지표.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   HS: {
     keywordID: 'HS',
@@ -87,7 +87,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     testType: 'textcomment',
     anatomic_groups: ['General'],
     testinfo: "심음 청진 소견. 심잡음(murmur)의 유무, 위치, 강도(grade 1~6), 특성을 기록. 좌측 심첨부(LV apex) 수축기 잡음은 MR, 우측 기저부 수축기 잡음은 PS/TR, 좌측 기저부 수축기 잡음은 SAS/PS를 시사.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   PE_comment: {
     keywordID: 'PE_comment',
@@ -98,7 +98,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     testType: 'textcomment',
     anatomic_groups: ['General'],
     testinfo: "신체검사 전반에 대한 추가 소견 기록란.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
 
   
@@ -181,6 +181,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
 
   // ---- Bmode: IVS ----
   IVS_flattening: {
+    priority:1,
     keywordID: 'IVS_flattening',
     keywordName: 'IVS Flattening',
     species: ['canine'],
@@ -255,6 +256,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
 
   // ---- Bmode: RV ----
   RVhypertrophy: {
+    priority:2,
     keywordID: 'RVhypertrophy',
     keywordName: 'RV hypertrophy',
     species: ['canine'],
@@ -269,6 +271,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     functional_groups: ['RV_function', 'Pulmonary_Hypertension'],
   },
   RVsystolicDysfunction: {
+    priority:3,
     keywordID: 'RVsystolicDysfunction',
     keywordName: 'RV systolic dysfunction',
     species: ['canine'],
@@ -283,6 +286,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     functional_groups: ['RV_function', 'Pulmonary_Hypertension'],
   },
   RAenlargement: {
+    priority:4,
     keywordID: 'RAenlargement',
     keywordName: 'RA enlargement',
     species: ['canine'],
@@ -297,6 +301,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     functional_groups: ['RV_function', 'Pulmonary_Hypertension'],
   },
   CVCenlargement: {
+    priority:5,
     keywordID: 'CVCenlargement',
     keywordName: 'CVC enlargement',
     species: ['canine'],
@@ -792,6 +797,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     functional_groups: ['TV_disease', 'PA_pressure', 'Pulmonary_Hypertension'],
   },
   TR_vel: {
+    priority:6,
     keywordID: 'TR_vel',
     keywordName: 'TR Velocity',
     species: ['canine'],
@@ -1098,6 +1104,7 @@ export const ECHO_TESTS_CANINE: Record<string, EchoTest> = {
     functional_groups: ['PA_flow', 'Pulmonary_Hypertension'],
   },
   SystolicNotch: {
+    priority:7,
     keywordID: 'SystolicNotch',
     keywordName: 'Systolic Notching',
     species: ['canine'],
@@ -1171,6 +1178,7 @@ PH_comment: {
     functional_groups: ['Pulmonary_Hypertension'],
   },
   anatomic_PAAO: {
+    priority:7,
     keywordID: 'anatomic_PAAO',
     keywordName: 'Pulmonary artery enlargement',
     species: ['canine'],
@@ -1188,6 +1196,7 @@ PH_comment: {
     functional_groups: [],
   },
   anatomic_PR_vel: {
+    priority:8,
     keywordID: 'anatomic_PR_vel',
     keywordName: 'PR velocity > 2.5',
     species: ['canine'],
@@ -1205,6 +1214,7 @@ PH_comment: {
     functional_groups: [],
   },
   anatomic_RPADi: {
+    priority:9,
     keywordID: 'anatomic_RPADi',
     keywordName: 'RPADi < 30%',
     species: ['canine'],
@@ -1222,6 +1232,7 @@ PH_comment: {
     functional_groups: [],
   },
   anatomic_AT: {
+    priority:10,
     keywordID: 'anatomic_AT',
     keywordName: 'AT < 52',
     species: ['canine'],
@@ -1239,6 +1250,7 @@ PH_comment: {
     functional_groups: [],
   },
   anatomic_ATET: {
+    priority:11,
     keywordID: 'anatomic_ATET',
     keywordName: 'AT/ET < 0.3',
     species: ['canine'],
@@ -1307,6 +1319,7 @@ PH_comment: {
     functional_groups: [],
   },
   anatomic_number: {
+    priority:12,
     keywordID: 'anatomic_number',
     keywordName: 'Number of anatomic sites',
     species: ['canine'],
@@ -1324,6 +1337,7 @@ PH_comment: {
     functional_groups: [],
   },
   PHprob: {
+    priority:13,
     keywordID: 'PHprob',
     keywordName: 'Probability of PH',
     species: ['canine'],
@@ -1658,6 +1672,7 @@ PH_comment: {
 
   // ---- MINE Score (개 전용) ----
   MINE_LAAO: {
+    priority: 1,
     keywordID: 'MINE_LAAO',
     keywordName: 'MINE_SCORE LA/AO ratio',
     species: ['canine'],
@@ -1671,11 +1686,12 @@ PH_comment: {
     thresholds: [1.3, 1.6],
     optResult: ['Grade 0', 'Grade 1', 'Grade 2'],
     optComment: ['', '', ''],
-    anatomic_groups: ['LA'],
+    anatomic_groups: [],
     testinfo: "",
     functional_groups: ['MMVD_staging'],
   },
   MINE_LVIDDN: {
+    priority:2,
     keywordID: 'MINE_LVIDDN',
     keywordName: 'MINE_SCORE LVIDDN',
     species: ['canine'],
@@ -1689,11 +1705,12 @@ PH_comment: {
     thresholds: [1.7],
     optResult: ['Grade 0', 'Grade 1'],
     optComment: ['', ''],
-    anatomic_groups: ['LV'],
+    anatomic_groups: [],
     testinfo: "",
     functional_groups: ['MMVD_staging'],
   },
   MINE_FS: {
+    priority:3,
     keywordID: 'MINE_FS',
     keywordName: 'MINE_SCORE FS',
     species: ['canine'],
@@ -1707,11 +1724,12 @@ PH_comment: {
     thresholds: [30],
     optResult: ['Grade 1', 'Grade 0'],
     optComment: ['', ''],
-    anatomic_groups: ['LV'],
+    anatomic_groups: [],
     testinfo: "",
     functional_groups: ['MMVD_staging'],
   },
   MINE_Ewave: {
+    priority:4,
     keywordID: 'MINE_Ewave',
     keywordName: 'MINE_SCORE E wave',
     species: ['canine'],
@@ -1725,11 +1743,12 @@ PH_comment: {
     thresholds: [1.2],
     optResult: ['Grade 0', 'Grade 1'],
     optComment: ['', ''],
-    anatomic_groups: ['MV'],
+    anatomic_groups: [],
     testinfo: "",
     functional_groups: ['MMVD_staging'],
   },
   MINE_score: {
+    priority:5,
     keywordID: 'MINE_score',
     keywordName: 'MINE_SCORE Total',
     species: ['canine'],

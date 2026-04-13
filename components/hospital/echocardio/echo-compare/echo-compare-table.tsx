@@ -1,6 +1,7 @@
 'use client'
 
 import { format, parseISO } from 'date-fns'
+import Link from 'next/link'
 import type {
   EchoChartDetail,
   EchoTestUIMeta,
@@ -86,7 +87,12 @@ export default function EchoCompareTable({
                         isCurrent ? 'bg-blue-50 text-blue-700' : 'text-slate-400'
                       }`}
                     >
-                      {format(parseISO(chart.exam_date), 'yy.MM.dd')}
+                      <Link 
+                        href={`/hospital/${chart.hos_id}/echocardio/${format(parseISO(chart.exam_date), 'yyyy-MM-dd')}/${chart.id}`}
+                        className="transition-colors hover:text-blue-500 hover:underline"
+                      >
+                        {format(parseISO(chart.exam_date), 'yy.MM.dd')}
+                      </Link>
                       {isCurrent && <span className="ml-1 text-[9px] opacity-80">(현재)</span>}
                     </th>
                   )
@@ -162,7 +168,12 @@ export default function EchoCompareTable({
                             isCurrent ? 'bg-blue-50 text-blue-700' : 'text-slate-400'
                           }`}
                         >
-                          {format(parseISO(chart.exam_date), 'yy.MM.dd')}
+                          <Link 
+                            href={`/hospital/${chart.hos_id}/echocardio/${format(parseISO(chart.exam_date), 'yyyy-MM-dd')}/${chart.id}`}
+                            className="transition-colors hover:text-blue-500 hover:underline"
+                          >
+                            {format(parseISO(chart.exam_date), 'yy.MM.dd')}
+                          </Link>
                           {isCurrent && <span className="ml-1 text-[9px] opacity-80">(현재)</span>}
                         </th>
                       )

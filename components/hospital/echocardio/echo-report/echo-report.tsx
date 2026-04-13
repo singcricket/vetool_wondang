@@ -86,6 +86,8 @@ export default function EchoReport({
 
     function processItem(item: any) {
       const { meta } = item
+      const layout = species === 'feline' ? LAYOUT_FELINE : LAYOUT_CANINE
+
       // 섹션별 그룹화
       meta.sections?.forEach((sec: EchoSection) => {
         if (!allowedSections.has(sec)) return
@@ -105,8 +107,9 @@ export default function EchoReport({
       // 기능별 그룹화
       meta.functional_groups?.forEach((func: string) => {
         if (!byFunctional[func]) {
+          const layoutGroup = layout.functionalGroups.find((g) => g.groupID === func)
           byFunctional[func] = { 
-            label: func.replace(/_/g, ' '), 
+            label: layoutGroup?.label || func.replace(/_/g, ' '), 
             items: [] 
           }
         }
@@ -118,8 +121,9 @@ export default function EchoReport({
       // 구조별 그룹화
       meta.anatomic_groups?.forEach((anat: string) => {
         if (!byAnatomic[anat]) {
+          const layoutGroup = layout.anatomicGroups.find((g) => g.groupID === anat)
           byAnatomic[anat] = { 
-            label: anat.replace(/_/g, ' '), 
+            label: layoutGroup?.label || anat.replace(/_/g, ' '), 
             items: [] 
           }
         }
@@ -129,16 +133,53 @@ export default function EchoReport({
       })
     }
 
+    // 그룹 내 아이템 정렬 (priority 기준)
+    const sortItems = (items: any[]) => {
+      return [...items].sort((a, b) => {
+        const pa = a.meta.priority ?? 999
+        const pb = b.meta.priority ?? 999
+        if (pa !== pb) return pa - pb
+        // 우선순위가 같으면 이전 방식(발견 순서) 유지 위해 0 반환
+        return 0
+      })
+    }
+
+    Object.values(bySection).forEach(group => { group.items = sortItems(group.items) })
+    Object.values(byFunctional).forEach(group => { group.items = sortItems(group.items) })
+    Object.values(byAnatomic).forEach(group => { group.items = sortItems(group.items) })
+
     return { bySection, byFunctional, byAnatomic }
   }, [chartDetail.results, testDefinitions, computedResults, resultMap, species])
 
-  // 섹션 뷰의 경우 정의된 순서대로 정렬
+  // 섹션 뷰 정렬
   const sortedSections = useMemo(() => {
     const defaultOrder = (species === 'feline' ? LAYOUT_FELINE : LAYOUT_CANINE).sections.map(
       (s: any) => s.sectionID as EchoSection,
     )
     return defaultOrder.filter((sec: EchoSection) => reportData.bySection[sec])
   }, [reportData.bySection, species])
+
+  // 기능별 뷰 정렬
+  const sortedFunctional = useMemo(() => {
+    const layout = species === 'feline' ? LAYOUT_FELINE : LAYOUT_CANINE
+    const defaultOrder = layout.functionalGroups.map((g) => g.groupID)
+    const existingGroups = Object.keys(reportData.byFunctional)
+    const sorted = defaultOrder.filter((g) => existingGroups.includes(g))
+    // 레이아웃에 명시되지 않은 그룹이 있다면 뒤에 추가
+    const others = existingGroups.filter((g) => !defaultOrder.includes(g))
+    return [...sorted, ...others]
+  }, [reportData.byFunctional, species])
+
+  // 구조별 뷰 정렬
+  const sortedAnatomic = useMemo(() => {
+    const layout = species === 'feline' ? LAYOUT_FELINE : LAYOUT_CANINE
+    const defaultOrder = layout.anatomicGroups.map((g) => g.groupID)
+    const existingGroups = Object.keys(reportData.byAnatomic)
+    const sorted = defaultOrder.filter((g) => existingGroups.includes(g))
+    // 레이아웃에 명시되지 않은 그룹이 있다면 뒤에 추가
+    const others = existingGroups.filter((g) => !defaultOrder.includes(g))
+    return [...sorted, ...others]
+  }, [reportData.byAnatomic, species])
 
   return (
     <div className="flex flex-col gap-4">
@@ -183,27 +224,33 @@ export default function EchoReport({
             />
           ))}
 
-          {activeTab === 'functional' && Object.entries(reportData.byFunctional).map(([key, group]) => (
-            <EchoReportTable 
-              key={key} 
-              label={group.label} 
-              items={group.items} 
-              isUppercase 
-              bwKg={parseFloat(resultMap['BW_kg'] || '0')}
-              species={species}
-            />
-          ))}
+          {activeTab === 'functional' && sortedFunctional.map((key) => {
+            const group = reportData.byFunctional[key]
+            return (
+              <EchoReportTable 
+                key={key} 
+                label={group.label} 
+                items={group.items} 
+                isUppercase 
+                bwKg={parseFloat(resultMap['BW_kg'] || '0')}
+                species={species}
+              />
+            )
+          })}
 
-          {activeTab === 'anatomic' && Object.entries(reportData.byAnatomic).map(([key, group]) => (
-            <EchoReportTable 
-              key={key} 
-              label={group.label} 
-              items={group.items} 
-              isUppercase 
-              bwKg={parseFloat(resultMap['BW_kg'] || '0')}
-              species={species}
-            />
-          ))}
+          {activeTab === 'anatomic' && sortedAnatomic.map((key) => {
+            const group = reportData.byAnatomic[key]
+            return (
+              <EchoReportTable 
+                key={key} 
+                label={group.label} 
+                items={group.items} 
+                isUppercase 
+                bwKg={parseFloat(resultMap['BW_kg'] || '0')}
+                species={species}
+              />
+            )
+          })}
         </div>
 
         {/* 종합 소견 */}

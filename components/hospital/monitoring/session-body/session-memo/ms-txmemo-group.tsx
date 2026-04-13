@@ -45,7 +45,7 @@ export default function MsTxMemoGroup({
   const [memoInput, setMemoInput] = useState('')
   const [memoColor, setMemoColor] = useState<MemoColor>(MEMO_COLORS[0])
   const [memoSchedule, setMemoSchedule] = useState<MsMemoSchedule | undefined>(undefined)
-  const [isInputOpen, setIsInputOpen] = useState(false)
+  const [isInputOpen, setIsInputOpen] = useState(true)
   const isMobile = useIsMobile()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -160,21 +160,8 @@ export default function MsTxMemoGroup({
           >
             완료 {doneCount}
           </Badge>
-          {isVet && (
-            <button
-              onClick={() => setIsInputOpen((v) => !v)}
-              title={isInputOpen ? '입력창 닫기' : '항목 추가'}
-              className="ml-1 flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-blue-600 hover:bg-blue-100 transition-colors"
-            >
-              {isInputOpen ? (
-                <ChevronUpIcon size={13} />
-              ) : (
-                <PlusIcon size={13} />
-              )}
-              {isInputOpen ? '닫기' : '항목 추가'}
-            </button>
-          )}
-          <Button
+         
+          {/* <Button
             variant="ghost"
             size="icon"
             className="h-6 w-6 text-blue-600 hover:bg-blue-100"
@@ -182,7 +169,7 @@ export default function MsTxMemoGroup({
             title={isCollapsed ? '펼치기' : '접기'}
           >
             {isCollapsed ? <ChevronDownIcon size={16} /> : <ChevronUpIcon size={16} />}
-          </Button>
+          </Button> */}
         </div>
       </div>
 

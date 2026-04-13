@@ -12,7 +12,7 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     unit: 'kg',
     anatomic_groups: ['General'],
     testinfo: "체중은 M-mode 정상 참고치 산출(allometric scaling: Y = a × BW^b)의 기준값으로 사용됩니다. 고양이는 체중에 따라 심장 크기가 달라지므로 반드시 정확한 측정이 필요합니다.",
-    functional_groups: ['Hemodynamics', 'LV_size'],
+    functional_groups: ['Physical_Exam', 'LV_size'],
   },
   BP: {
     keywordID: 'BP',
@@ -28,7 +28,7 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     optComment: ['전신 저혈압 의심. 쇼크, 심부전, 약물 등 원인 평가 필요', '', '전신 고혈압. 고양이에서 신장질환, 갑상선기능항진증, 부신피질기능항진증 등 원인 평가 필요'],
     anatomic_groups: ['General'],
     testinfo: "수축기 혈압 기준. 고양이 정상 160mmHg 미만(white coat 효과 고려). 160mmHg 초과 시 고혈압. 고양이에서 고혈압은 신장질환, 갑상선기능항진증의 이차 합병증으로 흔하며 HCM과 감별 필요.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   BT: {
     keywordID: 'BT',
@@ -44,7 +44,7 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     optComment: ['저체온증. 고양이에서 쇼크, CHF 말기, 패혈증 시 흔함. 예후 불량 신호', '', '발열. 감염, 염증성 질환 등 평가 필요'],
     anatomic_groups: ['General'],
     testinfo: "고양이 정상 체온 38.0~39.2°C. 저체온은 고양이 CHF의 불량한 예후 지표로 특히 중요. 심박출량 감소 및 말초 순환 부전을 반영.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   HR: {
     keywordID: 'HR',
@@ -60,7 +60,7 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     optComment: ['서맥. 고양이에서 방실차단, 미주신경 항진, 말기 심부전, 저체온 등 평가 필요', '', '빈맥. 스트레스(white coat), 통증, HCM, 갑상선기능항진증, 빈혈 등 평가 필요'],
     anatomic_groups: ['General'],
     testinfo: "고양이 정상 심박수는 140~220bpm. 고양이는 스트레스(white coat effect)로 병원 내 빈맥이 흔하므로 해석 시 주의. HCM에서 빈맥은 심근 산소 요구량 증가 및 충전 시간 단축으로 예후 악화.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   RR: {
     keywordID: 'RR',
@@ -76,7 +76,7 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     optComment: ['호흡 감소. 진정, 마취, 신경계 이상 평가 필요', '', '경도 빈호흡. 스트레스, 통증, 폐부종 초기 가능성', '중등도 빈호흡. 폐부종, 흉수, 기흉 등 평가 필요', '심한 빈호흡. CHF 폐부종, 흉수 응급 처치 필요'],
     anatomic_groups: ['General'],
     testinfo: "고양이 정상 호흡수 20~30회/분. 고양이는 안정 시 40회/분 초과 시 CHF로 인한 폐부종 또는 흉수의 중요한 경고 신호. 고양이 CHF의 초기 증상 중 하나.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   HS: {
     keywordID: 'HS',
@@ -87,7 +87,7 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     testType: 'textcomment',
     anatomic_groups: ['General'],
     testinfo: "심음 청진 소견. 고양이에서 심잡음은 HCM 환자의 약 50%에서 청진되지 않으므로 심잡음 부재가 HCM을 배제하지 않음. Gallop rhythm(S3, S4)은 심부전의 중요한 소견. SAM 동반 시 동적 LVOT 폐쇄 시사.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
   PE_comment: {
     keywordID: 'PE_comment',
@@ -98,7 +98,7 @@ export const ECHO_TESTS_FELINE: Record<string, EchoTest> = {
     testType: 'textcomment',
     anatomic_groups: ['General'],
     testinfo: "신체검사 전반에 대한 추가 소견 기록란.",
-    functional_groups: ['Hemodynamics'],
+    functional_groups: ['Physical_Exam'],
   },
 
   // ---- Radio ----

@@ -68,7 +68,9 @@ export default function EchoChartBody({
   const settings = savedTemplate || templatesSpecies?.[species] || (echoContextData as any).template
 
   const [activeTab, setActiveTab] = useState<Tab>('input')
-  const [inputMode, setInputMode] = useState<'section' | 'flat' | 'guide'>('section')
+  const [inputMode, setInputMode] = useState<'section' | 'flat' | 'guide'>(
+    guideImages.length > 0 ? 'guide' : 'section',
+  )
   const [isSaving, startSaving] = useTransition()
   const [pendingSave, setPendingSave] = useState<Set<string>>(new Set())
 
@@ -209,7 +211,9 @@ export default function EchoChartBody({
 
     // 3. 순서 정렬
     const order = settings.item_order?.[targetSection]
-    if (!order || order.length === 0) return filteredByActive
+    if (!order || order.length === 0) {
+      return [...filteredByActive].sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999))
+    }
 
     return [...filteredByActive].sort((a, b) => {
       const ai = order.indexOf(a.keywordID)

@@ -148,7 +148,7 @@ export const LAYOUT_CANINE: LayoutConfig = {
     { groupID: 'PA_flow', label: 'PA Flow Pattern' },
     { groupID: 'RV_function', label: 'RV Function' },
     { groupID: 'Effusion', label: 'Effusion' },
-    { groupID: 'Hemodynamics', label: 'Hemodynamics' },
+    { groupID: 'Physical_Exam', label: 'Physical Exam' },
     { groupID: 'Cardiomegaly', label: 'Cardiomegaly' },
   ],
 }
@@ -296,7 +296,7 @@ export const LAYOUT_FELINE: LayoutConfig = {
     { groupID: 'PA_flow', label: 'PA Flow Pattern' },
     { groupID: 'RV_function', label: 'RV Function' },
     { groupID: 'Effusion', label: 'Effusion' },
-    { groupID: 'Hemodynamics', label: 'Hemodynamics' },
+    { groupID: 'Physical_Exam', label: 'Physical Exam' },
     { groupID: 'Cardiomegaly', label: 'Cardiomegaly' },
     // MMVD_staging 없음
   ],

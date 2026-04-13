@@ -52,6 +52,273 @@ export type Database = {
           },
         ]
       }
+      dental_chart_teeth: {
+        Row: {
+          abrasion: string | null
+          attrition: string | null
+          calculus: string | null
+          caries: string | null
+          chart_id: string
+          created_at: string | null
+          fracture: string | null
+          furcation: string | null
+          gingivitis: string | null
+          hos_id: string
+          id: string
+          is_deciduous: boolean | null
+          mobility: string | null
+          plaque: string | null
+          probing_b: number | null
+          probing_db: number | null
+          probing_dl: number | null
+          probing_l: number | null
+          probing_mb: number | null
+          probing_ml: number | null
+          pulp_exposure: boolean | null
+          recession_b: number | null
+          recession_db: number | null
+          recession_dl: number | null
+          recession_l: number | null
+          recession_mb: number | null
+          recession_ml: number | null
+          resorption: string | null
+          staining: string | null
+          status: string | null
+          supernumerary: boolean | null
+          tooth_id: number
+          tooth_name: string | null
+          tooth_note: string | null
+          treatment_done: string[] | null
+          treatment_plan: string[] | null
+          treatment_priority: string | null
+          updated_at: string | null
+          xray_finding: string | null
+        }
+        Insert: {
+          abrasion?: string | null
+          attrition?: string | null
+          calculus?: string | null
+          caries?: string | null
+          chart_id: string
+          created_at?: string | null
+          fracture?: string | null
+          furcation?: string | null
+          gingivitis?: string | null
+          hos_id: string
+          id?: string
+          is_deciduous?: boolean | null
+          mobility?: string | null
+          plaque?: string | null
+          probing_b?: number | null
+          probing_db?: number | null
+          probing_dl?: number | null
+          probing_l?: number | null
+          probing_mb?: number | null
+          probing_ml?: number | null
+          pulp_exposure?: boolean | null
+          recession_b?: number | null
+          recession_db?: number | null
+          recession_dl?: number | null
+          recession_l?: number | null
+          recession_mb?: number | null
+          recession_ml?: number | null
+          resorption?: string | null
+          staining?: string | null
+          status?: string | null
+          supernumerary?: boolean | null
+          tooth_id: number
+          tooth_name?: string | null
+          tooth_note?: string | null
+          treatment_done?: string[] | null
+          treatment_plan?: string[] | null
+          treatment_priority?: string | null
+          updated_at?: string | null
+          xray_finding?: string | null
+        }
+        Update: {
+          abrasion?: string | null
+          attrition?: string | null
+          calculus?: string | null
+          caries?: string | null
+          chart_id?: string
+          created_at?: string | null
+          fracture?: string | null
+          furcation?: string | null
+          gingivitis?: string | null
+          hos_id?: string
+          id?: string
+          is_deciduous?: boolean | null
+          mobility?: string | null
+          plaque?: string | null
+          probing_b?: number | null
+          probing_db?: number | null
+          probing_dl?: number | null
+          probing_l?: number | null
+          probing_mb?: number | null
+          probing_ml?: number | null
+          pulp_exposure?: boolean | null
+          recession_b?: number | null
+          recession_db?: number | null
+          recession_dl?: number | null
+          recession_l?: number | null
+          recession_mb?: number | null
+          recession_ml?: number | null
+          resorption?: string | null
+          staining?: string | null
+          status?: string | null
+          supernumerary?: boolean | null
+          tooth_id?: number
+          tooth_name?: string | null
+          tooth_note?: string | null
+          treatment_done?: string[] | null
+          treatment_plan?: string[] | null
+          treatment_priority?: string | null
+          updated_at?: string | null
+          xray_finding?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dental_chart_teeth_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "dental_charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dental_chart_teeth_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
+      dental_charts: {
+        Row: {
+          anesthesia: boolean | null
+          anesthesia_note: string | null
+          calculus_overall: string | null
+          chart_date: string
+          created_at: string | null
+          crowding: string | null
+          general_note: string | null
+          gingivitis_overall: string | null
+          homecare_instruction: string | null
+          hos_id: string
+          id: string
+          lymph_node_eval: string | null
+          occlusion: string | null
+          oral_mucosa: string | null
+          palate_eval: string | null
+          patient_id: string
+          periodontitis_stage: string | null
+          pharynx_eval: string | null
+          procedure_fluoride: boolean | null
+          procedure_irrigation: boolean | null
+          procedure_other: string | null
+          procedure_polishing: boolean | null
+          procedure_scaling: boolean | null
+          recheck_interval: string | null
+          salivary_eval: string | null
+          skull_type: string | null
+          species: string | null
+          tongue_eval: string | null
+          tonsil_eval: string | null
+          treatment_plan: string | null
+          updated_at: string | null
+          vet_id: Json | null
+          xray_findings: string | null
+          xray_taken: boolean | null
+        }
+        Insert: {
+          anesthesia?: boolean | null
+          anesthesia_note?: string | null
+          calculus_overall?: string | null
+          chart_date: string
+          created_at?: string | null
+          crowding?: string | null
+          general_note?: string | null
+          gingivitis_overall?: string | null
+          homecare_instruction?: string | null
+          hos_id: string
+          id?: string
+          lymph_node_eval?: string | null
+          occlusion?: string | null
+          oral_mucosa?: string | null
+          palate_eval?: string | null
+          patient_id: string
+          periodontitis_stage?: string | null
+          pharynx_eval?: string | null
+          procedure_fluoride?: boolean | null
+          procedure_irrigation?: boolean | null
+          procedure_other?: string | null
+          procedure_polishing?: boolean | null
+          procedure_scaling?: boolean | null
+          recheck_interval?: string | null
+          salivary_eval?: string | null
+          skull_type?: string | null
+          species?: string | null
+          tongue_eval?: string | null
+          tonsil_eval?: string | null
+          treatment_plan?: string | null
+          updated_at?: string | null
+          vet_id?: Json | null
+          xray_findings?: string | null
+          xray_taken?: boolean | null
+        }
+        Update: {
+          anesthesia?: boolean | null
+          anesthesia_note?: string | null
+          calculus_overall?: string | null
+          chart_date?: string
+          created_at?: string | null
+          crowding?: string | null
+          general_note?: string | null
+          gingivitis_overall?: string | null
+          homecare_instruction?: string | null
+          hos_id?: string
+          id?: string
+          lymph_node_eval?: string | null
+          occlusion?: string | null
+          oral_mucosa?: string | null
+          palate_eval?: string | null
+          patient_id?: string
+          periodontitis_stage?: string | null
+          pharynx_eval?: string | null
+          procedure_fluoride?: boolean | null
+          procedure_irrigation?: boolean | null
+          procedure_other?: string | null
+          procedure_polishing?: boolean | null
+          procedure_scaling?: boolean | null
+          recheck_interval?: string | null
+          salivary_eval?: string | null
+          skull_type?: string | null
+          species?: string | null
+          tongue_eval?: string | null
+          tonsil_eval?: string | null
+          treatment_plan?: string | null
+          updated_at?: string | null
+          vet_id?: Json | null
+          xray_findings?: string | null
+          xray_taken?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dental_charts_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "dental_charts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+        ]
+      }
       diets: {
         Row: {
           active: boolean

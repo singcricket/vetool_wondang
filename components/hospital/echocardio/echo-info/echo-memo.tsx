@@ -44,7 +44,7 @@ export default function EchoMemo({ echoId, memo }: Props) {
         <div className="p-2 pt-0 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
           <Textarea
             id="echo-memo"
-            placeholder="심초음파 종합 소견 및 특이사항 입력..."
+            placeholder="심초음파 종합 소견 및 특이사항, 처방 등에 대해 입력..."
             disabled={isUpdating}
             value={value}
             onChange={(e) => setValue(e.target.value)}
