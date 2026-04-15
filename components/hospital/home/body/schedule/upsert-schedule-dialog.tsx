@@ -75,7 +75,6 @@ import { HospitalMetadata } from '../todo/todo'
 import { Schedule } from '@/types/hospital/schedule'
 import {
   ScheduleSetting,
-  TimeTemplate,
   ScheduleCategory,
 } from '@/types/hospital'
 
@@ -152,36 +151,6 @@ export default function UpsertScheduleDialog({
       load()
     }
   }, [isDialogOpen, hosId])
-
-  const applyPreset = (template: TimeTemplate) => {
-    if (template.is_all_day) {
-      form.setValue('is_all_day', true)
-    } else {
-      form.setValue('is_all_day', false)
-
-      const start = new Date(form.getValues('start_time'))
-      const [sH, sM] = template.start_time.split(':')
-      if (sH && sM) {
-        start.setHours(parseInt(sH), parseInt(sM))
-      }
-      form.setValue('start_time', start)
-
-      const end = new Date(form.getValues('end_time'))
-      const [eH, eM] = template.end_time.split(':')
-      if (eH && eM) {
-        end.setHours(parseInt(eH), parseInt(eM))
-      }
-      form.setValue('end_time', end)
-    }
-
-    if (template.title) {
-      form.setValue('title', template.title)
-    }
-
-    if (template.category) {
-      form.setValue('category', template.category)
-    }
-  }
 
   const handleUpsertSchedule = async (
     values: z.infer<typeof scheduleSchema>,
@@ -263,40 +232,6 @@ export default function UpsertScheduleDialog({
             onSubmit={form.handleSubmit(handleUpsertSchedule)}
             className="space-y-4"
           >
-            {/* 시간 템플릿 프리셋 (상단에 위치) */}
-            {scheduleSetting?.time_templates &&
-              scheduleSetting.time_templates.length > 0 && (
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                  <FormLabel className="flex items-center gap-1 mb-2 text-xs font-semibold text-slate-600">
-                    <Clock className="h-3 w-3" /> 시간표 템플릿 적용
-                  </FormLabel>
-                  <Select
-                    onValueChange={(val) => {
-                      const template = scheduleSetting.time_templates?.find(
-                        (t) => t.id === val,
-                      )
-                      if (template) applyPreset(template)
-                    }}
-                  >
-                    <SelectTrigger className="h-9 bg-white">
-                      <SelectValue placeholder="사전 정의된 템플릿 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {scheduleSetting.time_templates.map((t) => (
-                        <SelectItem key={t.id} value={t.id} className="text-xs">
-                          {t.name} (
-                          {t.is_all_day ? '종일' : `${t.start_time}~${t.end_time}`}
-                          )
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-muted-foreground mt-1.5 ml-1">
-                    * 템플릿 선택 시 제목, 카테고리, 시간이 자동으로 채워집니다.
-                  </p>
-                </div>
-              )}
-
             <div className="grid grid-cols-2 gap-4">
               {/* 카테고리 */}
               <FormField

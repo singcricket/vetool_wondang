@@ -15,6 +15,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils/utils'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
@@ -38,14 +39,33 @@ export default function MsTxMemoSimplifiedResult({
 }: Props) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
+  const pendingCount = planMemos.filter((m) => !m.is_done).length
+  const doneCount = planMemos.filter((m) => m.is_done).length
+
   return (
     <div className="w-full md:w-[calc(50%-0.375rem)]">
       <div className="flex h-full flex-col overflow-hidden rounded-xl border-2 border-blue-100 bg-white shadow-sm">
         {/* 헤더 */}
         <div className="flex items-center justify-between bg-blue-50/50 px-4 py-2.5 border-b">
           <div className="flex items-center gap-2">
-            <ClipboardListIcon size={16} className="text-blue-600" />
-            <span className="text-sm font-black text-slate-700">처치 계획</span>
+            <div className="flex items-center gap-2">
+              <ClipboardListIcon size={16} className="text-blue-600" />
+              <span className="text-sm font-black text-slate-700">처치 계획</span>
+            </div>
+            <div className="flex items-center gap-1.5 ml-2">
+              <Badge
+                variant="secondary"
+                className="text-[10px] font-bold px-1.5 py-0 bg-orange-100 text-orange-600 border-orange-200"
+              >
+                대기 {pendingCount}
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="text-[10px] font-bold px-1.5 py-0 bg-blue-100 text-blue-600 border-blue-200"
+              >
+                완료 {doneCount}
+              </Badge>
+            </div>
           </div>
 
           <div className="flex items-center gap-1">

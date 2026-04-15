@@ -11,6 +11,24 @@ import {
   Folder,
 } from 'lucide-react'
 
+const ToothIcon = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...props }: { size?: number; color?: string; strokeWidth?: number; [key: string]: any }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    {/* 송곳니(Fang) — 뾰족한 크라운 + 깊게 갈라진 두 갈래 치근 */}
+    <path d="M8 2C6 2 4.5 3.5 4.5 5.5C4.5 7.5 5.5 9.5 6.5 11.5C7.5 13.5 8 15 7 17.5C6 20 5.5 22 8 22C9.5 22 10 20 10.5 18C11 16 11.5 14 12 12C12.5 14 13 16 13.5 18C14 20 14.5 22 16 22C18.5 22 18 20 17 17.5C16 15 16.5 13.5 17.5 11.5C18.5 9.5 19.5 7.5 19.5 5.5C19.5 3.5 18 2 16 2C14 2 13 3 12 4C11 3 10 2 8 2Z" />
+  </svg>
+);
+
 export const HOS_SIDEBAR_MENUS = [
   {
     name: '병원 홈',
@@ -48,6 +66,13 @@ export const HOS_SIDEBAR_MENUS = [
     icon: <HeartPulse />,
   },
   {
+    name: '치과',
+    path: 'dental',
+    isReady: true,
+    isVetOnly: false,
+    icon: <ToothIcon />,
+  },
+  {
     name: '진료노트',
     path: 'notes',
     isReady: true,
@@ -69,3 +94,4 @@ export const HOS_SIDEBAR_MENUS = [
     icon: <Building />,
   },
 ] as const
+

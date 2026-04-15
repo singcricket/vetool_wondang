@@ -18,9 +18,21 @@ import { updateMsMemo } from '@/lib/services/monitoring/update-ms'
 import SingleMsLiveMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-live-memo'
 import { deleteMsMemoImage } from '@/lib/services/monitoring/delete-ms-memo-image'
 import MsMemoImageUploadButtons from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-upload-buttons'
-import { ActivityIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
+import {
+  ActivityIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  EyeIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import useIsMobile from '@/hooks/use-is-mobile'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 type Props = {
   memo: MsMemo[]
@@ -128,6 +140,52 @@ export default function MsLiveMemoGroup({
           <span className="text-sm font-black text-emerald-700">{memoName}</span>
         </div>
         <div className="flex items-center gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 px-1.5 text-[10px] font-bold text-emerald-600 hover:bg-emerald-200/50 hover:text-emerald-700 transition-colors"
+                title="상세 보기"
+              >
+                <EyeIcon size={12} />
+                자세히
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl bg-white p-0 overflow-hidden border-none shadow-2xl overflow-y-auto max-h-[90vh]">
+              <DialogHeader className="bg-emerald-50 px-6 py-4 border-b border-emerald-100">
+                <DialogTitle className="flex items-center gap-2 text-emerald-700 text-base font-bold">
+                  <ActivityIcon size={18} />
+                  {memoName} 전체 기록
+                </DialogTitle>
+              </DialogHeader>
+              <div className="p-6 bg-white overflow-y-auto">
+                {liveMemos.length === 0 ? (
+                  <NoResultSquirrel text="기록된 내용이 없습니다" size="md" />
+                ) : (
+                  <div className="relative pl-4">
+                    <div className="absolute left-[11px] top-2 bottom-2 w-px bg-emerald-100" />
+                    {liveMemos.map((memo, i) => (
+                      <div key={memo.id + i} className="relative flex gap-3 mb-4">
+                        <div className="absolute -left-4 top-[10px] h-2.5 w-2.5 rounded-full border-2 border-emerald-400 bg-white z-10 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <SingleMsLiveMemo
+                            isMemoNameSetting={false}
+                            memo={memo}
+                            memoIndex={memo.id}
+                            handleEditMemo={handleEditMemo}
+                            onDelete={() => handleDeleteMemo(memo.id)}
+                            msData={msData}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Badge
             variant="secondary"
             className="text-[10px] font-bold px-1.5 py-0 bg-emerald-100 text-emerald-600 border-emerald-200"
@@ -201,7 +259,7 @@ export default function MsLiveMemoGroup({
               handleAddMemo()
             }
           }}
-          className="w-full rounded-none border-0 bg-white pl-3 pr-24 text-sm placeholder:text-xs placeholder:text-emerald-300 focus-visible:ring-emerald-200 resize-none"
+          className="w-full rounded-none border-0 bg-white pl-3 pr-32 text-sm placeholder:text-xs placeholder:text-emerald-300 focus-visible:ring-emerald-200 resize-none"
         />
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
           <MsMemoImageUploadButtons
@@ -215,6 +273,14 @@ export default function MsLiveMemoGroup({
             setMemoColor={setMemoColor}
             className="static inset-auto"
           />
+          <Button
+            size="sm"
+            className="h-6 px-2 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+            onClick={() => handleAddMemo()}
+            disabled={isUpdating || isUploading || !memoInput.trim()}
+          >
+            입력
+          </Button>
         </div>
       </div>
     </div>

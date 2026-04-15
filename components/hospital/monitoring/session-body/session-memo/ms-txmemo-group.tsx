@@ -49,10 +49,6 @@ export default function MsTxMemoGroup({
   const isMobile = useIsMobile()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  useEffect(() => {
-    setIsCollapsed(isMobile)
-  }, [isMobile])
-
   const lastMemoRef = useRef<HTMLLIElement>(null)
 
   const { isUploading, cameraInputRef, galleryInputRef, handleFileUpload } =
@@ -227,7 +223,7 @@ export default function MsTxMemoGroup({
               handleAddMemo()
             }
           }}
-          className="w-full rounded-none border-0 bg-white pl-3 pr-32 text-sm placeholder:text-xs placeholder:text-blue-300 focus-visible:ring-blue-200 resize-none"
+          className="w-full rounded-none border-0 bg-white pl-3 pr-44 text-sm placeholder:text-xs placeholder:text-blue-300 focus-visible:ring-blue-200 resize-none"
         />
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
           <MsMemoSchedulePicker
@@ -247,6 +243,14 @@ export default function MsTxMemoGroup({
             setMemoColor={setMemoColor}
             className="static inset-auto"
           />
+          <Button
+            size="sm"
+            className="h-6 px-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            onClick={() => handleAddMemo()}
+            disabled={isUpdating || isUploading || !memoInput.trim()}
+          >
+            입력
+          </Button>
         </div>
       </div>
       )}

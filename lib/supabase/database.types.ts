@@ -222,10 +222,12 @@ export type Database = {
           salivary_eval: string | null
           skull_type: string | null
           species: string | null
+          tags: string | null
           tongue_eval: string | null
           tonsil_eval: string | null
           treatment_plan: string | null
           updated_at: string | null
+          user_tags: string | null
           vet_id: Json | null
           xray_findings: string | null
           xray_taken: boolean | null
@@ -258,10 +260,12 @@ export type Database = {
           salivary_eval?: string | null
           skull_type?: string | null
           species?: string | null
+          tags?: string | null
           tongue_eval?: string | null
           tonsil_eval?: string | null
           treatment_plan?: string | null
           updated_at?: string | null
+          user_tags?: string | null
           vet_id?: Json | null
           xray_findings?: string | null
           xray_taken?: boolean | null
@@ -294,10 +298,12 @@ export type Database = {
           salivary_eval?: string | null
           skull_type?: string | null
           species?: string | null
+          tags?: string | null
           tongue_eval?: string | null
           tonsil_eval?: string | null
           treatment_plan?: string | null
           updated_at?: string | null
+          user_tags?: string | null
           vet_id?: Json | null
           xray_findings?: string | null
           xray_taken?: boolean | null

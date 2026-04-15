@@ -39,9 +39,12 @@ export default function EchoTemplateGuideTab({
 }: EchoTemplateGuideTabProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [localImages, setLocalImages] = useState<EchoTemplateGuideImage[]>([])
+  const [isOrderChanged, setIsOrderChanged] = useState(false)
+  const [isSavingOrder, setIsSavingOrder] = useState(false)
 
   useEffect(() => {
     setLocalImages(guideImages)
+    setIsOrderChanged(false)
   }, [guideImages])
 
   const buttonColor = speciesColor === 'blue' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'
@@ -52,29 +55,32 @@ export default function EchoTemplateGuideTab({
     m.sections?.some((s: string) => allowedSectionIds.has(s))
   )
 
-  async function handleReorder(newList: EchoTemplateGuideImage[]) {
-    // 1. 순서가 실제로 바뀌었는지 ID 배열로 비교
-    const oldIds = localImages.map(img => img.id).join(',')
+  const handleReorder = (newList: EchoTemplateGuideImage[]) => {
+    // 1. 순서가 원래 서버 데이터(guideImages)와 달라졌는지 비교
+    const savedIds = guideImages.map(img => img.id).join(',')
     const newIds = newList.map(img => img.id).join(',')
     
-    // 2. 즉시 로컬 상태 업데이트 (ReactSortable 필수 동작)
+    // 2. 로컬 상태 업데이트
     setLocalImages(newList)
 
-    if (oldIds === newIds) return
+    // 3. 변경 여부 설정
+    setIsOrderChanged(savedIds !== newIds)
+  }
 
-    // 3. 서버에 순서 업데이트 요청
+  async function handleSaveOrder() {
+    setIsSavingOrder(true)
     try {
-      const updates = newList.map((img, index) => ({
+      const updates = localImages.map((img, index) => ({
         id: img.id,
         display_order: index
       }))
       await updateGuideImageOrder(updates)
-      // 주의: onRefresh()를 호출하면 부모의 isLoading이 true가 되면서 
-      // 이 컴포넌트 전체가 "불러오는 중..."으로 덮여 일시적 깜빡임 발생.
-      // 서버 저장이 완료되었으므로 로컬 상태만 유지해도 무방함.
+      setIsOrderChanged(false)
+      onRefresh()
     } catch (e) {
-      console.error('순서 변경 실패:', e)
-      setLocalImages(guideImages)
+      console.error('순서 저장 실패:', e)
+    } finally {
+      setIsSavingOrder(false)
     }
   }
 
@@ -107,6 +113,34 @@ export default function EchoTemplateGuideTab({
         <p className="py-4 text-center text-xs text-muted-foreground">
           등록된 가이드 이미지가 없습니다
         </p>
+      )}
+
+      {isOrderChanged && (
+        <div className="flex items-center justify-between rounded bg-amber-50 p-2 shadow-sm border border-amber-200">
+          <p className="text-[10px] font-bold text-amber-700">순서가 변경되었습니다. 저장하시겠습니까?</p>
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-7 text-xs px-2" 
+              onClick={() => {
+                setLocalImages(guideImages)
+                setIsOrderChanged(false)
+              }}
+              disabled={isSavingOrder}
+            >
+              취소
+            </Button>
+            <Button 
+              size="sm" 
+              className={cn("h-7 text-xs text-white px-3", buttonColor)}
+              onClick={handleSaveOrder}
+              disabled={isSavingOrder}
+            >
+              {isSavingOrder ? <Spinner className="text-white" /> : '순서 저장'}
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* 기존 가이드 이미지 목록 (Drag & Drop 가능) */}

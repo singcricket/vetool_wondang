@@ -3,9 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEffect, useMemo, useState } from 'react'
 import { isSameMonth, startOfMonth } from 'date-fns'
-import {
-  fetchHospitalMetadata,
-  fetchScheduleSetting,
+import { 
+  fetchHospitalMetadata, 
+  fetchScheduleSetting 
 } from '@/lib/services/hospital-home/todo'
 import { HospitalMetadata } from '../todo/todo'
 import { ScheduleSetting } from '@/types/hospital'
@@ -16,6 +16,16 @@ import ScheduleUserFilter from './schedule-user-filter'
 import ScheduleCategoryFilter from './schedule-category-filter'
 import UpsertScheduleDialog from './upsert-schedule-dialog'
 import TimeTableSettingsDialog from './time-table-settings-dialog'
+import ScheduleAuthoringTable from './schedule-authoring-table'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog'
+import { Edit2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 type Props = {
   hosId: string
@@ -41,6 +51,8 @@ export default function TimeTable({
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string[]>(
     [],
   )
+
+  const [isAuthoringOpen, setIsAuthoringOpen] = useState(false)
 
   useEffect(() => {
     if (!hosId) return
@@ -103,15 +115,45 @@ export default function TimeTable({
       <CardHeader className="p-4 bg-white rounded-t-sm border shadow-sm mb-4">
         <CardTitle>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-lg">
-              <h4 className="font-bold text-slate-800">📅 Hospital Schedule</h4>
-              <UpsertScheduleDialog
-                hosId={hosId}
-                date={selectedDate}
-                refetch={refetch}
-                metadata={metadata}
-              />
-              <TimeTableSettingsDialog hosId={hosId} />
+            <div className="flex items-center gap-4">
+              <h4 className="font-bold text-slate-800 text-lg">📅 Hospital Schedule</h4>
+              
+              <div className="flex items-center gap-2">
+                <UpsertScheduleDialog
+                  hosId={hosId}
+                  date={selectedDate}
+                  refetch={refetch}
+                  metadata={metadata}
+                />
+                
+                <Dialog open={isAuthoringOpen} onOpenChange={setIsAuthoringOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-9 w-9 border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700">
+                      <Edit2 size={16} />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full p-0 overflow-hidden border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-slate-800/50 [&>button]:rounded-full [&>button]:hover:bg-slate-800">
+                    <DialogHeader className="hidden">
+                      <DialogTitle>스케줄 작성</DialogTitle>
+                    </DialogHeader>
+                    <div className="h-full pt-10">
+                      <ScheduleAuthoringTable
+                        hosId={hosId}
+                        selectedDate={selectedDate}
+                        setSelectedDate={setSelectedDate}
+                        metadata={metadata}
+                        scheduleSetting={scheduleSetting}
+                        refetch={async () => {
+                          await refetch()
+                        }}
+                        schedulesByDate={schedulesByDate}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <TimeTableSettingsDialog hosId={hosId} />
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
