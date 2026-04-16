@@ -39,11 +39,13 @@ import {
   AlignRightIcon,
   HighlighterIcon,
   LinkIcon,
-  Link2OffIcon
+  Link2OffIcon,
+  FileTextIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { useRef, useState, useEffect } from 'react'
-import { uploadNoteImage } from '@/lib/services/notes/upload-note-image'
+import { uploadNoteFile } from '@/lib/services/notes/upload-note-file'
+import { PdfEmbed } from './extensions/PdfEmbed'
 import { toast } from 'sonner'
 
 interface Props {
@@ -133,35 +135,75 @@ const FontSize = Extension.create({
 
 // Custom NodeView for Image Resizing
 const ImageComponent = ({ node, updateAttributes, editor }: any) => {
-  const [resizing, setResizing] = useState(false)
+  const [resizing, setResizing] = useState<string | null>(null)
   const [width, setWidth] = useState(node.attrs.width || '100%')
+  const [height, setHeight] = useState(node.attrs.height || 'auto')
   const imageRef = useRef<HTMLImageElement>(null)
   
   // Get editable state from editor
   const isEditable = editor.isEditable
 
-  const onMouseDown = (event: React.MouseEvent) => {
+  const latestWidth = useRef(node.attrs.width || '100%')
+  const latestHeight = useRef(node.attrs.height || 'auto')
+
+  const onMouseDown = (event: React.MouseEvent, mode: 'width' | 'height' | 'both') => {
     if (!isEditable) return
     
     event.preventDefault()
-    setResizing(true)
+    setResizing(mode)
 
     const startX = event.clientX
-    const startWidth = imageRef.current?.getBoundingClientRect().width || 0
+    const startY = event.clientY
+    const startWidthWidthPx = imageRef.current?.getBoundingClientRect().width || 0
+    const startHeightPx = imageRef.current?.getBoundingClientRect().height || 0
     const parentWidth = imageRef.current?.parentElement?.parentElement?.getBoundingClientRect().width || 1
+    const aspectRatio = startWidthWidthPx / startHeightPx
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const currentX = moveEvent.clientX
-      const newWidthPx = startWidth + (currentX - startX)
-      const newWidthPercent = Math.min(Math.max((newWidthPx / parentWidth) * 100, 10), 100)
+      const currentY = moveEvent.clientY
       
-      const roundedWidth = `${Math.round(newWidthPercent)}%`
-      setWidth(roundedWidth)
+      let newWidth = latestWidth.current
+      let newHeight = latestHeight.current
+
+      // Horizontal Resizing
+      if (mode === 'width' || mode === 'both') {
+        const dx = currentX - startX
+        const newWidthPx = startWidthWidthPx + dx
+        const newWidthPercent = Math.min(Math.max((newWidthPx / parentWidth) * 100, 5), 100)
+        newWidth = `${Math.round(newWidthPercent)}%`
+      }
+
+      // Vertical Resizing
+      if (mode === 'height' || mode === 'both') {
+        const dy = currentY - startY
+        const newHeightPxValue = Math.max(startHeightPx + dy, 20)
+        newHeight = `${Math.round(newHeightPxValue)}px`
+      }
+
+      // Maintain Aspect Ratio if Shift is pressed during 'both' resize
+      if (mode === 'both' && moveEvent.shiftKey) {
+          const dx = currentX - startX
+          const newWidthPx = startWidthWidthPx + dx
+          const newHeightPxValue = newWidthPx / aspectRatio
+          const newWidthPercent = Math.min(Math.max((newWidthPx / parentWidth) * 100, 5), 100)
+          
+          newWidth = `${Math.round(newWidthPercent)}%`
+          newHeight = `${Math.round(newHeightPxValue)}px`
+      }
+
+      latestWidth.current = newWidth
+      latestHeight.current = newHeight
+      setWidth(newWidth)
+      setHeight(newHeight)
     }
 
     const onMouseUp = () => {
-      setResizing(false)
-      updateAttributes({ width })
+      setResizing(null)
+      updateAttributes({ 
+        width: latestWidth.current, 
+        height: latestHeight.current 
+      })
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
     }
@@ -170,13 +212,16 @@ const ImageComponent = ({ node, updateAttributes, editor }: any) => {
     document.addEventListener('mouseup', onMouseUp)
   }
 
-  // Update local width when node attributes change
+  // Update local dimensions when node attributes change
   useEffect(() => {
     setWidth(node.attrs.width || '100%')
-  }, [node.attrs.width])
+    setHeight(node.attrs.height || 'auto')
+    latestWidth.current = node.attrs.width || '100%'
+    latestHeight.current = node.attrs.height || 'auto'
+  }, [node.attrs.width, node.attrs.height])
 
   return (
-    <NodeViewWrapper className="relative inline-block leading-none group" style={{ width }}>
+    <NodeViewWrapper className="relative inline-block leading-none group" style={{ width, height }}>
       <img
         ref={imageRef}
         src={node.attrs.src}
@@ -186,26 +231,51 @@ const ImageComponent = ({ node, updateAttributes, editor }: any) => {
           "rounded-lg shadow-md border border-slate-200 transition-shadow",
           resizing ? "ring-2 ring-blue-500 shadow-xl" : (isEditable ? "group-hover:ring-2 group-hover:ring-blue-300" : "")
         )}
-        style={{ width: '100%', height: 'auto' }}
+        style={{ width: '100%', height: '100%', objectFit: (height === 'auto' ? 'contain' : 'fill') }}
       />
       
-      {/* Resize Handle - Only show if editable */}
+      {/* Edit Handles - Only show if editable */}
       {isEditable && (
-        <div
-          className={cn(
-            "absolute bottom-2 right-2 w-4 h-4 bg-blue-600 rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg pointer-events-auto z-10",
-            resizing && "opacity-100 scale-125"
-          )}
-          onMouseDown={onMouseDown}
-        >
-          <div className="w-1.5 h-1.5 border-r-2 border-b-2 border-white" />
-        </div>
+        <>
+          {/* Right Handle (Width only) */}
+          <div
+            className={cn(
+                "absolute top-0 -right-1 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 flex items-center justify-center z-10",
+                resizing === 'width' && "opacity-100"
+            )}
+            onMouseDown={(e) => onMouseDown(e, 'width')}
+          >
+              <div className="w-1 h-8 bg-blue-500 rounded-full" />
+          </div>
+
+          {/* Bottom Handle (Height only) */}
+          <div
+            className={cn(
+                "absolute -bottom-1 left-0 w-full h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 flex items-center justify-center z-10",
+                resizing === 'height' && "opacity-100"
+            )}
+            onMouseDown={(e) => onMouseDown(e, 'height')}
+          >
+              <div className="h-1 w-8 bg-blue-500 rounded-full" />
+          </div>
+
+          {/* Corner Handle (Both) */}
+          <div
+            className={cn(
+                "absolute -bottom-2 -right-2 w-5 h-5 bg-blue-600 rounded-full cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-transform flex items-center justify-center shadow-lg z-20",
+                resizing === 'both' && "opacity-100 scale-125 bg-blue-700"
+            )}
+            onMouseDown={(e) => onMouseDown(e, 'both')}
+          >
+            <div className="w-2 h-2 border-r-2 border-b-2 border-white" />
+          </div>
+        </>
       )}
 
       {/* Size Indicator */}
-      {(resizing || (isEditable && node.attrs.width)) && (
-        <div className="absolute top-2 right-2 bg-slate-900/75 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-          {width}
+      {(resizing || isEditable) && (
+        <div className="absolute top-2 right-2 bg-slate-900/75 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30 pointer-events-none">
+          {width} × {height === 'auto' ? 'auto' : height}
         </div>
       )}
     </NodeViewWrapper>
@@ -222,6 +292,15 @@ const ResizableImage = Image.extend({
         renderHTML: attributes => {
           return {
             style: `width: ${attributes.width}; max-width: 100%;`,
+          }
+        },
+      },
+      height: {
+        default: 'auto',
+        parseHTML: element => element.style.height,
+        renderHTML: attributes => {
+          return {
+            style: `height: ${attributes.height};`,
           }
         },
       },
@@ -255,6 +334,7 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
       ResizableImage.configure({
         allowBase64: true,
       }),
+      PdfEmbed,
       TextStyle,
       Color,
       FontFamily,
@@ -279,17 +359,32 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
     }
   }, [editable])
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !editor) return
 
-    const toastId = toast.loading('이미지를 업로드 중입니다...')
+    const isImage = file.type.startsWith('image/')
+    const isPdf = file.type === 'application/pdf'
+
+    const toastId = toast.loading(`${isImage ? '이미지' : '파일'}을 업로드 중입니다...`)
     try {
-      const { url, error } = await uploadNoteImage(file, hosId)
+      const { url, error, fileName } = await uploadNoteFile(file, hosId)
       if (error) throw new Error(error)
       if (url) {
-        editor.chain().focus().setImage({ src: url }).run()
-        toast.success('이미지가 삽입되었습니다.', { id: toastId })
+        if (isImage) {
+          editor.chain().focus().setImage({ src: url }).run()
+          toast.success('이미지가 삽입되었습니다.', { id: toastId })
+        } else if (isPdf) {
+          (editor.chain().focus() as any).setPdf({ 
+            src: url,
+            fileName: fileName 
+          }).run()
+          toast.success('PDF가 본문에 삽입되었습니다.', { id: toastId })
+        } else {
+          // For other files, we could just insert a link
+          editor.chain().focus().setLink({ href: url }).insertContent(file.name).run()
+          toast.success('파일 링크가 생성되었습니다.', { id: toastId })
+        }
       }
     } catch (error: any) {
       toast.error(`업로드 실패: ${error.message}`, { id: toastId })
@@ -325,7 +420,7 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
 
   return (
     <div className={cn(
-       "w-full overflow-x-auto bg-white",
+       "w-full bg-white",
        editable ? "border border-slate-200 rounded-2xl shadow-sm ring-1 ring-slate-100" : ""
     )}>
       {/* Toolbar - Only if editable */}
@@ -515,17 +610,34 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
           </MenuButton>
 
           <MenuButton
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+                if (fileInputRef.current) {
+                    fileInputRef.current.accept = 'image/*'
+                    fileInputRef.current.click()
+                }
+            }}
             title="이미지 업로드"
           >
             <ImageIcon size={16} strokeWidth={2.5} />
           </MenuButton>
+
+          <MenuButton
+            onClick={() => {
+                if (fileInputRef.current) {
+                    fileInputRef.current.accept = 'application/pdf'
+                    fileInputRef.current.click()
+                }
+            }}
+            title="PDF 업로드"
+          >
+            <FileTextIcon size={16} strokeWidth={2.5} />
+          </MenuButton>
+
           <input 
             type="file" 
             hidden 
             ref={fileInputRef} 
-            accept="image/*" 
-            onChange={handleImageUpload}
+            onChange={handleFileUpload}
           />
 
           <div className="flex-1" />
@@ -562,9 +674,8 @@ export default function NotesEditor({ content, onChange, hosId, editable = true 
          </div>
       )}
 
-      {/* Editor Content */}
       <div className={cn(
-        "relative cursor-text bg-white",
+        "relative cursor-text bg-white overflow-x-auto",
         editable ? "min-h-[600px]" : "cursor-default"
       )} onClick={() => editable && editor.chain().focus().run()}>
         <EditorContent editor={editor} />

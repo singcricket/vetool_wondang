@@ -296,7 +296,7 @@ export default function NotesCreateForm({ isDialog = false, onDone, onCancel, ed
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm ring-1 ring-slate-100 mt-2">
+          <div className="mt-2">
             <NotesEditor 
                content={content} 
                onChange={setContent} 
