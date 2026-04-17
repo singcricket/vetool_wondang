@@ -11,14 +11,14 @@ type Props = {
   startTime: string | null
   endTime: string | null
   sessionId: string
+  dueDate: string | null
 }
-
-
 
 export default function MsTimeIndicator({
   endTime,
   startTime,
   sessionId,
+  dueDate,
 }: Props) {
   const { formatted } = useMsTimer(startTime, endTime)
   
@@ -54,6 +54,7 @@ export default function MsTimeIndicator({
             startTime={startTime}
             endTime={endTime}
             sessionId={sessionId}
+            dueDate={dueDate}
           />
           <div className="flex items-center gap-3">
             <p className="text-xl font-semibold tracking-tight">시작: {new Date(startTime).toTimeString().slice(0, 8)}</p>
@@ -71,6 +72,7 @@ export default function MsTimeIndicator({
             startTime={startTime}
             endTime={endTime}
             sessionId={sessionId}
+            dueDate={dueDate}
           />
            <div className="flex items-center gap-3">
             <p className="text-l font-semibold tracking-tight text-muted-foreground">

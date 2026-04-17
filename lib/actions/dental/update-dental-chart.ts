@@ -9,7 +9,7 @@ export async function updateDentalChart(
   chartId: string,
   hosId: string,
   data: Partial<
-    Omit<DentalChartDetail, 'id' | 'hos_id' | 'patient_id' | 'chart_date' | 'created_at' | 'updated_at' | 'patient' | 'vet_id'>
+    Omit<DentalChartDetail, 'id' | 'hos_id' | 'patient_id' | 'chart_date' | 'created_at' | 'updated_at' | 'patient'>
   >,
 ): Promise<void> {
   const supabase = await createClient()

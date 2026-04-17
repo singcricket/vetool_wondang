@@ -69,7 +69,7 @@ export const HOS_SIDEBAR_MENUS = [
     name: '치과',
     path: 'dental',
     isReady: true,
-    isVetOnly: false,
+    isVetOnly: true,
     icon: <ToothIcon />,
   },
   {

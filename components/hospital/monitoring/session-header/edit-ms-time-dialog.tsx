@@ -20,15 +20,17 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 type Props = {
-  startTime: string | null// 2025-10-17T07:42:48.866+00:00
+  startTime: string | null // 2025-10-17T07:42:48.866+00:00
   endTime: string | null
   sessionId: string
+  dueDate: string | null
 }
 
 export default function EditMsTimeDialog({
   startTime,
   endTime,
   sessionId,
+  dueDate,
 }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -45,8 +47,8 @@ export default function EditMsTimeDialog({
 
     updateMsTime(
       sessionId,
-      localTimeToUTCISO(startTimeInput),
-      localTimeToUTCISO(endTimeInput),
+      localTimeToUTCISO(startTimeInput, dueDate),
+      localTimeToUTCISO(endTimeInput, dueDate),
     )
 
     toast.success('시간을 변경하였습니다')
@@ -60,7 +62,7 @@ export default function EditMsTimeDialog({
     setIsUpdating(true)
     updateMsTime(
       sessionId,
-      localTimeToUTCISO(startTimeInput),
+      localTimeToUTCISO(startTimeInput, dueDate),
       null,
     )
     toast.success('모니터링 종료를 취소하였습니다')
@@ -101,18 +103,20 @@ export default function EditMsTimeDialog({
 
             {endTime && <span>/</span>}
 
-            {endTime && <div className="flex items-center gap-2">
-              <Label className="shrink-0" htmlFor="startTime">
-                종료 :
-              </Label>
-              <Input
-                id="startTime"
-                name="startTime"
-                type="time"
-                value={endTimeInput}
-                onChange={(e) => setEndTimeInput(e.target.value)}
-              />
-            </div>}
+            {endTime && (
+              <div className="flex items-center gap-2">
+                <Label className="shrink-0" htmlFor="endTime">
+                  종료 :
+                </Label>
+                <Input
+                  id="endTime"
+                  name="endTime"
+                  type="time"
+                  value={endTimeInput}
+                  onChange={(e) => setEndTimeInput(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter className="mt-4">
@@ -121,11 +125,13 @@ export default function EditMsTimeDialog({
                 닫기
               </Button>
             </DialogClose>
-            {endTime && <DialogClose asChild>
-              <Button variant="outline" size="sm" onClick={handleCancelEnd}>
-                종료취소
-              </Button>
-            </DialogClose>}
+            {endTime && (
+              <DialogClose asChild>
+                <Button variant="outline" size="sm" onClick={handleCancelEnd}>
+                  종료취소
+                </Button>
+              </DialogClose>
+            )}
 
             <DialogClose asChild>
               <Button variant="secondary" size="sm" onClick={handleReset}>
@@ -133,11 +139,7 @@ export default function EditMsTimeDialog({
               </Button>
             </DialogClose>
 
-            <SubmitButton
-              buttonText="변경"
-              isPending={isUpdating}
-              type="submit"
-            />
+            <SubmitButton buttonText="변경" isPending={isUpdating} type="submit" />
           </DialogFooter>
         </form>
       </DialogContent>
@@ -150,13 +152,15 @@ function formatTimeToHHMM(dateString: string | null) {
   return new Date(dateString).toTimeString().substring(0, 5)
 }
 
-function localTimeToUTCISO(timeStr: string | null) {
+function localTimeToUTCISO(timeStr: string | null, dueDate: string | null) {
   if (!timeStr || timeStr === '') return null
-  const now = new Date()
   const [hours, minutes] = timeStr.split(':').map(Number)
 
-  // 오늘 날짜 + 입력 시간으로 새 Date 객체 생성 (로컬 기준)
-  const localDate = set(now, {
+  // dueDate가 있으면 해당 날짜를 기준으로, 없으면 오늘 날짜를 기준으로 설정
+  const baseDate = dueDate ? new Date(dueDate) : new Date()
+
+  // 해당 날짜 + 입력 시간으로 새 Date 객체 생성 (로컬 기준)
+  const localDate = set(baseDate, {
     hours,
     minutes,
     seconds: 0,

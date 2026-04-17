@@ -75,6 +75,8 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
         id: Math.random().toString(36).substring(7),
         name: '',
         color: DEFAULT_COLORS[categories.length % DEFAULT_COLORS.length],
+        start_time: '',
+        end_time: '',
       },
     ])
   }
@@ -86,6 +88,8 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
         id: Math.random().toString(36).substring(7),
         name: '',
         color: DEFAULT_COLORS[hiddenCategories.length % DEFAULT_COLORS.length],
+        start_time: '',
+        end_time: '',
       },
     ])
   }
@@ -116,7 +120,7 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle>일정 카테고리 설정</DialogTitle>
           <DialogDescription>
@@ -145,9 +149,11 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
           </div>
 
           <TabsContent value="standard" className="flex-1 overflow-y-auto px-6 py-6 min-h-0 m-0 space-y-4">
-            <div className="grid grid-cols-[30px_1fr_120px_40px] gap-4 px-2 text-xs font-semibold text-muted-foreground uppercase">
+            <div className="grid grid-cols-[30px_1fr_120px_120px_120px_40px] gap-2 px-2 text-[10px] font-bold text-muted-foreground uppercase">
               <div></div>
               <div>카테고리 이름</div>
+              <div>시작 시간</div>
+              <div>종료 시간</div>
               <div>표시 색상</div>
               <div></div>
             </div>
@@ -162,13 +168,13 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="grid grid-cols-[30px_1fr_120px_40px] gap-4 items-center bg-slate-50 p-2 rounded border"
+                  className="grid grid-cols-[30px_1fr_120px_120px_120px_40px] gap-2 items-center bg-white p-2 rounded border hover:border-primary/30 transition-colors"
                 >
                   <div className="handle cursor-move flex justify-center text-slate-400 hover:text-slate-600">
                     <GripVertical className="h-4 w-4" />
                   </div>
                   <Input
-                    className="h-9"
+                    className="h-8 text-sm"
                     placeholder="예: 수술, 진료, 세미나"
                     value={category.name}
                     onChange={(e) =>
@@ -181,14 +187,42 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
                       )
                     }
                   />
+                  <Input
+                    type="time"
+                    className="h-8 text-xs"
+                    value={category.start_time || ''}
+                    onChange={(e) =>
+                      setCategories(
+                        categories.map((c) =>
+                          c.id === category.id
+                            ? { ...c, start_time: e.target.value }
+                            : c,
+                        ),
+                      )
+                    }
+                  />
+                  <Input
+                    type="time"
+                    className="h-8 text-xs"
+                    value={category.end_time || ''}
+                    onChange={(e) =>
+                      setCategories(
+                        categories.map((c) =>
+                          c.id === category.id
+                            ? { ...c, end_time: e.target.value }
+                            : c,
+                        ),
+                      )
+                    }
+                  />
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-6 h-6 rounded border shrink-0"
+                      className="w-5 h-5 rounded border shrink-0"
                       style={{ backgroundColor: category.color }}
                     />
                     <Input
                       type="color"
-                      className="h-9 p-1 w-full"
+                      className="h-8 p-0.5 w-full cursor-pointer"
                       value={category.color}
                       onChange={(e) =>
                         setCategories(
@@ -207,7 +241,7 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
                     onClick={() =>
                       setCategories(categories.filter((c) => c.id !== category.id))
                     }
-                    className="text-destructive hover:bg-destructive/10"
+                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -241,9 +275,11 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
                 </p>
               </div>
 
-              <div className="grid grid-cols-[30px_1fr_120px_40px] gap-4 px-2 text-xs font-semibold text-muted-foreground uppercase">
+              <div className="grid grid-cols-[30px_1fr_120px_120px_120px_40px] gap-2 px-2 text-[10px] font-bold text-muted-foreground uppercase">
                 <div></div>
                 <div>히든 카테고리 이름</div>
+                <div>시작 시간</div>
+                <div>종료 시간</div>
                 <div>표시 색상</div>
                 <div></div>
               </div>
@@ -258,13 +294,13 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
                 {hiddenCategories.map((category) => (
                   <div
                     key={category.id}
-                    className="grid grid-cols-[30px_1fr_120px_40px] gap-4 items-center bg-slate-50 p-2 rounded border"
+                    className="grid grid-cols-[30px_1fr_120px_120px_120px_40px] gap-2 items-center bg-white p-2 rounded border hover:border-primary/30 transition-colors"
                   >
                     <div className="handle cursor-move flex justify-center text-slate-400 hover:text-slate-600">
                       <GripVertical className="h-4 w-4" />
                     </div>
                     <Input
-                      className="h-9"
+                      className="h-8 text-sm"
                       placeholder="예: 내부회의, 보완사항"
                       value={category.name}
                       onChange={(e) =>
@@ -277,14 +313,42 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
                         )
                       }
                     />
+                    <Input
+                      type="time"
+                      className="h-8 text-xs"
+                      value={category.start_time || ''}
+                      onChange={(e) =>
+                        setHiddenCategories(
+                          hiddenCategories.map((c) =>
+                            c.id === category.id
+                              ? { ...c, start_time: e.target.value }
+                              : c,
+                          ),
+                        )
+                      }
+                    />
+                    <Input
+                      type="time"
+                      className="h-8 text-xs"
+                      value={category.end_time || ''}
+                      onChange={(e) =>
+                        setHiddenCategories(
+                          hiddenCategories.map((c) =>
+                            c.id === category.id
+                              ? { ...c, end_time: e.target.value }
+                              : c,
+                          ),
+                        )
+                      }
+                    />
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-6 h-6 rounded border shrink-0"
+                        className="w-5 h-5 rounded border shrink-0"
                         style={{ backgroundColor: category.color }}
                       />
                       <Input
                         type="color"
-                        className="h-9 p-1 w-full"
+                        className="h-8 p-0.5 w-full cursor-pointer"
                         value={category.color}
                         onChange={(e) =>
                           setHiddenCategories(
@@ -303,7 +367,7 @@ export default function TimeTableSettingsDialog({ hosId, isAdmin }: { hosId: str
                       onClick={() =>
                         setHiddenCategories(hiddenCategories.filter((c) => c.id !== category.id))
                       }
-                      className="text-destructive hover:bg-destructive/10"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

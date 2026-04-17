@@ -25,6 +25,8 @@ export type ScheduleCategory = {
   id: string
   name: string
   color: string
+  start_time?: string
+  end_time?: string
 }
 
 export type ScheduleSetting = {

@@ -19,12 +19,14 @@ interface DentalRegisterDialogProps {
   hosId: string
   targetDate: string
   onRegistered: () => void
+  className?: string
 }
 
 export default function DentalRegisterDialog({
   hosId,
   targetDate,
   onRegistered,
+  className,
 }: DentalRegisterDialogProps) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState('search')
@@ -37,8 +39,11 @@ export default function DentalRegisterDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="shrink-0 pr-4 text-sm">
-          <PlusIcon />
+        <Button
+          size="sm"
+          className={cn('shrink-0 pr-4 text-sm', className)}
+        >
+          <PlusIcon size={16} />
           치과차트 등록
         </Button>
       </DialogTrigger>

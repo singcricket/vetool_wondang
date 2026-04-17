@@ -297,9 +297,19 @@ export default function ScheduleAuthoringTable({
           const targetId = change.existingId || findMatchingScheduleId(dateStr, change.staffId, change.category.name)
           
           const startTime = new Date(change.date)
-          startTime.setHours(9, 0, 0, 0)
           const endTime = new Date(change.date)
-          endTime.setHours(18, 0, 0, 0)
+          
+          const hasCategoryTimes = change.category?.start_time && change.category?.end_time
+          
+          if (hasCategoryTimes) {
+            const [sH, sM] = change.category!.start_time!.split(':').map(Number)
+            const [eH, eM] = change.category!.end_time!.split(':').map(Number)
+            startTime.setHours(sH, sM, 0, 0)
+            endTime.setHours(eH, eM, 0, 0)
+          } else {
+            startTime.setHours(9, 0, 0, 0)
+            endTime.setHours(18, 0, 0, 0)
+          }
 
           await upsertSchedule({
             id: targetId,
@@ -309,7 +319,7 @@ export default function ScheduleAuthoringTable({
             color: change.category.color,
             start_time: startTime.toISOString(),
             end_time: endTime.toISOString(),
-            is_all_day: true,
+            is_all_day: !hasCategoryTimes,
             target_users: [change.staffId],
             content: null,
             location: null,

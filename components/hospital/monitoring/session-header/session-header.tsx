@@ -29,6 +29,7 @@ export default function SessionHeader({
         startTime={start_time}
         endTime={end_time}
         sessionId={msData.session_id}
+        dueDate={msData.due_date}
       />
 
       <MsPatientUpdateDialog

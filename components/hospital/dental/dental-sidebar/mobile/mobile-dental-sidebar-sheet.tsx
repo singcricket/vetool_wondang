@@ -1,55 +1,63 @@
 'use client'
 
-import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Menu } from 'lucide-react'
-import DentalDesktopSidebar from '../dental-desktop-sidebar'
-import type { DentalSidebarItem } from '@/types/dental/dental-type'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { MenuIcon } from 'lucide-react'
+import { useState } from 'react'
+import { MobileDentalSidebar } from './mobile-dental-sidebar'
+import { DentalSidebarItem } from '@/types/dental/dental-type'
 
-interface MobileDentalSidebarSheetProps {
-  hosId: string
-  targetDate: string
+type Props = {
   items: DentalSidebarItem[]
+  targetDate: string
+  hosId: string
 }
 
 export function MobileDentalSidebarSheet({
-  hosId,
-  targetDate,
   items,
-}: MobileDentalSidebarSheetProps) {
-  const [open, setOpen] = useState(false)
+  targetDate,
+  hosId,
+}: Props) {
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+
+  const handleCloseMobileDrawer = () => setIsSheetOpen(false)
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="fixed left-4 top-24 z-40 2xl:hidden"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-[240px] p-0 sm:w-[300px]">
-        <SheetHeader className="sr-only">
-          <SheetTitle>치과차트 메뉴</SheetTitle>
-        </SheetHeader>
-        <div className="h-full pt-10">
-          <DentalDesktopSidebar
-            hosId={hosId}
-            targetDate={targetDate}
+    <div className="2xl:hidden">
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetTrigger asChild>
+          <Button
+            className="fixed left-0 top-0 z-40 h-10 w-10 rounded-none shadow-md"
+            size="icon"
+          >
+            <MenuIcon size={20} />
+          </Button>
+        </SheetTrigger>
+
+        <SheetContent side="left" className="w-[240px] px-0 py-2" noCloseButton>
+          <VisuallyHidden>
+            <SheetHeader>
+              <SheetTitle />
+              <SheetDescription />
+            </SheetHeader>
+          </VisuallyHidden>
+
+          <MobileDentalSidebar
+            handleCloseMobileDrawer={handleCloseMobileDrawer}
             items={items}
-            handleCloseMobileDrawer={() => setOpen(false)}
+            targetDate={targetDate}
+            hosId={hosId}
           />
-        </div>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
+    </div>
   )
 }

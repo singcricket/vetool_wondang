@@ -41,7 +41,7 @@ export default function DentalChartSvgPanel({
           selectedToothId={selectedToothId}
           onToothClick={onToothClick}
           /* SVG 원본 비율(1420×680) 유지하며 컨테이너에 맞게 축소/확대 */
-          style={{ width: '100%', height: 'auto', minWidth: '840px', display: 'block' }}
+          style={{ width: '100%', height: 'auto', display: 'block' }}
           viewBox="0 0 1420 680"
         />
       </div>

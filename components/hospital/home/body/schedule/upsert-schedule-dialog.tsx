@@ -160,6 +160,43 @@ export default function UpsertScheduleDialog({
     }
   }, [isDialogOpen, hosId])
 
+  // 카테고리 선택 시 기본 시간 자동 입력 로직
+  const categoryValue = form.watch('category')
+  useEffect(() => {
+    if (!scheduleSetting || !categoryValue) return
+
+    // 수정 모드이고 초기 진입 시(카테고리가 기존과 같은 경우)에는 자동 입력 방지
+    if (isEdit && categoryValue === schedule?.category) return
+
+    const allCategories = [
+      ...(scheduleSetting.schedule_categories || []),
+      ...(scheduleSetting.hidden_categories || []),
+    ]
+
+    const selectedCategory = allCategories.find((c) => c.name === categoryValue)
+
+    if (
+      selectedCategory &&
+      selectedCategory.start_time &&
+      selectedCategory.end_time
+    ) {
+      const [sH, sM] = selectedCategory.start_time.split(':').map(Number)
+      const [eH, eM] = selectedCategory.end_time.split(':').map(Number)
+
+      const currentStart = new Date(form.getValues('start_time'))
+      const currentEnd = new Date(form.getValues('end_time'))
+
+      currentStart.setHours(sH, sM, 0, 0)
+      currentEnd.setHours(eH, eM, 0, 0)
+
+      form.setValue('start_time', currentStart)
+      form.setValue('end_time', currentEnd)
+      
+      // 종일 일정이 해제되도록 처리 (시간이 지정되어 있으므로)
+      form.setValue('is_all_day', false)
+    }
+  }, [categoryValue, scheduleSetting, form, isEdit, schedule?.category])
+
   const handleUpsertSchedule = async (
     values: z.infer<typeof scheduleSchema>,
   ) => {
