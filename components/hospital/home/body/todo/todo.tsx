@@ -20,12 +20,16 @@ export type HospitalMetadata = {
     position: string
     group: string[] | null
     is_vet: boolean
+    is_admin: boolean
   }[]
   groups: string[]
+  master_user_id: string
 }
 
 type TodoProps = {
   hosId: string
+  metadata: HospitalMetadata
+  loggedInUserId: string
   activeFilter: 'all' | 'done' | 'not-done'
   setActiveFilter: Dispatch<SetStateAction<'all' | 'done' | 'not-done'>>
   selectedUserFilter: string[]
@@ -34,36 +38,17 @@ type TodoProps = {
 
 export default function Todo({
   hosId,
+  metadata,
+  loggedInUserId,
   activeFilter,
   setActiveFilter,
   selectedUserFilter,
   setSelectedUserFilter,
 }: TodoProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
-  const [metadata, setMetadata] = useState<HospitalMetadata>({
-    users: [],
-    groups: [],
-  })
 
   // 날짜 선택 상태를 부모에서 관리하여 달력과 리스트를 동기화함
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-
-  useEffect(() => {
-    if (!hosId) return
-
-    const loadMetadata = async () => {
-      try {
-        const data = await fetchHospitalMetadata(hosId)
-        if (data && 'users' in data && 'groups' in data) {
-          setMetadata(data as HospitalMetadata)
-        }
-      } catch (error) {
-        console.error('Failed to load hospital metadata:', error)
-      }
-    }
-
-    loadMetadata()
-  }, [hosId])
 
   const { todosByDate, refetch, isFetching } = useMonthTodos(
     hosId,
@@ -79,24 +64,63 @@ export default function Todo({
   }, [selectedDate])
 
   const filteredTodosByDate = useMemo(() => {
-    if (selectedUserFilter.length === 0) return todosByDate
+    const filterIds = selectedUserFilter;
+    const filterNames = selectedUserFilter
+      .map(id => metadata.users.find(u => u.user_id === id)?.name)
+      .filter(Boolean) as string[];
 
-    const result: Record<string, ClientTodo[]> = {}
-    Object.entries(todosByDate).forEach(([date, todos]) => {
-      result[date] = todos.filter((todo) => {
-        const targets = (todo.target_user || '').split(',').filter(Boolean)
-        
-        // 담당자가 없는 경우 '미지정' 필터가 켜져 있으면 포함
-        if (targets.length === 0) {
-          return selectedUserFilter.includes('미정') || selectedUserFilter.includes('미지정')
+      const result: Record<string, ClientTodo[]> = {}
+      Object.entries(todosByDate).forEach(([date, todos]) => {
+        result[date] = todos.filter((todo) => {
+          const targets = (todo.target_user || '').split(',').filter(Boolean)
+          const isCreator = todo.user_id === loggedInUserId
+          const currentUser = metadata.users.find(u => u.user_id === loggedInUserId)
+          const isMaster = currentUser?.is_admin === true
+          const isUnassigned = targets.length === 0
+          
+          const targetedGroups = targets.filter(t => metadata.groups.includes(t))
+          
+          // --- 1. 접근 권한 체크 (Accessibility Check) ---
+          let isAccessible = false
+          if (isCreator || isUnassigned || targets.includes(loggedInUserId || '')) {
+            isAccessible = true
+          } else {
+            const myGroups = currentUser?.group || []
+            const isTargetedAtMyGroup = targetedGroups.some(g => myGroups.includes(g))
+            
+            if (isTargetedAtMyGroup) {
+              isAccessible = true
+            } else if (isMaster && targetedGroups.length > 0) {
+              // 마스터는 '그룹'이 하나라도 포함된 경우 모든 그룹 메시지 열람 가능
+              isAccessible = true
+            }
+          }
+
+        if (!isAccessible) return false
+
+        // --- 2. UI 필터링 체크 (UI Filter Logic) ---
+        if (selectedUserFilter.length === 0) return true
+
+        // A. 담당자가 없는 경우 '미지정' 필터 확인
+        if (isUnassigned && (selectedUserFilter.includes('미정') || selectedUserFilter.includes('미지정'))) {
+          return true
         }
         
-        // 특정 담당자와 매칭되는지 확인
-        return targets.some((t) => selectedUserFilter.includes(t))
+        // B. 관리자/유저/그룹 필터 확인 (ID 또는 이름 매칭)
+        if (targets.some((t) => filterIds.includes(t) || filterNames.includes(t))) {
+          return true
+        }
+
+        // C. 내가 작성한 글 필터 확인
+        if (selectedUserFilter.includes('__created_by_me__') && isCreator) {
+          return true
+        }
+
+        return false
       })
     })
     return result
-  }, [todosByDate, selectedUserFilter])
+  }, [todosByDate, selectedUserFilter, metadata.users, loggedInUserId])
 
   return (
     <Card className="w-full rounded-sm border-none shadow-none bg-transparent">
@@ -107,6 +131,7 @@ export default function Todo({
               <h4 className="font-bold text-slate-800">📋 TODO Dashboard</h4>
               <UpsertTodoDialog
                 hosId={hosId}
+                loggedInUserId={loggedInUserId}
                 date={selectedDate} // 현재 선택된 날짜에 추가되도록 설정
                 refetch={refetch}
                 metadata={metadata}
@@ -116,6 +141,7 @@ export default function Todo({
             <div className="flex flex-wrap items-center gap-2">
               <TodoUserFilter
                 metadata={metadata}
+                loggedInUserId={loggedInUserId}
                 selectedValues={selectedUserFilter}
                 onSelectionChange={setSelectedUserFilter}
               />
@@ -150,6 +176,7 @@ export default function Todo({
           <div className="flex-[1.2] bg-white p-4 rounded-sm border shadow-sm min-w-[320px]">
              <TodoMobile
                 hosId={hosId}
+                loggedInUserId={loggedInUserId}
                 activeFilter={activeFilter}
                 todosByDate={todosByDate} 
                 selectedUserFilter={selectedUserFilter}

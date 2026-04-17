@@ -58,6 +58,7 @@ import { HospitalMetadata } from './todo'
 
 type Props = {
   hosId: string
+  loggedInUserId: string
   date: Date
   isEdit?: boolean
   refetch: () => Promise<void>
@@ -67,6 +68,7 @@ type Props = {
 
 export default function UpsertTodoDialog({
   hosId,
+  loggedInUserId,
   date,
   isEdit,
   refetch,
@@ -96,9 +98,14 @@ export default function UpsertTodoDialog({
   const options = useMemo(() => {
     if (!metadata) return []
     const groups = metadata.groups.map(g => ({ label: g, value: g, type: 'group' }))
-    const users = metadata.users.map(u => ({ label: u.name, value: u.name, type: 'user' }))
+    const users = metadata.users.map(u => ({ label: u.name, value: u.user_id, type: 'user' }))
     return [...groups, ...users]
   }, [metadata])
+
+  const getValueLabel = (val: string) => {
+    const found = options.find((o) => o.value === val)
+    return found ? found.label : val
+  }
 
   const handleUpsertTodo = async (values: z.infer<typeof todoSchema>) => {
     const { todo_title, target_user, target_date } = values
@@ -109,6 +116,7 @@ export default function UpsertTodoDialog({
       target_user,
       formatDateToISOString(target_date),
       hosId,
+      loggedInUserId,
       todo?.id,
     )
 
@@ -228,7 +236,7 @@ export default function UpsertTodoDialog({
                           {selectedUsers.length > 0 ? (
                             selectedUsers.map((user) => (
                               <Badge key={user} variant="secondary" className="flex items-center gap-1 py-0.5">
-                                {user}
+                                {getValueLabel(user)}
                                 <X 
                                   className="h-3 w-3 cursor-pointer" 
                                   onClick={(e) => {

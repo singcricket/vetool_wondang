@@ -60,6 +60,11 @@ export default function ScheduleList({
     const matching: Schedule[] = []
     const remaining: Schedule[] = []
 
+    const filterIds = selectedUserFilter;
+    const filterNames = selectedUserFilter
+      .map(id => metadata.users.find(u => u.user_id === id)?.name)
+      .filter(Boolean) as string[];
+
     allTodaySchedules.forEach((schedule) => {
       // 담당자 매칭
       const targets = schedule.target_users || []
@@ -68,7 +73,7 @@ export default function ScheduleList({
       const isUserMatch =
         selectedUserFilter.length === 0 ||
         isUnassignedMatch ||
-        targets.some((t) => selectedUserFilter.includes(t))
+        targets.some((t) => filterIds.includes(t) || filterNames.includes(t))
 
       // 카테고리 매칭
       const isCategoryMatch =
@@ -80,7 +85,7 @@ export default function ScheduleList({
     })
 
     return { matchingSchedules: matching, remainingSchedules: remaining }
-  }, [allTodaySchedules, selectedUserFilter, selectedCategoryFilter])
+  }, [allTodaySchedules, selectedUserFilter, selectedCategoryFilter, metadata.users])
 
   return (
     <div className="flex flex-col gap-4">

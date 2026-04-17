@@ -132,11 +132,16 @@ export default function UpsertScheduleDialog({
     }))
     const users = metadata.users.map((u) => ({
       label: u.name,
-      value: u.name,
+      value: u.user_id,
       type: 'user',
     }))
     return [...groups, ...users]
   }, [metadata])
+
+  const getValueLabel = (val: string) => {
+    const found = options.find((o) => o.value === val)
+    return found ? found.label : val
+  }
 
   useEffect(() => {
     if (isDialogOpen) {
@@ -457,7 +462,7 @@ export default function UpsertScheduleDialog({
                                 variant="secondary"
                                 className="flex items-center gap-1 py-0.5"
                               >
-                                {user}
+                                {getValueLabel(user)}
                                 <X
                                   className="h-3 w-3 cursor-pointer"
                                   onClick={(e) => {

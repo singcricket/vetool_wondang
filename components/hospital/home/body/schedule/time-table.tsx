@@ -29,21 +29,21 @@ import { Button } from '@/components/ui/button'
 
 type Props = {
   hosId: string
+  metadata: HospitalMetadata
+  loggedInUserId: string
   selectedUserFilter: string[]
   setSelectedUserFilter: (val: string[] | ((prev: string[]) => string[])) => void
 }
 
 export default function TimeTable({
   hosId,
+  metadata,
+  loggedInUserId,
   selectedUserFilter,
   setSelectedUserFilter,
 }: Props) {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [metadata, setMetadata] = useState<HospitalMetadata>({
-    users: [],
-    groups: [],
-  })
   const [scheduleSetting, setScheduleSetting] =
     useState<ScheduleSetting | null>(null)
 
@@ -56,19 +56,15 @@ export default function TimeTable({
 
   useEffect(() => {
     if (!hosId) return
-    const loadData = async () => {
+    const loadSetting = async () => {
       try {
-        const [meta, setting] = await Promise.all([
-          fetchHospitalMetadata(hosId),
-          fetchScheduleSetting(hosId),
-        ])
-        if (meta && 'users' in meta) setMetadata(meta as HospitalMetadata)
+        const setting = await fetchScheduleSetting(hosId)
         setScheduleSetting(setting)
       } catch (error) {
-        console.error('Failed to load data:', error)
+        console.error('Failed to load schedule setting:', error)
       }
     }
-    loadData()
+    loadSetting()
   }, [hosId])
 
   const { schedulesByDate, refetch, isFetching } = useMonthSchedules(
@@ -84,31 +80,64 @@ export default function TimeTable({
   }, [selectedDate])
 
   const filteredSchedulesByDate = useMemo(() => {
-    if (selectedUserFilter.length === 0 && selectedCategoryFilter.length === 0)
-      return schedulesByDate
-
     const result: typeof schedulesByDate = {}
     Object.entries(schedulesByDate).forEach(([date, daySchedules]) => {
       result[date] = daySchedules.filter((schedule) => {
-        // 담당자 필터
         const targets = schedule.target_users || []
-        const isUnassignedMatch =
-          targets.length === 0 && selectedUserFilter.includes('미지정')
-        const isUserMatch =
-          selectedUserFilter.length === 0 ||
-          isUnassignedMatch ||
-          targets.some((t) => selectedUserFilter.includes(t))
+        const isCreator = schedule.created_by === loggedInUserId
+        const currentUser = metadata.users.find(u => u.user_id === loggedInUserId)
+        const isMaster = currentUser?.is_admin === true
+        const isUnassigned = targets.length === 0
 
-        // 카테고리 필터
-        const isCategoryMatch =
-          selectedCategoryFilter.length === 0 ||
-          selectedCategoryFilter.includes(schedule.category || '일반')
+        const targetedGroups = targets.filter(t => metadata.groups.includes(t))
 
-        return isUserMatch && isCategoryMatch
+        // --- 1. 접근 권한 체크 (Accessibility Check) ---
+        let isAccessible = false
+        if (isCreator || isUnassigned || targets.includes(loggedInUserId || '')) {
+          isAccessible = true
+        } else {
+          const myGroups = currentUser?.group || []
+          const isTargetedAtMyGroup = targetedGroups.some(g => myGroups.includes(g))
+          
+          if (isTargetedAtMyGroup) {
+            isAccessible = true
+          } else if (isMaster && targetedGroups.length > 0) {
+            // 마스터는 '그룹'이 하나라도 포함된 경우 모든 그룹 일정 열람 가능
+            isAccessible = true
+          }
+        }
+
+        if (!isAccessible) return false
+
+        // --- 2. UI 필터링 체크 (UI Filter Logic) ---
+        if (selectedUserFilter.length === 0 && selectedCategoryFilter.length === 0)
+          return true
+
+        const filterIds = selectedUserFilter;
+        const filterNames = selectedUserFilter
+          .map(id => metadata.users.find(u => u.user_id === id)?.name)
+          .filter(Boolean) as string[];
+
+        // A. 담당자/유저/그룹 필터 확인
+        const isUserMatch = targets.some((t) => filterIds.includes(t) || filterNames.includes(t))
+        
+        // B. 미지정 필터 확인
+        const isUnassignedMatch = isUnassigned && (selectedUserFilter.includes('미정') || selectedUserFilter.includes('미지정'))
+
+        // C. 내가 작성한 글 필터 확인
+        const isCreatedByMeMatch = selectedUserFilter.includes('__created_by_me__') && isCreator
+
+        // D. 카테고리 필터 확인
+        const isCategoryMatch = selectedCategoryFilter.length === 0 || selectedCategoryFilter.includes(schedule.category || '일반')
+
+        const passesUserFilter = selectedUserFilter.length === 0 || isUserMatch || isUnassignedMatch || isCreatedByMeMatch
+        const passesCategoryFilter = isCategoryMatch
+
+        return passesUserFilter && passesCategoryFilter
       })
     })
     return result
-  }, [schedulesByDate, selectedUserFilter, selectedCategoryFilter])
+  }, [schedulesByDate, selectedUserFilter, selectedCategoryFilter, metadata.users, metadata.groups, loggedInUserId, metadata.master_user_id])
 
   return (
     <Card className="w-full rounded-sm border-none shadow-none bg-transparent">
@@ -139,6 +168,7 @@ export default function TimeTable({
                     <div className="h-full pt-10">
                       <ScheduleAuthoringTable
                         hosId={hosId}
+                        loggedInUserId={loggedInUserId}
                         selectedDate={selectedDate}
                         setSelectedDate={setSelectedDate}
                         metadata={metadata}
@@ -159,6 +189,7 @@ export default function TimeTable({
             <div className="flex flex-wrap items-center gap-2">
               <ScheduleUserFilter
                 metadata={metadata}
+                loggedInUserId={loggedInUserId}
                 selectedValues={selectedUserFilter}
                 onSelectionChange={setSelectedUserFilter}
               />

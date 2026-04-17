@@ -40,6 +40,8 @@ import { ko } from 'date-fns/locale'
 
 type NoticeProps = {
   hosId: string
+  metadata: HospitalMetadata
+  loggedInUserId: string
   activeFilter: 'all' | 'done' | 'not-done'
   setActiveFilter: Dispatch<SetStateAction<'all' | 'done' | 'not-done'>>
   selectedUserFilter: string[]
@@ -48,15 +50,13 @@ type NoticeProps = {
 
 export default function Notice({
   hosId,
+  metadata,
+  loggedInUserId,
   activeFilter,
   setActiveFilter,
   selectedUserFilter,
   setSelectedUserFilter,
 }: NoticeProps) {
-  const [metadata, setMetadata] = useState<HospitalMetadata>({
-    users: [],
-    groups: [],
-  })
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   // 리얼타임 데이터 및 페칭 훅 사용
@@ -70,7 +70,6 @@ export default function Notice({
   const {
     todosByDate,
     refetch: refetchTodos,
-    isFetching: isTodosLoading,
   } = useMonthTodos(hosId, currentMonth, activeFilter)
 
   // 선택된 날짜와 현재 보는 달이 동기화되도록 관리하여 "되감기" 버그 방지
@@ -80,41 +79,21 @@ export default function Notice({
     }
   }, [selectedDate, currentMonth])
 
-  const [isMetaLoading, setIsMetaLoading] = useState(true)
-
   const refetch = () => {
     refetchNotices()
     refetchTodos()
   }
 
-  useEffect(() => {
-    const loadMetadata = async () => {
-      setIsMetaLoading(true)
-      try {
-        const meta = await fetchHospitalMetadata(hosId)
-        if (meta && 'users' in meta && 'groups' in meta) {
-          setMetadata(meta as HospitalMetadata)
-        }
-      } catch (error) {
-        console.error('Failed to load hospital metadata:', error)
-      } finally {
-        setIsMetaLoading(false)
-      }
-    }
-    loadMetadata()
-  }, [hosId])
-
-  const isLoading = isNoticesLoading || isMetaLoading
+  const isLoading = isNoticesLoading
 
   const filteredNotices = useMemo(() => {
     let result = noticesData
 
     // 0. 날짜 필터 적용
-    // (시작일 <= 선택일) AND (종료일 >= 선택일 OR 종료일 IS NULL)
     const targetDate = startOfDay(selectedDate)
     result = result.filter((notice) => {
       const dates = notice.target_date as { start: string; end: string | null }
-      if (!dates || !dates.start) return true // 데이터가 없으면 무조건 노출 (혹은 예외처리)
+      if (!dates || !dates.start) return true
 
       const start = startOfDay(new Date(dates.start))
       const end = dates.end ? startOfDay(new Date(dates.end)) : null
@@ -125,16 +104,60 @@ export default function Notice({
       return isStarted && isNotEnded
     })
 
-    // 1. 공지 담당자 필터 적용
-    if (selectedUserFilter.length > 0) {
-      result = result.filter((notice) => {
-        const targets = (notice.target_user || '').split(',').filter(Boolean)
-        if (targets.length === 0) {
-          return selectedUserFilter.includes('미지정')
+    // 1. 공지 접근 가능 여부 및 담당자 필터 적용
+    result = result.filter((notice) => {
+      const targets = (notice.target_user || '').split(',').filter(Boolean)
+      const creatorId = notice.user_id && typeof notice.user_id === 'object' ? (notice.user_id as any).user_id : notice.user_id
+      const isCreator = creatorId === loggedInUserId
+      const currentUser = metadata.users.find((u) => u.user_id === loggedInUserId)
+      const isMaster = currentUser?.is_admin === true
+      const isUnassigned = targets.length === 0
+      
+      const targetedGroups = targets.filter(t => metadata.groups.includes(t))
+
+      // --- 1.1 접근 권한 체크 (Accessibility Check) ---
+      let isAccessible = false
+      if (isCreator || isUnassigned || targets.includes(loggedInUserId || '')) {
+        isAccessible = true
+      } else {
+        const myGroups = currentUser?.group || []
+        const isTargetedAtMyGroup = targetedGroups.some(g => myGroups.includes(g))
+        
+        if (isTargetedAtMyGroup) {
+          isAccessible = true
+        } else if (isMaster && targetedGroups.length > 0) {
+          // 마스터는 '그룹'이 하나라도 포함된 경우 모든 그룹 메시지 열람 가능
+          isAccessible = true
         }
-        return targets.some((t) => selectedUserFilter.includes(t))
-      })
-    }
+      }
+
+      if (!isAccessible) return false
+
+      // --- 1.2 UI 필터링 체크 (UI Filter Logic) ---
+      if (selectedUserFilter.length === 0) return true
+
+      const filterIds = selectedUserFilter;
+      const filterNames = selectedUserFilter
+        .map((id) => metadata.users.find((u) => u.user_id === id)?.name)
+        .filter(Boolean) as string[]
+
+      // A. 담당자가 없는 경우 '미지정' 필터 확인
+      if (isUnassigned && (selectedUserFilter.includes('미정') || selectedUserFilter.includes('미지정'))) {
+        return true
+      }
+
+      // B. 관리자/유저/그룹 필터 확인 (ID 또는 이름 매칭)
+      if (targets.some((t) => filterIds.includes(t) || filterNames.includes(t))) {
+        return true
+      }
+
+      // C. 내가 작성한 글 필터 확인
+      if (selectedUserFilter.includes('__created_by_me__') && isCreator) {
+        return true
+      }
+
+      return false
+    })
 
     // 2. 완료 여부 필터 적용
     if (activeFilter !== 'all') {
@@ -158,6 +181,7 @@ export default function Notice({
             </div>
             <UpsertNoticeDialog
               hosId={hosId}
+              loggedInUserId={loggedInUserId}
               metadata={metadata}
               onSubmitSuccess={refetch}
               oldStartDate={selectedDate}
@@ -214,6 +238,7 @@ export default function Notice({
           <div className="flex flex-wrap items-center gap-2">
             <TodoUserFilter
               metadata={metadata}
+              loggedInUserId={loggedInUserId}
               selectedValues={selectedUserFilter}
               onSelectionChange={setSelectedUserFilter}
             />
@@ -233,6 +258,7 @@ export default function Notice({
             ) : (
               <DragAndDropNoticeList
                 hosId={hosId}
+                loggedInUserId={loggedInUserId}
                 noticesData={filteredNotices}
                 metadata={metadata}
               />
@@ -245,6 +271,7 @@ export default function Notice({
             </div>
             <TodoMobile
               hosId={hosId}
+              loggedInUserId={loggedInUserId}
               activeFilter={activeFilter}
               todosByDate={todosByDate}
               selectedUserFilter={selectedUserFilter}

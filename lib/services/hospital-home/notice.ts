@@ -39,6 +39,7 @@ export const createNotice = async (
   noticeInput: string,
   colorInput: string,
   hosId: string,
+  userId: string,
   startDate: Date,
   endDate?: Date | null,
   targetUserId?: string | null,
@@ -49,6 +50,7 @@ export const createNotice = async (
     notice_color: colorInput,
     notice_text: noticeInput,
     notice_order: 0,
+    user_id: userId,
     target_date: {
       start: startDate.toISOString(),
       end: endDate ? endDate.toISOString() : null,

@@ -13,6 +13,7 @@ import { HospitalMetadata } from './todo'
 
 type Props = {
   hosId: string
+  loggedInUserId: string
   activeFilter: 'all' | 'done' | 'not-done'
   todosByDate: Record<string, ClientTodo[]>
   selectedUserFilter: string[] // 필터 기준 추가
@@ -26,6 +27,7 @@ type Props = {
 
 export default function TodoMobile({
   hosId,
+  loggedInUserId,
   activeFilter,
   todosByDate,
   selectedUserFilter,
@@ -46,22 +48,27 @@ export default function TodoMobile({
       return { matchingTodos: allTodayTodos, remainingTodos: [] }
     }
 
+    const filterIds = selectedUserFilter;
+    const filterNames = selectedUserFilter
+      .map(id => metadata.users.find(u => u.user_id === id)?.name)
+      .filter(Boolean) as string[];
+
     const matching: ClientTodo[] = []
     const remaining: ClientTodo[] = []
 
     allTodayTodos.forEach(todo => {
       const targets = (todo.target_user || '').split(',').filter(Boolean)
       
-      // 담당자가 없으면(targets.length === 0) '전체' 필터가 켜져있을 때 매칭
-      const isUnassignedMatch = targets.length === 0 && selectedUserFilter.includes('전체')
-      const isUserMatch = targets.some(t => selectedUserFilter.includes(t))
+      // 담당자가 없으면(targets.length === 0) '전체'/'미지정' 필터가 켜져있을 때 매칭
+      const isUnassignedMatch = targets.length === 0 && (selectedUserFilter.includes('전체') || selectedUserFilter.includes('미지정'))
+      const isUserMatch = targets.some(t => filterIds.includes(t) || filterNames.includes(t))
       
       if (isUnassignedMatch || isUserMatch) matching.push(todo)
       else remaining.push(todo)
     })
 
     return { matchingTodos: matching, remainingTodos: remaining }
-  }, [selectedDate, todosByDate, selectedUserFilter])
+  }, [selectedDate, todosByDate, selectedUserFilter, metadata.users])
 
   return (
     <div className="flex flex-col gap-4">
@@ -126,6 +133,7 @@ export default function TodoMobile({
             date={selectedDate}
             todos={matchingTodos}
             hosId={hosId}
+            loggedInUserId={loggedInUserId}
             refetch={refetch}
             activeFilter={activeFilter}
             metadata={metadata}
@@ -155,6 +163,7 @@ export default function TodoMobile({
                 date={selectedDate}
                 todos={remainingTodos}
                 hosId={hosId}
+                loggedInUserId={loggedInUserId}
                 refetch={refetch}
                 activeFilter={activeFilter}
                 metadata={metadata}

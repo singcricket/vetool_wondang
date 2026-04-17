@@ -70,6 +70,7 @@ import { HospitalMetadata } from '../todo/todo'
 
 type UpsertNoticeDialogProps = {
   hosId: string
+  loggedInUserId: string
   isEdit?: boolean
   oldNoticeId?: string
   oldNoticeText?: string
@@ -84,6 +85,7 @@ type UpsertNoticeDialogProps = {
 
 export default function UpsertNoticeDialog({
   hosId,
+  loggedInUserId,
   isEdit,
   oldNoticeText,
   oldNoticeColor,
@@ -130,7 +132,7 @@ export default function UpsertNoticeDialog({
     }))
     const users = metadata.users.map((u) => ({
       label: u.name,
-      value: u.name,
+      value: u.user_id,
       type: 'user',
       avatar_url: u.avatar_url,
     }))
@@ -155,6 +157,7 @@ export default function UpsertNoticeDialog({
           notice,
           color,
           hosId,
+          loggedInUserId,
           start_date,
           end_date,
           target_user,
@@ -172,6 +175,11 @@ export default function UpsertNoticeDialog({
 
     setIsDialogOpen(false)
     setIsSubmitting(false)
+  }
+  
+  const getValueLabel = (val: string) => {
+    const found = options.find((o) => o.value === val)
+    return found ? found.label : val
   }
 
   const toggleUser = (user: string) => {
@@ -371,7 +379,7 @@ export default function UpsertNoticeDialog({
                                 variant="secondary"
                                 className="flex items-center gap-1 px-1 py-0"
                               >
-                                {user}
+                                {getValueLabel(user)}
                                 <X
                                   className="h-2 w-2 cursor-pointer"
                                   onClick={(e) => {

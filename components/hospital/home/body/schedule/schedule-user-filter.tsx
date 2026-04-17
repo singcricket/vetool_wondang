@@ -24,12 +24,14 @@ type Props = {
   metadata: HospitalMetadata
   selectedValues: string[]
   onSelectionChange: (values: string[]) => void
+  loggedInUserId?: string
 }
 
 export default function ScheduleUserFilter({
   metadata,
   selectedValues,
   onSelectionChange,
+  loggedInUserId,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
@@ -42,11 +44,19 @@ export default function ScheduleUserFilter({
     }))
     const users = metadata.users.map((u) => ({
       label: u.name,
-      value: u.name,
+      value: u.user_id,
       type: 'user',
     }))
     return [...groups, ...users]
   }, [metadata])
+
+  const getValueLabel = (val: string) => {
+    if (val === '미지정') return '미지정'
+    if (val === '__created_by_me__') return '내가 작성한 글'
+    if (val === loggedInUserId) return '나'
+    const found = options.find((o) => o.value === val)
+    return found ? found.label : val
+  }
 
   const toggleValue = (val: string) => {
     const next = selectedValues.includes(val)
@@ -58,11 +68,18 @@ export default function ScheduleUserFilter({
 
   const isCustomValue = useMemo(() => {
     if (!searchValue.trim()) return false
-    if (searchValue.trim() === '미지정') return false
+    const reserved = ['미지정', '모두보기', '전체', '나', '내가 작성한 글']
+    if (reserved.includes(searchValue.trim())) return false
     return !options.some(
       (o) => o.label.toLowerCase() === searchValue.toLowerCase().trim(),
     )
   }, [searchValue, options])
+
+  const currentUser = useMemo(() => 
+    metadata.users.find(u => u.user_id === loggedInUserId)
+  , [metadata.users, loggedInUserId])
+
+  const myGroups = currentUser?.group || []
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -85,7 +102,7 @@ export default function ScheduleUserFilter({
                       key={val}
                       className="rounded-sm px-1 font-normal"
                     >
-                      {val}
+                      {getValueLabel(val)}
                     </Badge>
                   ))
                 )}
@@ -102,7 +119,7 @@ export default function ScheduleUserFilter({
 
           <Filter className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">
-            {selectedValues.length > 0 ? '대상자' : '모두보기'}
+            {selectedValues.length > 0 ? '필터 활성' : '모두보기'}
           </span>
         </Button>
       </PopoverTrigger>
@@ -119,6 +136,19 @@ export default function ScheduleUserFilter({
             </CommandEmpty>
 
             <CommandGroup heading="기본">
+              {/* 모두보기 (Reset) */}
+              <CommandItem
+                 onSelect={() => {
+                   onSelectionChange([])
+                   setOpen(false)
+                 }}
+                 className="font-medium text-primary"
+               >
+                 <UsersIcon className="mr-2 h-3.5 w-3.5" />
+                 <span>모두보기 (전체)</span>
+               </CommandItem>
+
+              {/* 미지정 */}
               <CommandItem onSelect={() => toggleValue('미지정')}>
                 <div
                   className={cn(
@@ -130,10 +160,64 @@ export default function ScheduleUserFilter({
                 >
                   <Check className="h-4 w-4" />
                 </div>
-                <UsersIcon className="mr-2 h-3.5 w-3.5 text-slate-400" />
                 <span>미지정</span>
               </CommandItem>
+
+              {/* 내가 작성한 글 */}
+              <CommandItem
+                 onSelect={() => toggleValue('__created_by_me__')}
+              >
+                <div
+                  className={cn(
+                    'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                    selectedValues.includes('__created_by_me__')
+                      ? 'bg-primary text-primary-foreground'
+                      : 'opacity-50 [&_svg]:invisible',
+                  )}
+                >
+                  <Check className="h-4 w-4" />
+                </div>
+                <span>내가 작성한 글</span>
+              </CommandItem>
             </CommandGroup>
+
+            {loggedInUserId && (
+              <CommandGroup heading="나">
+                <CommandItem onSelect={() => toggleValue(loggedInUserId)}>
+                  <div
+                    className={cn(
+                      'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                      selectedValues.includes(loggedInUserId)
+                        ? 'bg-primary text-primary-foreground'
+                        : 'opacity-50 [&_svg]:invisible',
+                    )}
+                  >
+                    <Check className="h-4 w-4" />
+                  </div>
+                  <span className="font-bold">나 ({currentUser?.name || '나'})</span>
+                </CommandItem>
+              </CommandGroup>
+            )}
+
+            {myGroups.length > 0 && (
+              <CommandGroup heading="내 그룹">
+                {myGroups.map(group => (
+                  <CommandItem key={group} onSelect={() => toggleValue(group)}>
+                    <div
+                      className={cn(
+                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                        selectedValues.includes(group)
+                          ? 'bg-primary text-primary-foreground'
+                          : 'opacity-50 [&_svg]:invisible',
+                      )}
+                    >
+                      <Check className="h-4 w-4" />
+                    </div>
+                    <span>{group}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
 
             {isCustomValue && (
               <CommandGroup heading="직접 지정">
@@ -147,9 +231,32 @@ export default function ScheduleUserFilter({
               </CommandGroup>
             )}
 
-            <CommandGroup heading="그룹">
+            <CommandGroup heading="기타 그룹">
               {options
-                .filter((o) => o.type === 'group')
+                .filter((o) => o.type === 'group' && !myGroups.includes(o.value))
+                .map((opt) => (
+                  <CommandItem
+                    key={opt.value}
+                    onSelect={() => toggleValue(opt.value)}
+                  >
+                    <div
+                      className={cn(
+                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                        selectedValues.includes(opt.value)
+                          ? 'bg-primary text-primary-foreground'
+                          : 'opacity-50 [&_svg]:invisible',
+                      )}
+                    >
+                      <Check className={cn('h-4 w-4')} />
+                    </div>
+                    <span>{opt.label}</span>
+                  </CommandItem>
+                ))}
+            </CommandGroup>
+            
+            <CommandGroup heading="사용자">
+              {options
+                .filter((o) => o.type === 'user' && o.value !== loggedInUserId)
                 .map((opt) => (
                   <CommandItem
                     key={opt.value}
@@ -170,35 +277,43 @@ export default function ScheduleUserFilter({
                 ))}
             </CommandGroup>
 
-            <CommandGroup heading="사용자">
-              {options
-                .filter((o) => o.type === 'user')
-                .map((opt) => (
-                  <CommandItem
-                    key={opt.value}
-                    onSelect={() => toggleValue(opt.value)}
-                  >
-                    <div
-                      className={cn(
-                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                        selectedValues.includes(opt.value)
-                          ? 'bg-primary text-primary-foreground'
-                          : 'opacity-50 [&_svg]:invisible',
-                      )}
+            {selectedValues.filter(val => 
+                val !== '미지정' && 
+                val !== '__created_by_me__' && 
+                val !== loggedInUserId && 
+                !options.some(o => o.value === val)
+            ).length > 0 && (
+              <CommandGroup heading="기타 필터">
+                {selectedValues
+                  .filter(val => 
+                    val !== '미지정' && 
+                    val !== '__created_by_me__' && 
+                    val !== loggedInUserId && 
+                    !options.some(o => o.value === val)
+                  )
+                  .map(val => (
+                    <CommandItem
+                      key={val}
+                      onSelect={() => toggleValue(val)}
                     >
-                      <Check className={cn('h-4 w-4')} />
-                    </div>
-                    <span>{opt.label}</span>
-                  </CommandItem>
-                ))}
-            </CommandGroup>
+                      <div className="mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary bg-primary text-primary-foreground">
+                        <Check className="h-4 w-4" />
+                      </div>
+                      <span>{val}</span>
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            )}
 
             {selectedValues.length > 0 && (
               <>
                 <div className="h-px bg-border" />
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => onSelectionChange([])}
+                    onSelect={() => {
+                        onSelectionChange([])
+                        setSearchValue('')
+                    }}
                     className="justify-center text-center text-red-500 font-medium hover:text-red-600"
                   >
                     필터 초기화

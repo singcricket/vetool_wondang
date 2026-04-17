@@ -116,7 +116,9 @@ export default function ScheduleCalendar({
                       >
                         {schedule.target_users && schedule.target_users.length > 0 && (
                           <span className="mr-1 text-[9px] font-bold shrink-0">
-                            {schedule.target_users.join(',')}
+                            {schedule.target_users
+                              .map((t) => metadata.users.find((u) => u.user_id === t)?.name || t)
+                              .join(',')}
                           </span>
                         )}
                         <span className="truncate font-medium">

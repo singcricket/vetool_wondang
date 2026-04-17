@@ -15,7 +15,7 @@ export const fetchTodos = async (
 
   let query = supabase
     .from('todos')
-    .select('id, is_done, target_date, target_user, todo_title')
+    .select('id, is_done, target_date, target_user, todo_title, user_id')
     .match({ hos_id: hosId })
     .in('target_date', [dayBefore, seletctedDay, dayAfter])
 
@@ -51,7 +51,7 @@ export const fetchMonthTodos = async (
 
   let query = supabase
     .from('todos')
-    .select('id, is_done, target_date, target_user, todo_title')
+    .select('id, is_done, target_date, target_user, todo_title, user_id')
     .match({ hos_id: hosId })
     .gte('target_date', start)
     .lte('target_date', end)
@@ -77,6 +77,7 @@ export const upsertTodo = async (
   target_user_input: string | undefined,
   date: string,
   hosId: string,
+  userId: string,
   id?: string,
 ) => {
   const supabase = await createClient()
@@ -86,6 +87,7 @@ export const upsertTodo = async (
     hos_id: hosId,
     target_user: target_user_input,
     target_date: date,
+    user_id: userId,
     id,
   })
 
@@ -125,7 +127,7 @@ export const fetchHospitalMetadata = async (hosId: string) => {
 
   const { data: users, error: usersError } = await supabase
     .from('users')
-    .select('user_id, name, avatar_url, position, group, is_vet')
+    .select('user_id, name, avatar_url, position, group, is_vet, is_admin')
     .eq('hos_id', hosId)
 
   if (usersError) {
@@ -135,7 +137,7 @@ export const fetchHospitalMetadata = async (hosId: string) => {
 
   const { data: hospital, error: hospitalError } = await supabase
     .from('hospitals')
-    .select('group_list, schedule_setting')
+    .select('group_list, schedule_setting, master_user_id')
     .eq('hos_id', hosId)
     .single()
 
@@ -154,10 +156,10 @@ export const fetchHospitalMetadata = async (hosId: string) => {
     group: [staff.group],
     is_vet: false,
   }))
-
   return {
     users: [...(users || []), ...formattedAdditionalUsers],
     groups: (hospital?.group_list as string[]) || [],
+    master_user_id: hospital?.master_user_id as string,
   }
 }
 export const fetchScheduleSetting = async (hosId: string) => {

@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation'
 
 type SingleNoticeProps = {
   hosId: string
+  loggedInUserId: string
   notice: NoticeWithUser
   metadata: HospitalMetadata
   onRefresh?: () => void
@@ -25,6 +26,7 @@ type SingleNoticeProps = {
 
 export default function SingleNotice({
   hosId,
+  loggedInUserId,
   notice,
   metadata,
   onRefresh,
@@ -107,7 +109,12 @@ export default function SingleNotice({
             variant="secondary"
             className="h-5 rounded-sm bg-black/10 px-1.5 text-[10px] font-bold text-slate-800"
           >
-            @{notice.target_user}
+            @
+            {notice.target_user
+              .split(',')
+              .filter(Boolean)
+              .map((t) => metadata.users.find((u) => u.user_id === t)?.name || t)
+              .join(', ')}
           </Badge>
         )}
       </div>
@@ -153,6 +160,7 @@ export default function SingleNotice({
         <div className="flex items-center gap-1">
           <UpsertNoticeDialog
             hosId={hosId}
+            loggedInUserId={loggedInUserId}
             isEdit
             oldNoticeId={notice.id}
             oldNoticeText={notice.notice_text}

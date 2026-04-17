@@ -56,7 +56,8 @@ export default function SingleSchedule({
                     className="px-2 py-0.5 text-[10px] font-bold bg-slate-800 text-white rounded-sm"
                   >
                     <User className="h-2.5 w-2.5 mr-1" />
-                    {user}
+                    {metadata?.users.find((u) => u.user_id === user)?.name ||
+                      user}
                   </Badge>
                 ))}
               {schedule.category && (

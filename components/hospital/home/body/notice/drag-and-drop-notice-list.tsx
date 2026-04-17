@@ -12,11 +12,13 @@ import SingleNotice from './single-notice'
 export default function DragAndDropNoticeList({
   noticesData,
   hosId,
+  loggedInUserId,
   metadata,
   onRefresh,
 }: {
   noticesData: NoticeWithUser[]
   hosId: string
+  loggedInUserId: string
   metadata: HospitalMetadata
   onRefresh?: () => void
 }) {
@@ -55,6 +57,7 @@ export default function DragAndDropNoticeList({
           {sortableNotice.map((notice) => (
             <SingleNotice
               hosId={hosId}
+              loggedInUserId={loggedInUserId}
               notice={notice}
               metadata={metadata}
               key={notice.id}

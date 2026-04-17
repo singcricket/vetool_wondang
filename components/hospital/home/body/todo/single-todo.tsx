@@ -9,12 +9,20 @@ import { cn } from '@/lib/utils/utils'
 type Props = {
   todo: ClientTodo
   hosId: string
+  loggedInUserId: string
   date: Date
   refetch: () => Promise<void>
   metadata: HospitalMetadata
 }
 
-export default function SingleTodo({ todo, hosId, date, refetch, metadata }: Props) {
+export default function SingleTodo({
+  todo,
+  hosId,
+  loggedInUserId,
+  date,
+  refetch,
+  metadata,
+}: Props) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isChecked, setIsChecked] = useState(todo.is_done)
 
@@ -57,13 +65,18 @@ export default function SingleTodo({ todo, hosId, date, refetch, metadata }: Pro
 
       <div className="flex shrink-0 items-center gap-2 self-start pt-0.5">
         <span className="text-[11px] text-muted-foreground max-w-[80px] truncate bg-accent/50 px-1.5 py-0.5 rounded-sm">
-          {todo.target_user ?? ''}
+          {(todo.target_user || '')
+            .split(',')
+            .filter(Boolean)
+            .map((t) => metadata.users.find((u) => u.user_id === t)?.name || t)
+            .join(', ')}
         </span>
 
         <UpsertTodoDialog
           todo={todo}
           date={date}
           hosId={hosId}
+          loggedInUserId={loggedInUserId}
           refetch={refetch}
           isEdit
           metadata={metadata}

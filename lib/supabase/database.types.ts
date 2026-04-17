@@ -1740,6 +1740,7 @@ export type Database = {
           target_date: string
           target_user: string | null
           todo_title: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1749,6 +1750,7 @@ export type Database = {
           target_date: string
           target_user?: string | null
           todo_title?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1758,6 +1760,7 @@ export type Database = {
           target_date?: string
           target_user?: string | null
           todo_title?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1766,6 +1769,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "hospitals"
             referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "todos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
           },
         ]
       }

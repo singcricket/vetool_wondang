@@ -8,6 +8,7 @@ import { HospitalMetadata } from './todo'
 type Props = {
   date: Date
   hosId: string
+  loggedInUserId: string
   todos: ClientTodo[]
   refetch: () => Promise<void>
   activeFilter: 'all' | 'done' | 'not-done'
@@ -17,6 +18,7 @@ type Props = {
 export default function TodoList({
   date,
   hosId,
+  loggedInUserId,
   todos,
   refetch,
   activeFilter,
@@ -46,6 +48,7 @@ export default function TodoList({
               key={todo.id}
               todo={todo}
               hosId={hosId}
+              loggedInUserId={loggedInUserId}
               date={date}
               refetch={refetch}
               metadata={metadata}

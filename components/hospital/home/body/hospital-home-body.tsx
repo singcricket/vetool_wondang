@@ -1,12 +1,23 @@
 'use client'
-
+import { createClient } from '@/lib/supabase/client'
+import { fetchHospitalMetadata } from '@/lib/services/hospital-home/todo'
+import { HospitalMetadata } from './todo/todo'
 import { useEffect, useState } from 'react'
-import Notice from './notice/notice'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import Todo from './todo/todo'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import Notice from './notice/notice'
 import TimeTable from './schedule/time-table'
 
 export default function HospitalHomeBody({ hosId }: { hosId: string }) {
+  const [metadata, setMetadata] = useState<HospitalMetadata | null>(null)
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null)
+  const [isInitializing, setIsInitializing] = useState(true)
+
   // 공유 필터 상태 정의
   const [activeFilter, setActiveFilter] = useState<'all' | 'done' | 'not-done'>(
     'all',
@@ -17,36 +28,85 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
   const SHARED_FILTER_KEY = `hospital_shared_filter_${hosId}`
   const SHARED_USER_FILTER_KEY = `hospital_shared_user_filter_${hosId}`
 
-  // 로컬 스토리지 데이터 로드
+  // 초기 데이터 로드 (Metadata, Auth, Saved Filters)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedFilter = localStorage.getItem(SHARED_FILTER_KEY)
-      const savedUserFilter = localStorage.getItem(SHARED_USER_FILTER_KEY)
+    const initializeDashboard = async () => {
+      if (!hosId) return
 
-      if (savedFilter) {
-        setActiveFilter(savedFilter as 'all' | 'done' | 'not-done')
-      }
-      if (savedUserFilter) {
-        try {
-          setSelectedUserFilter(JSON.parse(savedUserFilter))
-        } catch (e) {
-          console.error('Failed to parse shared hospital filter:', e)
+      try {
+        const supabase = createClient()
+        const [fetchedMetadata, authData] = await Promise.all([
+          fetchHospitalMetadata(hosId),
+          supabase.auth.getUser(),
+        ])
+
+        const user = authData.data.user
+        setLoggedInUserId(user?.id || null)
+        
+        if (fetchedMetadata) {
+          setMetadata(fetchedMetadata as HospitalMetadata)
         }
+
+        // 로컬 스토리지 데이터 로드
+        const savedFilter = localStorage.getItem(SHARED_FILTER_KEY)
+        const savedUserFilter = localStorage.getItem(SHARED_USER_FILTER_KEY)
+
+        if (savedFilter) {
+          setActiveFilter(savedFilter as 'all' | 'done' | 'not-done')
+        }
+
+        if (savedUserFilter) {
+          try {
+            setSelectedUserFilter(JSON.parse(savedUserFilter))
+          } catch (e) {
+            console.error('Failed to parse shared hospital filter:', e)
+          }
+        } else if (user?.id && fetchedMetadata) {
+          // 저장된 필터가 없는 경우 기본값 가공
+          const userObj = fetchedMetadata.users.find((u) => u.user_id === user.id)
+          const isMaster = userObj?.is_admin === true
+          const myGroups = userObj?.group || []
+
+          // 기본 필터: [Me, Unassigned, My Posts]
+          const defaultFilter = [user.id, '미지정', '__created_by_me__']
+
+          // 마스터면 모든 그룹 추가, 아니면 내 그룹만 추가
+          if (isMaster) {
+            defaultFilter.push(...fetchedMetadata.groups)
+          } else {
+            defaultFilter.push(...myGroups)
+          }
+
+          setSelectedUserFilter([...new Set(defaultFilter)])
+        }
+      } catch (error) {
+        console.error('Failed to initialize HospitalHome dashboard:', error)
+      } finally {
+        setIsInitializing(false)
       }
     }
-  }, [hosId, SHARED_FILTER_KEY, SHARED_USER_FILTER_KEY])
+
+    initializeDashboard()
+  }, [hosId])
 
   // 필터 변경 시 자동 저장
   useEffect(() => {
+    if (isInitializing) return
     localStorage.setItem(SHARED_FILTER_KEY, activeFilter)
-  }, [activeFilter, SHARED_FILTER_KEY])
+  }, [activeFilter, isInitializing, SHARED_FILTER_KEY])
 
   useEffect(() => {
+    if (isInitializing) return
     localStorage.setItem(
       SHARED_USER_FILTER_KEY,
       JSON.stringify(selectedUserFilter),
     )
-  }, [selectedUserFilter, SHARED_USER_FILTER_KEY])
+  }, [selectedUserFilter, isInitializing, SHARED_USER_FILTER_KEY])
+
+  if (isInitializing || !metadata) {
+    return <div className="flex h-96 items-center justify-center">Loading...</div>
+  }
+
 
   return (
     <div className="flex w-full flex-col gap-2 p-2 pt-6">
@@ -74,6 +134,8 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
         <TabsContent value="todo" className="mt-4">
           <Todo
             hosId={hosId}
+            metadata={metadata}
+            loggedInUserId={loggedInUserId || ''}
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}
             selectedUserFilter={selectedUserFilter}
@@ -83,6 +145,8 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
         <TabsContent value="notice" className="mt-4">
           <Notice
             hosId={hosId}
+            metadata={metadata}
+            loggedInUserId={loggedInUserId || ''}
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}
             selectedUserFilter={selectedUserFilter}
@@ -92,6 +156,8 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
         <TabsContent value="schedule" className="mt-4">
           <TimeTable
             hosId={hosId}
+            metadata={metadata}
+            loggedInUserId={loggedInUserId || ''}
             selectedUserFilter={selectedUserFilter}
             setSelectedUserFilter={setSelectedUserFilter}
           />

@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils/utils'
 
 type Props = {
   hosId: string
+  loggedInUserId: string
   selectedDate: Date
   setSelectedDate: (date: Date) => void
   metadata: HospitalMetadata
@@ -48,6 +49,7 @@ type Props = {
 
 export default function ScheduleAuthoringTable({
   hosId,
+  loggedInUserId,
   selectedDate,
   setSelectedDate,
   metadata,
@@ -56,7 +58,7 @@ export default function ScheduleAuthoringTable({
   schedulesByDate,
 }: Props) {
   const [isUpdating, setIsUpdating] = useState<string | null>(null) // staffId-date
-  const [selectedCellKeys, setSelectedCellKeys] = useState<Set<string>>(new Set()) // staffName|dateStr
+  const [selectedCellKeys, setSelectedCellKeys] = useState<Set<string>>(new Set()) // staffId|dateStr
   const [copyOffsetDays, setCopyOffsetDays] = useState<string>('7')
   const [isCopying, setIsCopying] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -78,9 +80,13 @@ export default function ScheduleAuthoringTable({
     const selectedSchedules: Schedule[] = []
 
     selectedCellKeys.forEach(key => {
-      const [staffName, dateStr] = key.split('|')
+      const [staffId, dateStr] = key.split('|')
+      const user = metadata.users.find(u => u.user_id === staffId)
       const daySchedules = schedulesByDate[dateStr] || []
-      const staffSchedule = daySchedules.find(s => s.target_users.includes(staffName))
+      
+      const staffSchedule = daySchedules.find(s => 
+        user && s.target_users.some(t => t === user.user_id || t === user.name)
+      )
       
       if (staffSchedule) {
         hasOccupied = true
@@ -91,17 +97,19 @@ export default function ScheduleAuthoringTable({
     })
 
     return { hasOccupied, hasEmpty, selectedSchedules }
-  }, [selectedCellKeys, schedulesByDate])
+  }, [selectedCellKeys, schedulesByDate, metadata.users])
 
   const handleAssignCategory = async (
-    staffName: string, 
+    staffId: string, 
     date: Date, 
     category: ScheduleCategory | null,
     existingSchedule?: Schedule
   ) => {
+    const user = metadata.users.find(u => u.user_id === staffId)
+    const staffName = user?.name || staffId
     const dateStr = format(date, 'yyyy-MM-dd')
-    const key = `${staffName}-${dateStr}`
-    const cellKey = `${staffName}|${dateStr}`
+    const key = `${staffId}-${dateStr}`
+    const cellKey = `${staffId}|${dateStr}`
     setIsUpdating(key)
     
     try {
@@ -131,10 +139,10 @@ export default function ScheduleAuthoringTable({
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
           is_all_day: true,
-          target_users: [staffName],
+          target_users: [staffId],
           content: null,
           location: null,
-          created_by: null
+          created_by: loggedInUserId
         })
         toast.success(`${staffName}의 일정을 ${category.name}(으)로 설정했습니다`)
       }
@@ -147,8 +155,8 @@ export default function ScheduleAuthoringTable({
     }
   }
 
-  const toggleCellSelection = (staffName: string, dateStr: string) => {
-    const key = `${staffName}|${dateStr}`
+  const toggleCellSelection = (staffId: string, dateStr: string) => {
+    const key = `${staffId}|${dateStr}`
     const next = new Set(selectedCellKeys)
     if (next.has(key)) {
       next.delete(key)
@@ -158,11 +166,11 @@ export default function ScheduleAuthoringTable({
     setSelectedCellKeys(next)
   }
 
-  const handleStaffSelection = (staffName: string, checked: boolean) => {
+  const handleStaffSelection = (staffId: string, checked: boolean) => {
     const next = new Set(selectedCellKeys)
     weekDates.forEach(date => {
       const dateStr = format(date, 'yyyy-MM-dd')
-      const key = `${staffName}|${dateStr}`
+      const key = `${staffId}|${dateStr}`
       if (checked) next.add(key)
       else next.delete(key)
     })
@@ -203,7 +211,7 @@ export default function ScheduleAuthoringTable({
             target_users: s.target_users,
             content: s.content,
             location: s.location,
-            created_by: null
+            created_by: loggedInUserId
           })
         })
       )
@@ -247,7 +255,7 @@ export default function ScheduleAuthoringTable({
 
     try {
       const assignPromises = Array.from(selectedCellKeys).map(key => {
-        const [staffName, dateStr] = key.split('|')
+        const [staffId, dateStr] = key.split('|')
         const date = parseISO(dateStr)
         const startTime = new Date(date)
         startTime.setHours(9, 0, 0, 0)
@@ -262,10 +270,10 @@ export default function ScheduleAuthoringTable({
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
           is_all_day: true,
-          target_users: [staffName],
+          target_users: [staffId],
           content: null,
           location: null,
-          created_by: null
+          created_by: loggedInUserId
         })
       })
 
@@ -437,16 +445,16 @@ export default function ScheduleAuthoringTable({
             ) : (
               metadata.users.map((user) => {
                 // 이 직원의 이번 주 모든 셀 선택 여부 확인
-                const staffWeeklyCellKeys = weekDates.map(d => `${user.name}|${format(d, 'yyyy-MM-dd')}`)
+                const staffWeeklyCellKeys = weekDates.map(d => `${user.user_id}|${format(d, 'yyyy-MM-dd')}`)
                 const isAllSelected = staffWeeklyCellKeys.every(key => selectedCellKeys.has(key))
 
                 return (
-                  <tr key={user.name} className="group hover:bg-slate-50/50 transition-colors">
+                  <tr key={user.user_id} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="border-b border-r p-3 text-xs font-bold text-slate-700 bg-white sticky left-0 z-10 group-hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-3">
                         <Checkbox 
                           checked={isAllSelected}
-                          onCheckedChange={(checked) => handleStaffSelection(user.name, !!checked)}
+                          onCheckedChange={(checked) => handleStaffSelection(user.user_id, !!checked)}
                           className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                         />
                         <div className="flex items-center gap-2 min-w-0">
@@ -459,10 +467,12 @@ export default function ScheduleAuthoringTable({
                     </td>
                     {weekDates.map((date) => {
                       const dateStr = format(date, 'yyyy-MM-dd')
-                      const cellKey = `${user.name}|${dateStr}`
+                      const cellKey = `${user.user_id}|${dateStr}`
                       const daySchedules = schedulesByDate[dateStr] || []
-                      const staffSchedule = daySchedules.find(s => s.target_users.includes(user.name))
-                      const isUpdatingCell = isUpdating === `${user.name}-${dateStr}`
+                      const staffSchedule = daySchedules.find(s => 
+                        s.target_users.some(t => t === user.user_id || t === user.name)
+                      )
+                      const isUpdatingCell = isUpdating === `${user.user_id}-${dateStr}`
                       const isSelected = selectedCellKeys.has(cellKey)
                       
                       return (
@@ -470,7 +480,7 @@ export default function ScheduleAuthoringTable({
                           <div className="absolute top-1 right-1 z-10">
                             <Checkbox 
                               checked={isSelected}
-                              onCheckedChange={() => toggleCellSelection(user.name, dateStr)}
+                              onCheckedChange={() => toggleCellSelection(user.user_id, dateStr)}
                               className={cn(
                                 "w-3.5 h-3.5 border-slate-300 transition-opacity",
                                 !isSelected && !staffSchedule && "opacity-0 group-hover:opacity-100",
@@ -520,7 +530,7 @@ export default function ScheduleAuthoringTable({
                                       variant="ghost"
                                       size="sm"
                                       className="justify-start h-8 text-xs font-medium"
-                                      onClick={() => handleAssignCategory(user.name, date, cat, staffSchedule)}
+                                      onClick={() => handleAssignCategory(user.user_id, date, cat, staffSchedule)}
                                     >
                                       <div 
                                         className="w-2 h-2 rounded-full mr-2 shrink-0" 
@@ -534,7 +544,7 @@ export default function ScheduleAuthoringTable({
                                     variant="ghost"
                                     size="sm"
                                     className="justify-start h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive font-medium"
-                                    onClick={() => handleAssignCategory(user.name, date, null, staffSchedule)}
+                                    onClick={() => handleAssignCategory(user.user_id, date, null, staffSchedule)}
                                   >
                                     <Trash2 className="w-3 h-3 mr-2" />
                                     일정 없음
