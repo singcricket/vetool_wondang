@@ -15,6 +15,7 @@ import NitroprussideCri from './drugs/nitroprusside-cri'
 import PhosphateCri from './drugs/phosphate.-cri'
 import PropofolCri from './drugs/propofol-cri'
 import RemifentanilCri from './drugs/remifentanil-cri'
+import TlkCri from './drugs/tlk-cri'
 
 type Props = {
   weight: string
@@ -85,6 +86,12 @@ export default function Cri({ weight, setIsSheetOpen }: Props) {
         />
 
         <RemifentanilCri
+          weight={localWeight}
+          setIsSheetOpen={setIsSheetOpen}
+          handleChangeWeight={handleChangeWeight}
+        />
+
+        <TlkCri
           weight={localWeight}
           setIsSheetOpen={setIsSheetOpen}
           handleChangeWeight={handleChangeWeight}
