@@ -85,6 +85,7 @@ type Props = {
   refetch: () => Promise<void>
   schedule?: Schedule
   metadata?: HospitalMetadata
+  isAdmin?: boolean
 }
 
 export default function UpsertScheduleDialog({
@@ -94,6 +95,7 @@ export default function UpsertScheduleDialog({
   refetch,
   schedule,
   metadata,
+  isAdmin = false,
 }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -115,6 +117,7 @@ export default function UpsertScheduleDialog({
       target_users: schedule?.target_users.join(',') ?? '',
       color: schedule?.color ?? '#3b82f6',
       category: schedule?.category ?? '일반',
+      is_admin_only: schedule?.target_users.includes('admin') ?? false,
     },
   })
 
@@ -166,12 +169,13 @@ export default function UpsertScheduleDialog({
 
       // 카테고리별 컬러 적용
       let selectedColor = rest.color
-      if (scheduleSetting?.schedule_categories) {
-        const cat = scheduleSetting.schedule_categories.find(
-          (c) => c.name === rest.category,
-        )
-        if (cat) selectedColor = cat.color
-      }
+      const allCategories = [
+        ...(scheduleSetting?.schedule_categories || []),
+        ...(scheduleSetting?.hidden_categories || []),
+      ]
+      
+      const cat = allCategories.find((c) => c.name === rest.category)
+      if (cat) selectedColor = cat.color
 
       await upsertSchedule({
         ...rest,
@@ -179,9 +183,13 @@ export default function UpsertScheduleDialog({
         hos_id: hosId,
         start_time: start_time.toISOString(),
         end_time: end_time.toISOString(),
-        target_users: target_users
-          ? target_users.split(',').filter(Boolean)
-          : [],
+        target_users: (() => {
+          const users = target_users ? target_users.split(',').filter(u => Boolean(u) && u !== 'admin') : []
+          if (values.is_admin_only) {
+            users.push('admin')
+          }
+          return users
+        })(),
         created_by: null,
         content: rest.content ?? null,
         location: rest.location ?? null,
@@ -258,17 +266,44 @@ export default function UpsertScheduleDialog({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="일반">일반</SelectItem>
-                        {scheduleSetting?.schedule_categories?.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.name}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: cat.color }}
-                              />
-                              {cat.name}
+                        
+                        {(scheduleSetting?.schedule_categories?.length || 0) > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 bg-slate-50/50 uppercase tracking-wider mt-1 mb-0.5">
+                              Standard
                             </div>
-                          </SelectItem>
-                        ))}
+                            {scheduleSetting?.schedule_categories?.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.name}>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: cat.color }}
+                                  />
+                                  {cat.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+
+                        {isAdmin && (scheduleSetting?.hidden_categories?.length || 0) > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-[10px] font-bold text-amber-500 bg-amber-50/50 uppercase tracking-wider mt-2 mb-0.5">
+                              Admin (Hidden)
+                            </div>
+                            {scheduleSetting?.hidden_categories?.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.name}>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: cat.color }}
+                                  />
+                                  {cat.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -383,6 +418,29 @@ export default function UpsertScheduleDialog({
                   </FormItem>
                 )}
               />
+
+              {/* 관리 전용 (어드민만 보임) */}
+              {isAdmin && (
+                <FormField
+                  control={form.control}
+                  name="is_admin_only"
+                  render={({ field }) => (
+                    <FormItem className="flex items-end pb-2">
+                      <div className="flex items-center space-x-2">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="pb-1 text-amber-600 font-semibold cursor-pointer">
+                          관리 전용
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             {!form.watch('is_all_day') && (

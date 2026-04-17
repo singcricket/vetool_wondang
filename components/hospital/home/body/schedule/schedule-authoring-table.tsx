@@ -44,6 +44,7 @@ type Props = {
   metadata: HospitalMetadata
   scheduleSetting: ScheduleSetting | null
   selectedUserFilter: string[]
+  isAdmin: boolean
   refetch: () => Promise<void>
   schedulesByDate: Record<string, Schedule[]>
 }
@@ -63,6 +64,7 @@ export default function ScheduleAuthoringTable({
   metadata,
   scheduleSetting,
   selectedUserFilter,
+  isAdmin,
   refetch,
   schedulesByDate,
 }: Props) {
@@ -551,9 +553,13 @@ export default function ScheduleAuthoringTable({
                       const dateStr = format(date, 'yyyy-MM-dd')
                       const cellKey = `${user.user_id}|${dateStr}`
                       const daySchedules = schedulesByDate[dateStr] || []
-                      const staffSchedule = daySchedules.find(s => 
+                      const rawStaffSchedule = daySchedules.find(s => 
                         s.target_users.some(t => t === user.user_id || t === user.name)
                       )
+                      
+                      // 관리 전용 필터링: 관리자가 아닐 경우 'admin' 포함된 스케줄은 숨김
+                      const isStaffAdminOnly = rawStaffSchedule?.target_users?.includes('admin')
+                      const staffSchedule = (!isAdmin && isStaffAdminOnly) ? undefined : rawStaffSchedule
                       
                       // Pending Change 확인
                       const pendingChange = pendingChanges[cellKey]

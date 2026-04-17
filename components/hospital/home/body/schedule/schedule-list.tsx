@@ -33,6 +33,7 @@ type Props = {
   metadata: HospitalMetadata
   selectedDate: Date
   setSelectedDate: (date: Date) => void
+  isAdmin: boolean
 }
 
 export default function ScheduleList({
@@ -47,13 +48,18 @@ export default function ScheduleList({
   metadata,
   selectedDate,
   setSelectedDate,
+  isAdmin,
 }: Props) {
   const dateStr = format(selectedDate, 'yyyy-MM-dd')
   const allTodaySchedules = schedulesByDate[dateStr] || []
 
   const { matchingSchedules, remainingSchedules } = useMemo(() => {
-    // 모든 스케줄은 공개 (접근 체크 불필요)
-    const accessibleSchedules = allTodaySchedules
+    // 관리 전용 필터링: 관리자가 아닐 경우 'admin'이 포함된 스케줄은 아예 보이지 않게 처리
+    const accessibleSchedules = allTodaySchedules.filter(schedule => {
+      const targets = schedule.target_users || []
+      if (!isAdmin && targets.includes('admin')) return false
+      return true
+    })
 
     if (
       selectedUserFilter.length === 0 &&

@@ -10,6 +10,7 @@ export const scheduleSchema = z.object({
   target_users: z.string().optional(), // 콤마로 구분된 문자열
   color: z.string().optional(),
   category: z.string().optional(),
+  is_admin_only: z.boolean().default(false),
 })
 
 export type ScheduleFormValues = z.infer<typeof scheduleSchema>

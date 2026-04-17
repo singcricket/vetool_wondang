@@ -1,7 +1,7 @@
 'use client'
 
 import AdminSidebarItem from '@/components/hospital/admin/admin-sidebar-item'
-import { SyringeIcon, UserCheckIcon, UsersIcon } from 'lucide-react'
+import { CalendarCheck2, SyringeIcon, UserCheckIcon, UsersIcon } from 'lucide-react'
 
 export default function AdminSidebar() {
   return (
@@ -36,13 +36,12 @@ const ADMIN_SIDEBAR_ITEMS = [
     path: 'icu-settings',
     icon: SyringeIcon,
   },
-  // {
-  //   name: '약물설정',
-  //   path: 'drug-settings',
-  //   icon: Pill,
-  //   isReady: false,
-  //   isResponsive: false,
-  // },
+  {
+    name: '근태관리',
+    path: 'attendance',
+    icon: CalendarCheck2,
+
+  },
   // {
   //   name: '사료설정',
   //   path: 'diet-settings',

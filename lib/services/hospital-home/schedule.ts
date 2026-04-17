@@ -64,3 +64,22 @@ export const fetchMonthSchedules = async (hosId: string, date: string) => {
 
   return data
 }
+
+export const fetchSchedulesByDateRange = async (hosId: string, startDateIso: string, endDateIso: string) => {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('schedules')
+    .select('*')
+    .eq('hos_id', hosId)
+    .gte('start_time', startDateIso)
+    .lte('start_time', endDateIso)
+    .order('start_time', { ascending: true })
+
+  if (error) {
+    console.error('fetchSchedulesByDateRange error:', error)
+    return []
+  }
+
+  return data
+}

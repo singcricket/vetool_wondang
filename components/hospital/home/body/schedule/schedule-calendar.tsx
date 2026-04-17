@@ -24,6 +24,7 @@ type Props = {
   metadata: HospitalMetadata
   selectedDate: Date
   setSelectedDate: (date: Date) => void
+  isAdmin: boolean
 }
 
 export default function ScheduleCalendar({
@@ -36,6 +37,7 @@ export default function ScheduleCalendar({
   metadata,
   selectedDate,
   setSelectedDate,
+  isAdmin,
 }: Props) {
   const handleDayClick = (date: Date) => {
     setSelectedDate(date)
@@ -43,7 +45,14 @@ export default function ScheduleCalendar({
 
   const getDaySchedules = (date: Date): Schedule[] => {
     const dateStr = format(date, 'yyyy-MM-dd')
-    return schedulesByDate[dateStr] || []
+    const daySchedules = schedulesByDate[dateStr] || []
+    
+    // 관리 전용 필터링
+    if (!isAdmin) {
+      return daySchedules.filter(s => !(s.target_users || []).includes('admin'))
+    }
+    
+    return daySchedules
   }
 
   return (

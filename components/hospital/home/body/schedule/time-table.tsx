@@ -54,6 +54,10 @@ export default function TimeTable({
 
   const [isAuthoringOpen, setIsAuthoringOpen] = useState(false)
 
+  const isAdmin = useMemo(() => {
+    return metadata.users.find(u => u.user_id === loggedInUserId)?.is_admin ?? false
+  }, [metadata.users, loggedInUserId])
+
   useEffect(() => {
     if (!hosId) return
     const loadSetting = async () => {
@@ -83,8 +87,11 @@ export default function TimeTable({
     const result: typeof schedulesByDate = {}
     Object.entries(schedulesByDate).forEach(([date, daySchedules]) => {
       result[date] = daySchedules.filter((schedule) => {
-        // 스케줄은 프라이버시 제한 없이 모두 공개
         const targets = schedule.target_users || []
+        
+        // 관리 전용 스케줄 필터링: 관리자가 아닌 경우 targets에 'admin'이 포함된 스케줄 숨김
+        if (!isAdmin && targets.includes('admin')) return false
+
         const isCreator = schedule.created_by === loggedInUserId
         const isUnassigned = targets.length === 0
 
@@ -136,6 +143,7 @@ export default function TimeTable({
                   date={selectedDate}
                   refetch={refetch}
                   metadata={metadata}
+                  isAdmin={isAdmin}
                 />
                 
                 <Dialog open={isAuthoringOpen} onOpenChange={setIsAuthoringOpen}>
@@ -161,12 +169,13 @@ export default function TimeTable({
                           await refetch()
                         }}
                         schedulesByDate={schedulesByDate}
+                        isAdmin={isAdmin}
                       />
                     </div>
                   </DialogContent>
                 </Dialog>
 
-                <TimeTableSettingsDialog hosId={hosId} />
+                <TimeTableSettingsDialog hosId={hosId} isAdmin={isAdmin} />
               </div>
             </div>
 
@@ -178,9 +187,10 @@ export default function TimeTable({
                 onSelectionChange={setSelectedUserFilter}
               />
               <ScheduleCategoryFilter
-                categories={scheduleSetting?.schedule_categories || []}
+                scheduleSetting={scheduleSetting}
                 selectedValues={selectedCategoryFilter}
                 onSelectionChange={setSelectedCategoryFilter}
+                isAdmin={isAdmin}
               />
             </div>
           </div>
@@ -201,6 +211,7 @@ export default function TimeTable({
               metadata={metadata}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
+              isAdmin={isAdmin}
             />
           </div>
 
@@ -209,7 +220,7 @@ export default function TimeTable({
             <ScheduleList
               hosId={hosId}
               loggedInUserId={loggedInUserId}
-              schedulesByDate={schedulesByDate}
+              schedulesByDate={filteredSchedulesByDate}
               selectedUserFilter={selectedUserFilter}
               selectedCategoryFilter={selectedCategoryFilter}
               refetch={refetch}
@@ -218,6 +229,7 @@ export default function TimeTable({
               metadata={metadata}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
+              isAdmin={isAdmin}
             />
           </div>
         </div>

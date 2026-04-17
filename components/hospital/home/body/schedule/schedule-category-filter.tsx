@@ -17,20 +17,24 @@ import {
 import { cn } from '@/lib/utils/utils'
 import { Check, Filter, Tag } from 'lucide-react'
 import { useState } from 'react'
-import { ScheduleCategory } from '@/types/hospital'
+import { ScheduleSetting } from '@/types/hospital'
 
 type Props = {
-  categories: ScheduleCategory[]
+  scheduleSetting: ScheduleSetting | null
   selectedValues: string[]
   onSelectionChange: (values: string[]) => void
+  isAdmin?: boolean
 }
 
 export default function ScheduleCategoryFilter({
-  categories,
+  scheduleSetting,
   selectedValues,
   onSelectionChange,
+  isAdmin = false,
 }: Props) {
   const [open, setOpen] = useState(false)
+  const categories = scheduleSetting?.schedule_categories || []
+  const hiddenCategories = scheduleSetting?.hidden_categories || []
 
   const toggleValue = (val: string) => {
     const next = selectedValues.includes(val)
@@ -120,6 +124,33 @@ export default function ScheduleCategoryFilter({
                 </CommandItem>
               ))}
             </CommandGroup>
+
+            {isAdmin && hiddenCategories.length > 0 && (
+              <CommandGroup heading="히든 카테고리 (관리전용)">
+                {hiddenCategories.map((cat) => (
+                  <CommandItem
+                    key={cat.id}
+                    onSelect={() => toggleValue(cat.name)}
+                  >
+                    <div
+                      className={cn(
+                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-amber-400',
+                        selectedValues.includes(cat.name)
+                          ? 'bg-amber-400 text-white'
+                          : 'opacity-50 [&_svg]:invisible',
+                      )}
+                    >
+                      <Check className="h-4 w-4" />
+                    </div>
+                    <div
+                      className="mr-2 w-2 h-2 rounded-full"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    <span>{cat.name}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
 
             {selectedValues.length > 0 && (
               <>

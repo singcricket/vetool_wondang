@@ -31,6 +31,7 @@ export type ScheduleSetting = {
   additional_staffs: AdditionalStaff[]
   time_templates?: TimeTemplate[]
   schedule_categories?: ScheduleCategory[]
+  hidden_categories?: ScheduleCategory[]
 }
 
 export type ParsedError = {
