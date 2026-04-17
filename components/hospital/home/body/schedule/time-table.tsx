@@ -146,34 +146,36 @@ export default function TimeTable({
                   isAdmin={isAdmin}
                 />
                 
-                <Dialog open={isAuthoringOpen} onOpenChange={setIsAuthoringOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-9 w-9 border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700">
-                      <Edit2 size={16} />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full p-0 overflow-hidden border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-slate-800/50 [&>button]:rounded-full [&>button]:hover:bg-slate-800">
-                    <DialogHeader className="hidden">
-                      <DialogTitle>스케줄 작성</DialogTitle>
-                    </DialogHeader>
-                    <div className="h-full pt-10">
-                      <ScheduleAuthoringTable
-                        hosId={hosId}
-                        loggedInUserId={loggedInUserId}
-                        selectedDate={selectedDate}
-                        setSelectedDate={setSelectedDate}
-                        metadata={metadata}
-                        scheduleSetting={scheduleSetting}
-                        selectedUserFilter={selectedUserFilter}
-                        refetch={async () => {
-                          await refetch()
-                        }}
-                        schedulesByDate={schedulesByDate}
-                        isAdmin={isAdmin}
-                      />
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                {isAdmin && (
+                  <Dialog open={isAuthoringOpen} onOpenChange={setIsAuthoringOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="icon" className="h-9 w-9 border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700">
+                        <Edit2 size={16} />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full p-0 overflow-hidden border-none bg-transparent shadow-none [&>button]:text-white [&>button]:bg-slate-800/50 [&>button]:rounded-full [&>button]:hover:bg-slate-800">
+                      <DialogHeader className="hidden">
+                        <DialogTitle>스케줄 작성</DialogTitle>
+                      </DialogHeader>
+                      <div className="h-full pt-10">
+                        <ScheduleAuthoringTable
+                          hosId={hosId}
+                          loggedInUserId={loggedInUserId}
+                          selectedDate={selectedDate}
+                          setSelectedDate={setSelectedDate}
+                          metadata={metadata}
+                          scheduleSetting={scheduleSetting}
+                          selectedUserFilter={selectedUserFilter}
+                          refetch={async () => {
+                            await refetch()
+                          }}
+                          schedulesByDate={schedulesByDate}
+                          isAdmin={isAdmin}
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
 
                 <TimeTableSettingsDialog hosId={hosId} isAdmin={isAdmin} />
               </div>
