@@ -43,9 +43,31 @@ export default function TodoMobile({
     const dateStr = format(selectedDate, 'yyyy-MM-dd')
     const allTodayTodos = todosByDate[dateStr] || []
     
-    // 필터가 없는 경우 모든 항목을 matching 처리함
+    // 1. 접근 가능한 Todo만 추출 (Tier 1 visibility)
+    const accessibleTodos = allTodayTodos.filter(todo => {
+      const targets = (todo.target_user || '').split(',').filter(Boolean)
+      const isCreator = todo.user_id === loggedInUserId
+      const currentUser = metadata.users.find(u => u.user_id === loggedInUserId)
+      const isMaster = currentUser?.is_admin === true
+      const isUnassigned = targets.length === 0
+      const targetedGroups = targets.filter(t => metadata.groups.includes(t))
+
+      if (isCreator || isUnassigned || targets.includes(loggedInUserId || '')) {
+        return true
+      }
+      
+      const myGroups = currentUser?.group || []
+      const isTargetedAtMyGroup = targetedGroups.some(g => myGroups.includes(g))
+      
+      if (isTargetedAtMyGroup) return true
+      if (isMaster && targetedGroups.length > 0) return true
+      
+      return false
+    })
+
+    // 2. 필터가 없는 경우 모든 접근 가능한 항목을 matching 처리
     if (selectedUserFilter.length === 0) {
-      return { matchingTodos: allTodayTodos, remainingTodos: [] }
+      return { matchingTodos: accessibleTodos, remainingTodos: [] }
     }
 
     const filterIds = selectedUserFilter;
@@ -56,19 +78,29 @@ export default function TodoMobile({
     const matching: ClientTodo[] = []
     const remaining: ClientTodo[] = []
 
-    allTodayTodos.forEach(todo => {
+    accessibleTodos.forEach(todo => {
       const targets = (todo.target_user || '').split(',').filter(Boolean)
-      
-      // 담당자가 없으면(targets.length === 0) '전체'/'미지정' 필터가 켜져있을 때 매칭
-      const isUnassignedMatch = targets.length === 0 && (selectedUserFilter.includes('전체') || selectedUserFilter.includes('미지정'))
+      const isCreator = todo.user_id === loggedInUserId
+      const isUnassigned = targets.length === 0
+
+      // A. 담당자/유저/그룹 필터 확인
       const isUserMatch = targets.some(t => filterIds.includes(t) || filterNames.includes(t))
       
-      if (isUnassignedMatch || isUserMatch) matching.push(todo)
-      else remaining.push(todo)
+      // B. 미지정 필터 확인
+      const isUnassignedMatch = isUnassigned && (selectedUserFilter.includes('미정') || selectedUserFilter.includes('미지정'))
+
+      // C. 내가 작성한 글 필터 확인
+      const isCreatedByMeMatch = selectedUserFilter.includes('__created_by_me__') && isCreator
+      
+      if (isUserMatch || isUnassignedMatch || isCreatedByMeMatch) {
+        matching.push(todo)
+      } else {
+        remaining.push(todo)
+      }
     })
 
     return { matchingTodos: matching, remainingTodos: remaining }
-  }, [selectedDate, todosByDate, selectedUserFilter, metadata.users])
+  }, [selectedDate, todosByDate, selectedUserFilter, metadata.users, metadata.groups, loggedInUserId])
 
   return (
     <div className="flex flex-col gap-4">
