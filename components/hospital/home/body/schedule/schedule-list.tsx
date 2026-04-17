@@ -23,6 +23,7 @@ import { HospitalMetadata } from '../todo/todo'
 
 type Props = {
   hosId: string
+  loggedInUserId: string
   schedulesByDate: Record<string, Schedule[]>
   selectedUserFilter: string[]
   selectedCategoryFilter: string[]
@@ -36,6 +37,7 @@ type Props = {
 
 export default function ScheduleList({
   hosId,
+  loggedInUserId,
   schedulesByDate,
   selectedUserFilter,
   selectedCategoryFilter,
@@ -50,42 +52,55 @@ export default function ScheduleList({
   const allTodaySchedules = schedulesByDate[dateStr] || []
 
   const { matchingSchedules, remainingSchedules } = useMemo(() => {
+    // 모든 스케줄은 공개 (접근 체크 불필요)
+    const accessibleSchedules = allTodaySchedules
+
     if (
       selectedUserFilter.length === 0 &&
       selectedCategoryFilter.length === 0
     ) {
-      return { matchingSchedules: allTodaySchedules, remainingSchedules: [] }
+      return { matchingSchedules: accessibleSchedules, remainingSchedules: [] }
     }
 
     const matching: Schedule[] = []
     const remaining: Schedule[] = []
 
-    const filterIds = selectedUserFilter;
-    const filterNames = selectedUserFilter
-      .map(id => metadata.users.find(u => u.user_id === id)?.name)
-      .filter(Boolean) as string[];
-
-    allTodaySchedules.forEach((schedule) => {
-      // 담당자 매칭
+    accessibleSchedules.forEach((schedule) => {
+      // 1. 담당자 매칭 (그룹 소속 여부 확인 포함)
       const targets = schedule.target_users || []
-      const isUnassignedMatch =
-        targets.length === 0 && selectedUserFilter.includes('미지정')
-      const isUserMatch =
-        selectedUserFilter.length === 0 ||
-        isUnassignedMatch ||
-        targets.some((t) => filterIds.includes(t) || filterNames.includes(t))
+      const isCreator = schedule.created_by === loggedInUserId
+      const isUnassigned = targets.length === 0
 
-      // 카테고리 매칭
+      const isUserMatch = targets.some((targetId) => {
+        // 1. 직접 ID 일치
+        if (selectedUserFilter.includes(targetId)) return true
+        
+        // 2. 해당 유저가 선택된 그룹에 속해 있는지 확인
+        const userObj = metadata.users.find(u => u.user_id === targetId)
+        if (userObj?.group?.some(g => selectedUserFilter.includes(g))) return true
+        
+        return false
+      })
+      
+      const isUnassignedMatch = isUnassigned && (selectedUserFilter.includes('미정') || selectedUserFilter.includes('미지정'))
+      const isCreatedByMeMatch = selectedUserFilter.includes('__created_by_me__') && isCreator
+
+      const passesUserFilter = selectedUserFilter.length === 0 || isUserMatch || isUnassignedMatch || isCreatedByMeMatch
+
+      // 2. 카테고리 매칭
       const isCategoryMatch =
         selectedCategoryFilter.length === 0 ||
         selectedCategoryFilter.includes(schedule.category || '일반')
 
-      if (isUserMatch && isCategoryMatch) matching.push(schedule)
-      else remaining.push(schedule)
+      if (passesUserFilter && isCategoryMatch) {
+        matching.push(schedule)
+      } else {
+        remaining.push(schedule)
+      }
     })
 
     return { matchingSchedules: matching, remainingSchedules: remaining }
-  }, [allTodaySchedules, selectedUserFilter, selectedCategoryFilter, metadata.users])
+  }, [allTodaySchedules, selectedUserFilter, selectedCategoryFilter, metadata.users, loggedInUserId])
 
   return (
     <div className="flex flex-col gap-4">

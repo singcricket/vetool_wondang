@@ -83,43 +83,26 @@ export default function TimeTable({
     const result: typeof schedulesByDate = {}
     Object.entries(schedulesByDate).forEach(([date, daySchedules]) => {
       result[date] = daySchedules.filter((schedule) => {
+        // 스케줄은 프라이버시 제한 없이 모두 공개
         const targets = schedule.target_users || []
         const isCreator = schedule.created_by === loggedInUserId
-        const currentUser = metadata.users.find(u => u.user_id === loggedInUserId)
-        const isMaster = currentUser?.is_admin === true
         const isUnassigned = targets.length === 0
 
-        const targetedGroups = targets.filter(t => metadata.groups.includes(t))
-
-        // --- 1. 접근 권한 체크 (Accessibility Check) ---
-        let isAccessible = false
-        if (isCreator || isUnassigned || targets.includes(loggedInUserId || '')) {
-          isAccessible = true
-        } else {
-          const myGroups = currentUser?.group || []
-          const isTargetedAtMyGroup = targetedGroups.some(g => myGroups.includes(g))
-          
-          if (isTargetedAtMyGroup) {
-            isAccessible = true
-          } else if (isMaster && targetedGroups.length > 0) {
-            // 마스터는 '그룹'이 하나라도 포함된 경우 모든 그룹 일정 열람 가능
-            isAccessible = true
-          }
-        }
-
-        if (!isAccessible) return false
-
-        // --- 2. UI 필터링 체크 (UI Filter Logic) ---
+        // 필터가 없으면 모두 표시
         if (selectedUserFilter.length === 0 && selectedCategoryFilter.length === 0)
           return true
 
-        const filterIds = selectedUserFilter;
-        const filterNames = selectedUserFilter
-          .map(id => metadata.users.find(u => u.user_id === id)?.name)
-          .filter(Boolean) as string[];
-
-        // A. 담당자/유저/그룹 필터 확인
-        const isUserMatch = targets.some((t) => filterIds.includes(t) || filterNames.includes(t))
+        // A. 담당자/유저/그룹 필터 확인 (고도화: 그룹 소속 여부 확인)
+        const isUserMatch = targets.some((targetId) => {
+          // 1. 직접 ID 일치
+          if (selectedUserFilter.includes(targetId)) return true
+          
+          // 2. 해당 유저가 선택된 그룹에 속해 있는지 확인
+          const userObj = metadata.users.find(u => u.user_id === targetId)
+          if (userObj?.group?.some(g => selectedUserFilter.includes(g))) return true
+          
+          return false
+        })
         
         // B. 미지정 필터 확인
         const isUnassignedMatch = isUnassigned && (selectedUserFilter.includes('미정') || selectedUserFilter.includes('미지정'))
@@ -137,7 +120,7 @@ export default function TimeTable({
       })
     })
     return result
-  }, [schedulesByDate, selectedUserFilter, selectedCategoryFilter, metadata.users, metadata.groups, loggedInUserId, metadata.master_user_id])
+  }, [schedulesByDate, selectedUserFilter, selectedCategoryFilter, metadata.users, loggedInUserId])
 
   return (
     <Card className="w-full rounded-sm border-none shadow-none bg-transparent">
@@ -173,6 +156,7 @@ export default function TimeTable({
                         setSelectedDate={setSelectedDate}
                         metadata={metadata}
                         scheduleSetting={scheduleSetting}
+                        selectedUserFilter={selectedUserFilter}
                         refetch={async () => {
                           await refetch()
                         }}
@@ -224,6 +208,7 @@ export default function TimeTable({
           <div className="flex-[1.2] bg-white p-4 rounded-sm border shadow-sm min-w-[320px]">
             <ScheduleList
               hosId={hosId}
+              loggedInUserId={loggedInUserId}
               schedulesByDate={schedulesByDate}
               selectedUserFilter={selectedUserFilter}
               selectedCategoryFilter={selectedCategoryFilter}

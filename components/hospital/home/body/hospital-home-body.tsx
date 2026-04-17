@@ -23,10 +23,12 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
     'all',
   )
   const [selectedUserFilter, setSelectedUserFilter] = useState<string[]>([])
+  const [selectedScheduleUserFilter, setSelectedScheduleUserFilter] = useState<string[]>([])
 
   // 로컬 스토리지 공유 키
   const SHARED_FILTER_KEY = `hospital_shared_filter_${hosId}`
   const SHARED_USER_FILTER_KEY = `hospital_shared_user_filter_${hosId}`
+  const SCHEDULE_USER_FILTER_KEY = `hospital_schedule_user_filter_${hosId}`
 
   // 초기 데이터 로드 (Metadata, Auth, Saved Filters)
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
         // 로컬 스토리지 데이터 로드
         const savedFilter = localStorage.getItem(SHARED_FILTER_KEY)
         const savedUserFilter = localStorage.getItem(SHARED_USER_FILTER_KEY)
+        const savedScheduleFilter = localStorage.getItem(SCHEDULE_USER_FILTER_KEY)
 
         if (savedFilter) {
           setActiveFilter(savedFilter as 'all' | 'done' | 'not-done')
@@ -79,6 +82,14 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
 
           setSelectedUserFilter([...new Set(defaultFilter)])
         }
+
+        if (savedScheduleFilter) {
+          try {
+            setSelectedScheduleUserFilter(JSON.parse(savedScheduleFilter))
+          } catch (e) {
+            console.error('Failed to parse schedule hospital filter:', e)
+          }
+        }
       } catch (error) {
         console.error('Failed to initialize HospitalHome dashboard:', error)
       } finally {
@@ -102,6 +113,14 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
       JSON.stringify(selectedUserFilter),
     )
   }, [selectedUserFilter, isInitializing, SHARED_USER_FILTER_KEY])
+
+  useEffect(() => {
+    if (isInitializing) return
+    localStorage.setItem(
+      SCHEDULE_USER_FILTER_KEY,
+      JSON.stringify(selectedScheduleUserFilter),
+    )
+  }, [selectedScheduleUserFilter, isInitializing, SCHEDULE_USER_FILTER_KEY])
 
   if (isInitializing || !metadata) {
     return <div className="flex h-96 items-center justify-center">Loading...</div>
@@ -158,8 +177,8 @@ export default function HospitalHomeBody({ hosId }: { hosId: string }) {
             hosId={hosId}
             metadata={metadata}
             loggedInUserId={loggedInUserId || ''}
-            selectedUserFilter={selectedUserFilter}
-            setSelectedUserFilter={setSelectedUserFilter}
+            selectedUserFilter={selectedScheduleUserFilter}
+            setSelectedUserFilter={setSelectedScheduleUserFilter}
           />
         </TabsContent>
       </Tabs>

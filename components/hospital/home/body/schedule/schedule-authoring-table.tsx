@@ -43,8 +43,16 @@ type Props = {
   setSelectedDate: (date: Date) => void
   metadata: HospitalMetadata
   scheduleSetting: ScheduleSetting | null
+  selectedUserFilter: string[]
   refetch: () => Promise<void>
   schedulesByDate: Record<string, Schedule[]>
+}
+
+type PendingChange = {
+  staffId: string;
+  date: Date;
+  category: ScheduleCategory | null;
+  existingId?: string;
 }
 
 export default function ScheduleAuthoringTable({
@@ -54,22 +62,60 @@ export default function ScheduleAuthoringTable({
   setSelectedDate,
   metadata,
   scheduleSetting,
+  selectedUserFilter,
   refetch,
   schedulesByDate,
 }: Props) {
   const [isUpdating, setIsUpdating] = useState<string | null>(null) // staffId-date
   const [selectedCellKeys, setSelectedCellKeys] = useState<Set<string>>(new Set()) // staffId|dateStr
+  const [activeEditCell, setActiveEditCell] = useState<{
+    staffId: string;
+    dateStr: string;
+    selectedCategoryId: string | null;
+    existingScheduleId?: string;
+  } | null>(null)
+
+  const [pendingChanges, setPendingChanges] = useState<Record<string, PendingChange>>({})
+  const [isSavingAll, setIsSavingAll] = useState(false)
+  
   const [copyOffsetDays, setCopyOffsetDays] = useState<string>('7')
   const [isCopying, setIsCopying] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
 
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }) // Monday
+  // 중복 데이터를 찾기 위한 헬퍼 (날짜, 대상자, 제목 기준)
+  const findMatchingScheduleId = (dateStr: string, staffId: string, title: string) => {
+    const daySchedules = schedulesByDate[dateStr] || []
+    const match = daySchedules.find(s => 
+      s.title === title && 
+      s.target_users.includes(staffId)
+    )
+    return match?.id
+  }
+
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }) // Sunday
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
   const handlePrevWeek = () => setSelectedDate(subDays(selectedDate, 7))
   const handleNextWeek = () => setSelectedDate(addDays(selectedDate, 7))
   const handleToday = () => setSelectedDate(new Date())
+
+  // 필터링된 유저 목록 (개인 선택 + 그룹 매칭)
+  const filteredUsers = useMemo(() => {
+    // 필터가 없거나 '모두보기' 성격이면 전체 노출
+    if (selectedUserFilter.length === 0) return metadata.users
+
+    return metadata.users.filter(user => {
+      // 1. 개별 유저 ID가 필터에 포함된 경우
+      if (selectedUserFilter.includes(user.user_id)) return true
+      
+      // 2. 유저의 그룹 중 하나라도 필터에 포함된 경우
+      if (user.group?.some(g => selectedUserFilter.includes(g))) return true
+      
+      // '내가 작성한 글'이나 '미지정' 필터만 있을 경우는 유저 행 노출과는 무관하므로 제외
+      return false
+    })
+  }, [metadata.users, selectedUserFilter])
 
   // 선택된 항목들의 상태 분석
   const selectionInfo = useMemo(() => {
@@ -99,60 +145,25 @@ export default function ScheduleAuthoringTable({
     return { hasOccupied, hasEmpty, selectedSchedules }
   }, [selectedCellKeys, schedulesByDate, metadata.users])
 
-  const handleAssignCategory = async (
+  const handleAssignCategory = (
     staffId: string, 
     date: Date, 
     category: ScheduleCategory | null,
-    existingSchedule?: Schedule
+    explicitExistingId?: string
   ) => {
-    const user = metadata.users.find(u => u.user_id === staffId)
-    const staffName = user?.name || staffId
     const dateStr = format(date, 'yyyy-MM-dd')
-    const key = `${staffId}-${dateStr}`
     const cellKey = `${staffId}|${dateStr}`
-    setIsUpdating(key)
     
-    try {
-      if (!category) {
-        if (existingSchedule) {
-          await deleteSchedule(existingSchedule.id, hosId)
-          // 선택 목록에서도 제거 (좌표 기반이므로 키 유지 여부는 정책에 따라 다름)
-          // 여기서는 삭제하면 선택에서도 빠지게 처리
-          const newSelected = new Set(selectedCellKeys)
-          newSelected.delete(cellKey)
-          setSelectedCellKeys(newSelected)
-          toast.success('일정을 삭제했습니다')
-        }
-      } else {
-        const startTime = new Date(date)
-        startTime.setHours(9, 0, 0, 0)
-        
-        const endTime = new Date(date)
-        endTime.setHours(18, 0, 0, 0)
-
-        await upsertSchedule({
-          id: existingSchedule?.id,
-          hos_id: hosId,
-          title: category.name,
-          category: category.name,
-          color: category.color,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          is_all_day: true,
-          target_users: [staffId],
-          content: null,
-          location: null,
-          created_by: loggedInUserId
-        })
-        toast.success(`${staffName}의 일정을 ${category.name}(으)로 설정했습니다`)
+    setPendingChanges(prev => ({
+      ...prev,
+      [cellKey]: {
+        staffId,
+        date,
+        category,
+        existingId: explicitExistingId
       }
-      await refetch()
-    } catch (error) {
-      console.error(error)
-      toast.error('변경 중 오류가 발생했습니다')
-    } finally {
-      setIsUpdating(null)
-    }
+    }))
+    setActiveEditCell(null)
   }
 
   const toggleCellSelection = (staffId: string, dateStr: string) => {
@@ -177,7 +188,7 @@ export default function ScheduleAuthoringTable({
     setSelectedCellKeys(next)
   }
 
-  const handleBatchCopy = async () => {
+  const handleBatchCopy = () => {
     if (selectionInfo.selectedSchedules.length === 0) return
     
     const offsets = copyOffsetDays
@@ -190,109 +201,178 @@ export default function ScheduleAuthoringTable({
       return
     }
 
-    setIsCopying(true)
+    const newPending = { ...pendingChanges }
+
+    offsets.forEach(offset => {
+      selectionInfo.selectedSchedules.forEach(s => {
+        const originalStart = new Date(s.start_time)
+        const newDate = addDays(originalStart, offset)
+        const newDateStr = format(newDate, 'yyyy-MM-dd')
+        const staffId = s.target_users[0]
+        const cellKey = `${staffId}|${newDateStr}`
+        
+        // 대상 카테고리 정보 찾기
+        const categoryMatch = scheduleSetting?.schedule_categories?.find(c => c.name === s.category) || null
+
+        // 이미 해당 셀에 예정된 변경이 있으면 덮어씌움
+        newPending[cellKey] = {
+          staffId,
+          date: newDate,
+          category: categoryMatch,
+          // note: existingId는 saveAll 시점에 findMatchingScheduleId로 찾음
+        }
+      })
+    })
+
+    setPendingChanges(newPending)
+    toast.success(`${selectionInfo.selectedSchedules.length}개의 복사할 일정이 변경 대기열에 추가되었습니다.`)
+    setSelectedCellKeys(new Set())
+  }
+
+  const handleBatchDelete = () => {
+    if (selectedCellKeys.size === 0) return
+
+    const newPending = { ...pendingChanges }
+    Array.from(selectedCellKeys).forEach(key => {
+      const [staffId, dateStr] = key.split('|')
+      const date = parseISO(dateStr)
+      newPending[key] = {
+        staffId,
+        date,
+        category: null,
+      }
+    })
+
+    setPendingChanges(newPending)
+    toast.success(`${selectedCellKeys.size}개의 삭제할 일정이 변경 대기열에 추가되었습니다.`)
+    setSelectedCellKeys(new Set())
+  }
+
+  const handleBatchAssign = (category: ScheduleCategory) => {
+    if (selectedCellKeys.size === 0) return
+
+    const newPending = { ...pendingChanges }
+    Array.from(selectedCellKeys).forEach(key => {
+      const [staffId, dateStr] = key.split('|')
+      const date = parseISO(dateStr)
+      newPending[key] = {
+        staffId,
+        date,
+        category,
+      }
+    })
+
+    setPendingChanges(newPending)
+    toast.success(`${selectedCellKeys.size}개의 일정이 ${category.name}(으)로 변경 대기열에 추가되었습니다.`)
+    setSelectedCellKeys(new Set())
+  }
+
+  const handleGlobalSave = async () => {
+    const changeCount = Object.keys(pendingChanges).length
+    if (changeCount === 0) return
+
+    setIsSavingAll(true)
+    const toastId = toast.loading(`${changeCount}개의 변경사항을 저장 중...`)
 
     try {
-      const copyPromises = offsets.flatMap(offset => 
-        selectionInfo.selectedSchedules.map(s => {
-          const originalStart = new Date(s.start_time)
-          const originalEnd = new Date(s.end_time)
-          const newStart = addDays(originalStart, offset)
-          const newEnd = addDays(originalEnd, offset)
+      const promises = Object.values(pendingChanges).map(async (change) => {
+        const dateStr = format(change.date, 'yyyy-MM-dd')
+        
+        if (!change.category) {
+          // 삭제 처리
+          // 1. explicit ID가 있으면 사용, 없으면 검색
+          const targetId = change.existingId || findMatchingScheduleId(dateStr, change.staffId, '') 
+          // Note: Empty title match is tricky, actually we should just find ANY schedule in that cell for deletion
+          const cellSchedule = schedulesByDate[dateStr]?.find(s => 
+            s.target_users.includes(change.staffId)
+          )
+          
+          if (cellSchedule || change.existingId) {
+            await deleteSchedule(change.existingId || cellSchedule!.id, hosId)
+          }
+        } else {
+          // 저장/수정 처리
+          const targetId = change.existingId || findMatchingScheduleId(dateStr, change.staffId, change.category.name)
+          
+          const startTime = new Date(change.date)
+          startTime.setHours(9, 0, 0, 0)
+          const endTime = new Date(change.date)
+          endTime.setHours(18, 0, 0, 0)
 
-          return upsertSchedule({
+          await upsertSchedule({
+            id: targetId,
             hos_id: hosId,
-            title: s.title,
-            category: s.category,
-            color: s.color,
-            start_time: newStart.toISOString(),
-            end_time: newEnd.toISOString(),
-            is_all_day: s.is_all_day,
-            target_users: s.target_users,
-            content: s.content,
-            location: s.location,
+            title: change.category.name,
+            category: change.category.name,
+            color: change.category.color,
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            is_all_day: true,
+            target_users: [change.staffId],
+            content: null,
+            location: null,
             created_by: loggedInUserId
           })
-        })
-      )
-
-      await Promise.all(copyPromises)
-      toast.success(`${selectionInfo.selectedSchedules.length}개의 일정을 ${offsets.join(', ')}일 후로 복사했습니다`)
-      setSelectedCellKeys(new Set())
-      await refetch()
-    } catch (error) {
-      console.error(error)
-      toast.error('복사 중 오류가 발생했습니다')
-    } finally {
-      setIsCopying(false)
-    }
-  }
-
-  const handleBatchDelete = async () => {
-    if (selectionInfo.selectedSchedules.length === 0) return
-    if (!confirm(`${selectionInfo.selectedSchedules.length}개의 일정을 일괄 삭제하시겠습니까?`)) return
-
-    setIsDeleting(true)
-    try {
-      const deletePromises = selectionInfo.selectedSchedules.map(s => 
-        deleteSchedule(s.id, hosId)
-      )
-      await Promise.all(deletePromises)
-      toast.success('선택한 일정들을 모두 삭제했습니다')
-      setSelectedCellKeys(new Set())
-      await refetch()
-    } catch (error) {
-      console.error(error)
-      toast.error('삭제 중 오류가 발생했습니다')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleBatchAssign = async (category: ScheduleCategory) => {
-    if (selectedCellKeys.size === 0) return
-    setIsAssigning(true)
-
-    try {
-      const assignPromises = Array.from(selectedCellKeys).map(key => {
-        const [staffId, dateStr] = key.split('|')
-        const date = parseISO(dateStr)
-        const startTime = new Date(date)
-        startTime.setHours(9, 0, 0, 0)
-        const endTime = new Date(date)
-        endTime.setHours(18, 0, 0, 0)
-
-        return upsertSchedule({
-          hos_id: hosId,
-          title: category.name,
-          category: category.name,
-          color: category.color,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          is_all_day: true,
-          target_users: [staffId],
-          content: null,
-          location: null,
-          created_by: loggedInUserId
-        })
+        }
       })
 
-      await Promise.all(assignPromises)
-      toast.success(`${selectedCellKeys.size}개의 일정을 ${category.name}(으)로 배정했습니다`)
-      setSelectedCellKeys(new Set())
+      // 대량 처리 시 병렬성 조절이 필요할 수 있으나, 일단 Promise.all로 진행
+      await Promise.all(promises)
+      
+      toast.success('모든 변경사항이 성공적으로 저장되었습니다.', { id: toastId })
+      setPendingChanges({})
       await refetch()
     } catch (error) {
       console.error(error)
-      toast.error('배정 중 오류가 발생했습니다')
+      toast.error('저장 중 일부 오류가 발생했습니다.', { id: toastId })
     } finally {
-      setIsAssigning(false)
+      setIsSavingAll(false)
     }
   }
 
   return (
     <div className="flex flex-col h-full bg-white rounded-sm border shadow-sm relative overflow-hidden">
+      {/* Pending Changes Action Bar (Floating) */}
+      {Object.keys(pendingChanges).length > 0 && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="bg-blue-600 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-6 border border-white/20">
+            <div className="flex items-center gap-2 pr-4 border-r border-white/20">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600 text-[10px] font-bold">
+                {Object.keys(pendingChanges).length}
+              </div>
+              <span className="text-sm font-bold whitespace-nowrap">변경 사항 저장 대기중</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                className="h-8 bg-white text-blue-600 hover:bg-slate-100 font-bold px-4"
+                onClick={handleGlobalSave}
+                disabled={isSavingAll}
+              >
+                {isSavingAll ? (
+                  <div className="w-3 h-3 border-2 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mr-2" />
+                ) : (
+                  <CheckCircle2 size={14} className="mr-2" />
+                )}
+                서버에 저장하기
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 text-white hover:bg-white/10 font-medium"
+                onClick={() => setPendingChanges({})}
+                disabled={isSavingAll}
+              >
+                모두 취소
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Selection Action Bar (Floating) */}
-      {selectedCellKeys.size > 0 && (
+      {selectedCellKeys.size > 0 && !activeEditCell && Object.keys(pendingChanges).length === 0 && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="bg-slate-800 text-white px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-6 border border-slate-700">
             <div className="flex items-center gap-2 border-r border-slate-700 pr-4">
@@ -436,27 +516,29 @@ export default function ScheduleAuthoringTable({
             </tr>
           </thead>
           <tbody>
-            {metadata.users.length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <tr>
                 <td colSpan={8} className="p-12 text-center text-sm text-slate-400">
-                  등록된 직원이 없습니다.
+                  필터 조건에 맞는 직원이 없습니다.
                 </td>
               </tr>
             ) : (
-              metadata.users.map((user) => {
+              filteredUsers.map((user) => {
                 // 이 직원의 이번 주 모든 셀 선택 여부 확인
                 const staffWeeklyCellKeys = weekDates.map(d => `${user.user_id}|${format(d, 'yyyy-MM-dd')}`)
                 const isAllSelected = staffWeeklyCellKeys.every(key => selectedCellKeys.has(key))
 
                 return (
                   <tr key={user.user_id} className="group hover:bg-slate-50/50 transition-colors">
-                    <td className="border-b border-r p-3 text-xs font-bold text-slate-700 bg-white sticky left-0 z-10 group-hover:bg-slate-50 transition-colors">
+                    <td 
+                      className="border-b border-r p-3 text-xs font-bold text-slate-700 bg-white sticky left-0 z-10 group-hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey) {
+                          handleStaffSelection(user.user_id, !isAllSelected)
+                        }
+                      }}
+                    >
                       <div className="flex items-center gap-3">
-                        <Checkbox 
-                          checked={isAllSelected}
-                          onCheckedChange={(checked) => handleStaffSelection(user.user_id, !!checked)}
-                          className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                        />
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 shrink-0">
                             <UserIcon size={12} />
@@ -472,87 +554,130 @@ export default function ScheduleAuthoringTable({
                       const staffSchedule = daySchedules.find(s => 
                         s.target_users.some(t => t === user.user_id || t === user.name)
                       )
+                      
+                      // Pending Change 확인
+                      const pendingChange = pendingChanges[cellKey]
+                      const hasPending = !!pendingChange
+                      const displayCategory = hasPending ? pendingChange.category?.name : staffSchedule?.category
+                      const displayColor = hasPending ? pendingChange.category?.color : staffSchedule?.color
+
                       const isUpdatingCell = isUpdating === `${user.user_id}-${dateStr}`
                       const isSelected = selectedCellKeys.has(cellKey)
                       
                       return (
                         <td key={dateStr} className="border-b p-1 h-16 relative">
-                          <div className="absolute top-1 right-1 z-10">
-                            <Checkbox 
-                              checked={isSelected}
-                              onCheckedChange={() => toggleCellSelection(user.user_id, dateStr)}
-                              className={cn(
-                                "w-3.5 h-3.5 border-slate-300 transition-opacity",
-                                !isSelected && !staffSchedule && "opacity-0 group-hover:opacity-100",
-                                isSelected && "bg-blue-600 border-blue-600 opacity-100"
-                              )}
-                            />
-                          </div>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button
-                                disabled={isUpdatingCell}
-                                className={cn(
-                                  "w-full h-full rounded-md border-2 border-transparent hover:border-blue-200 hover:bg-white flex items-center justify-center transition-all p-1",
-                                  staffSchedule ? "bg-white shadow-sm" : "bg-transparent",
-                                  isSelected && "border-blue-400 ring-1 ring-blue-100 bg-blue-50/10",
-                                  isUpdatingCell && "opacity-50 animate-pulse border-blue-400"
-                                )}
-                              >
-                                {staffSchedule ? (
-                                  <Badge 
-                                    style={{ 
-                                      backgroundColor: `${staffSchedule.color}20`,
-                                      color: staffSchedule.color || '#3b82f6',
-                                      borderColor: `${staffSchedule.color}40`
-                                    }}
-                                    variant="outline"
-                                    className="text-[10px] font-bold px-1.5 py-0 border truncate max-w-full"
-                                  >
-                                    {staffSchedule.category || '기본'}
-                                  </Badge>
-                                ) : (
-                                  <div className="text-slate-200 opacity-0 group-hover:opacity-100">
-                                    <span className="text-[10px] font-bold">+ 할당</span>
-                                  </div>
-                                )}
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-48 p-1 z-50 pointer-events-auto" align="center">
-                              <div className="flex flex-col gap-0.5">
-                                <p className="px-2 py-1.5 text-[10px] font-bold text-slate-500 bg-slate-50 mb-1 rounded">
-                                  {user.name} - {format(date, 'MM/dd')} 일정
-                                </p>
-                                <div className="grid grid-cols-1 gap-0.5">
-                                  {scheduleSetting?.schedule_categories?.map((cat) => (
-                                    <Button
-                                      key={cat.id}
-                                      variant="ghost"
-                                      size="sm"
-                                      className="justify-start h-8 text-xs font-medium"
-                                      onClick={() => handleAssignCategory(user.user_id, date, cat, staffSchedule)}
-                                    >
-                                      <div 
-                                        className="w-2 h-2 rounded-full mr-2 shrink-0" 
-                                        style={{ backgroundColor: cat.color }}
-                                      />
-                                      {cat.name}
-                                    </Button>
-                                  ))}
-                                  <div className="h-px bg-slate-100 my-1" />
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="justify-start h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive font-medium"
-                                    onClick={() => handleAssignCategory(user.user_id, date, null, staffSchedule)}
-                                  >
-                                    <Trash2 className="w-3 h-3 mr-2" />
-                                    일정 없음
-                                  </Button>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                          <div className={cn(
+                            "absolute inset-1 rounded-md transition-all pointer-events-none z-0",
+                            hasPending && "border-2 border-dashed border-blue-400 bg-blue-50/5"
+                          )} />
+                          <Popover 
+                             onOpenChange={(open) => {
+                               if (open) {
+                                 setActiveEditCell({
+                                   staffId: user.user_id,
+                                   dateStr: dateStr,
+                                   selectedCategoryId: hasPending ? (pendingChange.category?.name || null) : (staffSchedule?.category || null),
+                                   existingScheduleId: staffSchedule?.id
+                                 })
+                               } else {
+                                 setActiveEditCell(null)
+                               }
+                             }}
+                           >
+                             <PopoverTrigger asChild>
+                               <button
+                                 disabled={isUpdatingCell || isSavingAll || (!!activeEditCell && activeEditCell.dateStr !== dateStr)}
+                                 className={cn(
+                                   "w-full h-full rounded-md border-2 border-transparent hover:border-blue-200 hover:bg-white flex flex-col items-center justify-center transition-all p-1 relative z-[1] select-none",
+                                   (staffSchedule || hasPending) ? "bg-white shadow-sm" : "bg-transparent",
+                                   isSelected && "border-blue-400 ring-1 ring-blue-100 bg-blue-50/10",
+                                   isUpdatingCell && "opacity-50 animate-pulse border-blue-400"
+                                 )}
+                                 onClick={(e) => {
+                                   if (e.metaKey || e.ctrlKey) {
+                                     e.preventDefault()
+                                     e.stopPropagation()
+                                     toggleCellSelection(user.user_id, dateStr)
+                                   }
+                                 }}
+                               >
+                                 {(staffSchedule || hasPending) ? (
+                                   <>
+                                     {hasPending && (
+                                       <div className="absolute -top-1 -left-1 bg-blue-600 text-white text-[8px] font-bold px-1 rounded-sm shadow-sm z-20">
+                                         DRAFT
+                                       </div>
+                                     )}
+                                     {displayCategory ? (
+                                       <Badge 
+                                         style={{ 
+                                           backgroundColor: `${displayColor}20`,
+                                           color: displayColor || '#3b82f6',
+                                           borderColor: hasPending ? '#3b82f6' : `${displayColor}40`
+                                         }}
+                                         variant="outline"
+                                         className={cn(
+                                           "text-[10px] font-bold px-1.5 py-0 border truncate max-w-full",
+                                           hasPending && "border-blue-500 border-dashed"
+                                         )}
+                                       >
+                                         {displayCategory}
+                                       </Badge>
+                                     ) : (
+                                       <div className="text-[10px] text-slate-400 italic">삭제 예정</div>
+                                     )}
+                                   </>
+                                 ) : (
+                                   <div className="text-slate-200 opacity-0 group-hover:opacity-100">
+                                     <span className="text-[10px] font-bold">+ 할당</span>
+                                   </div>
+                                 )}
+                               </button>
+                             </PopoverTrigger>
+                             <PopoverContent className="w-52 p-1.5 z-50 pointer-events-auto shadow-xl border-slate-200" align="center">
+                               <div className="flex flex-col gap-1">
+                                 <div className="px-2 py-1.5 text-[10px] font-bold text-slate-500 bg-slate-50 mb-1 rounded flex items-center justify-between">
+                                   <span>{user.name} ({format(date, 'MM/dd')})</span>
+                                   {(isUpdatingCell || isSavingAll) && <div className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />}
+                                 </div>
+                                 <div className="grid grid-cols-1 gap-0.5 max-h-[200px] overflow-y-auto pr-1">
+                                   {scheduleSetting?.schedule_categories?.map((cat) => (
+                                     <Button
+                                       key={cat.id}
+                                       variant={activeEditCell?.selectedCategoryId === cat.name ? "secondary" : "ghost"}
+                                       size="sm"
+                                       className={cn(
+                                         "justify-start h-8 text-xs font-medium",
+                                         activeEditCell?.selectedCategoryId === cat.name && "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                       )}
+                                       onClick={() => handleAssignCategory(user.user_id, date, cat, staffSchedule?.id)}
+                                       disabled={isUpdatingCell || isSavingAll}
+                                     >
+                                       <div 
+                                         className="w-2 h-2 rounded-full mr-2 shrink-0" 
+                                         style={{ backgroundColor: cat.color }}
+                                       />
+                                       {cat.name}
+                                       {activeEditCell?.selectedCategoryId === cat.name && <CheckCircle2 className="ml-auto w-3 h-3 text-blue-600" />}
+                                     </Button>
+                                   ))}
+                                   <div className="h-px bg-slate-100 my-1" />
+                                   <Button
+                                     variant={activeEditCell?.selectedCategoryId === null ? "secondary" : "ghost"}
+                                     size="sm"
+                                     className={cn(
+                                        "justify-start h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive font-medium",
+                                        activeEditCell?.selectedCategoryId === null && "bg-red-50"
+                                     )}
+                                     onClick={() => handleAssignCategory(user.user_id, date, null, staffSchedule?.id)}
+                                   >
+                                     <Trash2 className="w-3 h-3 mr-2" />
+                                     일정 없음
+                                   </Button>
+                                 </div>
+                               </div>
+                             </PopoverContent>
+                           </Popover>
                         </td>
                       )
                     })}
