@@ -83,10 +83,24 @@ export function useEchoRealtime(hosId: string) {
 
     subscriptionRef.current = channel.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
-        console.log(`%cSUBSCRIBED: echo_realtime_${hosId}`, 'color: green; font-weight: bold')
+        console.log(
+          `%cSUBSCRIBED: echo_realtime_${hosId}`,
+          'color: green; font-weight: bold',
+        )
         setIsRealtimeReadyZustand(true)
+      } else if (status === 'CLOSED' || status === 'UNSUBSCRIBED') {
+        console.log(
+          `%c${status}: echo_realtime_${hosId}`,
+          'color: gray; font-weight: bold',
+        )
+        setIsRealtimeReadyZustand(false)
       } else {
-        console.error(`%cSUBSCRIPTION ERROR: echo_realtime_${hosId}`, 'color: red; font-weight: bold', status, err)
+        console.error(
+          `%cSUBSCRIPTION ERROR: echo_realtime_${hosId}`,
+          'color: red; font-weight: bold',
+          status,
+          err,
+        )
         setIsRealtimeReadyZustand(false)
       }
     })

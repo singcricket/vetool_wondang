@@ -75,10 +75,25 @@ export default function useIcuRealtime(hosId: string) {
 
     subscriptionRef.current = channel.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
-        console.log(`%cSUBSCRIBED: icu_realtime_${hosId}`, 'color: green; font-weight: bold')
+        console.log(
+          `%cSUBSCRIBED: icu_realtime_${hosId}`,
+          'color: green; font-weight: bold',
+        )
         setIsRealtimeReadyZustand(true)
+      } else if (status === 'CLOSED' || status === 'UNSUBSCRIBED') {
+        // Normal closure, log as info
+        console.log(
+          `%c${status}: icu_realtime_${hosId}`,
+          'color: gray; font-weight: bold',
+        )
+        setIsRealtimeReadyZustand(false)
       } else {
-        console.error(`%cSUBSCRIPTION ERROR: icu_realtime_${hosId}`, 'color: red; font-weight: bold', status, err)
+        console.error(
+          `%cSUBSCRIPTION ERROR: icu_realtime_${hosId}`,
+          'color: red; font-weight: bold',
+          status,
+          err,
+        )
         setIsRealtimeReadyZustand(false)
       }
     })
