@@ -2,12 +2,13 @@
 
 import { useZustandIcuRealtimeStore } from '@/lib/store/icu/realtime-state'
 import { cn } from '@/lib/utils/utils'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 const STORAGE_KEY = 'realtime-reload'
 const MAX_RELOAD_COUNT = 3
 const RELOAD_COOLDOWN_MS = 60_000 // 마지막 reload로부터 1분 경과 시 카운터 리셋
+const RELOAD_TIMEOUT_MS = 10_000 // 3초에서 10초로 연장
 
 type ReloadState = {
   count: number
@@ -54,9 +55,14 @@ function canAutoReload(): boolean {
 }
 
 export default function RealtimeStatus() {
+  const [mounted, setMounted] = useState(false)
   const isRealtimeReady = useZustandIcuRealtimeStore(
     (state) => state.isRealtimeReadyZustand,
   )
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Realtime 연결 성공 시 reload 카운터 리셋
   useEffect(() => {
@@ -92,7 +98,7 @@ export default function RealtimeStatus() {
               },
             )
           }
-        }, 3000)
+        }, RELOAD_TIMEOUT_MS)
       } else {
         clearTimeout(timeoutId)
         if (toastId !== undefined) {
@@ -119,6 +125,15 @@ export default function RealtimeStatus() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [isRealtimeReady])
+
+  if (!mounted) {
+    return (
+      <div className="mr-2 flex items-center gap-2">
+        <div className="h-2 w-2 rounded-full bg-red-500" />
+        <span className="text-xs text-muted-foreground">실시간</span>
+      </div>
+    )
+  }
 
   return (
     <div className="mr-2 flex items-center gap-2">

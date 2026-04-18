@@ -16,8 +16,9 @@ type Props = { chartDetail: DentalChartDetail; hosId: string }
 const SKULL_OPTS = ['dolichocephalic', 'mesocephalic', 'brachycephalic']
 const OCCLUSION_OPTS = ['normal', 'class1', 'class2', 'class3', 'class4']
 const CROWDING_OPTS = ['none', 'mild', 'moderate', 'severe']
-const SEVERITY = ['none', 'mild', 'moderate', 'severe']
-const STAGE_OPTS = ['healthy', 'stage1', 'stage2', 'stage3', 'stage4']
+const GINGIVITIS_OPTS = ['GI0', 'GI1', 'GI2', 'GI3']
+const CALCULUS_OPTS = ['CI0', 'CI1', 'CI2', 'CI3']
+const STAGE_OPTS = ['PD0', 'PD1', 'PD2', 'PD3', 'PD4']
 
 function SelectF({ label, value, onChange, options }: { label: string; value: string | null; onChange: (v: string) => void; options: string[] }) {
   return (
@@ -99,8 +100,8 @@ export default function DentalOralEvalTab({ chartDetail, hosId }: Props) {
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">전체 치주 평가</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectF label="잇몸 염증 (전체)" value={gingivitisOverall} onChange={setGingivitisOverall} options={SEVERITY} />
-              <SelectF label="치석 (전체)" value={calculusOverall} onChange={setCalculusOverall} options={SEVERITY} />
+              <SelectF label="잇몸 염증 (전체)" value={gingivitisOverall} onChange={setGingivitisOverall} options={GINGIVITIS_OPTS} />
+              <SelectF label="치석 (전체)" value={calculusOverall} onChange={setCalculusOverall} options={CALCULUS_OPTS} />
               <SelectF label="치주 질환 병기 (AVDC)" value={periodontitisStage} onChange={setPeriodontitisStage} options={STAGE_OPTS} />
             </div>
           </section>

@@ -66,12 +66,12 @@ export function useMonitoringRealtime(hosId: string) {
         handleChange,
       )
 
-    subscriptionRef.current = channel.subscribe((status) => {
+    subscriptionRef.current = channel.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
-        console.log('Subscribed to all tables')
+        console.log(`%cSUBSCRIBED: monitoring_realtime_${hosId}`, 'color: green; font-weight: bold')
         setIsRealtimeReadyZustand(true)
       } else {
-        console.log('Subscription failed with status:', status)
+        console.error(`%cSUBSCRIPTION ERROR: monitoring_realtime_${hosId}`, 'color: red; font-weight: bold', status, err)
         setIsRealtimeReadyZustand(false)
       }
     })

@@ -25,11 +25,15 @@ type Props = {
   onCancel?: () => void
 }
 
+const GINGIVITIS_OPTS = ['GI0', 'GI1', 'GI2', 'GI3'] as const
+const CALCULUS_OPTS = ['CI0', 'CI1', 'CI2', 'CI3'] as const
+const PLAQUE_OPTS = ['PI0', 'PI1', 'PI2', 'PI3'] as const
 const SEVERITY = ['none', 'mild', 'moderate', 'severe'] as const
-const FRACTURE_OPTS = ['none', 'enamel', 'uncomplicated', 'complicated', 'crown_root', 'root'] as const
-const RESORPTION_OPTS = ['none', 'type1', 'type2', 'type3'] as const
-const MOBILITY_OPTS = ['none', 'grade1', 'grade2', 'grade3'] as const
-const STATUS_OPTS = ['present', 'missing', 'extracted', 'unerupted', 'persistent'] as const
+const FRACTURE_OPTS = ['none', 'T/FX/EF', 'T/FX/UCF', 'T/FX/CCF', 'T/FX/UCRF', 'T/FX/CCRF', 'T/FX/RF'] as const
+const RESORPTION_OPTS = ['none', 'TR1', 'TR2', 'TR3', 'TR4', 'TR5'] as const
+const MOBILITY_OPTS = ['M0', 'M1', 'M2', 'M3'] as const
+const FURCATION_OPTS = ['F0', 'F1', 'F2', 'F3'] as const
+const STATUS_OPTS = ['present', 'ANO', 'extracted', 'T/U', 'T/I', 'DT/P'] as const
 const PRIORITY_OPTS = ['urgent', 'recommended', 'elective', 'monitor'] as const
 const TREATMENT_OPTIONS = [
   'scaling', 'polishing', 'extraction', 'root_canal', 'vital_pulp_therapy',
@@ -185,11 +189,11 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">치주 평가</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectField label="잇몸 염증" value={gingivitis} onChange={setGingivitis} options={SEVERITY} />
-              <SelectField label="치석" value={calculus} onChange={setCalculus} options={SEVERITY} />
-              <SelectField label="치태" value={plaque} onChange={setPlaque} options={SEVERITY} />
+              <SelectField label="잇몸 염증" value={gingivitis} onChange={setGingivitis} options={GINGIVITIS_OPTS} />
+              <SelectField label="치석" value={calculus} onChange={setCalculus} options={CALCULUS_OPTS} />
+              <SelectField label="치태" value={plaque} onChange={setPlaque} options={PLAQUE_OPTS} />
               <SelectField label="동요도" value={mobility} onChange={setMobility} options={MOBILITY_OPTS} />
-              <SelectField label="분기부 병변" value={furcation} onChange={setFurcation} options={MOBILITY_OPTS} />
+              <SelectField label="분기부 병변" value={furcation} onChange={setFurcation} options={FURCATION_OPTS} />
             </div>
           </section>
 

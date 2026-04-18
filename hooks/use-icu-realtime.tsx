@@ -73,12 +73,12 @@ export default function useIcuRealtime(hosId: string) {
         )
     })
 
-    subscriptionRef.current = channel.subscribe((status) => {
+    subscriptionRef.current = channel.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
-        console.log('Subscribed to all tables')
+        console.log(`%cSUBSCRIBED: icu_realtime_${hosId}`, 'color: green; font-weight: bold')
         setIsRealtimeReadyZustand(true)
       } else {
-        console.log('Subscription failed with status:', status)
+        console.error(`%cSUBSCRIPTION ERROR: icu_realtime_${hosId}`, 'color: red; font-weight: bold', status, err)
         setIsRealtimeReadyZustand(false)
       }
     })

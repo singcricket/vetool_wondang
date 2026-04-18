@@ -2,12 +2,13 @@
 
 import { useZustandMonitoringRealtimeStore } from '@/lib/store/monitoring/monitoring-realtime-state'
 import { cn } from '@/lib/utils/utils'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 const STORAGE_KEY = 'monitoring-realtime-reload'
 const MAX_RELOAD_COUNT = 3
 const RELOAD_COOLDOWN_MS = 60_000
+const RELOAD_TIMEOUT_MS = 10_000
 
 type ReloadState = {
   count: number
@@ -52,9 +53,14 @@ function canAutoReload(): boolean {
 }
 
 export default function MonitoringRealtimeStatus() {
+  const [mounted, setMounted] = useState(false)
   const isRealtimeReady = useZustandMonitoringRealtimeStore(
     (state) => state.isRealtimeReadyZustand,
   )
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (isRealtimeReady) {
@@ -87,7 +93,7 @@ export default function MonitoringRealtimeStatus() {
               },
             )
           }
-        }, 3000)
+        }, RELOAD_TIMEOUT_MS)
       } else {
         clearTimeout(timeoutId)
         if (toastId !== undefined) {
@@ -112,6 +118,15 @@ export default function MonitoringRealtimeStatus() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [isRealtimeReady])
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-2 w-2 rounded-full bg-red-500" />
+        <span className="text-xs text-muted-foreground">실시간</span>
+      </div>
+    )
+  }
 
   return (
     <div className="flex items-center gap-2">

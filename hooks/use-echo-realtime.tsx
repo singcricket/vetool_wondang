@@ -81,12 +81,12 @@ export function useEchoRealtime(hosId: string) {
         handleChange,
       )
 
-    subscriptionRef.current = channel.subscribe((status) => {
+    subscriptionRef.current = channel.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
-        console.log('Subscribed to echo_charts')
+        console.log(`%cSUBSCRIBED: echo_realtime_${hosId}`, 'color: green; font-weight: bold')
         setIsRealtimeReadyZustand(true)
       } else {
-        console.log('Echo subscription failed with status:', status)
+        console.error(`%cSUBSCRIPTION ERROR: echo_realtime_${hosId}`, 'color: red; font-weight: bold', status, err)
         setIsRealtimeReadyZustand(false)
       }
     })

@@ -50,9 +50,9 @@ export type DentalChartDetail = {
   crowding: 'none' | 'mild' | 'moderate' | 'severe' | null
 
   // 전체 치주
-  gingivitis_overall: 'none' | 'mild' | 'moderate' | 'severe' | null
-  calculus_overall: 'none' | 'mild' | 'moderate' | 'severe' | null
-  periodontitis_stage: 'healthy' | 'stage1' | 'stage2' | 'stage3' | 'stage4' | null
+  gingivitis_overall: 'GI0' | 'GI1' | 'GI2' | 'GI3' | null
+  calculus_overall: 'CI0' | 'CI1' | 'CI2' | 'CI3' | null
+  periodontitis_stage: 'PD0' | 'PD1' | 'PD2' | 'PD3' | 'PD4' | null
 
   // 구강 점막
   oral_mucosa: string | null
@@ -102,12 +102,12 @@ export type DentalTooth = {
   tooth_name: string | null
   is_deciduous: boolean
 
-  status: 'present' | 'missing' | 'extracted' | 'unerupted' | 'persistent'
+  status: 'present' | 'ANO' | 'extracted' | 'T/U' | 'T/I' | 'DT/P'
 
   // 치주 평가
-  gingivitis: 'none' | 'mild' | 'moderate' | 'severe' | null
-  calculus: 'none' | 'mild' | 'moderate' | 'severe' | null
-  plaque: 'none' | 'mild' | 'moderate' | 'severe' | null
+  gingivitis: 'GI0' | 'GI1' | 'GI2' | 'GI3' | null
+  calculus: 'CI0' | 'CI1' | 'CI2' | 'CI3' | null
+  plaque: 'PI0' | 'PI1' | 'PI2' | 'PI3' | null
 
   // 치주낭 깊이 (mm)
   probing_ml: number | null
@@ -126,8 +126,8 @@ export type DentalTooth = {
   recession_db: number | null
 
   // 동요도 / 분기부
-  mobility: 'none' | 'grade1' | 'grade2' | 'grade3' | null
-  furcation: 'none' | 'grade1' | 'grade2' | 'grade3' | null
+  mobility: 'M0' | 'M1' | 'M2' | 'M3' | null
+  furcation: 'F0' | 'F1' | 'F2' | 'F3' | null
 
   // 병변
   fracture: 'none' | 'enamel' | 'uncomplicated' | 'complicated' | 'crown_root' | 'root' | null
