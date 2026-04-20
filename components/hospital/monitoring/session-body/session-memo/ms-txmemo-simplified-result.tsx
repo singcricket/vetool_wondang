@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils/utils'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import MsTxMemoGroup from './ms-txmemo-group'
+import MsMemoImageGallery from '@/components/hospital/monitoring/session-body/session-memo/ms-memo-image-gallery'
 
 type Props = {
   memos: MsMemo[]
@@ -38,6 +39,9 @@ export default function MsTxMemoSimplifiedResult({
   handleToggleDone,
 }: Props) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [selectedGalleryUrls, setSelectedGalleryUrls] = useState<string[]>([])
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false)
 
   const pendingCount = planMemos.filter((m) => !m.is_done).length
   const doneCount = planMemos.filter((m) => m.is_done).length
@@ -112,6 +116,40 @@ export default function MsTxMemoSimplifiedResult({
             <div className="flex flex-col gap-1.5">
               {planMemos.map((m) => {
                 const isDone = !!m.done_timestamp
+                
+                const formatScheduleText = () => {
+                  if (!m.schedule) return null
+            
+                  if (m.schedule.type === 'absolute') {
+                    return `⏰ 예정: ${m.schedule.value}`
+                  }
+                  if (m.schedule.type === 'after_start') {
+                    if (msData.start_time) {
+                      const time = new Date(new Date(msData.start_time).getTime() + Number(m.schedule.value) * 60000)
+                      const timeStr = time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+                      return `⏰ 예정: ${timeStr} (시작 후 ${m.schedule.value}분)`
+                    }
+                    return `⏰ 시작 후 ${m.schedule.value}분 뒤`
+                  }
+                  if (m.schedule.type === 'after_prev') {
+                    const allMemos = msData.memo_tx as any as MsMemo[] | null
+                    const targetMemo = allMemos?.find((tm) => tm.id === m.schedule?.target_memo_id)
+                    const targetName = targetMemo 
+                      ? (targetMemo.memo.length > 8 ? targetMemo.memo.slice(0, 8) + '...' : targetMemo.memo) 
+                      : '이전 처치'
+                    
+                    if (targetMemo?.done_timestamp) {
+                      const time = new Date(new Date(targetMemo.done_timestamp).getTime() + Number(m.schedule.value) * 60000)
+                      const timeStr = time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+                      return `⏰ 예정: ${timeStr} (${targetName} 완료 후 ${m.schedule.value}분)`
+                    }
+                    return `⏰ ${targetName} 완료 후 ${m.schedule.value}분 뒤`
+                  }
+                  return null
+                }
+            
+                const scheduleText = formatScheduleText()
+
                 return (
                   <div
                     key={m.id}
@@ -133,6 +171,11 @@ export default function MsTxMemoSimplifiedResult({
                       )}
                     />
                     <div className="flex-1 min-w-0">
+                      {scheduleText && (
+                        <div className={cn("text-[11px] font-semibold mb-0.5", isDone ? "text-muted-foreground line-through opacity-60" : "text-blue-500")}>
+                          {scheduleText}
+                        </div>
+                      )}
                       <p
                         className={cn(
                           'text-xs font-medium leading-relaxed break-all',
@@ -143,14 +186,30 @@ export default function MsTxMemoSimplifiedResult({
                       >
                         {m.memo}
                       </p>
+                      
+                      {m.has_imgs && m.img_url && m.img_url.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {m.img_url.map((url, i) => (
+                            <img
+                              key={i}
+                              src={url}
+                              alt={`memo-img-${i}`}
+                              className={cn(
+                                "w-12 h-12 rounded-md object-cover border border-slate-200 cursor-pointer transition-opacity hover:opacity-80",
+                                isDone && "opacity-50 grayscale"
+                              )}
+                              loading="lazy"
+                              onClick={() => {
+                                setSelectedGalleryUrls(m.img_url)
+                                setSelectedImageIndex(i)
+                                setIsGalleryOpen(true)
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2.5 mt-1.5">
-                        {m.schedule && (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-orange-500">
-                            <span className="w-1 h-1 rounded-full bg-orange-400" />
-                            {m.schedule.value}
-                            {m.schedule.type === 'absolute' ? '' : '분 뒤'}
-                          </div>
-                        )}
                         {isDone && m.done_timestamp && (
                           <div className="flex items-center gap-1 text-[10px] font-medium text-blue-500">
                             <span className="w-1 h-1 rounded-full bg-blue-400" />
@@ -170,6 +229,15 @@ export default function MsTxMemoSimplifiedResult({
           </div>
         )}
       </div>
+
+      {selectedGalleryUrls.length > 0 && (
+        <MsMemoImageGallery
+          imgUrls={selectedGalleryUrls}
+          isGalleryOpen={isGalleryOpen}
+          setIsGalleryOpen={setIsGalleryOpen}
+          selectedImageIndex={selectedImageIndex}
+        />
+      )}
     </div>
   )
 }

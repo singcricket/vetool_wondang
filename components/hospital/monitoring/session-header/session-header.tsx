@@ -40,13 +40,13 @@ export default function SessionHeader({
         msData={msData}
       />
 
-      {isVet && (
-        <MsHeaderRightButtons
-          msData={msData}
-          hosId={hosId}
-          targetDate={targetDate}
-        />
-      )}
+       
+      <MsHeaderRightButtons
+        msData={msData}
+        hosId={hosId}
+        targetDate={targetDate}
+      />
+
     </header>
   )
 }
