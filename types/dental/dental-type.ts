@@ -133,7 +133,8 @@ export type DentalTooth = {
   fracture: 'none' | 'enamel' | 'uncomplicated' | 'complicated' | 'crown_root' | 'root' | null
   pulp_exposure: boolean
   caries: 'none' | 'mild' | 'moderate' | 'severe' | null
-  resorption: 'none' | 'type1' | 'type2' | 'type3' | null
+  resorption_stage: 'none' | 'TR1' | 'TR2' | 'TR3' | 'TR4' | 'TR5' | null
+  resorption_type: 'none' | 'T1' | 'T2' | 'T3' | null
   staining: 'none' | 'mild' | 'moderate' | 'severe' | null
   attrition: 'none' | 'mild' | 'moderate' | 'severe' | null
   abrasion: 'none' | 'mild' | 'moderate' | 'severe' | null
@@ -142,7 +143,9 @@ export type DentalTooth = {
   // 방사선 / 처치 / 계획
   xray_finding: string | null
   treatment_done: string[]
+  treatment_done_other: string | null
   treatment_plan: string[]
+  treatment_plan_other: string | null
   treatment_priority: 'urgent' | 'recommended' | 'elective' | 'monitor' | null
 
   tooth_note: string | null

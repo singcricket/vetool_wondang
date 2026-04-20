@@ -11,8 +11,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { upsertDentalTooth } from '@/lib/actions/dental/upsert-dental-tooth'
 import { toothNames } from '@/constants/hospital/dental/dental_chart_canine_combined'
+import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
 import type { DentalTooth } from '@/types/dental/dental-type'
 import DentalProbingGrid from './dental-probing-grid'
+import AvdcAutocompleteInput from '../../avdc-autocomplete-input'
 
 type SixPoint = { ml: number | null; l: number | null; dl: number | null; mb: number | null; b: number | null; db: number | null }
 
@@ -25,27 +27,24 @@ type Props = {
   onCancel?: () => void
 }
 
-const GINGIVITIS_OPTS = ['GI0', 'GI1', 'GI2', 'GI3'] as const
-const CALCULUS_OPTS = ['CI0', 'CI1', 'CI2', 'CI3'] as const
-const PLAQUE_OPTS = ['PI0', 'PI1', 'PI2', 'PI3'] as const
-const SEVERITY = ['none', 'mild', 'moderate', 'severe'] as const
-const FRACTURE_OPTS = ['none', 'T/FX/EF', 'T/FX/UCF', 'T/FX/CCF', 'T/FX/UCRF', 'T/FX/CCRF', 'T/FX/RF'] as const
-const RESORPTION_OPTS = ['none', 'TR1', 'TR2', 'TR3', 'TR4', 'TR5'] as const
-const MOBILITY_OPTS = ['M0', 'M1', 'M2', 'M3'] as const
-const FURCATION_OPTS = ['F0', 'F1', 'F2', 'F3'] as const
-const STATUS_OPTS = ['present', 'ANO', 'extracted', 'T/U', 'T/I', 'DT/P'] as const
-const PRIORITY_OPTS = ['urgent', 'recommended', 'elective', 'monitor'] as const
-const TREATMENT_OPTIONS = [
-  'scaling', 'polishing', 'extraction', 'root_canal', 'vital_pulp_therapy',
-  'crown_restoration', 'composite_restoration', 'gingivectomy',
-  'alveoloplasty', 'periodontal_surgery', 'splinting',
+const PRIORITY_OPTS = [
+  { value: 'urgent', label: '긴급 (Urgent)' },
+  { value: 'recommended', label: '권장 (Recommended)' },
+  { value: 'elective', label: '선택 (Elective)' },
+  { value: 'monitor', label: '모니터링 (Monitor)' },
+]
+const SEVERITY_OPTS = [
+  { value: 'none', label: '없음' },
+  { value: 'mild', label: '경도' },
+  { value: 'moderate', label: '중등도' },
+  { value: 'severe', label: '중증' },
 ]
 
 function SelectField({ label, value, onChange, options }: {
   label: string
   value: string | null
   onChange: (v: string) => void
-  options: readonly string[]
+  options: { value: string; label: string }[]
 }) {
   return (
     <div className="space-y-1">
@@ -56,7 +55,7 @@ function SelectField({ label, value, onChange, options }: {
         </SelectTrigger>
         <SelectContent>
           {options.map((o) => (
-            <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>
+            <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -64,27 +63,28 @@ function SelectField({ label, value, onChange, options }: {
   )
 }
 
-function MultiCheckField({ label, selected, onChange }: {
+function MultiCheckField({ label, selected, onChange, options }: {
   label: string
   selected: string[]
   onChange: (v: string[]) => void
+  options: { value: string; label: string }[]
 }) {
-  function toggle(opt: string) {
-    onChange(selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt])
+  function toggle(optValue: string) {
+    onChange(selected.includes(optValue) ? selected.filter((s) => s !== optValue) : [...selected, optValue])
   }
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
       <div className="flex flex-wrap gap-2">
-        {TREATMENT_OPTIONS.map((opt) => (
-          <div key={opt} className="flex items-center gap-1">
+        {options.map((opt) => (
+          <div key={opt.value} className="flex items-center gap-1">
             <Checkbox
-              id={`${label}-${opt}`}
-              checked={selected.includes(opt)}
-              onCheckedChange={() => toggle(opt)}
+              id={`${label}-${opt.value}`}
+              checked={selected.includes(opt.value)}
+              onCheckedChange={() => toggle(opt.value)}
               className="h-3.5 w-3.5"
             />
-            <label htmlFor={`${label}-${opt}`} className="cursor-pointer text-xs">{opt}</label>
+            <label htmlFor={`${label}-${opt.value}`} className="cursor-pointer text-xs">{opt.label}</label>
           </div>
         ))}
       </div>
@@ -109,11 +109,14 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
   const [fracture, setFracture] = useState<string>(existing?.fracture ?? 'none')
   const [pulpExposure, setPulpExposure] = useState(existing?.pulp_exposure ?? false)
   const [caries, setCaries] = useState<string>(existing?.caries ?? 'none')
-  const [resorption, setResorption] = useState<string>(existing?.resorption ?? 'none')
+  const [resorptionStage, setResorptionStage] = useState<string>(existing?.resorption_stage ?? 'none')
+  const [resorptionType, setResorptionType] = useState<string>(existing?.resorption_type ?? 'none')
   const [attrition, setAttrition] = useState<string>(existing?.attrition ?? 'none')
   const [abrasion, setAbrasion] = useState<string>(existing?.abrasion ?? 'none')
   const [treatmentDone, setTreatmentDone] = useState<string[]>(existing?.treatment_done ?? [])
+  const [treatmentDoneOther, setTreatmentDoneOther] = useState<string>(existing?.treatment_done_other ?? '')
   const [treatmentPlan, setTreatmentPlan] = useState<string[]>(existing?.treatment_plan ?? [])
+  const [treatmentPlanOther, setTreatmentPlanOther] = useState<string>(existing?.treatment_plan_other ?? '')
   const [priority, setPriority] = useState(existing?.treatment_priority ?? null)
   const [xrayFinding, setXrayFinding] = useState(existing?.xray_finding ?? '')
   const [toothNote, setToothNote] = useState(existing?.tooth_note ?? '')
@@ -145,7 +148,8 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
         fracture: fracture as DentalTooth['fracture'],
         pulp_exposure: pulpExposure,
         caries: caries as DentalTooth['caries'],
-        resorption: resorption as DentalTooth['resorption'],
+        resorption_stage: resorptionStage as DentalTooth['resorption_stage'],
+        resorption_type: resorptionType as DentalTooth['resorption_type'],
         attrition: attrition as DentalTooth['attrition'],
         abrasion: abrasion as DentalTooth['abrasion'],
         probing_ml: probing.ml, probing_l: probing.l, probing_dl: probing.dl,
@@ -153,7 +157,9 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
         recession_ml: recession.ml, recession_l: recession.l, recession_dl: recession.dl,
         recession_mb: recession.mb, recession_b: recession.b, recession_db: recession.db,
         treatment_done: treatmentDone,
+        treatment_done_other: treatmentDoneOther || null,
         treatment_plan: treatmentPlan,
+        treatment_plan_other: treatmentPlanOther || null,
         treatment_priority: priority as DentalTooth['treatment_priority'],
         xray_finding: xrayFinding || null,
         tooth_note: toothNote || null,
@@ -177,7 +183,7 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">기본 정보</p>
             <div className="grid grid-cols-2 gap-3">
-              <SelectField label="상태" value={status} onChange={setStatus} options={STATUS_OPTS} />
+              <SelectField label="상태" value={status} onChange={setStatus} options={DENTAL_TOOTH_TESTS.tooth_status?.options || []} />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="deciduous" checked={isDeciduous} onCheckedChange={setIsDeciduous} />
@@ -189,11 +195,11 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">치주 평가</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectField label="잇몸 염증" value={gingivitis} onChange={setGingivitis} options={GINGIVITIS_OPTS} />
-              <SelectField label="치석" value={calculus} onChange={setCalculus} options={CALCULUS_OPTS} />
-              <SelectField label="치태" value={plaque} onChange={setPlaque} options={PLAQUE_OPTS} />
-              <SelectField label="동요도" value={mobility} onChange={setMobility} options={MOBILITY_OPTS} />
-              <SelectField label="분기부 병변" value={furcation} onChange={setFurcation} options={FURCATION_OPTS} />
+              <SelectField label="잇몸 염증" value={gingivitis} onChange={setGingivitis} options={DENTAL_TOOTH_TESTS.gingivitis?.options || []} />
+              <SelectField label="치석" value={calculus} onChange={setCalculus} options={DENTAL_TOOTH_TESTS.calculus?.options || []} />
+              <SelectField label="치태" value={plaque} onChange={setPlaque} options={DENTAL_TOOTH_TESTS.plaque?.options || []} />
+              <SelectField label="동요도" value={mobility} onChange={setMobility} options={DENTAL_TOOTH_TESTS.mobility?.options || []} />
+              <SelectField label="분기부 병변" value={furcation} onChange={setFurcation} options={DENTAL_TOOTH_TESTS.furcation?.options || []} />
             </div>
           </section>
 
@@ -221,11 +227,12 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">병변</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectField label="치관 골절" value={fracture} onChange={setFracture} options={FRACTURE_OPTS} />
-              <SelectField label="우식 (충치)" value={caries} onChange={setCaries} options={SEVERITY} />
-              <SelectField label="치근 흡수" value={resorption} onChange={setResorption} options={RESORPTION_OPTS} />
-              <SelectField label="마모 (교모)" value={attrition} onChange={setAttrition} options={SEVERITY} />
-              <SelectField label="마모 (마찰)" value={abrasion} onChange={setAbrasion} options={SEVERITY} />
+              <SelectField label="치관 골절" value={fracture} onChange={setFracture} options={DENTAL_TOOTH_TESTS.tooth_fracture?.options || []} />
+              <SelectField label="치아 흡수 병기 (TR Stage)" value={resorptionStage} onChange={setResorptionStage} options={DENTAL_TOOTH_TESTS.tooth_resorption_stage?.options || []} />
+              <SelectField label="치아 흡수 유형 (TR Type)" value={resorptionType} onChange={setResorptionType} options={DENTAL_TOOTH_TESTS.tooth_resorption_type?.options || []} />
+              <SelectField label="우식 (충치)" value={caries} onChange={setCaries} options={DENTAL_TOOTH_TESTS.caries?.options || SEVERITY_OPTS} />
+              <SelectField label="마모 (교모)" value={attrition} onChange={setAttrition} options={SEVERITY_OPTS} />
+              <SelectField label="마모 (마찰)" value={abrasion} onChange={setAbrasion} options={SEVERITY_OPTS} />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="pulp" checked={pulpExposure} onCheckedChange={setPulpExposure} />
@@ -236,8 +243,19 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
           {/* 처치 & 계획 */}
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">처치 & 계획</p>
-            <MultiCheckField label="완료된 처치" selected={treatmentDone} onChange={setTreatmentDone} />
-            <MultiCheckField label="치료 계획" selected={treatmentPlan} onChange={setTreatmentPlan} />
+            <div className="space-y-2">
+              <MultiCheckField label="치료 계획" selected={treatmentPlan} onChange={setTreatmentPlan} options={DENTAL_TOOTH_TESTS.treatment_plan?.options || []} />
+              <div className="pl-1">
+                <AvdcAutocompleteInput value={treatmentPlanOther} onChange={setTreatmentPlanOther} placeholder="기타 치료 계획 (AVDC 약어 또는 정의 검색)" />
+              </div>
+            </div>
+            <div className="border-t my-2" />
+            <div className="space-y-2">
+              <MultiCheckField label="완료된 처치" selected={treatmentDone} onChange={setTreatmentDone} options={DENTAL_TOOTH_TESTS.treatment_done?.options || []} />
+              <div className="pl-1">
+                <AvdcAutocompleteInput value={treatmentDoneOther} onChange={setTreatmentDoneOther} placeholder="기타 완료된 처치 (AVDC 약어 또는 정의 검색)" />
+              </div>
+            </div>
             <SelectField label="우선순위" value={priority} onChange={(v) => setPriority(v as DentalTooth['treatment_priority'])} options={PRIORITY_OPTS} />
             <div className="space-y-1">
               <Label className="text-xs">방사선 소견</Label>

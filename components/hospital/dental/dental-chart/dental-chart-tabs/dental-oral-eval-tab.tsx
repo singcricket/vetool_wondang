@@ -10,23 +10,23 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { updateDentalChart } from '@/lib/actions/dental/update-dental-chart'
 import type { DentalChartDetail } from '@/types/dental/dental-type'
+import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 
 type Props = { chartDetail: DentalChartDetail; hosId: string }
 
-const SKULL_OPTS = ['dolichocephalic', 'mesocephalic', 'brachycephalic']
-const OCCLUSION_OPTS = ['normal', 'class1', 'class2', 'class3', 'class4']
-const CROWDING_OPTS = ['none', 'mild', 'moderate', 'severe']
-const GINGIVITIS_OPTS = ['GI0', 'GI1', 'GI2', 'GI3']
-const CALCULUS_OPTS = ['CI0', 'CI1', 'CI2', 'CI3']
-const STAGE_OPTS = ['PD0', 'PD1', 'PD2', 'PD3', 'PD4']
-
-function SelectF({ label, value, onChange, options }: { label: string; value: string | null; onChange: (v: string) => void; options: string[] }) {
+function SelectF({ label, value, onChange, options }: { label: string; value: string | null; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
   return (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
       <Select value={value ?? ''} onValueChange={onChange}>
         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="선택" /></SelectTrigger>
-        <SelectContent>{options.map((o) => <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>)}</SelectContent>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value} className="text-xs">
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
     </div>
   )
@@ -91,18 +91,18 @@ export default function DentalOralEvalTab({ chartDetail, hosId }: Props) {
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">두개 / 교합</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectF label="두개 유형" value={skullType} onChange={setSkullType} options={SKULL_OPTS} />
-              <SelectF label="교합" value={occlusion} onChange={setOcclusion} options={OCCLUSION_OPTS} />
-              <SelectF label="혼잡도" value={crowding} onChange={setCrowding} options={CROWDING_OPTS} />
+              <SelectF label="두개 유형" value={skullType} onChange={setSkullType} options={DENTAL_CHART_TESTS.skull_type?.options || []} />
+              <SelectF label="교합" value={occlusion} onChange={setOcclusion} options={DENTAL_CHART_TESTS.occlusion?.options || []} />
+              <SelectF label="혼잡도" value={crowding} onChange={setCrowding} options={DENTAL_CHART_TESTS.crowding?.options || []} />
             </div>
           </section>
 
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">전체 치주 평가</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectF label="잇몸 염증 (전체)" value={gingivitisOverall} onChange={setGingivitisOverall} options={GINGIVITIS_OPTS} />
-              <SelectF label="치석 (전체)" value={calculusOverall} onChange={setCalculusOverall} options={CALCULUS_OPTS} />
-              <SelectF label="치주 질환 병기 (AVDC)" value={periodontitisStage} onChange={setPeriodontitisStage} options={STAGE_OPTS} />
+              <SelectF label="잇몸 염증 (전체)" value={gingivitisOverall} onChange={setGingivitisOverall} options={DENTAL_CHART_TESTS.gingivitis_overall?.options || []} />
+              <SelectF label="치석 (전체)" value={calculusOverall} onChange={setCalculusOverall} options={DENTAL_CHART_TESTS.calculus_overall?.options || []} />
+              <SelectF label="치주 질환 병기 (AVDC)" value={periodontitisStage} onChange={setPeriodontitisStage} options={DENTAL_CHART_TESTS.periodontitis_stage?.options || []} />
             </div>
           </section>
 

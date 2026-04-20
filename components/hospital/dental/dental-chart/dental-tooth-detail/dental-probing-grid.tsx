@@ -1,6 +1,6 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type SixPoint = {
   ml: number | null
@@ -27,8 +27,8 @@ const KEY_LABELS: Record<keyof SixPoint, string> = {
 
 export default function DentalProbingGrid({ label, values, onChange, disabled }: Props) {
   function handleChange(key: keyof SixPoint, raw: string) {
-    const num = raw === '' ? null : Number(raw)
-    onChange(key, num === null || isNaN(num) ? null : Math.min(20, Math.max(0, num)))
+    const num = raw === 'none' ? null : Number(raw)
+    onChange(key, num)
   }
 
   function renderRow(keys: (keyof SixPoint)[]) {
@@ -37,15 +37,17 @@ export default function DentalProbingGrid({ label, values, onChange, disabled }:
         {keys.map((k) => (
           <div key={k} className="flex flex-col items-center gap-0.5">
             <span className="text-[10px] font-medium text-muted-foreground">{KEY_LABELS[k]}</span>
-            <Input
-              type="number"
-              min={0}
-              max={20}
-              value={values[k] ?? ''}
-              onChange={(e) => handleChange(k, e.target.value)}
-              disabled={disabled}
-              className="h-7 w-12 text-center text-xs"
-            />
+            <Select value={values[k]?.toString() ?? 'none'} onValueChange={(val) => handleChange(k, val)} disabled={disabled}>
+              <SelectTrigger className="h-7 w-[52px] px-1 py-0 justify-center text-xs text-center [&>span]:text-center">
+                <SelectValue placeholder="-" />
+              </SelectTrigger>
+              <SelectContent className="min-w-[52px]">
+                <SelectItem value="none" className="text-xs justify-center">-</SelectItem>
+                {Array.from({ length: 11 }, (_, i) => (
+                  <SelectItem key={i} value={i.toString()} className="text-xs justify-center">{i}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         ))}
       </div>
