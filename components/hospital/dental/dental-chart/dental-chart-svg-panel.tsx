@@ -1,6 +1,7 @@
 'use client'
 
 import { DentalChartCanineCombined } from '@/constants/hospital/dental/dental_chart_canine_combined'
+import { DentalChartFelineCombined } from '@/constants/hospital/dental/dental_chart_feline_combined'
 import type { DentalTooth } from '@/types/dental/dental-type'
 
 type Props = {
@@ -16,7 +17,7 @@ function getRecordedToothIds(teeth: DentalTooth[]): Set<string> {
       .filter(
         (t) =>
           t.status !== 'present' ||
-          t.gingivitis ||
+          t. gingivitis ||
           t.calculus ||
           t.fracture ||
           t.tooth_note,
@@ -32,18 +33,25 @@ export default function DentalChartSvgPanel({
   teeth,
 }: Props) {
   const recordedIds = getRecordedToothIds(teeth)
+  const isFeline = species?.toLowerCase().startsWith('fel')
 
   return (
     <div className="flex h-full flex-col">
       {/* SVG 컨테이너 — 가로 스크롤 허용, 세로 fill */}
       <div className="flex-1 overflow-auto">
-        <DentalChartCanineCombined
-          selectedToothId={selectedToothId}
-          onToothClick={onToothClick}
-          /* SVG 원본 비율(1420×680) 유지하며 컨테이너에 맞게 축소/확대 */
-          style={{ width: '100%', height: 'auto', display: 'block' }}
-          viewBox="0 0 1420 680"
-        />
+        {isFeline ? (
+          <DentalChartFelineCombined
+            selectedToothId={selectedToothId}
+            onToothClick={onToothClick}
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          />
+        ) : (
+          <DentalChartCanineCombined
+            selectedToothId={selectedToothId}
+            onToothClick={onToothClick}
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          />
+        )}
       </div>
 
       {/* 기록된 치아 배지 */}

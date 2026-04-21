@@ -70,29 +70,59 @@ export default function AvdcAutocompleteInput({ value, onChange, placeholder = '
       </PopoverTrigger>
       {/* Popover 포커싱으로 인해 Input이 blur되지 않게 onOpenAutoFocus 방지 */}
       <PopoverContent 
-        className="w-[300px] p-0" 
+        className="w-[300px] p-0 shadow-lg border rounded-md overflow-hidden" 
         align="start" 
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        <Command shouldFilter={false}>
-          <CommandList className="max-h-[250px] overflow-y-auto">
-            <CommandGroup heading="AVDC 약어 추천 목록">
-              {results.map((r: AvdcAbbrev, index: number) => (
-                <CommandItem 
-                  key={`${r.abbr}-${index}`} 
-                  value={`${r.abbr}-${index}`} 
-                  onSelect={() => handleSelect(r.abbr)} 
-                  className="cursor-pointer"
-                >
-                  <span className="text-xs font-medium">
-                    {r.definition} ({r.abbr}{r.definition_kr ? ` : ${r.definition_kr}` : ''})
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+        <style>{`
+          .avdc-scroll::-webkit-scrollbar {
+            display: block !important;
+            width: 5px !important;
+          }
+          .avdc-scroll::-webkit-scrollbar-track {
+            background: transparent !important;
+          }
+          .avdc-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1 !important;
+            border-radius: 20px !important;
+          }
+          .avdc-scroll {
+            scrollbar-width: thin !important;
+            scrollbar-color: #cbd5e1 transparent !important;
+            -ms-overflow-style: auto !important;
+          }
+        `}</style>
+        
+        <div 
+          className="w-full avdc-scroll" 
+          style={{ 
+            maxHeight: '300px', 
+            overflowY: 'auto', 
+            pointerEvents: 'auto', 
+            scrollBehavior: 'auto' 
+          }}
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <Command className="h-auto overflow-visible" shouldFilter={false}>
+            <CommandList className="h-auto max-h-none overflow-visible">
+              <CommandGroup heading="AVDC 약어 추천 목록">
+                {results.map((r: AvdcAbbrev, index: number) => (
+                  <CommandItem 
+                    key={`${r.abbr}-${index}`} 
+                    value={`${r.abbr}-${index}`} 
+                    onSelect={() => handleSelect(r.abbr)} 
+                    className="cursor-pointer"
+                  >
+                    <span className="text-xs font-medium">
+                      {r.definition} ({r.abbr}{r.definition_kr ? ` : ${r.definition_kr}` : ''})
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </div>
       </PopoverContent>
     </Popover>
   )

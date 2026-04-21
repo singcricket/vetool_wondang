@@ -49,11 +49,12 @@ function SelectField({ label, value, onChange, options }: {
   return (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>
-      <Select value={value ?? 'none'} onValueChange={onChange}>
+      <Select value={value || 'clear'} onValueChange={(v) => onChange(v === 'clear' ? '' : v)}>
         <SelectTrigger className="h-8 text-xs">
-          <SelectValue />
+          <SelectValue placeholder="선택 안 함" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="clear" className="text-xs text-muted-foreground italic">선택 안 함</SelectItem>
           {options.map((o) => (
             <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
           ))}
@@ -101,22 +102,36 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
   // ── state 초기값 ──
   const [status, setStatus] = useState<string>(existing?.status ?? 'present')
   const [isDeciduous, setIsDeciduous] = useState(existing?.is_deciduous ?? false)
-  const [gingivitis, setGingivitis] = useState<string>(existing?.gingivitis ?? 'none')
-  const [calculus, setCalculus] = useState<string>(existing?.calculus ?? 'none')
-  const [plaque, setPlaque] = useState<string>(existing?.plaque ?? 'none')
-  const [mobility, setMobility] = useState<string>(existing?.mobility ?? 'none')
-  const [furcation, setFurcation] = useState<string>(existing?.furcation ?? 'none')
-  const [fracture, setFracture] = useState<string>(existing?.fracture ?? 'none')
+  const [periodontalStage, setPeriodontalStage] = useState<string>(existing?.periodontal_stage ?? '')
+  const [gingivitis, setGingivitis] = useState<string>(existing?.gingivitis ?? '')
+  const [calculus, setCalculus] = useState<string>(existing?.calculus ?? '')
+  const [plaque, setPlaque] = useState<string>(existing?.plaque ?? '')
+  const [mobility, setMobility] = useState<string>(existing?.mobility ?? '')
+  const [furcation, setFurcation] = useState<string>(existing?.furcation ?? '')
+  const [fracture, setFracture] = useState<string>(existing?.fracture ?? '')
   const [pulpExposure, setPulpExposure] = useState(existing?.pulp_exposure ?? false)
-  const [caries, setCaries] = useState<string>(existing?.caries ?? 'none')
-  const [resorptionStage, setResorptionStage] = useState<string>(existing?.resorption_stage ?? 'none')
-  const [resorptionType, setResorptionType] = useState<string>(existing?.resorption_type ?? 'none')
-  const [attrition, setAttrition] = useState<string>(existing?.attrition ?? 'none')
-  const [abrasion, setAbrasion] = useState<string>(existing?.abrasion ?? 'none')
-  const [treatmentDone, setTreatmentDone] = useState<string[]>(existing?.treatment_done ?? [])
-  const [treatmentDoneOther, setTreatmentDoneOther] = useState<string>(existing?.treatment_done_other ?? '')
-  const [treatmentPlan, setTreatmentPlan] = useState<string[]>(existing?.treatment_plan ?? [])
-  const [treatmentPlanOther, setTreatmentPlanOther] = useState<string>(existing?.treatment_plan_other ?? '')
+  const [caries, setCaries] = useState<string>(existing?.caries ?? '')
+  const [resorptionStage, setResorptionStage] = useState<string>(existing?.resorption_stage ?? '')
+  const [resorptionType, setResorptionType] = useState<string>(existing?.resorption_type ?? '')
+  const [attrition, setAttrition] = useState<string>(existing?.attrition ?? '')
+  const [abrasion, setAbrasion] = useState<string>(existing?.abrasion ?? '')
+  const predefinedDone = DENTAL_TOOTH_TESTS.treatment_done.options?.map((o) => o.value) || []
+  const allDone = existing?.treatment_done ?? []
+  const [treatmentDone, setTreatmentDone] = useState<string[]>(allDone.filter((x) => predefinedDone.includes(x)))
+  const [treatmentDoneOther, setTreatmentDoneOther] = useState<string>(
+    allDone.filter((x) => !predefinedDone.includes(x)).length > 0
+      ? allDone.filter((x) => !predefinedDone.includes(x)).join(', ') + ', '
+      : ''
+  )
+
+  const predefinedPlan = DENTAL_TOOTH_TESTS.treatment_plan.options?.map((o) => o.value) || []
+  const allPlan = existing?.treatment_plan ?? []
+  const [treatmentPlan, setTreatmentPlan] = useState<string[]>(allPlan.filter((x) => predefinedPlan.includes(x)))
+  const [treatmentPlanOther, setTreatmentPlanOther] = useState<string>(
+    allPlan.filter((x) => !predefinedPlan.includes(x)).length > 0
+      ? allPlan.filter((x) => !predefinedPlan.includes(x)).join(', ') + ', '
+      : ''
+  )
   const [priority, setPriority] = useState(existing?.treatment_priority ?? null)
   const [xrayFinding, setXrayFinding] = useState(existing?.xray_finding ?? '')
   const [toothNote, setToothNote] = useState(existing?.tooth_note ?? '')
@@ -138,29 +153,34 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
         chart_id: chartId,
         hos_id: hosId,
         tooth_id: Number(toothId),
-        status: status as DentalTooth['status'],
+        status,
         is_deciduous: isDeciduous,
-        gingivitis: gingivitis as DentalTooth['gingivitis'],
-        calculus: calculus as DentalTooth['calculus'],
-        plaque: plaque as DentalTooth['plaque'],
-        mobility: mobility as DentalTooth['mobility'],
-        furcation: furcation as DentalTooth['furcation'],
-        fracture: fracture as DentalTooth['fracture'],
+        periodontal_stage: periodontalStage || null,
+        gingivitis: gingivitis || null,
+        calculus: calculus || null,
+        plaque: plaque || null,
+        mobility: mobility || null,
+        furcation: furcation || null,
+        fracture: fracture || null,
         pulp_exposure: pulpExposure,
-        caries: caries as DentalTooth['caries'],
-        resorption_stage: resorptionStage as DentalTooth['resorption_stage'],
-        resorption_type: resorptionType as DentalTooth['resorption_type'],
-        attrition: attrition as DentalTooth['attrition'],
-        abrasion: abrasion as DentalTooth['abrasion'],
+        caries: caries || null,
+        resorption_stage: resorptionStage || null,
+        resorption_type: resorptionType || null,
+        attrition: attrition || null,
+        abrasion: abrasion || null,
         probing_ml: probing.ml, probing_l: probing.l, probing_dl: probing.dl,
         probing_mb: probing.mb, probing_b: probing.b, probing_db: probing.db,
         recession_ml: recession.ml, recession_l: recession.l, recession_dl: recession.dl,
         recession_mb: recession.mb, recession_b: recession.b, recession_db: recession.db,
-        treatment_done: treatmentDone,
-        treatment_done_other: treatmentDoneOther || null,
-        treatment_plan: treatmentPlan,
-        treatment_plan_other: treatmentPlanOther || null,
-        treatment_priority: priority as DentalTooth['treatment_priority'],
+        treatment_done: (() => {
+          const arr = Array.from(new Set([...treatmentDone, ...treatmentDoneOther.split(',').map(s=>s.trim()).filter(Boolean)]))
+          return arr.length > 0 ? arr : null
+        })(),
+        treatment_plan: (() => {
+          const arr = Array.from(new Set([...treatmentPlan, ...treatmentPlanOther.split(',').map(s=>s.trim()).filter(Boolean)]))
+          return arr.length > 0 ? arr : null
+        })(),
+        treatment_priority: priority,
         xray_finding: xrayFinding || null,
         tooth_note: toothNote || null,
       })
@@ -195,6 +215,7 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">치주 평가</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <SelectField label="치주 질환 병기" value={periodontalStage} onChange={setPeriodontalStage} options={DENTAL_TOOTH_TESTS.periodontal_stage?.options || []} />
               <SelectField label="잇몸 염증" value={gingivitis} onChange={setGingivitis} options={DENTAL_TOOTH_TESTS.gingivitis?.options || []} />
               <SelectField label="치석" value={calculus} onChange={setCalculus} options={DENTAL_TOOTH_TESTS.calculus?.options || []} />
               <SelectField label="치태" value={plaque} onChange={setPlaque} options={DENTAL_TOOTH_TESTS.plaque?.options || []} />
@@ -228,8 +249,8 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">병변</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <SelectField label="치관 골절" value={fracture} onChange={setFracture} options={DENTAL_TOOTH_TESTS.tooth_fracture?.options || []} />
-              <SelectField label="치아 흡수 병기 (TR Stage)" value={resorptionStage} onChange={setResorptionStage} options={DENTAL_TOOTH_TESTS.tooth_resorption_stage?.options || []} />
-              <SelectField label="치아 흡수 유형 (TR Type)" value={resorptionType} onChange={setResorptionType} options={DENTAL_TOOTH_TESTS.tooth_resorption_type?.options || []} />
+              <SelectField label="치아 흡수 병기 (Stage)" value={resorptionStage} onChange={setResorptionStage} options={DENTAL_TOOTH_TESTS.resorption_stage?.options || []} />
+              <SelectField label="치아 흡수 유형 (TR Type)" value={resorptionType} onChange={setResorptionType} options={DENTAL_TOOTH_TESTS.resorption_type?.options || []} />
               <SelectField label="우식 (충치)" value={caries} onChange={setCaries} options={DENTAL_TOOTH_TESTS.caries?.options || SEVERITY_OPTS} />
               <SelectField label="마모 (교모)" value={attrition} onChange={setAttrition} options={SEVERITY_OPTS} />
               <SelectField label="마모 (마찰)" value={abrasion} onChange={setAbrasion} options={SEVERITY_OPTS} />

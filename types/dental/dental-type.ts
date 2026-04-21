@@ -102,12 +102,13 @@ export type DentalTooth = {
   tooth_name: string | null
   is_deciduous: boolean
 
-  status: 'present' | 'ANO' | 'extracted' | 'T/U' | 'T/I' | 'DT/P'
+  status: string | null
 
   // 치주 평가
-  gingivitis: 'GI0' | 'GI1' | 'GI2' | 'GI3' | null
-  calculus: 'CI0' | 'CI1' | 'CI2' | 'CI3' | null
-  plaque: 'PI0' | 'PI1' | 'PI2' | 'PI3' | null
+  periodontal_stage: string | null
+  gingivitis: string | null
+  calculus: string | null
+  plaque: string | null
 
   // 치주낭 깊이 (mm)
   probing_ml: number | null
@@ -126,27 +127,25 @@ export type DentalTooth = {
   recession_db: number | null
 
   // 동요도 / 분기부
-  mobility: 'M0' | 'M1' | 'M2' | 'M3' | null
-  furcation: 'F0' | 'F1' | 'F2' | 'F3' | null
+  mobility: string | null
+  furcation: string | null
 
   // 병변
-  fracture: 'none' | 'enamel' | 'uncomplicated' | 'complicated' | 'crown_root' | 'root' | null
+  fracture: string | null
   pulp_exposure: boolean
-  caries: 'none' | 'mild' | 'moderate' | 'severe' | null
-  resorption_stage: 'none' | 'TR1' | 'TR2' | 'TR3' | 'TR4' | 'TR5' | null
-  resorption_type: 'none' | 'T1' | 'T2' | 'T3' | null
-  staining: 'none' | 'mild' | 'moderate' | 'severe' | null
-  attrition: 'none' | 'mild' | 'moderate' | 'severe' | null
-  abrasion: 'none' | 'mild' | 'moderate' | 'severe' | null
+  caries: string | null
+  resorption_stage: string | null
+  resorption_type: string | null
+  staining: string | null
+  attrition: string | null
+  abrasion: string | null
   supernumerary: boolean
 
   // 방사선 / 처치 / 계획
   xray_finding: string | null
-  treatment_done: string[]
-  treatment_done_other: string | null
-  treatment_plan: string[]
-  treatment_plan_other: string | null
-  treatment_priority: 'urgent' | 'recommended' | 'elective' | 'monitor' | null
+  treatment_done: string[] | null
+  treatment_plan: string[] | null
+  treatment_priority: string | null
 
   tooth_note: string | null
 

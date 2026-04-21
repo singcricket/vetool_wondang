@@ -538,8 +538,8 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
 
   // ── 치아 흡수 (FORL / TR) ──────────────────────────────────
   // ── 치아 흡수 병기 (TR Stage) ─────────────────────────────
-  tooth_resorption_stage: {
-    testID:     'tooth_resorption_stage',
+  resorption_stage: {
+    testID:     'resorption_stage',
     testName:   'Tooth Resorption Stage',
     testNameKo: '치아 흡수 병기 (Stage)',
     testType:   'select',
@@ -589,8 +589,8 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
   },
 
   // ── 치아 흡수 유형 (TR Type) ──────────────────────────────
-  tooth_resorption_type: {
-    testID:     'tooth_resorption_type',
+  resorption_type: {
+    testID:     'resorption_type',
     testName:   'Tooth Resorption Type',
     testNameKo: '치아 흡수 유형 (Type)',
     testType:   'select',

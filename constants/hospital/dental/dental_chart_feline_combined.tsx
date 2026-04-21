@@ -16,7 +16,7 @@ export const toothNames: Record<string, string> = {
   "407":"Rt Mand 3rd PM","408":"Rt Mand 4th PM","409":"Rt Mand 1st Molar (M1)","410":"Rt Mand 2nd Molar","411":"Rt Mand 3rd Molar"
 };
 
-export interface DentalChartCanineCombinedProps extends React.SVGProps<SVGSVGElement> {
+export interface DentalChartFelineCombinedProps extends React.SVGProps<SVGSVGElement> {
   selectedToothId?: string | null;
   onToothClick?: (toothId: string) => void;
 }
@@ -26,32 +26,28 @@ export interface DentalChartCanineCombinedProps extends React.SVGProps<SVGSVGEle
 // 각 SVG는 독립적인 좌표계를 가짐
 // ────────────────────────────────────────────────────────────────────
 
-// 개상악A (3444px wide) — buccal/lateral view
-// 갭: 106→221, 280→409, 510→603, 671→775, 832→929, 1140→1303, 1347→1498,
-//     1530→1687, 1712→1848, 1872→2006, 2036→2157, 2207→2335, 2558→2649,
-//     2707→2797, 2873→2986, 3090→3196, 3265→3358
+// 고양이상악A (3444px wide) — buccal/lateral view
 const maxA_teeth: [string, number, number][] = [
-  ["110",    0,  180], // 0 → gap@106(+buffer)
-  ["109",  221,  395], // 221 → 280
-  ["108",  409,  555], // 409 → 510
-  ["107",  603,  715], // 603 → 671
-  ["106",  775,  875], // 775 → 832
-  ["105",  929, 1000], // 929 → 1140
-  ["104", 1010, 1250], // 1303 → 1347 (canine)
-  ["103", 1270, 1420], // 1498 → 1530
-  ["102", 1440, 1590], // 1687 → 1712
-  ["101", 1610, 1770], // 1848 → 1872
-  ["201", 1790, 1940], // 2006 → 2036
-  ["202", 1950, 2100], // 2157 → 2207
-  ["203", 2120, 2280], // 2335 → 2558
-  ["204", 2300, 2500], // canine
-  ["205", 2510, 2620], // 2797 → 2873
-  ["206", 2620, 2770], // 2986 → 3090
-  ["207", 2780, 2920], // 3196 → 3265
-  ["208", 2940, 3150], // 3358 → end
+  ["110",    0,  180],
+  ["109",  221,  395],
+  ["108",  409,  555],
+  ["107",  603,  715],
+  ["106",  775,  875],
+  ["105",  929, 1000],
+  ["104", 1010, 1250],
+  ["103", 1270, 1420],
+  ["102", 1440, 1590],
+  ["101", 1610, 1770],
+  ["201", 1790, 1940],
+  ["202", 1950, 2100],
+  ["203", 2120, 2280],
+  ["204", 2300, 2500],
+  ["205", 2510, 2620],
+  ["206", 2620, 2770],
+  ["207", 2780, 2920],
+  ["208", 2940, 3150],
   ["209", 3160,3325],
-   ["210", 3330,3480]
-  // 209, 210 not visible in this arrangement (only 18 shown)
+  ["210", 3330,3480]
 ];
 
 // 개상악B (3444px wide) — occlusal/crown view
@@ -62,7 +58,7 @@ const maxB_teeth: [string, number, number][] = [
   ["107",  608,  718],
   ["106",  765,  875],
   ["105",  914, 1000],
-  ["104", 1097, 1160], // corrected
+  ["104", 1097, 1160],
   ["103", 1300, 1398],
   ["102", 1493, 1555],
   ["101", 1684, 1760],
@@ -78,9 +74,6 @@ const maxB_teeth: [string, number, number][] = [
 ];
 
 // 개하악A (3483px wide) — buccal/lateral view
-// 갭: 90→220, 281→397, 495→595, 646→779, 836→936, 971→1061, 1079→1191,
-//     1212→1370, 1413→1544, 1568→1702, 1732→1854, 1879→1990, 2021→2111,
-//     2154→2271, 2329→2443, 2617→2702, 2769→2860, 2938→3041, 3291→3380
 const manA_teeth: [string, number, number][] = [
   ["411",    50,  180],
   ["410",  210,  345],
@@ -107,9 +100,6 @@ const manA_teeth: [string, number, number][] = [
 ];
 
 // 개하악B (3483px wide) — occlusal/crown view
-// 갭: 101→219, 282→387, 497→597, 664→769, 847→985, 985→1087, 1205→1371,
-//     1398→1542, 1577→1699, 1725→1858, 1878→1984, 2015→2116, 2156→2271,
-//     2363→2444, 2465→2549, 2935→3037, 3292→3387
 const manB_teeth: [string, number, number][] = [
   ["411",    0,  160],
   ["410",  219,  340],
@@ -142,12 +132,11 @@ const maxB_srcW = 3444; const maxB_srcH = 272;
 const manB_srcW = 3483; const manB_srcH = 236;
 const manA_srcW = 3483; const manA_srcH = 305;
 
-const maxA_dispH = Math.round(DISPLAY_W * maxA_srcH / maxA_srcW); // ~115
-const maxB_dispH = Math.round(DISPLAY_W * maxB_srcH / maxB_srcW); // ~111 → use 68
-const manB_dispH = Math.round(DISPLAY_W * manB_srcH / manB_srcW); // ~95 → use 60
-const manA_dispH = Math.round(DISPLAY_W * manA_srcH / manA_srcW); // ~122
+const maxA_dispH = Math.round(DISPLAY_W * maxA_srcH / maxA_srcW);
+const maxB_dispH = Math.round(DISPLAY_W * maxB_srcH / maxB_srcW);
+const manB_dispH = Math.round(DISPLAY_W * manB_srcH / manB_srcW);
+const manA_dispH = Math.round(DISPLAY_W * manA_srcH / manA_srcW);
 
-// Adjusted display heights to fit nicely
 const ROW = {
   maxA: { y: 12,  h: 115 }, // 상악 옆면
   maxB: { y: 127, h: 68  }, // 상악 크라운
@@ -156,12 +145,10 @@ const ROW = {
 };
 const TOTAL_H = ROW.manA.y + ROW.manA.h + 16; // 398
 
-// Scale source x-coords to display x-coords
 function scaleX(srcX: number, srcW: number): number {
   return Math.round((srcX / srcW) * DISPLAY_W);
 }
 
-// A single clickable tooth overlay (transparent rect that sits on top of the image)
 function ToothHit({
   id, x1, x2, srcW, rowY, rowH, selected, onClick,
 }: {
@@ -187,11 +174,16 @@ function ToothHit({
   );
 }
 
-export const DentalChartCanineCombined = ({
+const FELINE_MISSING = new Set([
+  "110", "105", "205", "210", 
+  "411", "410", "406", "405", "305", "306", "310", "311"
+]);
+
+export const DentalChartFelineCombined = ({
   selectedToothId,
   onToothClick,
   ...props
-}: DentalChartCanineCombinedProps) => {
+}: DentalChartFelineCombinedProps) => {
   const click = (id: string) => () => onToothClick?.(id);
   const sel   = (id: string) => selectedToothId === id;
 
@@ -210,97 +202,74 @@ export const DentalChartCanineCombined = ({
         `}}/>
       </defs>
 
-      {/* Background */}
-      {/* <rect width={DISPLAY_W} height={TOTAL_H} fill="#fafaf8" rx="3"/> */}
-
       <g transform="translate(-30, 0)">
-        {/* 4개 SVG 이미지 (public/dental/) */}
         <image
-          href="/dental/%EA%B0%9C%EC%83%81%EC%95%85A.svg"
+          href="/dental/%EA%B3%A0%EC%96%91%EC%9D%B4%EC%83%81%EC%95%85A.svg"
           x={15} y={ROW.maxA.y}
           width={DISPLAY_W - 10} height={ROW.maxA.h}
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
         />
         <image
-          href="/dental/%EA%B0%9C%EC%83%81%EC%95%85B.svg"
+          href="/dental/%EA%B3%A0%EC%96%91%EC%9D%B4%EC%83%81%EC%95%85B.svg"
           x={15} y={ROW.maxB.y}
           width={DISPLAY_W - 10} height={ROW.maxB.h}
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
         />
         <image
-          href="/dental/%EA%B0%9C%ED%95%98%EC%95%85B.svg"
+          href="/dental/%EA%B3%A0%EC%96%91%EC%9D%B4%ED%95%98%EC%95%85B.svg"
           x={15} y={ROW.manB.y}
           width={DISPLAY_W - 10} height={ROW.manB.h}
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
         />
         <image
-          href="/dental/%EA%B0%9C%ED%95%98%EC%95%85A.svg"
+          href="/dental/%EA%B3%A0%EC%96%91%EC%9D%B4%ED%95%98%EC%95%85A.svg"
           x={15} y={ROW.manA.y}
           width={DISPLAY_W - 10} height={ROW.manA.h}
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
         />
 
-        {/* ── Row labels ── */}
-        {/* <text className="dc-lbl" x={DISPLAY_W - 2} y={ROW.maxA.y + ROW.maxA.h/2} textAnchor="middle" dominantBaseline="middle"
-          transform={`rotate(90,${DISPLAY_W-2},${ROW.maxA.y + ROW.maxA.h/2})`}>Buccal</text>
-        <text className="dc-lbl" x={DISPLAY_W - 2} y={ROW.maxB.y + ROW.maxB.h/2} textAnchor="middle" dominantBaseline="middle"
-          transform={`rotate(90,${DISPLAY_W-2},${ROW.maxB.y + ROW.maxB.h/2})`}>Occlusal</text>
-        <text className="dc-lbl" x={DISPLAY_W - 2} y={ROW.manB.y + ROW.manB.h/2} textAnchor="middle" dominantBaseline="middle"
-          transform={`rotate(90,${DISPLAY_W-2},${ROW.manB.y + ROW.manB.h/2})`}>Occlusal</text>
-        <text className="dc-lbl" x={DISPLAY_W - 2} y={ROW.manA.y + ROW.manA.h/2} textAnchor="middle" dominantBaseline="middle"
-          transform={`rotate(90,${DISPLAY_W-2},${ROW.manA.y + ROW.manA.h/2})`}>Buccal</text> */}
-
-        ── Section labels ──
-        {/* <text className="dc-sec" x={3} y={ROW.maxA.y + ROW.maxA.h/2} textAnchor="middle" dominantBaseline="middle"
-          transform={`rotate(-90,3,${ROW.maxA.y + ROW.maxA.h/2})`}>MAXILLA 상악</text>
-        <text className="dc-sec" x={3} y={ROW.manA.y + ROW.manA.h/2} textAnchor="middle" dominantBaseline="middle"
-          transform={`rotate(-90,3,${ROW.manA.y + ROW.manA.h/2})`}>MANDIBLE 하악</text> */}
-
-        {/* ── Side labels ── */}
-        {/* <text className="dc-lbl" x={100} y={6} textAnchor="start">← Right 우측</text>
-        <text className="dc-lbl" x={DISPLAY_W - 100} y={6} textAnchor="end">Left 좌측 →</text>
-        <text className="dc-lbl" x={100} y={TOTAL_H - 2} textAnchor="start">← Right 우측</text>
-        <text className="dc-lbl" x={DISPLAY_W - 100} y={TOTAL_H - 2} textAnchor="end">Left 좌측 →</text> */}
-
-        {/* ── Dividers ── */}
         <line x1={15} y1={ROW.maxB.y} x2={DISPLAY_W-15} y2={ROW.maxB.y} stroke="#ddd" strokeWidth="0.5" strokeDasharray="4 3" style={{ pointerEvents: 'none' }}/>
         <line x1={0} y1={ROW.manB.y} x2={DISPLAY_W} y2={ROW.manB.y} stroke="#94a3b8" strokeWidth="1.5" style={{ pointerEvents: 'none' }}/>
         <line x1={15} y1={ROW.manA.y} x2={DISPLAY_W-15} y2={ROW.manA.y} stroke="#ddd" strokeWidth="0.5" strokeDasharray="4 3" style={{ pointerEvents: 'none' }}/>
-        {/* 4분할을 위한 중심선 (Midline & Jaw Divider) */}
         <line x1={DISPLAY_W/2 + 30} y1={0} x2={DISPLAY_W/2 + 25} y2={TOTAL_H} stroke="#94a3b8" strokeWidth="1.5" style={{ pointerEvents: 'none' }}/>
 
-        {/* 클릭 영역 */}
         <g id="hits-maxilla">
-          {maxA_teeth.map(([id, x1, x2]) => (
-            <ToothHit
-              key={id}
-              id={id}
-              x1={x1} x2={x2}
-              srcW={maxA_srcW}
-              rowY={ROW.maxA.y}
-              rowH={ROW.maxA.h + ROW.maxB.h}
-              selected={sel(id)}
-              onClick={click(id)}
-            />
-          ))}
+          {maxA_teeth.map(([id, x1, x2]) => {
+            if (FELINE_MISSING.has(id)) return null;
+            return (
+              <ToothHit
+                key={id}
+                id={id}
+                x1={x1} x2={x2}
+                srcW={maxA_srcW}
+                rowY={ROW.maxA.y}
+                rowH={ROW.maxA.h + ROW.maxB.h}
+                selected={sel(id)}
+                onClick={click(id)}
+              />
+            );
+          })}
         </g>
         <g id="hits-mandible">
-          {manA_teeth.map(([id, x1, x2]) => (
-            <ToothHit
-              key={id}
-              id={id}
-              x1={x1} x2={x2}
-              srcW={manA_srcW}
-              rowY={ROW.manB.y}
-              rowH={ROW.manB.h + ROW.manA.h}
-              selected={sel(id)}
-              onClick={click(id)}
-            />
-          ))}
+          {manA_teeth.map(([id, x1, x2]) => {
+            if (FELINE_MISSING.has(id)) return null;
+            return (
+              <ToothHit
+                key={id}
+                id={id}
+                x1={x1} x2={x2}
+                srcW={manA_srcW}
+                rowY={ROW.manB.y}
+                rowH={ROW.manB.h + ROW.manA.h}
+                selected={sel(id)}
+                onClick={click(id)}
+              />
+            );
+          })}
         </g>
 
-        {/* 치아 번호 레이블 */}
         {maxA_teeth.map(([id, x1, x2]) => {
+          if (FELINE_MISSING.has(id)) return null;
           const cx = scaleX((x1 + x2) / 2, maxA_srcW);
           return (
             <text key={`n-${id}`}
@@ -315,6 +284,7 @@ export const DentalChartCanineCombined = ({
           );
         })}
         {manA_teeth.map(([id, x1, x2]) => {
+          if (FELINE_MISSING.has(id)) return null;
           const cx = scaleX((x1 + x2) / 2, manA_srcW);
           return (
             <text key={`n-${id}`}

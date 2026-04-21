@@ -64,6 +64,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
       {/* ── 치아 상세 Dialog ── */}
       {selectedToothId && (
         <DentalToothDialog
+          key={selectedToothId}
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           toothId={selectedToothId}

@@ -67,6 +67,7 @@ export type Database = {
           id: string
           is_deciduous: boolean | null
           mobility: string | null
+          periodontal_stage: string | null
           plaque: string | null
           probing_b: number | null
           probing_db: number | null
@@ -81,7 +82,8 @@ export type Database = {
           recession_l: number | null
           recession_mb: number | null
           recession_ml: number | null
-          resorption: string | null
+          resorption_stage: string | null
+          resorption_type: string | null
           staining: string | null
           status: string | null
           supernumerary: boolean | null
@@ -108,6 +110,7 @@ export type Database = {
           id?: string
           is_deciduous?: boolean | null
           mobility?: string | null
+          periodontal_stage?: string | null
           plaque?: string | null
           probing_b?: number | null
           probing_db?: number | null
@@ -122,7 +125,8 @@ export type Database = {
           recession_l?: number | null
           recession_mb?: number | null
           recession_ml?: number | null
-          resorption?: string | null
+          resorption_stage?: string | null
+          resorption_type?: string | null
           staining?: string | null
           status?: string | null
           supernumerary?: boolean | null
@@ -149,6 +153,7 @@ export type Database = {
           id?: string
           is_deciduous?: boolean | null
           mobility?: string | null
+          periodontal_stage?: string | null
           plaque?: string | null
           probing_b?: number | null
           probing_db?: number | null
@@ -163,7 +168,8 @@ export type Database = {
           recession_l?: number | null
           recession_mb?: number | null
           recession_ml?: number | null
-          resorption?: string | null
+          resorption_stage?: string | null
+          resorption_type?: string | null
           staining?: string | null
           status?: string | null
           supernumerary?: boolean | null
