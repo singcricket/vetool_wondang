@@ -10,7 +10,14 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { updateDentalChart } from '@/lib/actions/dental/update-dental-chart'
 import type { DentalChartDetail } from '@/types/dental/dental-type'
 
-type Props = { chartDetail: DentalChartDetail; hosId: string }
+type Props = {
+  treatmentPlan: string
+  onTreatmentPlanChange: (v: string) => void
+  recheckInterval: DentalChartDetail['recheck_interval']
+  onRecheckIntervalChange: (v: DentalChartDetail['recheck_interval']) => void
+  homecareInstruction: string
+  onHomecareInstructionChange: (v: string) => void
+}
 
 const RECHECK_OPTS: { value: DentalChartDetail['recheck_interval']; label: string }[] = [
   { value: '1month', label: '1개월' },
@@ -20,38 +27,22 @@ const RECHECK_OPTS: { value: DentalChartDetail['recheck_interval']; label: strin
   { value: 'as_needed', label: '필요 시' },
 ]
 
-export default function DentalTreatmentTab({ chartDetail, hosId }: Props) {
-  const { refresh } = useRouter()
-  const [isPending, startTransition] = useTransition()
-
-  const [treatmentPlan, setTreatmentPlan] = useState(chartDetail.treatment_plan ?? '')
-  const [recheckInterval, setRecheckInterval] = useState<DentalChartDetail['recheck_interval']>(
-    chartDetail.recheck_interval,
-  )
-  const [homecareInstruction, setHomecareInstruction] = useState(chartDetail.homecare_instruction ?? '')
-
-  function handleSave() {
-    startTransition(async () => {
-      await updateDentalChart(chartDetail.id, hosId, {
-        treatment_plan: treatmentPlan || null,
-        recheck_interval: recheckInterval,
-        homecare_instruction: homecareInstruction || null,
-      })
-      refresh()
-    })
-  }
-
+export default function DentalTreatmentTab({
+  treatmentPlan, onTreatmentPlanChange,
+  recheckInterval, onRecheckIntervalChange,
+  homecareInstruction, onHomecareInstructionChange
+}: Props) {
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <ScrollArea className="flex-1 px-4 py-4">
-        <div className="space-y-6 pb-20">
+    <div className="flex flex-col">
+      <div className="px-4 py-4">
+        <div className="space-y-6">
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">치료 계획</p>
             <div className="space-y-1">
               <Label className="text-xs">전체 치료 계획 요약</Label>
               <Textarea
                 value={treatmentPlan}
-                onChange={(e) => setTreatmentPlan(e.target.value)}
+                onChange={(e) => onTreatmentPlanChange(e.target.value)}
                 rows={5}
                 className="text-sm"
                 placeholder="향후 치료 계획을 기재하세요"
@@ -65,7 +56,7 @@ export default function DentalTreatmentTab({ chartDetail, hosId }: Props) {
               <Label className="text-xs">다음 검진 권장 주기</Label>
               <Select
                 value={recheckInterval ?? ''}
-                onValueChange={(v) => setRecheckInterval(v as DentalChartDetail['recheck_interval'])}
+                onValueChange={(v) => onRecheckIntervalChange(v as DentalChartDetail['recheck_interval'])}
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="선택" />
@@ -85,19 +76,13 @@ export default function DentalTreatmentTab({ chartDetail, hosId }: Props) {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">가정 관리 지침</p>
             <Textarea
               value={homecareInstruction}
-              onChange={(e) => setHomecareInstruction(e.target.value)}
+              onChange={(e) => onHomecareInstructionChange(e.target.value)}
               rows={4}
               className="text-sm"
               placeholder="보호자에게 안내할 가정 구강 관리 방법"
             />
           </section>
         </div>
-      </ScrollArea>
-
-      <div className="shrink-0 flex justify-end border-t bg-background px-4 py-3">
-        <Button onClick={handleSave} disabled={isPending} size="sm">
-          {isPending ? '저장 중...' : '저장'}
-        </Button>
       </div>
     </div>
   )

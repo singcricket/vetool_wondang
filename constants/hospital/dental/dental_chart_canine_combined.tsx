@@ -16,9 +16,12 @@ export const toothNames: Record<string, string> = {
   "407":"Rt Mand 3rd PM","408":"Rt Mand 4th PM","409":"Rt Mand 1st Molar (M1)","410":"Rt Mand 2nd Molar","411":"Rt Mand 3rd Molar"
 };
 
+import type { DentalTooth } from "@/types/dental/dental-type";
+
 export interface DentalChartCanineCombinedProps extends React.SVGProps<SVGSVGElement> {
   selectedToothId?: string | null;
   onToothClick?: (toothId: string) => void;
+  teeth?: DentalTooth[];
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -43,8 +46,8 @@ const maxA_teeth: [string, number, number][] = [
   ["101", 1610, 1770], // 1848 → 1872
   ["201", 1790, 1940], // 2006 → 2036
   ["202", 1950, 2100], // 2157 → 2207
-  ["203", 2120, 2280], // 2335 → 2558
-  ["204", 2300, 2500], // canine
+  ["203", 2120, 2275], // 2335 → 2558
+  ["204", 2280, 2500], // canine
   ["205", 2510, 2620], // 2797 → 2873
   ["206", 2620, 2770], // 2986 → 3090
   ["207", 2780, 2920], // 3196 → 3265
@@ -163,22 +166,61 @@ function scaleX(srcX: number, srcW: number): number {
 
 // A single clickable tooth overlay (transparent rect that sits on top of the image)
 function ToothHit({
-  id, x1, x2, srcW, rowY, rowH, selected, onClick,
+  id, x1, x2, srcW, rowY, rowH, selected, onClick, toothData
 }: {
   id: string; x1: number; x2: number; srcW: number;
   rowY: number; rowH: number; selected: boolean; onClick: () => void;
+  toothData?: DentalTooth;
 }) {
   const dx = scaleX(x1, srcW);
   const dw = scaleX(x2, srcW) - dx;
+
+  let fill = "rgba(0,0,0,0)";
+  let stroke = "transparent";
+  let strokeWidth = 0;
+  let strokeDasharray = "none";
+
+  if (selected) {
+    fill = "rgba(34,85,170,0.18)";
+    stroke = "#2255aa";
+    strokeWidth = 1.5;
+    strokeDasharray = "4 2";
+  } else if (toothData) {
+    const isExtractedDone = toothData.treatment_done?.some(t => ['X', 'XS', 'XSS'].includes(t));
+    const isExtractionPlanned = toothData.treatment_plan?.some(t => ['X', 'XS', 'XSS'].includes(t));
+    const isMissing = toothData.status === 'FE' || toothData.status === 'ANO';
+    const hasOtherTx = toothData.treatment_done && toothData.treatment_done.some(t => !['X', 'XS', 'XSS'].includes(t));
+    const hasLesion = (toothData.fracture && toothData.fracture !== 'none') || 
+                      (toothData.caries && toothData.caries !== 'none') || 
+                      (toothData.resorption_stage && toothData.resorption_stage !== 'none');
+
+    if (isMissing) {
+      fill = "rgba(128, 128, 128, 0.5)";
+    } else if (isExtractedDone) {
+      fill = "rgba(255, 0, 0, 0.2)";
+    } else if (isExtractionPlanned) {
+      fill = "rgba(255, 0, 0, 0.08)";
+      stroke = "red";
+      strokeWidth = 1.5;
+      strokeDasharray = "4 2";
+    } else if (hasOtherTx) {
+      stroke = "green";
+      strokeWidth = 1.5;
+    } else if (hasLesion) {
+      stroke = "orange";
+      strokeWidth = 2;
+    }
+  }
+
   return (
     <rect
       id={`hit-${id}`}
       x={dx} y={rowY}
       width={dw} height={rowH}
-      fill={selected ? "rgba(34,85,170,0.18)" : "rgba(0,0,0,0)"}
-      stroke={selected ? "#2255aa" : "transparent"}
-      strokeWidth={selected ? 1.5 : 0}
-      strokeDasharray={selected ? "4 2" : "none"}
+      fill={fill}
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+      strokeDasharray={strokeDasharray}
       rx={3}
       cursor="pointer"
       onClick={onClick}
@@ -190,10 +232,12 @@ function ToothHit({
 export const DentalChartCanineCombined = ({
   selectedToothId,
   onToothClick,
+  teeth = [],
   ...props
 }: DentalChartCanineCombinedProps) => {
   const click = (id: string) => () => onToothClick?.(id);
   const sel   = (id: string) => selectedToothId === id;
+  const getData = (id: string) => teeth.find(t => String(t.tooth_id) === id);
 
   return (
     <svg
@@ -281,6 +325,7 @@ export const DentalChartCanineCombined = ({
               rowH={ROW.maxA.h + ROW.maxB.h}
               selected={sel(id)}
               onClick={click(id)}
+              toothData={getData(id)}
             />
           ))}
         </g>
@@ -295,6 +340,7 @@ export const DentalChartCanineCombined = ({
               rowH={ROW.manB.h + ROW.manA.h}
               selected={sel(id)}
               onClick={click(id)}
+              toothData={getData(id)}
             />
           ))}
         </g>

@@ -119,12 +119,12 @@ export type DentalTooth = {
   probing_db: number | null
 
   // 치은 퇴축 (mm)
-  recession_ml: number | null
-  recession_l: number | null
-  recession_dl: number | null
-  recession_mb: number | null
-  recession_b: number | null
-  recession_db: number | null
+  recession_ml: string | null
+  recession_l: string | null
+  recession_dl: string | null
+  recession_mb: string | null
+  recession_b: string | null
+  recession_db: string | null
 
   // 동요도 / 분기부
   mobility: string | null
@@ -152,6 +152,22 @@ export type DentalTooth = {
   created_at?: string
   updated_at?: string
 }
+
+// ──────────────────────────────────────────────
+// Image (dental_images)
+// ──────────────────────────────────────────────
+export type DentalImage = {
+  dental_image_id: string
+  chart_id: string
+  tooth_ids: string[] | null
+  dental_chart_teeth_ids: string[] | null
+  other_tags: string[] | null
+  mark: string | null
+  img_url: string
+  is_radio: boolean
+  created_at: string
+}
+
 
 // ──────────────────────────────────────────────
 // 레거시 (하위 호환)

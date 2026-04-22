@@ -1,16 +1,16 @@
 'use client'
 
-import type { DentalTooth } from '@/types/dental/dental-type'
+import type { DentalChartDetail, DentalTooth } from '@/types/dental/dental-type'
 import DentalToothForm from '../dental-tooth-detail/dental-tooth-form'
 
 type Props = {
   selectedToothId: string | null
-  chartId: string
+  chartDetail: DentalChartDetail
   hosId: string
   teeth: DentalTooth[]
 }
 
-export default function DentalToothTab({ selectedToothId, chartId, hosId, teeth }: Props) {
+export default function DentalToothTab({ selectedToothId, chartDetail, hosId, teeth }: Props) {
   if (!selectedToothId) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
@@ -30,7 +30,7 @@ export default function DentalToothTab({ selectedToothId, chartId, hosId, teeth 
   return (
     <DentalToothForm
       toothId={selectedToothId}
-      chartId={chartId}
+      chartDetail={chartDetail}
       hosId={hosId}
       existing={existing}
     />

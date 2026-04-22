@@ -19,7 +19,7 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
     options: [
       { value: 'present',    detail: 'Tooth present',          label: '존재' },
       { value: 'ANO',        detail: 'Missing tooth (ANO)',     label: '결손 (선천성-ANO)' },
-      { value: 'extracted',  detail: 'Previously extracted',    label: '기발치' },
+      { value: 'FE',  detail: 'Formerly extracted',    label: '기발치(FE)' },
       { value: 'T/U',        detail: 'Unerupted tooth (T/U)',  label: '미맹출 (T/U)' },
       { value: 'T/I',        detail: 'Impacted tooth (T/I)',   label: '매복 (T/I)' },
       { value: 'DT/P',       detail: 'Persistent deciduous tooth (DT/P)', label: '유치 잔존 (DT/P)' },
@@ -233,39 +233,41 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
     testID:     'probing_depth',
     testName:   'Probing Depth',
     testNameKo: '치주낭 깊이',
-    testType:   'select',
+    testType:   'range',
+    unit:       'mm',
     testInfo:   '치주낭 깊이(mm). 6포인트 측정 (MB, B, DB, ML, L, DL). 개 정상 <3mm, 고양이 정상 <1mm.',
     affectedSpecies: ['canine', 'feline'],
-    options: [
-      { value: '0',  detail: '0mm',  label: '0mm' },
-      { value: '1',  detail: '1mm',  label: '1mm' },
-      { value: '2',  detail: '2mm',  label: '2mm' },
-      { value: '3',  detail: '3mm',  label: '3mm' },
-      { value: '4',  detail: '4mm',  label: '4mm' },
-      { value: '5',  detail: '5mm',  label: '5mm' },
-      { value: '6',  detail: '6mm',  label: '6mm' },
-      { value: '7',  detail: '7mm',  label: '7mm' },
-      { value: '8',  detail: '8mm',  label: '8mm' },
-      { value: '9',  detail: '9mm',  label: '9mm' },
-      { value: '10', detail: '10mm+', label: '10mm+' },
-    ],
-    optComment: {
-      '0':  '치주낭 깊이 0mm. 정상.',
-      '1':  '치주낭 깊이 1mm. 개에서는 정상, 고양이에서는 경계/주의.',
-      '2':  '치주낭 깊이 2mm. 개에서는 정상, 고양이에서는 깊은 치주낭 소견.',
-      '3':  '치주낭 깊이 3mm. 개에서는 경계 소견, 집중 관리 필요.',
-      '4':  '치주낭 깊이 4mm. 개의 중등도 치주염 지표.',
-      '5':  '치주낭 깊이 5mm. 깊은 치주낭 소견. 치주 수술 또는 발치 고려.',
-      '10': '치주낭 깊이 10mm 이상. 중증의 부착 소실.',
-    },
-    urgency: {
-      '0':  'none',
-      '1':  'none',
-      '2':  'monitor',
-      '3':  'recommended',
-      '4':  'urgent',
-      '5':  'urgent',
-      '10': 'urgent',
+    thresholds_canine: [3, 5, 7],
+    thresholds_feline: [1, 2, 3],
+    rangeComments: {
+      normal: {
+        label: 'Normal (정상)',
+        optComment: '치주낭 깊이 정상 범위 내. 이상 소견 없음.',
+        generalComment: '잇몸 건강 상태가 정상입니다. 정기적인 양치질과 검진을 권장합니다.',
+        urgency: 'none',
+        suggestedTx: ['PRO']
+      },
+      pd2: {
+        label: 'PD 2 (초기 치주염)',
+        optComment: '초기 치주염 소견. 치조골 소실 <25%. 치주 인대 부착 상실 시작.',
+        generalComment: '잇몸 질환 초기 단계입니다. 스케일링과 정밀 치주 치료로 회복이 가능합니다.',
+        urgency: 'recommended',
+        suggestedTx: ['PRO', 'RP/C']
+      },
+      pd3: {
+        label: 'PD 3 (중등도 치주염)',
+        optComment: '중등도 치주염 소견. 치조골 소실 25~50%. 치주 수술 또는 발치 고려.',
+        generalComment: '잇몸 질환이 상당히 진행되었습니다. 적극적인 치주 수술이나 상태에 따른 발치가 필요할 수 있습니다.',
+        urgency: 'urgent',
+        suggestedTx: ['PRO', 'RP/O', 'GF/B', 'GTR']
+      },
+      pd4: {
+        label: 'PD 4 (진행성 치주염)',
+        optComment: '진행성 치주염 소견. 치조골 소실 >50%. 대부분 발치 적응증.',
+        generalComment: '잇몸 뼈가 대부분 손상되어 치아를 유지하기 어려운 상태입니다. 통증과 감염 예방을 위해 발치를 권장합니다.',
+        urgency: 'urgent',
+        suggestedTx: ['XSS', 'ALV', 'RAD']
+      }
     },
     noteTags: ['probing depth', 'pocket depth', 'periodontal pocket'],
   },

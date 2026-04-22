@@ -34,7 +34,17 @@ export interface DentalTest {
 
   // range (probing depth 등)
   thresholds?: number[];
+  thresholds_canine?: number[];
+  thresholds_feline?: number[];
   unit_range?: string;
+
+  rangeComments?: Record<string, {
+    label: string;
+    optComment: string;
+    generalComment: string;
+    urgency: UrgencyLevel;
+    suggestedTx: string[];
+  }>;
 
   noteTags: string[];
 }

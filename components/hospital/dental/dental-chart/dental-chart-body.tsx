@@ -6,6 +6,7 @@ import type { DentalChartDetail, DentalTooth } from '@/types/dental/dental-type'
 import DentalToothDialog from './dental-tooth-dialog'
 import DentalChartDetailPanel from './dental-chart-detail-panel'
 import DentalChartGeneralPanel from './dental-chart-general-panel'
+import DentalImageUploadDialog from '../dental-image-uploader/dental-image-upload-dialog'
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -28,7 +29,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
-      <Tabs defaultValue="general" className="flex flex-1 flex-col overflow-hidden">
+      <Tabs defaultValue="detail" className="flex flex-1 flex-col overflow-hidden">
         <TabsList className="grid w-full grid-cols-2 rounded-none border-b bg-slate-50 p-0 h-11 shrink-0">
           <TabsTrigger 
             value="general"
@@ -68,11 +69,18 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           toothId={selectedToothId}
-          chartId={chartDetail.id}
+          chartDetail={chartDetail}
           hosId={hosId}
           existing={existingTooth}
         />
       )}
+
+      {/* ── 다중 이미지 업로더 다이얼로그 (우측 하단 플로팅 버튼) ── */}
+      <DentalImageUploadDialog
+        chartDetail={chartDetail}
+        teeth={teeth}
+        hosId={hosId}
+      />
     </div>
   )
 }

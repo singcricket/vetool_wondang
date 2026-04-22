@@ -12,15 +12,16 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { upsertDentalTooth } from '@/lib/actions/dental/upsert-dental-tooth'
 import { toothNames } from '@/constants/hospital/dental/dental_chart_canine_combined'
 import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
-import type { DentalTooth } from '@/types/dental/dental-type'
+import type { DentalChartDetail, DentalTooth } from '@/types/dental/dental-type'
+import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 import DentalProbingGrid from './dental-probing-grid'
 import AvdcAutocompleteInput from '../../avdc-autocomplete-input'
 
-type SixPoint = { ml: number | null; l: number | null; dl: number | null; mb: number | null; b: number | null; db: number | null }
+type SixPoint<T = number | null> = { ml: T; l: T; dl: T; mb: T; b: T; db: T }
 
 type Props = {
   toothId: string
-  chartId: string
+  chartDetail: DentalChartDetail
   hosId: string
   existing: DentalTooth | undefined
   onSaved?: () => void
@@ -93,7 +94,8 @@ function MultiCheckField({ label, selected, onChange, options }: {
   )
 }
 
-export default function DentalToothForm({ toothId, chartId, hosId, existing, onSaved, onCancel }: Props) {
+export default function DentalToothForm({ toothId, chartDetail, hosId, existing, onSaved, onCancel }: Props) {
+  const species = chartDetail.species || 'canine'
   const { refresh } = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -116,11 +118,16 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
   const [attrition, setAttrition] = useState<string>(existing?.attrition ?? '')
   const [abrasion, setAbrasion] = useState<string>(existing?.abrasion ?? '')
   const predefinedDone = DENTAL_TOOTH_TESTS.treatment_done.options?.map((o) => o.value) || []
-  const allDone = existing?.treatment_done ?? []
-  const [treatmentDone, setTreatmentDone] = useState<string[]>(allDone.filter((x) => predefinedDone.includes(x)))
+  const initialDone = existing?.treatment_done ? [...existing.treatment_done] : []
+  
+  // 방사선(xray_taken) 및 스케일링(procedure_scaling) 자동 포함 로직
+  if (chartDetail.xray_taken && !initialDone.includes('RAD')) initialDone.push('RAD')
+  if (chartDetail.procedure_scaling && !initialDone.includes('PRO')) initialDone.push('PRO')
+
+  const [treatmentDone, setTreatmentDone] = useState<string[]>(initialDone.filter((x) => predefinedDone.includes(x)))
   const [treatmentDoneOther, setTreatmentDoneOther] = useState<string>(
-    allDone.filter((x) => !predefinedDone.includes(x)).length > 0
-      ? allDone.filter((x) => !predefinedDone.includes(x)).join(', ') + ', '
+    initialDone.filter((x) => !predefinedDone.includes(x)).length > 0
+      ? initialDone.filter((x) => !predefinedDone.includes(x)).join(', ') + ', '
       : ''
   )
 
@@ -137,12 +144,12 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
   const [toothNote, setToothNote] = useState(existing?.tooth_note ?? '')
 
   // 치주낭 깊이
-  const [probing, setProbing] = useState<SixPoint>({
+  const [probing, setProbing] = useState<SixPoint<number | null>>({
     ml: existing?.probing_ml ?? null, l: existing?.probing_l ?? null, dl: existing?.probing_dl ?? null,
     mb: existing?.probing_mb ?? null, b: existing?.probing_b ?? null, db: existing?.probing_db ?? null,
   })
   // 치은 퇴축
-  const [recession, setRecession] = useState<SixPoint>({
+  const [recession, setRecession] = useState<SixPoint<string | null>>({
     ml: existing?.recession_ml ?? null, l: existing?.recession_l ?? null, dl: existing?.recession_dl ?? null,
     mb: existing?.recession_mb ?? null, b: existing?.recession_b ?? null, db: existing?.recession_db ?? null,
   })
@@ -150,7 +157,7 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
   function handleSave() {
     startTransition(async () => {
       await upsertDentalTooth({
-        chart_id: chartId,
+        chart_id: chartDetail.id,
         hos_id: hosId,
         tooth_id: Number(toothId),
         status,
@@ -190,8 +197,8 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <ScrollArea className="flex-1 px-4 py-4">
+    <div className="flex flex-1 flex-col overflow-hidden min-h-0">
+      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
         <div className="space-y-6 pb-32">
           {/* 치아 제목 */}
           {/* <div className="flex items-center gap-2">
@@ -228,9 +235,11 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">치주낭 깊이 (mm)</p>
             <DentalProbingGrid
+              type="input"
+              species={species}
               label="6포인트 측정"
               values={probing}
-              onChange={(k, v) => setProbing((prev) => ({ ...prev, [k]: v }))}
+              onChange={(k, v) => setProbing((prev) => ({ ...prev, [k]: v as number | null }))}
             />
           </section>
 
@@ -238,9 +247,11 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">치은 퇴축 (mm)</p>
             <DentalProbingGrid
+              type="select"
               label="6포인트 측정"
+              options={DENTAL_TOOTH_TESTS.gingival_recession.options}
               values={recession}
-              onChange={(k, v) => setRecession((prev) => ({ ...prev, [k]: v }))}
+              onChange={(k, v) => setRecession((prev) => ({ ...prev, [k]: v as string | null }))}
             />
           </section>
 
@@ -288,10 +299,10 @@ export default function DentalToothForm({ toothId, chartId, hosId, existing, onS
             </div>
           </section>
         </div>
-      </ScrollArea>
+      </div>
 
       {/* 고정 저장 버튼 */}
-      <div className="shrink-0 flex justify-end gap-2 border-t bg-background py-3">
+      <div className="shrink-0 flex justify-end gap-2 border-t bg-background px-6 py-4">
         {onCancel && (
           <Button variant="outline" size="sm" onClick={onCancel} disabled={isPending}>
             취소

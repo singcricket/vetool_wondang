@@ -12,7 +12,38 @@ import { updateDentalChart } from '@/lib/actions/dental/update-dental-chart'
 import type { DentalChartDetail } from '@/types/dental/dental-type'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 
-type Props = { chartDetail: DentalChartDetail; hosId: string }
+type Props = {
+  skullType: string | null
+  onSkullTypeChange: (v: string) => void
+  occlusion: string | null
+  onOcclusionChange: (v: string) => void
+  crowding: string | null
+  onCrowdingChange: (v: string) => void
+  gingivitisOverall: string | null
+  onGingivitisOverallChange: (v: string) => void
+  calculusOverall: string | null
+  onCalculusOverallChange: (v: string) => void
+  periodontitisStage: string | null
+  onPeriodontitisStageChange: (v: string) => void
+  oralMucosa: string
+  onOralMucosaChange: (v: string) => void
+  tongueEval: string
+  onTongueEvalChange: (v: string) => void
+  palateEval: string
+  onPalateEvalChange: (v: string) => void
+  tonsilEval: string
+  onTonsilEvalChange: (v: string) => void
+  pharynxEval: string
+  onPharynxEvalChange: (v: string) => void
+  salivaryEval: string
+  onSalivaryEvalChange: (v: string) => void
+  lymphNodeEval: string
+  onLymphNodeEvalChange: (v: string) => void
+  xrayTaken: boolean
+  onXrayTakenChange: (v: boolean) => void
+  xrayFindings: string
+  onXrayFindingsChange: (v: string) => void
+}
 
 function SelectF({ label, value, onChange, options }: { label: string; value: string | null; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
   return (
@@ -41,99 +72,67 @@ function TextF({ label, value, onChange, rows = 2 }: { label: string; value: str
   )
 }
 
-export default function DentalOralEvalTab({ chartDetail, hosId }: Props) {
-  const { refresh } = useRouter()
-  const [isPending, startTransition] = useTransition()
-
-  const [skullType, setSkullType] = useState<string | null>(chartDetail.skull_type ?? null)
-  const [occlusion, setOcclusion] = useState<string | null>(chartDetail.occlusion ?? null)
-  const [crowding, setCrowding] = useState<string | null>(chartDetail.crowding ?? null)
-  const [gingivitisOverall, setGingivitisOverall] = useState<string | null>(chartDetail.gingivitis_overall ?? null)
-  const [calculusOverall, setCalculusOverall] = useState<string | null>(chartDetail.calculus_overall ?? null)
-  const [periodontitisStage, setPeriodontitisStage] = useState<string | null>(chartDetail.periodontitis_stage ?? null)
-  const [oralMucosa, setOralMucosa] = useState(chartDetail.oral_mucosa ?? '')
-  const [tongueEval, setTongueEval] = useState(chartDetail.tongue_eval ?? '')
-  const [palateEval, setPalateEval] = useState(chartDetail.palate_eval ?? '')
-  const [tonsilEval, setTonsilEval] = useState(chartDetail.tonsil_eval ?? '')
-  const [pharynxEval, setPharynxEval] = useState(chartDetail.pharynx_eval ?? '')
-  const [salivaryEval, setSalivaryEval] = useState(chartDetail.salivary_eval ?? '')
-  const [lymphNodeEval, setLymphNodeEval] = useState(chartDetail.lymph_node_eval ?? '')
-  const [xrayTaken, setXrayTaken] = useState(chartDetail.xray_taken ?? false)
-  const [xrayFindings, setXrayFindings] = useState(chartDetail.xray_findings ?? '')
-
-  function handleSave() {
-    startTransition(async () => {
-      await updateDentalChart(chartDetail.id, hosId, {
-        skull_type: skullType as DentalChartDetail['skull_type'],
-        occlusion: occlusion as DentalChartDetail['occlusion'],
-        crowding: crowding as DentalChartDetail['crowding'],
-        gingivitis_overall: gingivitisOverall as DentalChartDetail['gingivitis_overall'],
-        calculus_overall: calculusOverall as DentalChartDetail['calculus_overall'],
-        periodontitis_stage: periodontitisStage as DentalChartDetail['periodontitis_stage'],
-        oral_mucosa: oralMucosa || null,
-        tongue_eval: tongueEval || null,
-        palate_eval: palateEval || null,
-        tonsil_eval: tonsilEval || null,
-        pharynx_eval: pharynxEval || null,
-        salivary_eval: salivaryEval || null,
-        lymph_node_eval: lymphNodeEval || null,
-        xray_taken: xrayTaken,
-        xray_findings: xrayFindings || null,
-      })
-      refresh()
-    })
-  }
-
+export default function DentalOralEvalTab({
+  skullType, onSkullTypeChange,
+  occlusion, onOcclusionChange,
+  crowding, onCrowdingChange,
+  gingivitisOverall, onGingivitisOverallChange,
+  calculusOverall, onCalculusOverallChange,
+  periodontitisStage, onPeriodontitisStageChange,
+  oralMucosa, onOralMucosaChange,
+  tongueEval, onTongueEvalChange,
+  palateEval, onPalateEvalChange,
+  tonsilEval, onTonsilEvalChange,
+  pharynxEval, onPharynxEvalChange,
+  salivaryEval, onSalivaryEvalChange,
+  lymphNodeEval, onLymphNodeEvalChange,
+  xrayTaken, onXrayTakenChange,
+  xrayFindings, onXrayFindingsChange
+}: Props) {
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <ScrollArea className="flex-1 px-4 py-4">
-        <div className="space-y-6 pb-20">
+    <div className="flex flex-col">
+      <div className="px-4 py-4">
+        <div className="space-y-6">
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">두개 / 교합</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectF label="두개 유형" value={skullType} onChange={setSkullType} options={DENTAL_CHART_TESTS.skull_type?.options || []} />
-              <SelectF label="교합" value={occlusion} onChange={setOcclusion} options={DENTAL_CHART_TESTS.occlusion?.options || []} />
-              <SelectF label="혼잡도" value={crowding} onChange={setCrowding} options={DENTAL_CHART_TESTS.crowding?.options || []} />
+              <SelectF label="두개 유형" value={skullType} onChange={onSkullTypeChange} options={DENTAL_CHART_TESTS.skull_type?.options || []} />
+              <SelectF label="교합" value={occlusion} onChange={onOcclusionChange} options={DENTAL_CHART_TESTS.occlusion?.options || []} />
+              <SelectF label="혼잡도" value={crowding} onChange={onCrowdingChange} options={DENTAL_CHART_TESTS.crowding?.options || []} />
             </div>
           </section>
 
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">전체 치주 평가</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectF label="잇몸 염증 (전체)" value={gingivitisOverall} onChange={setGingivitisOverall} options={DENTAL_CHART_TESTS.gingivitis_overall?.options || []} />
-              <SelectF label="치석 (전체)" value={calculusOverall} onChange={setCalculusOverall} options={DENTAL_CHART_TESTS.calculus_overall?.options || []} />
-              <SelectF label="치주 질환 병기 (AVDC)" value={periodontitisStage} onChange={setPeriodontitisStage} options={DENTAL_CHART_TESTS.periodontitis_stage?.options || []} />
+              <SelectF label="잇몸 염증 (전체)" value={gingivitisOverall} onChange={onGingivitisOverallChange} options={DENTAL_CHART_TESTS.gingivitis_overall?.options || []} />
+              <SelectF label="치석 (전체)" value={calculusOverall} onChange={onCalculusOverallChange} options={DENTAL_CHART_TESTS.calculus_overall?.options || []} />
+              <SelectF label="치주 질환 병기 (AVDC)" value={periodontitisStage} onChange={onPeriodontitisStageChange} options={DENTAL_CHART_TESTS.periodontitis_stage?.options || []} />
             </div>
           </section>
 
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">구강 점막 소견</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <TextF label="구강 점막" value={oralMucosa} onChange={setOralMucosa} />
-              <TextF label="혀" value={tongueEval} onChange={setTongueEval} />
-              <TextF label="구개" value={palateEval} onChange={setPalateEval} />
-              <TextF label="편도" value={tonsilEval} onChange={setTonsilEval} />
-              <TextF label="인두" value={pharynxEval} onChange={setPharynxEval} />
-              <TextF label="침샘" value={salivaryEval} onChange={setSalivaryEval} />
-              <TextF label="하악 림프절" value={lymphNodeEval} onChange={setLymphNodeEval} />
+              <TextF label="구강 점막" value={oralMucosa} onChange={onOralMucosaChange} />
+              <TextF label="혀" value={tongueEval} onChange={onTongueEvalChange} />
+              <TextF label="구개" value={palateEval} onChange={onPalateEvalChange} />
+              <TextF label="편도" value={tonsilEval} onChange={onTonsilEvalChange} />
+              <TextF label="인두" value={pharynxEval} onChange={onPharynxEvalChange} />
+              <TextF label="침샘" value={salivaryEval} onChange={onSalivaryEvalChange} />
+              <TextF label="하악 림프절" value={lymphNodeEval} onChange={onLymphNodeEvalChange} />
             </div>
           </section>
 
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">방사선</p>
             <div className="flex items-center gap-2">
-              <Switch id="xray" checked={xrayTaken} onCheckedChange={setXrayTaken} />
+              <Switch id="xray" checked={xrayTaken} onCheckedChange={onXrayTakenChange} />
               <Label htmlFor="xray" className="cursor-pointer text-xs">방사선 촬영 시행</Label>
             </div>
-            {xrayTaken && <TextF label="방사선 소견" value={xrayFindings} onChange={setXrayFindings} rows={3} />}
+            {xrayTaken && <TextF label="방사선 소견" value={xrayFindings} onChange={onXrayFindingsChange} rows={3} />}
           </section>
         </div>
-      </ScrollArea>
-
-      <div className="shrink-0 flex justify-end border-t bg-background px-4 py-3">
-        <Button onClick={handleSave} disabled={isPending} size="sm">
-          {isPending ? '저장 중...' : '저장'}
-        </Button>
       </div>
     </div>
   )

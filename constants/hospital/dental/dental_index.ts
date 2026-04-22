@@ -14,7 +14,7 @@ export type {
 
 // Data
 export { DENTAL_CHART_TESTS } from './dentalChartTests';
-export { DENTAL_TOOTH_TESTS }  from './dentalToothTestsA';
+export { DENTAL_TOOTH_TESTS }  from './dentalToothTests';
 
 // Report Generator
 export type {
@@ -36,7 +36,7 @@ export {
 
 // ── 전체 테스트 통합 조회 ────────────────────────────────────
 import { DENTAL_CHART_TESTS } from './dentalChartTests';
-import { DENTAL_TOOTH_TESTS }  from './dentalToothTestsA';
+import { DENTAL_TOOTH_TESTS }  from './dentalToothTests';
 import type { DentalTest }     from './dentalTest_types';
 
 export const ALL_DENTAL_TESTS: Record<string, DentalTest> = {

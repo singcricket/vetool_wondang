@@ -86,7 +86,7 @@ export default function DentalChartDetailPanel({
               const hidden = shouldHideNum(num)
               
               return (
-                <div key={num} className="flex flex-col items-center justify-end h-28 gap-0.5 pb-1 select-none">
+                <div key={num} className="flex flex-col items-center justify-end min-h-[7rem] h-auto gap-0.5 pb-1 select-none">
                   {!hidden && abbrs.slice().reverse().map((a, i) => (
                     <div key={i} className="text-center font-medium leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full text-slate-700 bg-slate-200 px-0.5 rounded shadow-sm w-full opacity-90">
                       {a}
@@ -123,7 +123,7 @@ export default function DentalChartDetailPanel({
               const hidden = shouldHideNum(num)
 
               return (
-                <div key={num} className="flex flex-col items-center justify-start h-28 gap-0.5 pt-1 select-none">
+                <div key={num} className="flex flex-col items-center justify-start min-h-[7rem] h-auto gap-0.5 pt-1 select-none">
                   <div 
                     onClick={() => !hidden && onToothClick(String(num))}
                     className={`font-bold border-b-2 border-slate-400 w-full text-center pb-1 mb-1 text-slate-900 ${hidden ? 'invisible' : 'cursor-pointer hover:bg-slate-200/50'}`}

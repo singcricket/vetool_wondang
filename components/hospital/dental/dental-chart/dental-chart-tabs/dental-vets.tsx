@@ -25,21 +25,17 @@ import { updateDentalChart } from '@/lib/actions/dental/update-dental-chart'
 import type { Staff } from '@/lib/services/admin/staff'
 
 type Props = {
-  chartId: string
-  hosId: string
   vetId: any // {id, role}[]
   staffs: Staff[]
+  onVetIdChange: (v: any[]) => void
 }
 
 export default function DentalVets({
-  chartId,
-  hosId,
   vetId,
   staffs,
+  onVetIdChange,
 }: Props) {
-  const { refresh } = useRouter()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // 역할별 현재 값 추출
   const currentAttending = (vetId as any[])?.find(v => v.role === '담당의')?.id ?? 'none'
@@ -51,9 +47,7 @@ export default function DentalVets({
   const attendingName = staffs.find(s => s.user_id === currentAttending)?.name ?? '미지정'
   const operatorName = staffs.find(s => s.user_id === currentOperator)?.name ?? '미지정'
 
-  const handleSave = async () => {
-    setIsSubmitting(true)
-    
+  const handleApply = () => {
     // 신규 vet_id 배열 구성
     const newVets = []
     if (selectedAttendingId !== 'none') {
@@ -62,20 +56,8 @@ export default function DentalVets({
     if (selectedOperatorId !== 'none') {
       newVets.push({ id: selectedOperatorId, role: '술자' })
     }
-
-    try {
-      await updateDentalChart(chartId, hosId, {
-        vet_id: newVets as any
-      })
-      toast.success('담당의/술자를 변경하였습니다')
-      setIsDialogOpen(false)
-      refresh()
-    } catch (error) {
-      console.error(error)
-      toast.error('변경에 실패하였습니다')
-    } finally {
-      setIsSubmitting(false)
-    }
+    onVetIdChange(newVets)
+    setIsDialogOpen(false)
   }
 
   return (
@@ -142,8 +124,8 @@ export default function DentalVets({
             <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)}>
               닫기
             </Button>
-            <Button size="sm" disabled={isSubmitting} onClick={handleSave}>
-              {isSubmitting ? <LoaderCircleIcon className="animate-spin" /> : '저장'}
+            <Button size="sm" onClick={handleApply}>
+              적용
             </Button>
           </div>
         </div>

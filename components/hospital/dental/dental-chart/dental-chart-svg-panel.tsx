@@ -37,25 +37,26 @@ export default function DentalChartSvgPanel({
 
   return (
     <div className="flex h-full flex-col">
-      {/* SVG 컨테이너 — 가로 스크롤 허용, 세로 fill */}
       <div className="flex-1 overflow-auto">
         {isFeline ? (
           <DentalChartFelineCombined
             selectedToothId={selectedToothId}
             onToothClick={onToothClick}
+            teeth={teeth}
             style={{ width: '100%', height: 'auto', display: 'block' }}
           />
         ) : (
           <DentalChartCanineCombined
             selectedToothId={selectedToothId}
             onToothClick={onToothClick}
+            teeth={teeth}
             style={{ width: '100%', height: 'auto', display: 'block' }}
           />
         )}
       </div>
 
       {/* 기록된 치아 배지 */}
-      {recordedIds.size > 0 && (
+      {/* {recordedIds.size > 0 && (
         <div className="shrink-0 flex flex-wrap gap-1 border-t bg-slate-50 px-2 py-1.5">
           <span className="text-[10px] text-muted-foreground self-center">기록:</span>
           {Array.from(recordedIds)
@@ -70,7 +71,7 @@ export default function DentalChartSvgPanel({
               </button>
             ))}
         </div>
-      )}
+      )} */}
     </div>
   )
 }

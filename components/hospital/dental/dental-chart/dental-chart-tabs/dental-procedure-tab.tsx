@@ -11,7 +11,21 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { updateDentalChart } from '@/lib/actions/dental/update-dental-chart'
 import type { DentalChartDetail } from '@/types/dental/dental-type'
 
-type Props = { chartDetail: DentalChartDetail; hosId: string }
+type Props = {
+  anesthesia: boolean
+  onAnesthesiaChange: (v: boolean) => void
+  anesthesiaNote: string
+  onAnesthesiaNoteChange: (v: string) => void
+  procedures: {
+    procedure_scaling: boolean
+    procedure_polishing: boolean
+    procedure_irrigation: boolean
+    procedure_fluoride: boolean
+  }
+  onProceduresChange: (v: Props['procedures']) => void
+  procedureOther: string
+  onProcedureOtherChange: (v: string) => void
+}
 
 const PROCEDURE_ITEMS = [
   { key: 'procedure_scaling', label: '스케일링 (Scaling)' },
@@ -20,45 +34,25 @@ const PROCEDURE_ITEMS = [
   { key: 'procedure_fluoride', label: '불소 도포 (Fluoride)' },
 ] as const
 
-export default function DentalProcedureTab({ chartDetail, hosId }: Props) {
-  const { refresh } = useRouter()
-  const [isPending, startTransition] = useTransition()
-
-  const [anesthesia, setAnesthesia] = useState(chartDetail.anesthesia ?? false)
-  const [anesthesiaNote, setAnesthesiaNote] = useState(chartDetail.anesthesia_note ?? '')
-  const [procedures, setProcedures] = useState({
-    procedure_scaling: chartDetail.procedure_scaling ?? false,
-    procedure_polishing: chartDetail.procedure_polishing ?? false,
-    procedure_irrigation: chartDetail.procedure_irrigation ?? false,
-    procedure_fluoride: chartDetail.procedure_fluoride ?? false,
-  })
-  const [procedureOther, setProcedureOther] = useState(chartDetail.procedure_other ?? '')
-
+export default function DentalProcedureTab({
+  anesthesia, onAnesthesiaChange,
+  anesthesiaNote, onAnesthesiaNoteChange,
+  procedures, onProceduresChange,
+  procedureOther, onProcedureOtherChange
+}: Props) {
   function toggleProcedure(key: keyof typeof procedures) {
-    setProcedures((prev) => ({ ...prev, [key]: !prev[key] }))
-  }
-
-  function handleSave() {
-    startTransition(async () => {
-      await updateDentalChart(chartDetail.id, hosId, {
-        anesthesia,
-        anesthesia_note: anesthesiaNote || null,
-        ...procedures,
-        procedure_other: procedureOther || null,
-      })
-      refresh()
-    })
+    onProceduresChange({ ...procedures, [key]: !procedures[key] })
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <ScrollArea className="flex-1 px-4 py-4">
-        <div className="space-y-6 pb-20">
+    <div className="flex flex-col">
+      <div className="px-4 py-4">
+        <div className="space-y-6">
           {/* 전신 마취 */}
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">전신 마취</p>
             <div className="flex items-center gap-2">
-              <Switch id="anesthesia" checked={anesthesia} onCheckedChange={setAnesthesia} />
+              <Switch id="anesthesia" checked={anesthesia} onCheckedChange={onAnesthesiaChange} />
               <Label htmlFor="anesthesia" className="cursor-pointer text-xs">전신 마취 시행</Label>
             </div>
             {anesthesia && (
@@ -66,7 +60,7 @@ export default function DentalProcedureTab({ chartDetail, hosId }: Props) {
                 <Label className="text-xs">마취 관련 메모</Label>
                 <Textarea
                   value={anesthesiaNote}
-                  onChange={(e) => setAnesthesiaNote(e.target.value)}
+                  onChange={(e) => onAnesthesiaNoteChange(e.target.value)}
                   rows={2}
                   className="text-sm"
                   placeholder="마취 프로토콜, 약물 등"
@@ -94,7 +88,7 @@ export default function DentalProcedureTab({ chartDetail, hosId }: Props) {
               <Label className="text-xs">기타 처치</Label>
               <Textarea
                 value={procedureOther}
-                onChange={(e) => setProcedureOther(e.target.value)}
+                onChange={(e) => onProcedureOtherChange(e.target.value)}
                 rows={2}
                 className="text-sm"
                 placeholder="기타 시행한 처치를 자유롭게 기재"
@@ -102,12 +96,6 @@ export default function DentalProcedureTab({ chartDetail, hosId }: Props) {
             </div>
           </section>
         </div>
-      </ScrollArea>
-
-      <div className="shrink-0 flex justify-end border-t bg-background px-4 py-3">
-        <Button onClick={handleSave} disabled={isPending} size="sm">
-          {isPending ? '저장 중...' : '저장'}
-        </Button>
       </div>
     </div>
   )

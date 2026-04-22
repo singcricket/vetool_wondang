@@ -76,12 +76,12 @@ export type Database = {
           probing_mb: number | null
           probing_ml: number | null
           pulp_exposure: boolean | null
-          recession_b: number | null
-          recession_db: number | null
-          recession_dl: number | null
-          recession_l: number | null
-          recession_mb: number | null
-          recession_ml: number | null
+          recession_b: string | null
+          recession_db: string | null
+          recession_dl: string | null
+          recession_l: string | null
+          recession_mb: string | null
+          recession_ml: string | null
           resorption_stage: string | null
           resorption_type: string | null
           staining: string | null
@@ -119,12 +119,12 @@ export type Database = {
           probing_mb?: number | null
           probing_ml?: number | null
           pulp_exposure?: boolean | null
-          recession_b?: number | null
-          recession_db?: number | null
-          recession_dl?: number | null
-          recession_l?: number | null
-          recession_mb?: number | null
-          recession_ml?: number | null
+          recession_b?: string | null
+          recession_db?: string | null
+          recession_dl?: string | null
+          recession_l?: string | null
+          recession_mb?: string | null
+          recession_ml?: string | null
           resorption_stage?: string | null
           resorption_type?: string | null
           staining?: string | null
@@ -162,12 +162,12 @@ export type Database = {
           probing_mb?: number | null
           probing_ml?: number | null
           pulp_exposure?: boolean | null
-          recession_b?: number | null
-          recession_db?: number | null
-          recession_dl?: number | null
-          recession_l?: number | null
-          recession_mb?: number | null
-          recession_ml?: number | null
+          recession_b?: string | null
+          recession_db?: string | null
+          recession_dl?: string | null
+          recession_l?: string | null
+          recession_mb?: string | null
+          recession_ml?: string | null
           resorption_stage?: string | null
           resorption_type?: string | null
           staining?: string | null
@@ -328,6 +328,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "patients"
             referencedColumns: ["patient_id"]
+          },
+        ]
+      }
+      dental_images: {
+        Row: {
+          chart_id: string
+          created_at: string
+          dental_chart_teeth_ids: string[] | null
+          dental_image_id: string
+          img_url: string
+          is_radio: boolean | null
+          mark: string | null
+          other_tags: string[] | null
+          tooth_ids: string[] | null
+        }
+        Insert: {
+          chart_id: string
+          created_at?: string
+          dental_chart_teeth_ids?: string[] | null
+          dental_image_id?: string
+          img_url: string
+          is_radio?: boolean | null
+          mark?: string | null
+          other_tags?: string[] | null
+          tooth_ids?: string[] | null
+        }
+        Update: {
+          chart_id?: string
+          created_at?: string
+          dental_chart_teeth_ids?: string[] | null
+          dental_image_id?: string
+          img_url?: string
+          is_radio?: boolean | null
+          mark?: string | null
+          other_tags?: string[] | null
+          tooth_ids?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dental_images_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "dental_charts"
+            referencedColumns: ["id"]
           },
         ]
       }
