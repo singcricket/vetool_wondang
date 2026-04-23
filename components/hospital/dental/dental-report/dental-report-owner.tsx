@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import type { DentalChartDetail, DentalTooth, DentalImage } from '@/types/dental/dental-type'
 import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
-import { toothNames } from '@/constants/hospital/dental/dental_chart_canine_combined'
+import { toothNames, toothNames_kr } from '@/constants/hospital/dental/dental_chart_canine_combined'
 import { getByAbbr } from '@/constants/hospital/dental/avdcAbbreviations'
 import dynamic from 'next/dynamic'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -331,6 +331,20 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
               }
             })
 
+            // 치료 계획 (treatment_plan)
+            if (tooth.treatment_plan && Array.isArray(tooth.treatment_plan)) {
+              tooth.treatment_plan.forEach(code => {
+                const abbrev = getByAbbr(code)
+                const namePart = abbrev?.definition_kr || abbrev?.definition || code
+                const detailText = abbrev?.generalComment
+                  ? `${namePart} — ${abbrev.generalComment}`
+                  : namePart
+                findings.push({
+                  label: '계획 내역',
+                  detail: detailText
+                })
+              })
+            }
             // 치료 개입 (treatment_done)
             if (tooth.treatment_done && Array.isArray(tooth.treatment_done)) {
               tooth.treatment_done.forEach(code => {
@@ -346,6 +360,8 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
               })
             }
 
+          
+
             // 패스 조건: 사진도 없고 소견도 없으면 렌더링 안 함
             if (findings.length === 0 && allToothImages.length === 0) return null
 
@@ -357,7 +373,7 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                       {tooth.tooth_id}
                     </span>
                     <span className="text-slate-700 font-medium">
-                      {toothNames[String(tooth.tooth_id)]}
+                      {toothNames_kr[String(tooth.tooth_id)]}
                     </span>
                   </h3>
                 </div>
@@ -367,8 +383,9 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                   {/* 왼쪽: 설명 */}
                   <div className="flex-1 space-y-5">
                     {(() => {
-                      const clinicalFindings = findings.filter(f => f.label !== '치료 내역')
+                      const clinicalFindings = findings.filter(f => f.label !== '치료 내역' && f.label !== '계획 내역')
                       const treatmentFindings = findings.filter(f => f.label === '치료 내역')
+                      const planFindings = findings.filter(f => f.label === '계획 내역')
                       return (
                         <>
                           <div className="space-y-2">
@@ -386,14 +403,27 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                             )}
                           </div>
 
+                          {planFindings.length > 0 && (
+                            <div className="space-y-2 border-t pt-4">
+                              <h4 className="text-sm font-bold text-indigo-700">예정된 치료</h4>
+                              <div className="space-y-2">
+                                {planFindings.map((f, i) => (
+                                  <div key={i} className="bg-indigo-50 p-3 rounded text-sm text-indigo-900 leading-relaxed border border-indigo-100 border-l-2 border-l-indigo-400">
+                                    {f.detail}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {treatmentFindings.length > 0 && (
                             <div className="space-y-2 border-t pt-4">
                               <h4 className="text-sm font-bold text-teal-700">진행된 치료</h4>
                               <div className="space-y-2">
                                 {treatmentFindings.map((f, i) => (
-                                  <div key={i} className="bg-teal-50 p-3 rounded text-sm text-teal-900 leading-relaxed border border-teal-100 border-l-2 border-l-teal-400">
+                                  <li key={i} className="list-none bg-teal-50 p-3 rounded text-sm text-teal-900 leading-relaxed border border-teal-100 border-l-2 border-l-teal-400">
                                     {f.detail}
-                                  </div>
+                                  </li>
                                 ))}
                               </div>
                             </div>

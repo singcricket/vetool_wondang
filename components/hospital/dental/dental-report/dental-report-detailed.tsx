@@ -323,6 +323,20 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
                 }
               }
             })
+               // 치료 계획 (treatment_plan)
+            if (tooth.treatment_plan && Array.isArray(tooth.treatment_plan)) {
+              tooth.treatment_plan.forEach(code => {
+                const abbrev = getByAbbr(code)
+                let detailText = code
+                if (abbrev) {
+                  detailText = `${abbrev.definition} ${abbrev.definition_kr ? `(${abbrev.definition_kr})` : ''}`
+                }
+                findings.push({
+                  label: '계획 (Plan)',
+                  detail: detailText
+                })
+              })
+            }
 
             // 치료 개입 (treatment_done)
             if (tooth.treatment_done && Array.isArray(tooth.treatment_done)) {
@@ -338,6 +352,8 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
                 })
               })
             }
+
+         
 
             if (findings.length === 0 && allToothImages.length === 0) return null
 
@@ -357,8 +373,9 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
                   {/* 좌: 발견된 소견 및 치료 목록 */}
                   <div className="space-y-5">
                     {(() => {
-                      const clinicalFindings = findings.filter(f => f.label !== '치료 (Treatment)')
+                      const clinicalFindings = findings.filter(f => f.label !== '치료 (Treatment)' && f.label !== '계획 (Plan)')
                       const treatmentFindings = findings.filter(f => f.label === '치료 (Treatment)')
+                      const planFindings = findings.filter(f => f.label === '계획 (Plan)')
                       
                       return (
                         <>
@@ -379,10 +396,24 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
                             )}
                           </div>
 
+                          {/* 치료 계획 */}
+                          {planFindings.length > 0 && (
+                            <div className="space-y-2 pt-2 border-t border-dashed">
+                              <h4 className="text-sm font-semibold text-indigo-700">Planned Treatments</h4>
+                              <ul className="space-y-1.5">
+                                {planFindings.map((f, i) => (
+                                  <li key={i} className="text-sm text-indigo-900 leading-relaxed bg-indigo-50/50 p-2 rounded border border-indigo-100">
+                                    {f.detail}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
                           {/* 치료 내역 */}
                           {treatmentFindings.length > 0 && (
                             <div className="space-y-2 pt-2 border-t border-dashed">
-                              <h4 className="text-sm font-semibold text-teal-700">Treatments</h4>
+                              <h4 className="text-sm font-semibold text-teal-700">Done Treatments</h4>
                               <ul className="space-y-1.5">
                                 {treatmentFindings.map((f, i) => (
                                   <li key={i} className="text-sm text-teal-900 leading-relaxed bg-teal-50/50 p-2 rounded border border-teal-100">
