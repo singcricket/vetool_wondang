@@ -46,8 +46,16 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
     fetchImages()
   }, [chartDetail.id])
 
-  const toggleSelect = (id: string) => {
-    setImages(prev => prev.map(img => img.dental_image_id === id ? { ...img, selected: !img.selected } : img))
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    const isMulti = e.ctrlKey || e.metaKey
+    setImages(prev => prev.map(img => {
+      if (img.dental_image_id === id) {
+        // 멀티 모드면 토글, 싱글 모드면 무조건 선택
+        return { ...img, selected: isMulti ? !img.selected : true }
+      }
+      // 멀티 모드면 그대로 유지, 싱글 모드면 선택 해제
+      return isMulti ? img : { ...img, selected: false }
+    }))
   }
   const selectAll = () => setImages(prev => prev.map(img => ({ ...img, selected: true })))
   const deselectAll = () => setImages(prev => prev.map(img => ({ ...img, selected: false })))
@@ -157,7 +165,7 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
             {images.map((img) => (
               <div 
                 key={img.dental_image_id}
-                onClick={() => toggleSelect(img.dental_image_id)}
+                onClick={(e) => toggleSelect(img.dental_image_id, e)}
                 className={cn(
                   "group relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all p-0.5 bg-white",
                   img.selected ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200 ring-offset-1" : "border-slate-200 hover:border-slate-300"
@@ -197,15 +205,15 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
       </div>
 
       {/* RIGHT PANE: 태그 관리 및 삭제 */}
-      <div className="w-full md:w-80 flex flex-col shrink-0 bg-white border-l h-full overflow-y-auto relative">
-        <div className="p-4 bg-slate-50 border-b">
+      <div className="w-full md:w-80 flex flex-col shrink-0 bg-white border-l h-full relative overflow-hidden">
+        <div className="p-4 bg-slate-50 border-b shrink-0">
           <h3 className="font-semibold text-slate-800">일괄 관리 하기</h3>
           <p className="text-xs text-slate-500 mt-1 flex gap-1 bg-amber-50 p-1.5 rounded text-amber-800 my-2">
             <AlertCircle className="w-3.5 h-3.5" /> 선택된 모든 사진의 현재 태그를 완전히 <strong>무시하고 새로 덮어씁니다</strong>.
           </p>
         </div>
 
-        <div className={cn("p-4 flex-1 space-y-6", selectedCount === 0 && "opacity-40 pointer-events-none")}>
+        <div className={cn("p-4 flex-1 space-y-6 overflow-y-auto pb-44", selectedCount === 0 && "opacity-40 pointer-events-none")}>
           
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -232,31 +240,35 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
               />
             </div>
           </div>
-          
-          <div className="pt-4 border-t border-slate-100 flex justify-end">
+        </div>
+      </div>
+
+      {/* 하단 전체 액션 바 (upload-tab 스타일로 통일) */}
+      <div className="p-4 border-t bg-white shrink-0 w-full h-20 flex absolute bottom-0 left-0 right-0 z-30 items-center shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+        <div className="w-full flex justify-between items-center px-4">
+          <div className="text-sm text-slate-500">
+            {images.length}개의 이미지 중 <span className="font-bold text-blue-600">{selectedCount}개</span> 선택됨
+          </div>
+          <div className="flex gap-3">
             <Button 
-               variant="destructive" 
-               className="w-full shadow-sm"
+               variant="outline" 
+               className="h-10 px-6 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" 
                onClick={handleDelete}
                disabled={selectedCount === 0 || isProcessing}
             >
-               <Trash2 className="w-4 h-4 mr-2" /> 선택 사진 영구 삭제
+               <Trash2 className="w-4 h-4 mr-2" /> 선택 삭제
+            </Button>
+
+            <Button 
+              onClick={handleSaveUpdates} 
+              disabled={selectedCount === 0 || isProcessing}
+              className="h-10 px-8 font-bold"
+              variant="default"
+            >
+              {isProcessing ? '처리 중...' : '변경사항 저장'}
             </Button>
           </div>
         </div>
-        
-        {/* 액션 컨트롤러 */}
-        <div className="p-4 border-t bg-white shrink-0 mt-auto w-full absolute bottom-0 left-0 right-0 z-10 border-t flex items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          <Button 
-            onClick={handleSaveUpdates} 
-            disabled={selectedCount === 0 || isProcessing}
-            className="w-full"
-            variant="default"
-          >
-            {isProcessing ? '처리 중...' : `${selectedCount}개 변경사항 덮어쓰기`}
-          </Button>
-        </div>
-
       </div>
     </div>
   )

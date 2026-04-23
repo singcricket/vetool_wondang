@@ -107,10 +107,14 @@ export default function DentalImageUploadTab({ chartDetail, teeth, hosId, onSucc
   }
 
   // 선택 토글
-  const toggleSelect = (id: string) => {
-    setStagedImages(prev => prev.map((img) => 
-      img.id === id ? { ...img, selected: !img.selected } : img
-    ))
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    const isMulti = e.ctrlKey || e.metaKey
+    setStagedImages(prev => prev.map((img) => {
+      if (img.id === id) {
+        return { ...img, selected: isMulti ? !img.selected : true }
+      }
+      return isMulti ? img : { ...img, selected: false }
+    }))
   }
   const selectAll = () => setStagedImages(prev => prev.map(img => ({ ...img, selected: true })))
   const deselectAll = () => setStagedImages(prev => prev.map(img => ({ ...img, selected: false })))
@@ -234,7 +238,7 @@ export default function DentalImageUploadTab({ chartDetail, teeth, hosId, onSucc
                   {stagedImages.map((img) => (
                     <div 
                       key={img.id}
-                      onClick={() => toggleSelect(img.id)}
+                      onClick={(e) => toggleSelect(img.id, e)}
                       className={cn(
                         "group relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all p-0.5",
                         img.selected ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200 ring-offset-1" : "border-transparent bg-slate-100 hover:border-slate-300"
