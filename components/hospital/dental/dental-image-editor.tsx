@@ -111,6 +111,41 @@ export default function DentalImageEditor({
           canvas.loadFromJSON(initialMark, () => {
              if (!isMounted) return
              
+             // ── 해상도 차이에 따른 마킹 스케일 보정 로직 ──
+             if (parsed.origWidth && parsed.origHeight) {
+                const ratioX = canvas.width! / parsed.origWidth
+                const ratioY = canvas.height! / parsed.origHeight
+                
+                // 이미지가 aspect-fit으로 중앙 정렬되므로, 
+                // 이미지의 실제 스케일 변화량을 추적하는 것이 가장 정확함
+                const oldCanvasAspect = parsed.origWidth / parsed.origHeight
+                const newCanvasAspect = canvas.width! / canvas.height!
+                
+                const isVertical = (parsed.bgInfo?.angle || 0) === 90 || (parsed.bgInfo?.angle || 0) === 270
+                const imgW = isVertical ? img.height! : img.width!
+                const imgH = isVertical ? img.width! : img.height!
+                const imgAspect = imgW / imgH
+
+                const oldScale = oldCanvasAspect >= imgAspect ? parsed.origHeight / imgH : parsed.origWidth / imgW
+                const newScale = newCanvasAspect >= imgAspect ? canvas.height! / imgH : canvas.width! / imgW
+                const scaleRatio = newScale / oldScale
+
+                canvas.getObjects().forEach((obj: any) => {
+                  // 1. 위치 보정 (중앙 기준 상대 좌표로 변환 후 스케일링)
+                  const relX = obj.left - (parsed.origWidth / 2)
+                  const relY = obj.top - (parsed.origHeight / 2)
+                  
+                  obj.set({
+                    left: (canvas.width! / 2) + (relX * scaleRatio),
+                    top: (canvas.height! / 2) + (relY * scaleRatio),
+                    // 2. 크기 보정
+                    scaleX: (obj.scaleX || 1) * scaleRatio,
+                    scaleY: (obj.scaleY || 1) * scaleRatio
+                  })
+                  obj.setCoords()
+                })
+             }
+
              // 복원된 배경 이미지 설정 (각도, 반전 등 적용)
              if (parsed.bgInfo) {
                 img.set({
