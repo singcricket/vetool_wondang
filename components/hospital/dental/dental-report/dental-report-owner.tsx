@@ -211,19 +211,23 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species 
           .sort((a,b) => a.tooth_id - b.tooth_id)
           .map(tooth => {
 
-            // 이 치아에 번호로만 태그된 이미지 (글로벌 태그 제외)
+            // 이 치아에 번호로만 태그된 이미지 (글로벌 태그 및 비교 태그 제외)
             const toothImages = images.filter(img =>
               img.tooth_ids?.includes(String(tooth.tooth_id)) &&
               !img.tooth_ids.includes('general') &&
               !img.tooth_ids.includes('assessment') &&
-              !img.tooth_ids.includes('treatment')
+              !img.tooth_ids.includes('treatment') &&
+              !img.tooth_ids.includes('tooth-assessment') &&
+              !img.tooth_ids.includes('tooth-treatment')
             )
             // 이 치아 번호 + assessment / treatment 함께 달린 이미지
             const toothAssessment = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) && img.tooth_ids?.includes('assessment')
+              img.tooth_ids?.includes(String(tooth.tooth_id)) && 
+              (img.tooth_ids?.includes('assessment') || img.tooth_ids?.includes('tooth-assessment') || img.tooth_ids?.includes('tooth-assesment'))
             )
             const toothTreatment = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) && img.tooth_ids?.includes('treatment')
+              img.tooth_ids?.includes(String(tooth.tooth_id)) && 
+              (img.tooth_ids?.includes('treatment') || img.tooth_ids?.includes('tooth-treatment'))
             )
             const allToothImages = [...toothImages, ...toothAssessment, ...toothTreatment]
 

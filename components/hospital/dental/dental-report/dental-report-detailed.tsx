@@ -206,19 +206,23 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
           .sort((a,b) => a.tooth_id - b.tooth_id)
           .map(tooth => {
             
-            // 이 치아에 태그된 이미지 (치아 번호로 매핑되고, global 태그가 없는 것)
+            // 이 치아에 태그된 이미지 (치아 번호로 매핑되고, 비교용 태그가 없는 것)
             const toothImages = images.filter(img => 
               img.tooth_ids && img.tooth_ids.includes(String(tooth.tooth_id)) &&
               !img.tooth_ids.includes('general') &&
               !img.tooth_ids.includes('assessment') &&
-              !img.tooth_ids.includes('treatment')
+              !img.tooth_ids.includes('treatment') &&
+              !img.tooth_ids.includes('tooth-assessment') &&
+              !img.tooth_ids.includes('tooth-treatment')
             )
-            // 이 치아에 assessment/treatment 태그도 함께 달린 이미지
+            // 이 치아에 assessment/treatment 태그도 함께 달린 이미지 (프리픽스 유무 모두 지원)
             const toothAssessment = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) && img.tooth_ids?.includes('assessment')
+              img.tooth_ids?.includes(String(tooth.tooth_id)) && 
+              (img.tooth_ids?.includes('assessment') || img.tooth_ids?.includes('tooth-assessment') || img.tooth_ids?.includes('tooth-assesment'))
             )
             const toothTreatment = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) && img.tooth_ids?.includes('treatment')
+              img.tooth_ids?.includes(String(tooth.tooth_id)) && 
+              (img.tooth_ids?.includes('treatment') || img.tooth_ids?.includes('tooth-treatment'))
             )
             const allToothImages = [...toothImages, ...toothAssessment, ...toothTreatment]
 
@@ -276,21 +280,47 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   
-                  {/* 좌: 발견된 소견 목록 */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-slate-500 border-b pb-1">Clinical Findings</h4>
-                    {findings.length > 0 ? (
-                      <ul className="space-y-2">
-                        {findings.map((f, i) => (
-                          <li key={i} className="text-sm text-slate-700 leading-relaxed">
-                            <span className="font-semibold mr-1">[{f.label}]</span> 
-                            {f.detail}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-slate-400">특이 병소 소견 없음</p>
-                    )}
+                  {/* 좌: 발견된 소견 및 치료 목록 */}
+                  <div className="space-y-5">
+                    {(() => {
+                      const clinicalFindings = findings.filter(f => f.label !== '치료 (Treatment)')
+                      const treatmentFindings = findings.filter(f => f.label === '치료 (Treatment)')
+                      
+                      return (
+                        <>
+                          {/* 발견 소견 */}
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-slate-500 border-b pb-1">Clinical Findings</h4>
+                            {clinicalFindings.length > 0 ? (
+                              <ul className="space-y-1.5">
+                                {clinicalFindings.map((f, i) => (
+                                  <li key={i} className="text-sm text-slate-700 leading-relaxed">
+                                    <span className="font-bold mr-1 text-slate-900">[{f.label}]</span> 
+                                    {f.detail}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-sm text-slate-400">특이 병소 소견 없음</p>
+                            )}
+                          </div>
+
+                          {/* 치료 내역 */}
+                          {treatmentFindings.length > 0 && (
+                            <div className="space-y-2 pt-2 border-t border-dashed">
+                              <h4 className="text-sm font-semibold text-teal-700">Treatments</h4>
+                              <ul className="space-y-1.5">
+                                {treatmentFindings.map((f, i) => (
+                                  <li key={i} className="text-sm text-teal-900 leading-relaxed bg-teal-50/50 p-2 rounded border border-teal-100">
+                                    {f.detail}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
                   </div>
 
                   {/* 우: 이미지 갤러리 */}
