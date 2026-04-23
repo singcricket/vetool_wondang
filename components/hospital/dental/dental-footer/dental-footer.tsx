@@ -23,12 +23,12 @@ const FOOTER_MENUS = [
     icon: <SearchIcon />,
     hideInMobile: false,
   },
-  {
-    label: '템플릿',
-    value: 'template',
-    icon: <BookmarkIcon />,
-    hideInMobile: false,
-  },
+  // {
+  //   label: '템플릿',
+  //   value: 'template',
+  //   icon: <BookmarkIcon />,
+  //   hideInMobile: false,
+  // },
 ] as const
 
 type FooterValue = (typeof FOOTER_MENUS)[number]['value']
@@ -44,9 +44,7 @@ export default function DentalFooter({ hosId, targetDate }: Props) {
   const activeTab: FooterValue =
     sub === 'search'
       ? 'search'
-      : sub === 'template'
-        ? 'template'
-        : 'chart'
+      :'chart'
 
   function handleNav(value: FooterValue) {
     if (value === 'chart') {
