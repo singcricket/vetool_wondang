@@ -211,6 +211,7 @@ export const AVDC_ABBREVIATIONS: AvdcAbbrev[] = [
   { abbr: 'GR',          definition: 'Gingival recession',  definition_kr: '치은 퇴축',                                type: 'dx',  generalComment: '잇몸이 내려앉아 치아 뿌리가 노출되어 있는 상태입니다. 차가운 음식에 민감해질 수 있습니다.' },
   { abbr: 'GTR',         definition: 'Guided tissue regeneration',  definition_kr: '조직 유도 재생술',                        type: 'tx',  generalComment: '손상된 잇몸 조직과 잇몸뼈가 다시 재생될 수 있도록 특수 막을 이용하는 수술을 시행하였습니다.' },
   { abbr: 'GV',          definition: 'Gingivectomy / gingivoplasty',  definition_kr: '치은 절제/성형술',                      type: 'tx',  generalComment: '과도하게 자라난 잇몸 조직을 잘라내어 구강 위생 환경을 개선하는 처치를 시행하였습니다.' },
+  { abbr : 'GBR',         definition: 'Guided bone regeneration',  definition_kr: '골 유도 재생술',                        type: 'tx',  generalComment: '손상된 잇몸 조직과 잇몸뼈가 다시 재생될 수 있도록 특수 막을 이용하는 수술을 시행하였습니다.' },
 
   // ── H ──────────────────────────────────────────────────────
   { abbr: 'HC',          definition: 'Hypercementosis',  definition_kr: '백악질 비대증',                                   type: 'dx' },
