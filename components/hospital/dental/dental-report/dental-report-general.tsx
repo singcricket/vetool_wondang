@@ -1,3 +1,4 @@
+'use client'
 import React, { useState } from 'react'
 import type { DentalChartDetail, DentalTooth, DentalImage } from '@/types/dental/dental-type'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
@@ -7,6 +8,8 @@ import dynamic from 'next/dynamic'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { DialogTitle, DialogDescription } from '@radix-ui/react-dialog'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils/utils'
 
 const DentalImageWithMark = dynamic(() => import('../dental-image-with-mark'), { 
   ssr: false,
@@ -23,16 +26,17 @@ type Props = {
   teeth: DentalTooth[]
   images: DentalImage[]
   species: string
+  isShared?: boolean
 }
 
-function ImageCard({ img }: { img: DentalImage }) {
-  const [editorOpen, setEditorOpen] = useState(false)
+function ImageCard({ img, isShared }: { img: DentalImage; isShared?: boolean }) {
+  const [viewerOpen, setViewerOpen] = useState(false)
 
   return (
     <>
       <div 
         className="border rounded bg-white p-1 shadow-sm group relative cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all"
-        onClick={() => setEditorOpen(true)}
+        onClick={() => setViewerOpen(true)}
       >
         <DentalImageWithMark 
           imageUrl={img.img_url} 
@@ -44,26 +48,47 @@ function ImageCard({ img }: { img: DentalImage }) {
         )}
       </div>
 
-      <Dialog open={editorOpen} onOpenChange={setEditorOpen} modal={false}>
+      <Dialog open={viewerOpen} onOpenChange={setViewerOpen} modal={!isShared}>
         <DialogContent 
-          className="max-w-[100vw] w-screen h-screen max-h-[100vh] p-0 m-0 border-0 flex flex-col bg-slate-900 rounded-none z-[200]"
+           className={cn(
+            "p-0 m-0 border-0 flex flex-col items-center justify-center bg-slate-900/95 rounded-none z-[150]",
+            isShared 
+              ? "max-w-[90vw] w-[1200px] h-auto aspect-auto border border-slate-700 shadow-2xl rounded-xl" 
+              : "max-w-[100vw] w-screen h-screen max-h-[100vh] z-[200]"
+          )}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          onCloseAutoFocus={(e) => e.preventDefault()}
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
         >
           <VisuallyHidden>
-            <DialogTitle>치과 이미지 에디터</DialogTitle>
-            <DialogDescription>이미지 마킹을 확인하거나 수정할 수 있습니다.</DialogDescription>
+            <DialogTitle>{isShared ? '이미지 크게 보기' : '치과 이미지 에디터'}</DialogTitle>
+            <DialogDescription>{isShared ? '상세 이미지를 확인합니다.' : '이미지 마킹을 확인하거나 수정할 수 있습니다.'}</DialogDescription>
           </VisuallyHidden>
           
-          {editorOpen && (
-             <DentalImageEditor 
-               imageId={img.dental_image_id} 
-               imageUrl={img.img_url} 
-               initialMark={img.mark} 
-               onClose={() => setEditorOpen(false)}
-             />
+          {viewerOpen && (
+             isShared ? (
+                <div className="relative w-full h-full p-4 flex items-center justify-center">
+                  <DentalImageWithMark 
+                    imageUrl={img.img_url} 
+                    mark={img.mark} 
+                    aspectRatio="aspect-auto" 
+                    className="max-h-[80vh] w-full"
+                    noHover={true}
+                  />
+                  <Button 
+                    variant="ghost" 
+                    className="absolute top-4 right-4 text-white hover:bg-white/10" 
+                    onClick={() => setViewerOpen(false)}
+                  >
+                    닫기
+                  </Button>
+                </div>
+             ) : (
+                <DentalImageEditor 
+                  imageId={img.dental_image_id} 
+                  imageUrl={img.img_url} 
+                  initialMark={img.mark} 
+                  onClose={() => setViewerOpen(false)}
+                />
+             )
           )}
         </DialogContent>
       </Dialog>
@@ -71,7 +96,7 @@ function ImageCard({ img }: { img: DentalImage }) {
   )
 }
 
-export default function DentalReportGeneral({ chartDetail, teeth, images, species }: Props) {
+export default function DentalReportGeneral({ chartDetail, teeth, images, species, isShared }: Props) {
   
   // 환자 정보 및 병기 요약
   return (
@@ -195,7 +220,7 @@ export default function DentalReportGeneral({ chartDetail, teeth, images, specie
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {images.map(img => (
-              <ImageCard key={img.dental_image_id} img={img} />
+              <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
             ))}
           </div>
         </section>

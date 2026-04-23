@@ -5,6 +5,7 @@ import Link from 'next/link'
 import SharedNoteView from './_components/shared-note-view'
 import SharedMonitoringView from './_components/SharedMonitoringView'
 import SharedCollectionView from './_components/shared-collection-view'
+import SharedDentalView from './_components/shared-dental-view'
 import { Suspense } from 'react'
 
 export default async function SharedResourcePage(props: { params: Promise<{ share_id: string }> }) {
@@ -51,6 +52,9 @@ export default async function SharedResourcePage(props: { params: Promise<{ shar
             )}
             {share.resource_type === 'collection' && (
               <SharedCollectionView resourceId={share.resource_id} restrictedData={share.restricted_data} />
+            )}
+            {share.resource_type === 'dental' && (
+              <SharedDentalView resourceId={share.resource_id} restrictedData={share.restricted_data} />
             )}
             {share.resource_type === 'icu' && (
               <div className="p-12 text-center text-slate-500 bg-white rounded-xl shadow-sm border">

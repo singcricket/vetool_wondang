@@ -14,13 +14,14 @@ import { cn } from '@/lib/utils/utils'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Collection } from '@/types/collections/collection-type'
+import { ShareResourceType } from '@/types/share/share-type'
 
 interface Props {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   hosId: string
   userId: string
-  resourceType: 'note' | 'monitoring' | 'icu'
+  resourceType: ShareResourceType
   resourceId: string
   resourceTitle?: string
 }
@@ -140,7 +141,7 @@ export default function AddToCollectionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none shadow-2xl">
+      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none shadow-2xl z-[200]">
         <DialogHeader className="p-6 bg-slate-900 text-white">
           <DialogTitle className="text-xl font-black flex items-center gap-2">
             <FolderPlus className="text-blue-400" />

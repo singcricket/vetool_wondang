@@ -1,5 +1,5 @@
 export type ShareTargetType = 'public' | 'hospital' | 'user'
-export type ShareResourceType = 'note' | 'icu' | 'monitoring' | 'collection'
+export type ShareResourceType = 'note' | 'icu' | 'monitoring' | 'collection' | 'dental'
 export type SharePermissionLevel = 'read' | 'comment' | 'edit'
 
 // ── 공유 권한 테이블 제어 타입 ──
@@ -15,7 +15,7 @@ export interface ResourceShare {
   target_id?: string | null          // share_target_type이 hospital이나 user일 때 값 세팅
   
   permission_level: SharePermissionLevel // 조회, 댓글, 수정 등 권한
-  restricted_data?: Record<string, boolean> | null // 가림표시 설정 ex: { hide_internal: true }
+  restricted_data?: Record<string, any> | null // 가림표시 설정 ex: { hide_internal: true }
   
   valid_from?: string | null    // 공유 유효 시작 시간 (ISO 8601)
   valid_until?: string | null   // 공유 만료 시간 (ISO 8601)

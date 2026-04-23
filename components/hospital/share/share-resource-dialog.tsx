@@ -21,6 +21,7 @@ interface Props {
   title: string
   hosId: string
   userId?: string
+  restrictedData?: Record<string, any>
 }
 
 export default function ShareResourceDialog({
@@ -30,7 +31,8 @@ export default function ShareResourceDialog({
   resourceId,
   title,
   hosId,
-  userId
+  userId,
+  restrictedData
 }: Props) {
   const [shares, setShares] = useState<ResourceShare[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -99,6 +101,7 @@ export default function ShareResourceDialog({
         permission_level: 'read',
         valid_from: now.toISOString(),
         valid_until: validUntil,
+        restricted_data: restrictedData || null
       })
 
       toast.success('새로운 공유 링크가 생성되었습니다.')
@@ -137,7 +140,7 @@ export default function ShareResourceDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl z-[200]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <LinkIcon size={18} className="text-blue-500" />

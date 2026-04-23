@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, Share2, FolderPlus } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { DentalChartDetail, DentalTooth, DentalImage } from '@/types/dental/dental-type'
 import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
@@ -19,6 +19,8 @@ import { toast } from 'sonner'
 import DentalReportGeneral from './dental-report-general'
 import DentalReportDetailed from './dental-report-detailed'
 import DentalReportOwner from './dental-report-owner'
+import ShareResourceDialog from '@/components/hospital/share/share-resource-dialog'
+import AddToCollectionDialog from '@/components/hospital/collections/add-to-collection-dialog'
 
 // import html2canvas from 'html2canvas'
 // import { jsPDF } from 'jspdf'
@@ -34,9 +36,20 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
   const [activeTab, setActiveTab] = useState('general')
   const [images, setImages] = useState<DentalImage[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isCollectionOpen, setIsCollectionOpen] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
   
   const species = chartDetail.species ?? chartDetail.patient?.species ?? 'canine'
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id)
+    })
+  }, [])
 
   const fetchImages = async () => {
     try {
@@ -164,6 +177,24 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
             </DialogDescription>
           </div>
           <div className="flex items-center gap-2 pr-6">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-4 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                onClick={() => setIsShareOpen(true)}
+              >
+                <Share2 size={14} />
+                <span>공유하기</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 gap-1.5 text-xs border-slate-200 font-bold px-4 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                onClick={() => setIsCollectionOpen(true)}
+              >
+                <FolderPlus size={14} />
+                <span>컬렉션</span>
+              </Button>
              <Button variant="outline" size="sm" onClick={handleExportPNG}>
                <Download className="w-4 h-4 mr-2" /> PNG 저장
              </Button>
@@ -213,6 +244,29 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
               </div>
             </div>
           </Tabs>
+        )}
+        
+        <ShareResourceDialog
+          isOpen={isShareOpen}
+          onOpenChange={setIsShareOpen}
+          resourceType="dental"
+          resourceId={chartDetail.id}
+          title={`치과 리포트 - ${chartDetail.patient?.name} (${activeTab === 'general' ? '일반' : activeTab === 'detailed' ? '상세' : '보호자용'})`}
+          hosId={hosId}
+          userId={userId || undefined}
+          restrictedData={{ view_type: activeTab }}
+        />
+
+        {userId && (
+          <AddToCollectionDialog
+            isOpen={isCollectionOpen}
+            onOpenChange={setIsCollectionOpen}
+            hosId={hosId}
+            userId={userId}
+            resourceType="dental"
+            resourceId={chartDetail.id}
+            resourceTitle={`치과 리포트 - ${chartDetail.patient?.name}`}
+          />
         )}
       </DialogContent>
     </Dialog>
