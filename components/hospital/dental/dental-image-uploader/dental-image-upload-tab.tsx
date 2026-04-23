@@ -301,12 +301,6 @@ export default function DentalImageUploadTab({ chartDetail, teeth, hosId, onSucc
               </div>
 
               <div className="space-y-3">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">관련 치아 번호</Label>
-                  <p className="text-[11px] text-muted-foreground">
-                    이미지와 연관된 치아를 모두 선택하세요.
-                  </p>
-                </div>
                 <div className="bg-slate-50 border rounded-lg p-2">
                   <DentalToothSelector 
                     species={species}

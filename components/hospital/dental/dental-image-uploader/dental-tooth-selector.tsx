@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils/utils'
-
+import { Label } from '@/components/ui/label'
 // Vertical layout logic:
 // q1 (Top-Left screen, patient's Upper Right): 106 to 110 (col1), 101 to 105 (col2)
 const q1 = [106, 107, 108, 109, 110, 101, 102, 103, 104, 105]
@@ -105,31 +105,52 @@ export default function DentalToothSelector({ species, selectedIds, onChange, ot
     )
   }
 
-  const isGeneralSelected = selectedIds.includes('general')
-
-  const toggleGeneral = () => {
-    if (isGeneralSelected) {
-      onChange(selectedIds.filter(id => id !== 'general'))
+  const toggleFixedTag = (tag: string) => {
+    if (selectedIds.includes(tag)) {
+      onChange(selectedIds.filter(id => id !== tag))
     } else {
-      onChange([...selectedIds, 'general'])
+      onChange([...selectedIds, tag])
     }
+  }
+
+  const renderFixedTagButton = (tag: string, label: string) => {
+    const isSelected = selectedIds.includes(tag)
+    return (
+      <Button 
+        type="button" 
+        variant={isSelected ? "default" : "outline"} 
+        className={cn("flex-1 h-8 text-[10px] sm:text-[11px] font-semibold transition-colors px-1", isSelected && "bg-slate-700 hover:bg-slate-800")}
+        onClick={() => toggleFixedTag(tag)}
+      >
+        {label}
+      </Button>
+    )
   }
 
   return (
     <div className="w-full space-y-4 select-none pb-2 flex flex-col items-center">
-      
-      {/* 전반(General) 옵션 */}
-      <div className="w-full px-2 max-w-[320px] flex justify-center pb-1">
-        <Button 
-          type="button" 
-          variant={isGeneralSelected ? "default" : "outline"} 
-          className={cn("w-full h-8 text-[11px] font-semibold transition-colors", isGeneralSelected && "bg-slate-700 hover:bg-slate-800")}
-          onClick={toggleGeneral}
-        >
-          General (구강 전반)
-        </Button>
+      <div className="space-y-0.5">
+        <Label className="text-sm font-medium">전체치아 관련 태그</Label>
+        <p className="text-[11px] text-muted-foreground">
+          전체 치아와 연관된 범위를 선택해 주세요.
+        </p>
       </div>
-
+      {/* 범위/목적 옵션 */}
+      <div className="w-full px-2 max-w-[340px] flex gap-2 justify-center pb-1">
+        {renderFixedTagButton('general', 'General')}
+        {renderFixedTagButton('assessment', 'Assessment')}
+        {renderFixedTagButton('treatment', 'Treatment')}
+      </div>
+ <div className="space-y-0.5">
+        <Label className="text-sm font-medium">개별 치아 관련 태그</Label>
+        <p className="text-[11px] text-muted-foreground">
+          이미지와 연관된 치아를 모두 선택하세요.
+        </p>
+      </div>
+         <div className="w-full px-2 max-w-[340px] flex gap-2 justify-center pb-1">
+        {renderFixedTagButton('tooth-assessment', 'Assessment')}
+        {renderFixedTagButton('tooth-treatment', 'Treatment')}
+      </div>
       {/* 상악 (Top) */}
       <div className="flex justify-center divide-x-2 divide-slate-300 border-b-4 border-slate-300 pb-4">
         <div className="flex flex-1 justify-end">

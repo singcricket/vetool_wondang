@@ -8,14 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { upsertDentalTooth } from '@/lib/actions/dental/upsert-dental-tooth'
 import { toothNames } from '@/constants/hospital/dental/dental_chart_canine_combined'
 import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
 import type { DentalChartDetail, DentalTooth } from '@/types/dental/dental-type'
-import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 import DentalProbingGrid from './dental-probing-grid'
 import AvdcAutocompleteInput from '../../avdc-autocomplete-input'
+import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
+import { useEffect } from 'react'
+import type { DentalImage } from '@/types/dental/dental-type'
+import DentalImageGallery from '@/components/hospital/dental/dental-image-gallery'
 
 type SixPoint<T = number | null> = { ml: T; l: T; dl: T; mb: T; b: T; db: T }
 
@@ -98,6 +100,11 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
   const species = chartDetail.species || 'canine'
   const { refresh } = useRouter()
   const [isPending, startTransition] = useTransition()
+  
+  const [images, setImages] = useState<DentalImage[]>([])
+  useEffect(() => {
+    getDentalImages(chartDetail.id).then(res => setImages(res)).catch(console.error)
+  }, [chartDetail.id])
 
   const toothName = toothNames[toothId] ?? toothId
 
@@ -196,6 +203,14 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
     })
   }
 
+  // --- 이미지 필터링 로직 ---
+  const toothImages = images.filter(img => (img.tooth_ids || []).includes(String(toothId)))
+
+  const assessmentImgs = toothImages.filter(img => (img.tooth_ids || []).includes('tooth-assessment'))
+  const treatmentImgs = toothImages.filter(img => (img.tooth_ids || []).includes('tooth-treatment'))
+  const radioImgs = toothImages.filter(img => img.is_radio)
+  const otherImgs = toothImages.filter(img => !assessmentImgs.includes(img) && !treatmentImgs.includes(img) && !radioImgs.includes(img))
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden min-h-0">
       <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
@@ -272,8 +287,16 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
             </div>
           </section>
 
+         
           {/* 처치 & 계획 */}
           <section className="space-y-3">
+             {/* tooth-assessment 태그가 달린 이미지 */}
+             <DentalImageGallery 
+              images={assessmentImgs} 
+              title="진단/평가 (Assessment)" 
+              className="mt-0 mb-2 p-3 bg-slate-50/70"
+              imageHeight="h-[72px]"
+            />
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">처치 & 계획</p>
             <div className="space-y-2">
               <MultiCheckField label="치료 계획" selected={treatmentPlan} onChange={setTreatmentPlan} options={DENTAL_TOOTH_TESTS.treatment_plan?.options || []} />
@@ -283,6 +306,13 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
             </div>
             <div className="border-t my-2" />
             <div className="space-y-2">
+               {/* tooth-treatment 태그가 달린 이미지 */}
+               <DentalImageGallery 
+                images={treatmentImgs} 
+                title="치료/처치 (Treatment)" 
+                className="mt-0 mb-2 p-3 bg-slate-50/70"
+                imageHeight="h-[72px]"
+              />
               <MultiCheckField label="완료된 처치" selected={treatmentDone} onChange={setTreatmentDone} options={DENTAL_TOOTH_TESTS.treatment_done?.options || []} />
               <div className="pl-1">
                 <AvdcAutocompleteInput value={treatmentDoneOther} onChange={setTreatmentDoneOther} placeholder="기타 완료된 처치 (AVDC 약어 또는 정의 검색)" />
@@ -290,9 +320,23 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
             </div>
             <SelectField label="우선순위" value={priority} onChange={(v) => setPriority(v as DentalTooth['treatment_priority'])} options={PRIORITY_OPTS} />
             <div className="space-y-1">
+               {/* is_radio : true 이미지 */}
+               <DentalImageGallery 
+                images={radioImgs} 
+                title="방사선 (X-Ray)" 
+                className="mt-0 mb-2 p-3 bg-slate-50/70"
+                imageHeight="h-[72px]"
+              />
               <Label className="text-xs">방사선 소견</Label>
               <Textarea value={xrayFinding} onChange={(e) => setXrayFinding(e.target.value)} rows={2} className="text-sm" />
             </div>
+             {/* 나머지 이미지 */}
+             <DentalImageGallery 
+              images={otherImgs} 
+              title="참고 이미지" 
+              className="mt-0 mb-2 p-3 bg-slate-50/70"
+              imageHeight="h-[72px]"
+            />
             <div className="space-y-1">
               <Label className="text-xs">치아 메모</Label>
               <Textarea value={toothNote} onChange={(e) => setToothNote(e.target.value)} rows={2} className="text-sm" />

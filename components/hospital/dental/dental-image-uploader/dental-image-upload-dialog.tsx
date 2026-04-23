@@ -28,18 +28,18 @@ export default function DentalImageUploadDialog({ chartDetail, teeth, hosId }: P
   const [activeTab, setActiveTab] = useState('upload')
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogTrigger asChild>
         <Button 
           variant="default" 
           size="icon" 
-          className="fixed top-24 right-8 h-12 w-12 rounded-full shadow-lg z-50 hover:scale-105 transition-transform"
+          className="fixed bottom-40 right-8 h-12 w-12 rounded-full shadow-lg z-[60] hover:scale-105 transition-transform bg-teal-600 hover:bg-teal-700 text-white"
         >
           <Camera className="h-6 w-6" />
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden bg-slate-50">
+      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden bg-slate-50 z-[110]">
         <DialogHeader className="p-4 border-b bg-white shrink-0">
           <DialogTitle>치과 이미지 모듈</DialogTitle>
           <DialogDescription className="hidden">치과 이미지를 업로드하거나 관리하는 모달입니다.</DialogDescription>

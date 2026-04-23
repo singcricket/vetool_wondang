@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -13,6 +13,9 @@ import DentalOralEvalTab from './dental-chart-tabs/dental-oral-eval-tab'
 import DentalProcedureTab from './dental-chart-tabs/dental-procedure-tab'
 import DentalTreatmentTab from './dental-chart-tabs/dental-treatment-tab'
 import DentalNoteTab from './dental-chart-tabs/dental-note-tab'
+import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
+import type { DentalImage } from '@/types/dental/dental-type'
+import DentalImageGallery from '@/components/hospital/dental/dental-image-gallery'
 
 interface Props {
   chartDetail: DentalChartDetail
@@ -23,6 +26,9 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
   const { refresh } = useRouter()
   const [isPending, startTransition] = useTransition()
 
+  // 첨부 이미지 관리
+  const [images, setImages] = useState<DentalImage[]>([])
+  
   // 1. 일반 정보 (DentalNoteTab)
   const [vetId, setVetId] = useState(chartDetail.vet_id)
   const [userTags, setUserTags] = useState(chartDetail.user_tags ?? '')
@@ -60,6 +66,10 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
   const [treatmentPlan, setTreatmentPlan] = useState(chartDetail.treatment_plan ?? '')
   const [recheckInterval, setRecheckInterval] = useState<DentalChartDetail['recheck_interval']>(chartDetail.recheck_interval)
   const [homecareInstruction, setHomecareInstruction] = useState(chartDetail.homecare_instruction ?? '')
+
+  useEffect(() => {
+    getDentalImages(chartDetail.id).then(res => setImages(res)).catch(console.error)
+  }, [chartDetail.id])
 
   async function handleSave() {
     startTransition(async () => {
@@ -111,6 +121,10 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
     })
   }
 
+  const generalImages = images.filter(img => (img.tooth_ids || []).includes('general'))
+  const assessmentImages = images.filter(img => (img.tooth_ids || []).includes('assessment'))
+  const treatmentImages = images.filter(img => (img.tooth_ids || []).includes('treatment'))
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-white relative">
       <ScrollArea className="flex-1">
@@ -130,6 +144,7 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
               generalNote={generalNote}
               onGeneralNoteChange={setGeneralNote}
             />
+            <DentalImageGallery images={generalImages} title="구강 전반" />
           </section>
 
           <Separator />
@@ -156,6 +171,7 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
               xrayTaken={xrayTaken} onXrayTakenChange={setXrayTaken}
               xrayFindings={xrayFindings} onXrayFindingsChange={setXrayFindings}
             />
+            <DentalImageGallery images={assessmentImages} title="진단 및 평가" />
           </section>
 
           <Separator />
@@ -175,7 +191,7 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
 
           <Separator />
 
-          {/* 4. 치료 계획 (DentalTreatmentTab) */}
+          {/* 4. 치료 계획 (DentalTreatmentTab) - Treatment 이미지는 처치/치료 마지막에 통합 표시 */}
           <section id="treatment-plan">
             <div className="bg-slate-50 px-4 py-2 border-b border-t mt-4">
               <h3 className="text-sm font-bold text-slate-700">치료 계획</h3>
@@ -185,6 +201,7 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
               recheckInterval={recheckInterval} onRecheckIntervalChange={setRecheckInterval}
               homecareInstruction={homecareInstruction} onHomecareInstructionChange={setHomecareInstruction}
             />
+            <DentalImageGallery images={treatmentImages} title="치료 및 처치" />
           </section>
 
           {/* 여백 확보 */}

@@ -7,6 +7,7 @@ import DentalToothDialog from './dental-tooth-dialog'
 import DentalChartDetailPanel from './dental-chart-detail-panel'
 import DentalChartGeneralPanel from './dental-chart-general-panel'
 import DentalImageUploadDialog from '../dental-image-uploader/dental-image-upload-dialog'
+import DentalReportDialog from '../dental-report/dental-report-dialog'
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -77,6 +78,13 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
 
       {/* ── 다중 이미지 업로더 다이얼로그 (우측 하단 플로팅 버튼) ── */}
       <DentalImageUploadDialog
+        chartDetail={chartDetail}
+        teeth={teeth}
+        hosId={hosId}
+      />
+
+      {/* ── 리포트 수출 및 열람용 다이얼로그 (우측 하단 두번째 버튼) ── */}
+      <DentalReportDialog
         chartDetail={chartDetail}
         teeth={teeth}
         hosId={hosId}

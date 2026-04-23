@@ -3,6 +3,17 @@ const nextConfig = {
   experimental: {
     typedEnv: true,
   },
+  transpilePackages: ['fabric'],
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: false,
+        jsdom: false,
+      };
+    }
+    return config;
+  },
   typedRoutes: true,
   typescript: {
     ignoreBuildErrors: true,

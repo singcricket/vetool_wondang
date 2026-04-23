@@ -25,11 +25,12 @@ export default function DentalToothDialog({
   const toothName = toothNames[toothId] ?? toothId
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }} modal={false}>
       <DialogContent 
         className="flex max-h-[90vh] w-full max-w-2xl flex-col gap-0 p-0 overflow-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="shrink-0 border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2">
