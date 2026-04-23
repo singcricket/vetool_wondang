@@ -13,6 +13,11 @@ const DentalImageEditor = dynamic(() => import('./dental-image-editor'), {
   loading: () => <div className="flex h-full items-center justify-center bg-slate-900 text-white">에디터 로딩 중...</div>
 })
 
+const DentalImageWithMark = dynamic(() => import('./dental-image-with-mark'), { 
+  ssr: false,
+  loading: () => <div className="aspect-square bg-slate-100 flex items-center justify-center text-[10px] text-slate-400">Loading...</div>
+})
+
 interface Props {
   images: DentalImage[]
   title?: string
@@ -81,17 +86,21 @@ export default function DentalImageGallery({
         )}
         <div className={cn("flex gap-2 overflow-x-auto pb-2 scrollbar-thin", imageContainerClassName)}>
           {localImages.map((img) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img 
+            <div 
               key={img.dental_image_id} 
-              src={img.img_url} 
-              alt="첨부사진" 
               onClick={() => setSelectedImageId(img.dental_image_id)}
               className={cn(
-                "object-cover rounded shadow-sm border border-slate-200 bg-white shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:ring-offset-1 transition-all", 
+                "shrink-0 cursor-pointer",
                 imageHeight
-              )} 
-            />
+              )}
+            >
+              <DentalImageWithMark 
+                imageUrl={img.img_url} 
+                mark={img.mark} 
+                aspectRatio="aspect-square" 
+                className="h-full"
+              />
+            </div>
           ))}
         </div>
       </div>

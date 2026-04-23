@@ -4,12 +4,17 @@ import React, { useEffect, useRef, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { 
   LoaderCircleIcon, PencilIcon, SquareIcon, CircleIcon, 
-  EraserIcon, TypeIcon, DownloadIcon, MousePointer2Icon, Trash2Icon 
+  EraserIcon, TypeIcon, DownloadIcon, MousePointer2Icon, Trash2Icon, TagsIcon, XIcon, SaveIcon 
 } from 'lucide-react'
 import { updateDentalImageMark } from '@/lib/actions/dental/update-dental-image-mark'
+import { updateDentalImageTagsById } from '@/lib/actions/dental/update-dental-image-tags-by-id'
+import { getDentalImageDetails } from '@/lib/actions/dental/get-dental-image-details'
 import { toast } from 'sonner'
 import { useParams } from 'next/navigation'
 import { fabric } from 'fabric'
+import DentalToothSelector from './dental-image-uploader/dental-tooth-selector'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 export default function DentalImageEditor({ 
   imageId, 
@@ -29,6 +34,30 @@ export default function DentalImageEditor({
   const hosId = params.hos_id as string
   const [color, setColor] = useState('#ef4444') // 기본 빨간색
   const [mode, setMode] = useState<'select' | 'draw'>('select')
+
+  // ==== 태그 및 메타데이터 상태 ====
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false)
+  const [species, setSpecies] = useState('canine')
+  const [toothIds, setToothIds] = useState<string[]>([])
+  const [otherTags, setOtherTags] = useState<string[]>([])
+  const [isRadio, setIsRadio] = useState(false)
+  const [isTagsLoading, setIsTagsLoading] = useState(false)
+
+  // 에디터 진입 시 이미지의 태그 메타데이터 호출
+  useEffect(() => {
+    async function fetchDetails() {
+      setIsTagsLoading(true)
+      const data = await getDentalImageDetails(imageId)
+      if (data) {
+        setSpecies(data.species)
+        setToothIds(data.tooth_ids)
+        setOtherTags(data.other_tags)
+        setIsRadio(data.is_radio)
+      }
+      setIsTagsLoading(false)
+    }
+    fetchDetails()
+  }, [imageId])
 
   // Fabric 인스턴스 초기화
   useEffect(() => {
@@ -99,6 +128,10 @@ export default function DentalImageEditor({
 
     // 키보드 이벤트 (Delete 등) 처리
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 입력창 등에서는 동작 방지
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
       // 텍스트 편집 중이 아닐 때만 작동하도록 체크
       const activeObject = canvas.getActiveObject()
       const isEditingText = activeObject && (activeObject.type === 'i-text' || activeObject.type === 'text') && (activeObject as any).isEditing
@@ -245,15 +278,24 @@ export default function DentalImageEditor({
     }
   }
 
-  const saveMark = () => {
+  const saveMarkAndTags = () => {
     if (!fabricCanvas) return
     startTransition(async () => {
       try {
         const json = fabricCanvas.toJSON(['id', 'selectable', 'evented']) 
         delete json.backgroundImage
+        // 저장 시의 캔버스 크기를 함께 기록하여 리포트 출력 시 비율을 맞출 수 있게 함
+        json.origWidth = fabricCanvas.width
+        json.origHeight = fabricCanvas.height
         const stringified = JSON.stringify(json)
+        
+        // 1. 마킹 좌표 저장
         await updateDentalImageMark(imageId, stringified, hosId)
-        toast.success('태그 마킹이 보존/저장되었습니다.')
+        
+        // 2. 태그 및 속성 저장
+        await updateDentalImageTagsById(imageId, toothIds, isRadio, otherTags, hosId)
+        
+        toast.success('태그 및 마킹 정보가 완전히 보존되었습니다.')
       } catch(err) {
         toast.error('저장에 실패했습니다.')
         console.error(err)
@@ -317,10 +359,23 @@ export default function DentalImageEditor({
             <EraserIcon className="w-4 h-4 sm:mr-1.5" />
             <span className="hidden sm:inline">전체 삭제</span>
           </Button>
+
+          <div className="w-[1px] h-6 bg-slate-600 mx-1 shrink-0" />
+
+          <Button 
+            variant={isSidePanelOpen ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} 
+            title="태그 속성 편집" 
+            className="px-2 shrink-0 text-amber-500 border-amber-500/50 hover:bg-amber-500 hover:text-white bg-slate-800"
+          >
+            <TagsIcon className="w-4 h-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">태그 관리</span>
+          </Button>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button onClick={saveMark} disabled={isPending} className="font-bold whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">
+          <Button onClick={saveMarkAndTags} disabled={isPending} className="font-bold whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">
             {isPending ? <LoaderCircleIcon className="animate-spin w-4 h-4 sm:mr-2" /> : <DownloadIcon className="w-4 h-4 sm:mr-2" />}
             <span className="hidden sm:inline">저장하기</span>
           </Button>
@@ -332,11 +387,67 @@ export default function DentalImageEditor({
         </div>
       </div>
 
-      {/* 중앙 캔버스 워크스페이스 */}
-      <div className="flex-1 w-full flex items-center justify-center p-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PC9yZWN0Pgo8Y2lyY2xlIGN4PSIxIiBjeT0iMSIgcj0iMSIgZmlsbD0iIzMzNDE1NSI+PC9jaXJjbGU+Cjwvc3ZnPg==')] overflow-auto">
-        <div className="shadow-[0_0_40px_rgba(0,0,0,0.8)] border border-slate-700 bg-black relative rounded-sm outline-none">
-          <canvas ref={canvasRef} />
+      {/* 메인 캔버스 + 우측 패널 */}
+      <div className="flex-1 w-full flex flex-row overflow-hidden relative">
+        
+        {/* 중앙 캔버스 워크스페이스 */}
+        <div className="flex-1 h-full flex items-center justify-center p-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PC9yZWN0Pgo8Y2lyY2xlIGN4PSIxIiBjeT0iMSIgcj0iMSIgZmlsbD0iIzMzNDE1NSI+PC9jaXJjbGU+Cjwvc3ZnPg==')] overflow-auto">
+          <div className="shadow-[0_0_40px_rgba(0,0,0,0.8)] border border-slate-700 bg-black relative rounded-sm outline-none">
+            <canvas ref={canvasRef} />
+          </div>
         </div>
+
+        {/* 우측 태그 속성 관리 패널 */}
+        {isSidePanelOpen && (
+          <div className="w-80 h-full bg-white flex flex-col shrink-0 shadow-[-10px_0_30px_rgba(0,0,0,0.2)] z-30 transition-transform border-l border-slate-300">
+            <div className="p-4 border-b bg-slate-50 flex justify-between items-center shrink-0">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <TagsIcon className="w-4 h-4 text-slate-500" /> 치아 번호/태그 관리
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => setIsSidePanelOpen(false)} className="h-8 w-8 text-slate-500 hover:text-slate-800">
+                <XIcon className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-4 flex-1 overflow-y-auto space-y-6">
+              {isTagsLoading ? (
+                 <div className="text-center text-slate-400 py-10 flex flex-col items-center">
+                    <LoaderCircleIcon className="w-6 h-6 animate-spin mb-2" />
+                    <span className="text-sm">데이터 로딩 중...</span>
+                 </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-bold text-slate-700">방사선 사진 (X-Ray)</Label>
+                    <Switch checked={isRadio} onCheckedChange={setIsRadio} />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-bold text-slate-700">치아 번호 및 부가 태그 지정</Label>
+                      <p className="text-[10px] text-slate-500">이 사진에 기록된 태그를 덮어씁니다.</p>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                      <DentalToothSelector 
+                        species={species}
+                        selectedIds={toothIds}
+                        onChange={setToothIds}
+                        otherTags={otherTags}
+                        onOtherTagsChange={setOtherTags}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="p-4 border-t bg-slate-50 shrink-0">
+              <Button onClick={saveMarkAndTags} disabled={isPending} className="w-full font-bold bg-indigo-600 hover:bg-indigo-700 text-white">
+                {isPending ? <LoaderCircleIcon className="animate-spin w-4 h-4 mr-2" /> : <SaveIcon className="w-4 h-4 mr-2" />}
+                마킹 + 태그 모두 저장
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

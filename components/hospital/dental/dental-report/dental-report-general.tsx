@@ -1,18 +1,77 @@
-import React from 'react'
-import type { DentalChartDetail, DentalTooth } from '@/types/dental/dental-type'
-import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
+import React, { useState } from 'react'
+import type { DentalChartDetail, DentalTooth, DentalImage } from '@/types/dental/dental-type'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
-import { toothNames } from '@/constants/hospital/dental/dental_chart_canine_combined'
 import { Badge } from '@/components/ui/badge'
 import { getByAbbr } from '@/constants/hospital/dental/avdcAbbreviations'
+import dynamic from 'next/dynamic'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { DialogTitle, DialogDescription } from '@radix-ui/react-dialog'
+
+const DentalImageWithMark = dynamic(() => import('../dental-image-with-mark'), { 
+  ssr: false,
+  loading: () => <div className="aspect-square bg-slate-100 flex items-center justify-center text-[10px] text-slate-400">Loading...</div>
+})
+
+const DentalImageEditor = dynamic(() => import('../dental-image-editor'), {
+  ssr: false,
+  loading: () => <div className="flex h-full items-center justify-center bg-slate-900 text-white">에디터 로딩 중...</div>
+})
 
 type Props = {
   chartDetail: DentalChartDetail
   teeth: DentalTooth[]
+  images: DentalImage[]
   species: string
 }
 
-export default function DentalReportGeneral({ chartDetail, teeth, species }: Props) {
+function ImageCard({ img }: { img: DentalImage }) {
+  const [editorOpen, setEditorOpen] = useState(false)
+
+  return (
+    <>
+      <div 
+        className="border rounded bg-white p-1 shadow-sm group relative cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all"
+        onClick={() => setEditorOpen(true)}
+      >
+        <DentalImageWithMark 
+          imageUrl={img.img_url} 
+          mark={img.mark} 
+          aspectRatio="aspect-square" 
+        />
+        {img.is_radio && (
+          <span className="absolute top-2 left-2 text-[9px] bg-yellow-400 text-yellow-950 px-1 rounded font-bold pointer-events-none">X-Ray</span>
+        )}
+      </div>
+
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen} modal={false}>
+        <DialogContent 
+          className="max-w-[100vw] w-screen h-screen max-h-[100vh] p-0 m-0 border-0 flex flex-col bg-slate-900 rounded-none z-[200]"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <VisuallyHidden>
+            <DialogTitle>치과 이미지 에디터</DialogTitle>
+            <DialogDescription>이미지 마킹을 확인하거나 수정할 수 있습니다.</DialogDescription>
+          </VisuallyHidden>
+          
+          {editorOpen && (
+             <DentalImageEditor 
+               imageId={img.dental_image_id} 
+               imageUrl={img.img_url} 
+               initialMark={img.mark} 
+               onClose={() => setEditorOpen(false)}
+             />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+export default function DentalReportGeneral({ chartDetail, teeth, images, species }: Props) {
   
   // 환자 정보 및 병기 요약
   return (
@@ -126,6 +185,21 @@ export default function DentalReportGeneral({ chartDetail, teeth, species }: Pro
           </table>
         </div>
       </section>
+
+      {/* 이미지 갤러리 */}
+      {images.length > 0 && (
+        <section className="pt-4 border-t">
+          <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+            <span className="w-2 h-6 bg-blue-500 rounded-sm mr-2 block"></span>
+            Dental Images
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {images.map(img => (
+              <ImageCard key={img.dental_image_id} img={img} />
+            ))}
+          </div>
+        </section>
+      )}
       
     </div>
   )

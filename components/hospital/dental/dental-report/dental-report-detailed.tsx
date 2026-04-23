@@ -1,9 +1,23 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { DentalChartDetail, DentalTooth, DentalImage } from '@/types/dental/dental-type'
 import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 import { toothNames } from '@/constants/hospital/dental/dental_chart_canine_combined'
 import { getByAbbr } from '@/constants/hospital/dental/avdcAbbreviations'
+import dynamic from 'next/dynamic'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { DialogTitle, DialogDescription } from '@radix-ui/react-dialog'
+
+const DentalImageWithMark = dynamic(() => import('../dental-image-with-mark'), { 
+  ssr: false,
+  loading: () => <div className="aspect-square bg-slate-100 flex items-center justify-center text-[10px] text-slate-400">Loading...</div>
+})
+
+const DentalImageEditor = dynamic(() => import('../dental-image-editor'), {
+  ssr: false,
+  loading: () => <div className="flex h-full items-center justify-center bg-slate-900 text-white">에디터 로딩 중...</div>
+})
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -18,15 +32,50 @@ function filterByTag(images: DentalImage[], tag: string) {
 }
 
 function ImageCard({ img }: { img: DentalImage }) {
+  const [editorOpen, setEditorOpen] = useState(false)
+
   return (
-    <div className="border rounded bg-slate-50 p-0.5 relative">
-      <img src={img.img_url} alt="dental" className="w-full aspect-square object-cover rounded-sm" />
-      {img.is_radio && (
-        <div className="absolute top-1 left-1">
-          <span className="text-[10px] bg-yellow-400 text-yellow-900 px-1 font-bold shadow-sm rounded">X-Ray</span>
-        </div>
-      )}
-    </div>
+    <>
+      <div 
+        className="border rounded bg-slate-50 p-0.5 relative group overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all"
+        onClick={() => setEditorOpen(true)}
+      >
+        <DentalImageWithMark 
+          imageUrl={img.img_url} 
+          mark={img.mark} 
+          aspectRatio="aspect-square" 
+        />
+        {img.is_radio && (
+          <div className="absolute top-1 left-1 pointer-events-none">
+            <span className="text-[10px] bg-yellow-400 text-yellow-900 px-1 font-bold shadow-sm rounded">X-Ray</span>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen} modal={false}>
+        <DialogContent 
+          className="max-w-[100vw] w-screen h-screen max-h-[100vh] p-0 m-0 border-0 flex flex-col bg-slate-900 rounded-none z-[200]"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <VisuallyHidden>
+            <DialogTitle>치과 이미지 에디터</DialogTitle>
+            <DialogDescription>이미지 마킹을 확인하거나 수정할 수 있습니다.</DialogDescription>
+          </VisuallyHidden>
+          
+          {editorOpen && (
+             <DentalImageEditor 
+               imageId={img.dental_image_id} 
+               imageUrl={img.img_url} 
+               initialMark={img.mark} 
+               onClose={() => setEditorOpen(false)}
+             />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -332,27 +381,13 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
                           <div className="flex flex-col gap-2">
                             <div className="text-xs font-bold text-center bg-slate-200 py-1 rounded text-slate-700">치료 전 (평가)</div>
                             {toothAssessment.map(img => (
-                              <div key={img.dental_image_id} className="border rounded relative p-0.5">
-                                <img src={img.img_url} alt="before" className="w-full aspect-square object-cover rounded-sm" />
-                                {img.is_radio && (
-                                  <div className="absolute top-1 left-1">
-                                    <span className="text-[10px] bg-yellow-400 text-yellow-900 px-1 font-bold shadow-sm rounded">X-Ray</span>
-                                  </div>
-                                )}
-                              </div>
+                              <ImageCard key={img.dental_image_id} img={img} />
                             ))}
                           </div>
                           <div className="flex flex-col gap-2">
                             <div className="text-xs font-bold text-center bg-teal-100 py-1 rounded text-teal-800">치료 후 (결과)</div>
                             {toothTreatment.map(img => (
-                              <div key={img.dental_image_id} className="border rounded relative p-0.5">
-                                <img src={img.img_url} alt="after" className="w-full aspect-square object-cover rounded-sm" />
-                                {img.is_radio && (
-                                  <div className="absolute top-1 left-1">
-                                    <span className="text-[10px] bg-yellow-400 text-yellow-900 px-1 font-bold shadow-sm rounded">X-Ray</span>
-                                  </div>
-                                )}
-                              </div>
+                              <ImageCard key={img.dental_image_id} img={img} />
                             ))}
                           </div>
                         </div>

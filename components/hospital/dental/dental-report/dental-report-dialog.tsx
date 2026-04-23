@@ -200,7 +200,7 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
                   reportRef 하위에 있는 내용을 html2canvas로 캡처 
                 */}
                 <TabsContent value="general" className="m-0 border-0 outline-none p-0">
-                  <DentalReportGeneral chartDetail={chartDetail} teeth={teeth} species={species} />
+                  <DentalReportGeneral chartDetail={chartDetail} teeth={teeth} images={images} species={species} />
                 </TabsContent>
 
                 <TabsContent value="detailed" className="m-0 border-0 outline-none p-0">
