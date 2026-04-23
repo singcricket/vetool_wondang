@@ -12,6 +12,7 @@ import { updateDentalImageTagsById } from '@/lib/actions/dental/update-dental-im
 import { updateDentalImageUrl } from '@/lib/actions/dental/update-dental-image-url'
 import { getDentalImageDetails } from '@/lib/actions/dental/get-dental-image-details'
 import { uploadDentalImage } from '@/lib/services/dental/upload-dental-image'
+import { deleteDentalImages } from '@/lib/actions/dental/delete-dental-images'
 import { toast } from 'sonner'
 import { useParams, useRouter } from 'next/navigation'
 import { fabric } from 'fabric'
@@ -532,6 +533,22 @@ export default function DentalImageEditor({
       }
     })
   }
+  
+  const handleDeleteImage = async () => {
+    if (!confirm('이 사진을 완전히 삭제하시겠습니까? 관련 데이터와 마킹도 모두 사라집니다.')) return
+
+    startTransition(async () => {
+      try {
+        await deleteDentalImages([imageId], hosId)
+        toast.success('사진이 삭제되었습니다.')
+        router.refresh()
+        onClose?.()
+      } catch (err) {
+        console.error(err)
+        toast.error('사진 삭제에 실패했습니다.')
+      }
+    })
+  }
 
   return (
     <div 
@@ -642,6 +659,19 @@ export default function DentalImageEditor({
             {isPending ? <LoaderCircleIcon className="animate-spin w-4 h-4 sm:mr-2" /> : <DownloadIcon className="w-4 h-4 sm:mr-2" />}
             <span className="hidden sm:inline">저장하기</span>
           </Button>
+
+          {/* 사진 자체 삭제 버튼 (마킹 삭제와 별도 배치) */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDeleteImage} 
+            disabled={isPending}
+            className="flex gap-1.5 border-red-500/50 text-red-400 hover:bg-red-50 hover:text-red-600 bg-slate-800"
+          >
+            <Trash2Icon className="w-4 h-4" />
+            <span className="hidden sm:inline text-xs">사진 삭제</span>
+          </Button>
+
           {onClose && (
             <Button variant="outline" size="sm" onClick={onClose} className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600 px-3">
               닫기
