@@ -53,7 +53,19 @@ export default function DentalImageWithMark({
           const imgAspect = imgWidth / imgHeight
 
           // 에디터와 100% 동일한 스케일/중앙정렬 로직 적용
-          const scaleFactor = canvasAspect >= imgAspect ? origH / imgHeight : origW / imgWidth
+          if (parsedMark.bgInfo) {
+            img.set({
+              angle: parsedMark.bgInfo.angle || 0,
+              flipX: !!parsedMark.bgInfo.flipX,
+              flipY: !!parsedMark.bgInfo.flipY
+            })
+          }
+
+          const isVertical = (img.angle || 0) === 90 || (img.angle || 0) === 270
+          const actualW = isVertical ? imgHeight : imgWidth
+          const actualH = isVertical ? imgWidth : imgHeight
+          const scaleFactor = canvasAspect >= (actualW / actualH) ? origH / actualH : origW / actualW
+
           img.set({
             originX: 'center',
             originY: 'center',

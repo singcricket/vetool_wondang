@@ -8,6 +8,7 @@ export async function getDentalImageDetails(dentalImageId: string) {
   const { data, error } = await supabase
     .from('dental_images')
     .select(`
+      chart_id,
       tooth_ids,
       other_tags,
       is_radio,
@@ -34,6 +35,7 @@ export async function getDentalImageDetails(dentalImageId: string) {
   }
 
   return {
+    chart_id: data.chart_id,
     tooth_ids: data.tooth_ids || [],
     other_tags: data.other_tags || [],
     is_radio: data.is_radio || false,

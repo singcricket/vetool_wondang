@@ -4,13 +4,16 @@ import React, { useEffect, useRef, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { 
   LoaderCircleIcon, PencilIcon, SquareIcon, CircleIcon, 
-  EraserIcon, TypeIcon, DownloadIcon, MousePointer2Icon, Trash2Icon, TagsIcon, XIcon, SaveIcon 
+  EraserIcon, TypeIcon, DownloadIcon, MousePointer2Icon, Trash2Icon, TagsIcon, XIcon, SaveIcon,
+  RotateCwIcon, FlipHorizontalIcon, FlipVerticalIcon, CropIcon
 } from 'lucide-react'
 import { updateDentalImageMark } from '@/lib/actions/dental/update-dental-image-mark'
 import { updateDentalImageTagsById } from '@/lib/actions/dental/update-dental-image-tags-by-id'
+import { updateDentalImageUrl } from '@/lib/actions/dental/update-dental-image-url'
 import { getDentalImageDetails } from '@/lib/actions/dental/get-dental-image-details'
+import { uploadDentalImage } from '@/lib/services/dental/upload-dental-image'
 import { toast } from 'sonner'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { fabric } from 'fabric'
 import DentalToothSelector from './dental-image-uploader/dental-tooth-selector'
 import { Switch } from '@/components/ui/switch'
@@ -42,6 +45,9 @@ export default function DentalImageEditor({
   const [otherTags, setOtherTags] = useState<string[]>([])
   const [isRadio, setIsRadio] = useState(false)
   const [isTagsLoading, setIsTagsLoading] = useState(false)
+  const [isCropping, setIsCropping] = useState(false)
+  const [currentImageUrl, setCurrentImageUrl] = useState(imageUrl)
+  const router = useRouter()
 
   // 에디터 진입 시 이미지의 태그 메타데이터 호출
   useEffect(() => {
@@ -78,8 +84,8 @@ export default function DentalImageEditor({
     })
     setFabricCanvas(canvas)
 
-    // 백그라운드 이미지 스케일 조정
-    fabric.Image.fromURL(imageUrl, (img) => {
+    // 백그라운드 이미지 스케일 조정 (currentImageUrl 사용)
+    fabric.Image.fromURL(currentImageUrl, (img) => {
       if (!isMounted) return
       
       const canvasAspect = canvas.width! / canvas.height!
@@ -101,8 +107,34 @@ export default function DentalImageEditor({
 
       if (initialMark) {
         try {
+          const parsed = JSON.parse(initialMark)
           canvas.loadFromJSON(initialMark, () => {
              if (!isMounted) return
+             
+             // 복원된 배경 이미지 설정 (각도, 반전 등 적용)
+             if (parsed.bgInfo) {
+                img.set({
+                  angle: parsed.bgInfo.angle || 0,
+                  flipX: !!parsed.bgInfo.flipX,
+                  flipY: !!parsed.bgInfo.flipY
+                })
+                
+                // 다시 정렬
+                const canvasAspect = canvas.width! / canvas.height!
+                const isVertical = (parsed.bgInfo.angle || 0) === 90 || (parsed.bgInfo.angle || 0) === 270
+                const w = isVertical ? img.height! : img.width!
+                const h = isVertical ? img.width! : img.height!
+                const imgAspect = w / h
+                let scaleFactor = canvasAspect >= imgAspect ? canvas.height! / h : canvas.width! / w
+                
+                img.set({
+                  scaleX: scaleFactor,
+                  scaleY: scaleFactor,
+                  left: canvas.width! / 2,
+                  top: canvas.height! / 2
+                })
+             }
+
              canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas))
              canvas.requestRenderAll()
           })
@@ -155,7 +187,7 @@ export default function DentalImageEditor({
       window.removeEventListener('keydown', handleKeyDown)
       canvas.dispose()
     }
-  }, [imageUrl, initialMark])
+  }, [currentImageUrl, initialMark])
 
   // 도구 및 색상 변경 Effect
   useEffect(() => {
@@ -268,7 +300,7 @@ export default function DentalImageEditor({
     if (!fabricCanvas) return
     if (confirm('모든 그림 및 글자를 지우시겠습니까?')) {
       fabricCanvas.clear()
-      fabric.Image.fromURL(imageUrl, (img) => {
+      fabric.Image.fromURL(currentImageUrl, (img) => {
         const canvasAspect = fabricCanvas.width! / fabricCanvas.height!
         const imgAspect = img.width! / img.height!
         let scaleFactor = canvasAspect >= imgAspect ? fabricCanvas.height! / img.height! : fabricCanvas.width! / img.width!
@@ -278,18 +310,181 @@ export default function DentalImageEditor({
     }
   }
 
+  const rotate90 = () => {
+    if (!fabricCanvas) return
+    const bg = fabricCanvas.backgroundImage
+    if (!bg) return
+    
+    // 현재 각도에서 90도씩 회전
+    const currentAngle = bg.angle || 0
+    const newAngle = (currentAngle + 90) % 360
+    bg.set('angle', newAngle)
+    
+    // 회전 후 캔버스 중앙에 맞추기 위해 정렬 다시 계산
+    const canvasAspect = fabricCanvas.width! / fabricCanvas.height!
+    // 회전되었을 때는 원본의 너비/높이를 바꿔서 계산해야 함
+    const isVertical = newAngle === 90 || newAngle === 270
+    const w = isVertical ? bg.height! : bg.width!
+    const h = isVertical ? bg.width! : bg.height!
+    const imgAspect = w / h
+    
+    let scaleFactor = canvasAspect >= imgAspect ? fabricCanvas.height! / h : fabricCanvas.width! / w
+    
+    bg.set({
+      scaleX: scaleFactor,
+      scaleY: scaleFactor,
+      left: fabricCanvas.width! / 2,
+      top: fabricCanvas.height! / 2
+    })
+    
+    fabricCanvas.requestRenderAll()
+  }
+
+  const flipH = () => {
+    if (!fabricCanvas) return
+    const bg = fabricCanvas.backgroundImage
+    if (!bg) return
+    bg.set('flipX', !bg.flipX)
+    fabricCanvas.requestRenderAll()
+  }
+
+  const flipV = () => {
+    if (!fabricCanvas) return
+    const bg = fabricCanvas.backgroundImage
+    if (!bg) return
+    bg.set('flipY', !bg.flipY)
+    fabricCanvas.requestRenderAll()
+  }
+
+  const startCrop = () => {
+    if (!fabricCanvas) return
+    setIsCropping(true)
+    setMode('select')
+    
+    // 자르기 영역을 나타낼 사각형 추가
+    const rect = new fabric.Rect({
+      left: fabricCanvas.width! / 4,
+      top: fabricCanvas.height! / 4,
+      width: fabricCanvas.width! / 2,
+      height: fabricCanvas.height! / 2,
+      fill: 'rgba(255, 255, 255, 0.3)',
+      stroke: '#fff',
+      strokeWidth: 2,
+      strokeDashArray: [5, 5],
+      cornerColor: '#6366f1',
+      cornerSize: 12,
+      transparentCorners: false,
+      id: 'crop-rect'
+    } as any)
+    
+    fabricCanvas.add(rect)
+    fabricCanvas.setActiveObject(rect)
+    fabricCanvas.requestRenderAll()
+  }
+
+  const cancelCrop = () => {
+    if (!fabricCanvas) return
+    const cropRect = fabricCanvas.getObjects().find((obj: any) => obj.id === 'crop-rect')
+    if (cropRect) fabricCanvas.remove(cropRect)
+    setIsCropping(false)
+    fabricCanvas.requestRenderAll()
+  }
+
+  const applyCrop = async () => {
+    if (!fabricCanvas) return
+    const cropRect = fabricCanvas.getObjects().find((obj: any) => obj.id === 'crop-rect')
+    if (!cropRect) return
+
+    if (!confirm('이미지를 자르면 현재 그려진 모든 마킹이 제거됩니다. 계속하시겠습니까?')) return
+
+    startTransition(async () => {
+      try {
+        // 1. 자를 영역 계산
+        const bound = cropRect.getBoundingRect()
+        
+        // 2. 배경 이미지만 남기고 모든 객체 숨기기 (캡처를 위해)
+        const objects = fabricCanvas.getObjects()
+        objects.forEach((obj: any) => {
+          if ((obj as any).id !== 'crop-rect') obj.set('visible', false)
+        })
+        ;(cropRect as any).set('visible', false) // 자기 자신도 숨김
+
+        // 3. 캡처
+        const dataURL = fabricCanvas.toDataURL({
+          left: bound.left,
+          top: bound.top,
+          width: bound.width,
+          height: bound.height,
+          format: 'jpeg',
+          quality: 0.9,
+          multiplier: 1 / fabricCanvas.getZoom() // 현재 줌 무시하고 실제 크기 기준으로 캡처하려면 조정 필요할 수 있음
+        })
+
+        // 4. Blob으로 변환하여 업로드
+        const res = await fetch(dataURL)
+        const blob = await res.blob()
+        const chartId = params.target_date // 차트 ID 대용 또는 상세 조회에서 가져온 ID 사용
+        // 실제 chart_id를 찾기 위해 imgData가 필요하지만, params에서 유추하거나 getDetails에서 가져온 것을 활용
+        // 여기서는 안전하게 params 구조 혹은 에디터 진입 시의 chartId를 활용해야 함.
+        // 현재 DentalImageEditor에는 chartId가 명시적으로 없으므로 getDetails에서 가져오거나 chart_id를 prop으로 받아야 함.
+        
+        // getDentalImageDetails에서 chart_id를 가져오도록 수정하거나, params에서 id 추출
+        // url을 생성하기 위해 chartId가 필수임.
+        const detail = await getDentalImageDetails(imageId)
+        const actualChartId = detail?.chart_id || (params.dental_id as string)
+
+        const file = new File([blob], `cropped_${Date.now()}.jpg`, { type: 'image/jpeg' })
+        const uploadRes = await uploadDentalImage(file, actualChartId)
+
+        if (uploadRes.error || !uploadRes.url) throw new Error(uploadRes.error || '업로드 실패')
+
+        // 5. DB 업데이트 및 상태 갱신
+        await updateDentalImageUrl(imageId, uploadRes.url, hosId)
+        
+        // 6. 상태 초기화 (setCurrentImageUrl 변경 시 useEffect가 실행되어 캔버스를 새로 고침)
+        setCurrentImageUrl(uploadRes.url)
+        setIsCropping(false)
+        
+        toast.success('이미지가 성공적으로 잘렸습니다.')
+        router.refresh()
+      } catch (err: any) {
+        toast.error('자르기에 실패했습니다.')
+        console.error(err)
+        // 실패 시 객체 다시 보이기
+        fabricCanvas.getObjects().forEach((obj: any) => obj.set('visible', true))
+        fabricCanvas.requestRenderAll()
+      }
+    })
+  }
+
   const saveMarkAndTags = () => {
     if (!fabricCanvas) return
     startTransition(async () => {
       try {
-        const json = fabricCanvas.toJSON(['id', 'selectable', 'evented']) 
+        // 자르기 사각형이 남아있다면 제거하고 저장
+        const cropRect = fabricCanvas.getObjects().find((obj: any) => obj.id === 'crop-rect')
+        if (cropRect) fabricCanvas.remove(cropRect)
+
+        // 객체들과 함께 배경 정보(각도, 반전 등)를 포함하여 저장
+        const json = fabricCanvas.toJSON(['id', 'selectable', 'evented', 'angle', 'flipX', 'flipY']) 
+        
+        // 배경 이미지의 URL 정보 자체는 DB 공간 절약을 위해 제외하되, 
+        // 각도와 반전 상태는 나중에 로드 시 복원하기 위해 따로 저장하거나 JSON에 남겨둠
+        const bgInfo = fabricCanvas.backgroundImage ? {
+          angle: fabricCanvas.backgroundImage.angle,
+          flipX: fabricCanvas.backgroundImage.flipX,
+          flipY: fabricCanvas.backgroundImage.flipY,
+        } : null
+
         delete json.backgroundImage
+        json.bgInfo = bgInfo // 커스텀 정보 추가
+        
         // 저장 시의 캔버스 크기를 함께 기록하여 리포트 출력 시 비율을 맞출 수 있게 함
         json.origWidth = fabricCanvas.width
         json.origHeight = fabricCanvas.height
         const stringified = JSON.stringify(json)
         
-        // 1. 마킹 좌표 저장
+        // 1. 마킹 좌표 저장 (JSON 내부에 bgInfo 포함됨)
         await updateDentalImageMark(imageId, stringified, hosId)
         
         // 2. 태그 및 속성 저장
@@ -359,6 +554,39 @@ export default function DentalImageEditor({
             <EraserIcon className="w-4 h-4 sm:mr-1.5" />
             <span className="hidden sm:inline">전체 삭제</span>
           </Button>
+
+          <div className="w-[1px] h-6 bg-slate-600 mx-1 shrink-0" />
+
+          <Button variant="secondary" size="sm" onClick={rotate90} title="90도 회전" className="px-2 shrink-0">
+            <RotateCwIcon className="w-4 h-4 sm:mr-1.5" />
+            <span className="hidden sm:inline text-xs">회전</span>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={flipH} title="좌우 반전" className="px-2 shrink-0">
+            <FlipHorizontalIcon className="w-4 h-4 sm:mr-1.5" />
+            <span className="hidden sm:inline text-xs">좌우</span>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={flipV} title="상하 반전" className="px-2 shrink-0">
+            <FlipVerticalIcon className="w-4 h-4 sm:mr-1.5" />
+            <span className="hidden sm:inline text-xs">상하</span>
+          </Button>
+
+          <div className="w-[1px] h-6 bg-slate-600 mx-1 shrink-0" />
+
+          {isCropping ? (
+            <div className="flex items-center gap-1">
+              <Button variant="default" size="sm" onClick={applyCrop} className="bg-emerald-600 hover:bg-emerald-700 animate-pulse text-white px-2 shrink-0">
+                자르기 확정
+              </Button>
+              <Button variant="secondary" size="sm" onClick={cancelCrop} className="px-2 shrink-0">
+                취소
+              </Button>
+            </div>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={startCrop} title="이미지 자르기" className="px-2 shrink-0">
+              <CropIcon className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline text-xs">자르기</span>
+            </Button>
+          )}
 
           <div className="w-[1px] h-6 bg-slate-600 mx-1 shrink-0" />
 

@@ -12,10 +12,10 @@ export async function updateDentalImageTagsById(
 ) {
   const supabase = await createClient()
 
-  // 1. Get the image record to find dental_chart_id
+  // 1. Get the image record to find chart_id
   const { data: imgData, error: imgError } = await supabase
     .from('dental_images')
-    .select('dental_chart_id')
+    .select('chart_id')
     .eq('dental_image_id', dentalImageId)
     .single()
 
@@ -25,7 +25,7 @@ export async function updateDentalImageTagsById(
   const { data: teethData, error: teethError } = await supabase
     .from('dental_chart_teeth')
     .select('id, tooth_id')
-    .eq('dental_chart_id', imgData.dental_chart_id)
+    .eq('chart_id', imgData.chart_id)
     .not('tooth_id', 'is', null)
 
   let matchedTeethIds: string[] = []
