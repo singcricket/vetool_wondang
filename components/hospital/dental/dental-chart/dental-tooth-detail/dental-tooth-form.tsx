@@ -8,7 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useRef } from 'react'
+import { CameraIcon, ImageIcon, LoaderCircleIcon } from 'lucide-react'
 import { upsertDentalTooth } from '@/lib/actions/dental/upsert-dental-tooth'
+import { uploadDentalImage } from '@/lib/services/dental/upload-dental-image'
+import { insertDentalImages } from '@/lib/actions/dental/insert-dental-images'
 import { toothNames } from '@/constants/hospital/dental/dental_chart_canine_combined'
 import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
 import type { DentalChartDetail, DentalTooth } from '@/types/dental/dental-type'
@@ -18,6 +22,7 @@ import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
 import { useEffect } from 'react'
 import type { DentalImage } from '@/types/dental/dental-type'
 import DentalImageGallery from '@/components/hospital/dental/dental-image-gallery'
+import { toast } from 'sonner'
 
 type SixPoint<T = number | null> = { ml: T; l: T; dl: T; mb: T; b: T; db: T }
 
@@ -28,6 +33,7 @@ type Props = {
   existing: DentalTooth | undefined
   onSaved?: () => void
   onCancel?: () => void
+  refreshKey?: number
 }
 
 const PRIORITY_OPTS = [
@@ -96,15 +102,21 @@ function MultiCheckField({ label, selected, onChange, options }: {
   )
 }
 
-export default function DentalToothForm({ toothId, chartDetail, hosId, existing, onSaved, onCancel }: Props) {
+export default function DentalToothForm({ toothId, chartDetail, hosId, existing, onSaved, onCancel, refreshKey }: Props) {
   const species = chartDetail.species || 'canine'
   const { refresh } = useRouter()
   const [isPending, startTransition] = useTransition()
   
   const [images, setImages] = useState<DentalImage[]>([])
+
+  const fetchImages = async () => {
+    const data = await getDentalImages(chartDetail.id)
+    setImages(data)
+  }
+
   useEffect(() => {
-    getDentalImages(chartDetail.id).then(res => setImages(res)).catch(console.error)
-  }, [chartDetail.id])
+    fetchImages()
+  }, [chartDetail.id, refreshKey])
 
   const toothName = toothNames[toothId] ?? toothId
 
@@ -148,7 +160,7 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
   )
   const [priority, setPriority] = useState(existing?.treatment_priority ?? null)
   const [xrayFinding, setXrayFinding] = useState(existing?.xray_finding ?? '')
-  const [toothNote, setToothNote] = useState(existing?.tooth_note ?? '')
+  const [toothNote, setToothNote] = useState(existing?.tooth_note || '')
 
   // 치주낭 깊이
   const [probing, setProbing] = useState<SixPoint<number | null>>({

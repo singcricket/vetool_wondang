@@ -8,6 +8,7 @@ import DentalChartDetailPanel from './dental-chart-detail-panel'
 import DentalChartGeneralPanel from './dental-chart-general-panel'
 import DentalImageUploadDialog from '../dental-image-uploader/dental-image-upload-dialog'
 import DentalReportDialog from '../dental-report/dental-report-dialog'
+import { LayoutDashboard, Activity, SquareGanttChart } from 'lucide-react'
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -31,18 +32,26 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
       <Tabs defaultValue="detail" className="flex flex-1 flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-2 rounded-none border-b bg-slate-50 p-0 h-11 shrink-0">
+        <TabsList className="grid w-full grid-cols-2 rounded-none border-b bg-slate-100/50 p-0 h-12 shrink-0">
           <TabsTrigger 
             value="general"
-            className="rounded-none border-r data-[state=active]:bg-white data-[state=active]:font-bold h-full"
+            className="group relative rounded-none border-r data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-none h-full transition-all duration-200"
           >
-            일반 차트
+            <div className="flex items-center gap-2">
+              <LayoutDashboard className="w-4 h-4 transition-colors group-data-[state=active]:text-indigo-600 text-slate-400" />
+              <span className="font-semibold text-sm">일반 차트</span>
+            </div>
+            <div className="absolute bottom-0 left-0 h-[3px] w-full scale-x-0 bg-indigo-600 transition-transform duration-200 group-data-[state=active]:scale-x-100" />
           </TabsTrigger>
           <TabsTrigger 
             value="detail" 
-            className="rounded-none data-[state=active]:bg-white data-[state=active]:font-bold h-full"
+            className="group relative rounded-none data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-none h-full transition-all duration-200"
           >
-            디테일 차트
+            <div className="flex items-center gap-2">
+              <SquareGanttChart className="w-4 h-4 transition-colors group-data-[state=active]:text-indigo-600 text-slate-400" />
+              <span className="font-semibold text-sm">디테일 차트</span>
+            </div>
+            <div className="absolute bottom-0 left-0 h-[3px] w-full scale-x-0 bg-indigo-600 transition-transform duration-200 group-data-[state=active]:scale-x-100" />
           </TabsTrigger>
         </TabsList>
 

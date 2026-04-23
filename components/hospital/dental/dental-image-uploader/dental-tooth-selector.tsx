@@ -136,10 +136,14 @@ export default function DentalToothSelector({ species, selectedIds, onChange, ot
         </p>
       </div>
       {/* 범위/목적 옵션 */}
-      <div className="w-full px-2 max-w-[340px] flex gap-2 justify-center pb-1">
-        {renderFixedTagButton('general', 'General')}
-        {renderFixedTagButton('assessment', 'Assessment')}
-        {renderFixedTagButton('treatment', 'Treatment')}
+      <div className="w-full px-2 max-w-[340px] flex flex-wrap gap-2 justify-center pb-1">
+        {renderFixedTagButton('general', '전체사진')}
+        {renderFixedTagButton('assessment', '치료전/평가시진')}
+        {renderFixedTagButton('treatment', '치료 후 사진')}
+         {renderFixedTagButton('100','Rt Max')}
+          {renderFixedTagButton('200','Lt Max')}
+           {renderFixedTagButton('400','Rt Mand')}
+            {renderFixedTagButton('300','Lt Mand')}
       </div>
  <div className="space-y-0.5">
         <Label className="text-sm font-medium">개별 치아 관련 태그</Label>
@@ -148,8 +152,8 @@ export default function DentalToothSelector({ species, selectedIds, onChange, ot
         </p>
       </div>
          <div className="w-full px-2 max-w-[340px] flex gap-2 justify-center pb-1">
-        {renderFixedTagButton('tooth-assessment', 'Assessment')}
-        {renderFixedTagButton('tooth-treatment', 'Treatment')}
+        {renderFixedTagButton('tooth-assessment', '개별치아-치료전')}
+        {renderFixedTagButton('tooth-treatment', '개별치아-치료후')}
       </div>
       {/* 상악 (Top) */}
       <div className="flex justify-center divide-x-2 divide-slate-300 border-b-4 border-slate-300 pb-4">
