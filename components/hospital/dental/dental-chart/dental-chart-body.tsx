@@ -1,15 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { DentalChartDetail, DentalTooth } from '@/types/dental/dental-type'
+import { createClient } from '@/lib/supabase/client'
 import DentalToothDialog from './dental-tooth-dialog'
 import DentalChartDetailPanel from './dental-chart-detail-panel'
 import DentalChartGeneralPanel from './dental-chart-general-panel'
 import DentalImageUploadDialog from '../dental-image-uploader/dental-image-upload-dialog'
 import DentalReportDialog from '../dental-report/dental-report-dialog'
 import DentalChartTestPanel from './dental-chart-test-panel'
-import { LayoutDashboard, Activity, SquareGanttChart, FlaskConical, MonitorPlay } from 'lucide-react'
+import { LayoutDashboard, Activity, SquareGanttChart, MonitorPlay } from 'lucide-react'
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -18,17 +19,76 @@ type Props = {
 }
 
 export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
+  const [localChartDetail, setLocalChartDetail] = useState(chartDetail)
+  const [localTeeth, setLocalTeeth] = useState(teeth)
   const [selectedToothId, setSelectedToothId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const species = chartDetail.species ?? chartDetail.patient?.species ?? 'canine'
+  // Realtime 구독
+  useEffect(() => {
+    const supabase = createClient()
+    
+    // 1. 차트 기본 정보 구독 (dental_charts)
+    const chartChannel = supabase
+      .channel(`dental_chart_${chartDetail.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'dental_charts',
+          filter: `id=eq.${chartDetail.id}`
+        },
+        (payload) => {
+          setLocalChartDetail(prev => ({ ...prev, ...(payload.new as any) }))
+        }
+      )
+      .subscribe()
+
+    // 2. 개별 치아 정보 구독 (dental_chart_teeth)
+    const teethChannel = supabase
+      .channel(`dental_teeth_${chartDetail.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dental_chart_teeth',
+          filter: `chart_id=eq.${chartDetail.id}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const updatedTooth = payload.new as DentalTooth
+            setLocalTeeth(prev => {
+              const index = prev.findIndex(t => t.id === updatedTooth.id)
+              if (index > -1) {
+                const next = [...prev]
+                next[index] = { ...next[index], ...updatedTooth }
+                return next
+              }
+              return [...prev, updatedTooth]
+            })
+          } else if (payload.eventType === 'DELETE') {
+            setLocalTeeth(prev => prev.filter(t => t.id !== payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(chartChannel)
+      supabase.removeChannel(teethChannel)
+    }
+  }, [chartDetail.id])
+
+  const species = localChartDetail.species ?? localChartDetail.patient?.species ?? 'canine'
 
   function handleToothClick(id: string) {
     setSelectedToothId(id)
     setDialogOpen(true)
   }
 
-  const existingTooth = teeth.find((t) => String(t.tooth_id) === selectedToothId)
+  const existingTooth = localTeeth.find((t) => String(t.tooth_id) === selectedToothId)
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
@@ -68,7 +128,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
 
         <TabsContent value="general" className="m-0 flex-1 overflow-hidden focus-visible:ring-0">
           <DentalChartGeneralPanel
-            chartDetail={chartDetail}
+            chartDetail={localChartDetail}
             hosId={hosId}
           />
         </TabsContent>
@@ -78,14 +138,14 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
             species={species}
             selectedToothId={selectedToothId}
             onToothClick={handleToothClick}
-            teeth={teeth}
+            teeth={localTeeth}
           />
         </TabsContent>
 
         <TabsContent value="test" className="m-0 flex-1 overflow-hidden focus-visible:ring-0">
           <DentalChartTestPanel
-            chartDetail={chartDetail}
-            teeth={teeth}
+            chartDetail={localChartDetail}
+            teeth={localTeeth}
           />
         </TabsContent>
       </Tabs>
@@ -97,7 +157,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           toothId={selectedToothId}
-          chartDetail={chartDetail}
+          chartDetail={localChartDetail}
           hosId={hosId}
           existing={existingTooth}
         />
@@ -105,15 +165,15 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
 
       {/* ── 다중 이미지 업로더 다이얼로그 (우측 하단 플로팅 버튼) ── */}
       <DentalImageUploadDialog
-        chartDetail={chartDetail}
-        teeth={teeth}
+        chartDetail={localChartDetail}
+        teeth={localTeeth}
         hosId={hosId}
       />
 
       {/* ── 리포트 수출 및 열람용 다이얼로그 (우측 하단 두번째 버튼) ── */}
       <DentalReportDialog
-        chartDetail={chartDetail}
-        teeth={teeth}
+        chartDetail={localChartDetail}
+        teeth={localTeeth}
         hosId={hosId}
       />
     </div>

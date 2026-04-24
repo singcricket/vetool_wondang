@@ -19,6 +19,16 @@ import { fabric } from 'fabric'
 import DentalToothSelector from './dental-image-uploader/dental-tooth-selector'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function DentalImageEditor({ 
   imageId, 
@@ -48,6 +58,7 @@ export default function DentalImageEditor({
   const [isTagsLoading, setIsTagsLoading] = useState(false)
   const [isCropping, setIsCropping] = useState(false)
   const [currentImageUrl, setCurrentImageUrl] = useState(imageUrl)
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false)
   const router = useRouter()
 
   // 에디터 진입 시 이미지의 태그 메타데이터 호출
@@ -535,8 +546,6 @@ export default function DentalImageEditor({
   }
   
   const handleDeleteImage = async () => {
-    if (!confirm('이 사진을 완전히 삭제하시겠습니까? 관련 데이터와 마킹도 모두 사라집니다.')) return
-
     startTransition(async () => {
       try {
         await deleteDentalImages([imageId], hosId)
@@ -664,7 +673,7 @@ export default function DentalImageEditor({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={handleDeleteImage} 
+            onClick={() => setIsDeleteAlertOpen(true)} 
             disabled={isPending}
             className="flex gap-1.5 border-red-500/50 text-red-400 hover:bg-red-50 hover:text-red-600 bg-slate-800"
           >
@@ -742,6 +751,27 @@ export default function DentalImageEditor({
           </div>
         )}
       </div>
+
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent className="bg-white border text-slate-800 z-[201]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-800">사진 삭제 확인</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500">
+              이 사진을 완전히 삭제하시겠습니까? <br />
+              사진에 포함된 모든 마킹 정보와 태그 데이터가 함께 삭제되며, 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-none">취소</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteImage}
+              className="bg-red-500 hover:bg-red-600 text-white border-none"
+            >
+              삭제하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
