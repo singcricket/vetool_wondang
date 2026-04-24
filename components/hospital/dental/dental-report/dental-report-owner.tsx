@@ -110,6 +110,37 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
   const assessmentImages = filterByTag(images, 'assessment')
   const treatmentImages  = filterByTag(images, 'treatment')
 
+  // 4분면 이미지 추출
+  const img100 = images.find(img => img.tooth_ids?.includes('100'))
+  const img200 = images.find(img => img.tooth_ids?.includes('200'))
+  const img300 = images.find(img => img.tooth_ids?.includes('300'))
+  const img400 = images.find(img => img.tooth_ids?.includes('400'))
+
+  function QuadrantBox({ label, img }: { label: string, img?: DentalImage }) {
+    return (
+      <div className="flex flex-col border border-amber-200 bg-white shadow-sm overflow-hidden rounded">
+        <div className="text-[10px] font-bold text-center bg-amber-50 py-1 border-b border-amber-100 uppercase text-amber-700 tracking-wider">
+          {label}
+        </div>
+        <div className="aspect-[4/3] bg-amber-50/30 flex items-center justify-center">
+          {img ? (
+            <DentalImageWithMark 
+              imageUrl={img.img_url} 
+              mark={img.mark} 
+              noHover 
+              aspectRatio="aspect-auto" 
+              className="h-full w-full" 
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-1 opacity-20">
+              <span className="text-[9px] font-medium text-amber-400">NO IMAGE</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // recheck 라벨 맵
   const recheckLabel: Record<string, string> = {
     '1month': '1개월 후', '3months': '3개월 후',
@@ -244,7 +275,7 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
           </div>
         </div>
 
-        {/* 구강 전반 사진 (general 태그) */}
+        {/* 구강 전반 사진 (general 태그)
         {generalImages.length > 0 && (
           <div className="border-t border-amber-200 pt-4">
             <h3 className="text-sm font-semibold text-amber-700 mb-3">구강 전반 사진</h3>
@@ -252,7 +283,22 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
               {generalImages.map(img => <ImageCard key={img.dental_image_id} img={img} caption="전체 구강" isShared={isShared} />)}
             </div>
           </div>
-        )}
+        )} */}
+
+        {/* 4분할 사진 */}
+        <div className="border-t border-amber-200 pt-6 bg-amber-50/30 p-4 rounded-lg my-4">
+          <h3 className="text-sm font-semibold text-amber-700 mb-4 text-center uppercase tracking-widest">
+            구강 전반 사진
+          </h3>
+          <div className="max-w-[700px] mx-auto">
+            <div className="grid grid-cols-2 gap-4">
+              <QuadrantBox label="Rt Max" img={img100} />
+              <QuadrantBox label="Lt Max" img={img200} />
+              <QuadrantBox label="Rt Mand" img={img400} />
+              <QuadrantBox label="Lt Mand" img={img300} />
+            </div>
+          </div>
+        </div>
 
         {/* 치료 전/후 비교 사진 (assessment / treatment 글로벌 태그) */}
         {(assessmentImages.length > 0 || treatmentImages.length > 0) && (

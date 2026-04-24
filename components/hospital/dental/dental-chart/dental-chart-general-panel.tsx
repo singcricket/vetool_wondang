@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
-import { LoaderCircleIcon } from 'lucide-react'
+import { LoaderCircleIcon, CameraIcon, ImageIcon } from 'lucide-react'
 import { updateDentalChart } from '@/lib/actions/dental/update-dental-chart'
 import type { DentalChartDetail } from '@/types/dental/dental-type'
+import { uploadDentalImage } from '@/lib/services/dental/upload-dental-image'
+import { insertDentalImages } from '@/lib/actions/dental/insert-dental-images'
 import DentalOralEvalTab from './dental-chart-tabs/dental-oral-eval-tab'
 import DentalProcedureTab from './dental-chart-tabs/dental-procedure-tab'
 import DentalTreatmentTab from './dental-chart-tabs/dental-treatment-tab'
@@ -119,7 +121,43 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
   const img300 = images.find(img => img.tooth_ids?.includes('300'))
   const img400 = images.find(img => img.tooth_ids?.includes('400'))
 
-  function QuadrantBox({ label, img }: { label: string, img?: DentalImage }) {
+  function QuadrantBox({ label, img, toothId }: { label: string, img?: DentalImage, toothId: string }) {
+    const cameraInputRef = useRef<HTMLInputElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [isUploading, setIsUploading] = useState(false)
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+
+      setIsUploading(true)
+      try {
+        const { url, error } = await uploadDentalImage(file, chartDetail.id)
+        if (error || !url) throw new Error(error || '업로드 실패')
+
+        await insertDentalImages([{
+          chart_id: chartDetail.id,
+          tooth_ids: [toothId],
+          dental_chart_teeth_ids: [],
+          other_tags: [],
+          mark: null,
+          img_url: url,
+          is_radio: false
+        }], hosId)
+
+        toast.success('사진이 등록되었습니다.')
+        const updatedImages = await getDentalImages(chartDetail.id)
+        setImages(updatedImages)
+        refresh()
+      } catch (err: any) {
+        console.error(err)
+        toast.error('사진 등록에 실패했습니다.', { description: err.message })
+      } finally {
+        setIsUploading(false)
+        if (e.target) e.target.value = ''
+      }
+    }
+
     return (
       <div 
         className={cn(
@@ -131,7 +169,13 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
         <div className="text-[10.5px] font-bold text-center bg-slate-100 py-1 border-b uppercase text-slate-600 tracking-wider">
           {label}
         </div>
-        <div className="aspect-[4/3] bg-slate-50 flex items-center justify-center">
+        <div className="aspect-[4/3] bg-slate-50 flex items-center justify-center relative">
+          {isUploading && (
+            <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
+              <LoaderCircleIcon className="w-5 h-5 animate-spin text-indigo-600" />
+            </div>
+          )}
+
           {img ? (
             <DentalImageWithMark 
               imageUrl={img.img_url} 
@@ -141,8 +185,53 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
               className="h-full w-full" 
             />
           ) : (
-            <div className="flex flex-col items-center gap-1 opacity-20">
-              <span className="text-[9px] font-medium text-slate-400">NO IMAGE</span>
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-[9px] font-medium text-slate-400 opacity-50">NO IMAGE</span>
+              
+              <div className="flex items-center gap-2">
+                <input 
+                  type="file" 
+                  ref={cameraInputRef} 
+                  accept="image/*" 
+                  capture="environment" 
+                  className="hidden" 
+                  onChange={handleImageUpload} 
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  className="h-9 w-9 p-0 flex items-center justify-center border-dashed border-indigo-200 hover:border-indigo-500 hover:bg-indigo-50"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    cameraInputRef.current?.click()
+                  }}
+                  disabled={isUploading}
+                >
+                  <CameraIcon className="w-4 h-4 text-indigo-500" />
+                </Button>
+
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleImageUpload} 
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  className="h-9 w-9 p-0 flex items-center justify-center border-dashed border-slate-200 hover:border-slate-400 hover:bg-slate-50"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    fileInputRef.current?.click()
+                  }}
+                  disabled={isUploading}
+                >
+                  <ImageIcon className="w-4 h-4 text-slate-500" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -241,10 +330,10 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId }: Props) {
             <div className="px-4 py-6 bg-slate-50/30">
                <div className="max-w-[800px] mx-auto">
                   <div className="grid grid-cols-2 gap-4">
-                    <QuadrantBox label="Rt Max" img={img100} />
-                    <QuadrantBox label="Lt Max" img={img200} />
-                    <QuadrantBox label="Rt Mand" img={img400} />
-                    <QuadrantBox label="Lt Mand" img={img300} />
+                    <QuadrantBox label="Rt Max" img={img100} toothId="100" />
+                    <QuadrantBox label="Lt Max" img={img200} toothId="200" />
+                    <QuadrantBox label="Rt Mand" img={img400} toothId="400" />
+                    <QuadrantBox label="Lt Mand" img={img300} toothId="300" />
                   </div>
                   <p className="text-[10px] text-slate-400 mt-3 text-center italic">
                     * 개별 치아 선택 시 100~400 태그를 지정하면 자동으로 요약 차트에 반영됩니다.

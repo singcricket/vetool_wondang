@@ -8,7 +8,8 @@ import DentalChartDetailPanel from './dental-chart-detail-panel'
 import DentalChartGeneralPanel from './dental-chart-general-panel'
 import DentalImageUploadDialog from '../dental-image-uploader/dental-image-upload-dialog'
 import DentalReportDialog from '../dental-report/dental-report-dialog'
-import { LayoutDashboard, Activity, SquareGanttChart } from 'lucide-react'
+import DentalChartTestPanel from './dental-chart-test-panel'
+import { LayoutDashboard, Activity, SquareGanttChart, FlaskConical, MonitorPlay } from 'lucide-react'
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -32,7 +33,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
       <Tabs defaultValue="detail" className="flex flex-1 flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-2 rounded-none border-b bg-slate-100/50 p-0 h-12 shrink-0">
+        <TabsList className="grid w-full grid-cols-3 rounded-none border-b bg-slate-100/50 p-0 h-12 shrink-0">
           <TabsTrigger 
             value="general"
             className="group relative rounded-none border-r data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-none h-full transition-all duration-200"
@@ -53,6 +54,16 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
             </div>
             <div className="absolute bottom-0 left-0 h-[3px] w-full scale-x-0 bg-indigo-600 transition-transform duration-200 group-data-[state=active]:scale-x-100" />
           </TabsTrigger>
+          <TabsTrigger 
+            value="test" 
+            className="group relative rounded-none data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-none h-full transition-all duration-200"
+          >
+            <div className="flex items-center gap-2">
+              <MonitorPlay className="w-4 h-4 transition-colors group-data-[state=active]:text-indigo-600 text-slate-400" />
+              <span className="font-semibold text-sm">차트 리뷰</span>
+            </div>
+            <div className="absolute bottom-0 left-0 h-[3px] w-full scale-x-0 bg-indigo-600 transition-transform duration-200 group-data-[state=active]:scale-x-100" />
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="m-0 flex-1 overflow-hidden focus-visible:ring-0">
@@ -67,6 +78,13 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
             species={species}
             selectedToothId={selectedToothId}
             onToothClick={handleToothClick}
+            teeth={teeth}
+          />
+        </TabsContent>
+
+        <TabsContent value="test" className="m-0 flex-1 overflow-hidden focus-visible:ring-0">
+          <DentalChartTestPanel
+            chartDetail={chartDetail}
             teeth={teeth}
           />
         </TabsContent>

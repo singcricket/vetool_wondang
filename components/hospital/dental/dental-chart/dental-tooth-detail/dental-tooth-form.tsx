@@ -23,6 +23,8 @@ import { useEffect } from 'react'
 import type { DentalImage } from '@/types/dental/dental-type'
 import DentalImageGallery from '@/components/hospital/dental/dental-image-gallery'
 import { toast } from 'sonner'
+import { HelpCircle } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 type SixPoint<T = number | null> = { ml: T; l: T; dl: T; mb: T; b: T; db: T }
 
@@ -49,15 +51,62 @@ const SEVERITY_OPTS = [
   { value: 'severe', label: '중증' },
 ]
 
-function SelectField({ label, value, onChange, options }: {
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+
+function TestHelpTooltip({ testId }: { testId?: string }) {
+  if (!testId || !DENTAL_TOOTH_TESTS[testId]) return null
+  
+  const test = DENTAL_TOOTH_TESTS[testId]
+  const comments = test.optComment
+  const hasOptComments = comments && Object.keys(comments).length > 0
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" className="inline-flex items-center justify-center rounded-full hover:bg-slate-100 p-0.5 transition-colors">
+          <HelpCircle className="w-3.5 h-3.5 text-slate-400 cursor-help hover:text-indigo-500 transition-colors" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="right" className="w-[280px] sm:w-[320px] p-3 text-xs bg-slate-900 text-slate-200 border-slate-700 shadow-2xl z-[100]">
+        <div className="space-y-2">
+          {test.testInfo && <p className="font-medium text-indigo-300 leading-relaxed">{test.testInfo}</p>}
+          {hasOptComments && (
+            <div className="space-y-1.5 border-t border-slate-800 pt-2 mt-2">
+              {test.options?.map((opt) => {
+                const comment = comments[opt.value]
+                if (!comment) return null
+                return (
+                  <div key={opt.value} className="flex flex-col gap-0.5">
+                    <span className="font-bold text-slate-100 text-[10px] uppercase">{opt.label}</span>
+                    <span className="text-slate-400 text-[11px] leading-tight">{comment}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function SelectField({ label, value, onChange, options, testId }: {
   label: string
   value: string | null
   onChange: (v: string) => void
   options: { value: string; label: string }[]
+  testId?: string
 }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center gap-1">
+        <Label className="text-xs">{label}</Label>
+        <TestHelpTooltip testId={testId} />
+      </div>
       <Select value={value || 'clear'} onValueChange={(v) => onChange(v === 'clear' ? '' : v)}>
         <SelectTrigger className="h-8 text-xs">
           <SelectValue placeholder="선택 안 함" />
@@ -73,18 +122,22 @@ function SelectField({ label, value, onChange, options }: {
   )
 }
 
-function MultiCheckField({ label, selected, onChange, options }: {
+function MultiCheckField({ label, selected, onChange, options, testId }: {
   label: string
   selected: string[]
   onChange: (v: string[]) => void
   options: { value: string; label: string }[]
+  testId?: string
 }) {
   function toggle(optValue: string) {
     onChange(selected.includes(optValue) ? selected.filter((s) => s !== optValue) : [...selected, optValue])
   }
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center gap-1">
+        <Label className="text-xs font-semibold">{label}</Label>
+        <TestHelpTooltip testId={testId} />
+      </div>
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => (
           <div key={opt.value} className="flex items-center gap-1">
@@ -237,7 +290,7 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">기본 정보</p>
             <div className="grid grid-cols-2 gap-3">
-              <SelectField label="상태" value={status} onChange={setStatus} options={DENTAL_TOOTH_TESTS.tooth_status?.options || []} />
+              <SelectField label="상태" value={status} onChange={setStatus} options={DENTAL_TOOTH_TESTS.tooth_status?.options || []} testId="tooth_status" />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="deciduous" checked={isDeciduous} onCheckedChange={setIsDeciduous} />
@@ -249,12 +302,12 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">치주 평가</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectField label="치주 질환 병기" value={periodontalStage} onChange={setPeriodontalStage} options={DENTAL_TOOTH_TESTS.periodontal_stage?.options || []} />
-              <SelectField label="잇몸 염증" value={gingivitis} onChange={setGingivitis} options={DENTAL_TOOTH_TESTS.gingivitis?.options || []} />
-              <SelectField label="치석" value={calculus} onChange={setCalculus} options={DENTAL_TOOTH_TESTS.calculus?.options || []} />
-              <SelectField label="치태" value={plaque} onChange={setPlaque} options={DENTAL_TOOTH_TESTS.plaque?.options || []} />
-              <SelectField label="동요도" value={mobility} onChange={setMobility} options={DENTAL_TOOTH_TESTS.mobility?.options || []} />
-              <SelectField label="분기부 병변" value={furcation} onChange={setFurcation} options={DENTAL_TOOTH_TESTS.furcation?.options || []} />
+              <SelectField label="치주 질환 병기" value={periodontalStage} onChange={setPeriodontalStage} options={DENTAL_TOOTH_TESTS.periodontal_stage?.options || []} testId="periodontal_stage" />
+              <SelectField label="잇몸 염증" value={gingivitis} onChange={setGingivitis} options={DENTAL_TOOTH_TESTS.gingivitis?.options || []} testId="gingivitis" />
+              <SelectField label="치석" value={calculus} onChange={setCalculus} options={DENTAL_TOOTH_TESTS.calculus?.options || []} testId="calculus" />
+              <SelectField label="치태" value={plaque} onChange={setPlaque} options={DENTAL_TOOTH_TESTS.plaque?.options || []} testId="plaque" />
+              <SelectField label="동요도" value={mobility} onChange={setMobility} options={DENTAL_TOOTH_TESTS.mobility?.options || []} testId="mobility" />
+              <SelectField label="분기부 병변" value={furcation} onChange={setFurcation} options={DENTAL_TOOTH_TESTS.furcation?.options || []} testId="furcation" />
             </div>
           </section>
 
@@ -286,12 +339,12 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
           <section className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">병변</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <SelectField label="치관 골절" value={fracture} onChange={setFracture} options={DENTAL_TOOTH_TESTS.tooth_fracture?.options || []} />
-              <SelectField label="치아 흡수 병기 (Stage)" value={resorptionStage} onChange={setResorptionStage} options={DENTAL_TOOTH_TESTS.resorption_stage?.options || []} />
-              <SelectField label="치아 흡수 유형 (TR Type)" value={resorptionType} onChange={setResorptionType} options={DENTAL_TOOTH_TESTS.resorption_type?.options || []} />
-              <SelectField label="우식 (충치)" value={caries} onChange={setCaries} options={DENTAL_TOOTH_TESTS.caries?.options || SEVERITY_OPTS} />
-              <SelectField label="마모 (교모)" value={attrition} onChange={setAttrition} options={SEVERITY_OPTS} />
-              <SelectField label="마모 (마찰)" value={abrasion} onChange={setAbrasion} options={SEVERITY_OPTS} />
+              <SelectField label="치관 골절" value={fracture} onChange={setFracture} options={DENTAL_TOOTH_TESTS.tooth_fracture?.options || []} testId="tooth_fracture" />
+              <SelectField label="치아 흡수 병기 (Stage)" value={resorptionStage} onChange={setResorptionStage} options={DENTAL_TOOTH_TESTS.resorption_stage?.options || []} testId="resorption_stage" />
+              <SelectField label="치아 흡수 유형 (TR Type)" value={resorptionType} onChange={setResorptionType} options={DENTAL_TOOTH_TESTS.resorption_type?.options || []} testId="resorption_type" />
+              <SelectField label="우식 (충치)" value={caries} onChange={setCaries} options={DENTAL_TOOTH_TESTS.caries?.options || SEVERITY_OPTS} testId="caries" />
+              <SelectField label="마모 (교모)" value={attrition} onChange={setAttrition} options={SEVERITY_OPTS} testId="wear" />
+              <SelectField label="마모 (마찰)" value={abrasion} onChange={setAbrasion} options={SEVERITY_OPTS} testId="wear" />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="pulp" checked={pulpExposure} onCheckedChange={setPulpExposure} />
@@ -311,7 +364,7 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
             />
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">처치 & 계획</p>
             <div className="space-y-2">
-              <MultiCheckField label="치료 계획" selected={treatmentPlan} onChange={setTreatmentPlan} options={DENTAL_TOOTH_TESTS.treatment_plan?.options || []} />
+              <MultiCheckField label="치료 계획" selected={treatmentPlan} onChange={setTreatmentPlan} options={DENTAL_TOOTH_TESTS.treatment_plan?.options || []} testId="treatment_plan" />
               <div className="pl-1">
                 <AvdcAutocompleteInput value={treatmentPlanOther} onChange={setTreatmentPlanOther} placeholder="기타 치료 계획 (AVDC 약어 또는 정의 검색)" />
               </div>
@@ -325,12 +378,12 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
                 className="mt-0 mb-2 p-3 bg-slate-50/70"
                 imageHeight="h-[72px]"
               />
-              <MultiCheckField label="완료된 처치" selected={treatmentDone} onChange={setTreatmentDone} options={DENTAL_TOOTH_TESTS.treatment_done?.options || []} />
+              <MultiCheckField label="완료된 처치" selected={treatmentDone} onChange={setTreatmentDone} options={DENTAL_TOOTH_TESTS.treatment_done?.options || []} testId="treatment_done" />
               <div className="pl-1">
                 <AvdcAutocompleteInput value={treatmentDoneOther} onChange={setTreatmentDoneOther} placeholder="기타 완료된 처치 (AVDC 약어 또는 정의 검색)" />
               </div>
             </div>
-            <SelectField label="우선순위" value={priority} onChange={(v) => setPriority(v as DentalTooth['treatment_priority'])} options={PRIORITY_OPTS} />
+            <SelectField label="우선순위" value={priority} onChange={(v) => setPriority(v as DentalTooth['treatment_priority'])} options={PRIORITY_OPTS} testId="treatment_priority" />
             <div className="space-y-1">
                {/* is_radio : true 이미지 */}
                <DentalImageGallery 

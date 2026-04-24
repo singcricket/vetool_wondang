@@ -3,24 +3,10 @@ import React, { useState } from 'react'
 import type { DentalChartDetail, DentalTooth, DentalImage } from '@/types/dental/dental-type'
 import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
-import { toothNames } from '@/constants/hospital/dental/dental_chart_canine_combined'
-import { getByAbbr } from '@/constants/hospital/dental/avdcAbbreviations'
-import dynamic from 'next/dynamic'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-import { DialogTitle, DialogDescription } from '@radix-ui/react-dialog'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils/utils'
+import ImageCard from './dental-image-card'
+import DentalToothDetailView from './dental-tooth-detail-view'
+import DentalImageWithMark from '@/components/hospital/dental/dental-image-with-mark'
 
-const DentalImageWithMark = dynamic(() => import('../dental-image-with-mark'), { 
-  ssr: false,
-  loading: () => <div className="aspect-square bg-slate-100 flex items-center justify-center text-[10px] text-slate-400">Loading...</div>
-})
-
-const DentalImageEditor = dynamic(() => import('../dental-image-editor'), {
-  ssr: false,
-  loading: () => <div className="flex h-full items-center justify-center bg-slate-900 text-white">에디터 로딩 중...</div>
-})
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -35,74 +21,7 @@ function filterByTag(images: DentalImage[], tag: string) {
   return images.filter(img => img.tooth_ids?.includes(tag))
 }
 
-function ImageCard({ img, isShared }: { img: DentalImage; isShared?: boolean }) {
-  const [viewerOpen, setViewerOpen] = useState(false)
 
-  return (
-    <>
-      <div 
-        className="border rounded bg-slate-50 p-0.5 relative group overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all"
-        onClick={() => setViewerOpen(true)}
-      >
-        <DentalImageWithMark 
-          imageUrl={img.img_url} 
-          mark={img.mark} 
-          aspectRatio="aspect-square" 
-        />
-        {img.is_radio && (
-          <div className="absolute top-1 left-1 pointer-events-none">
-            <span className="text-[10px] bg-yellow-400 text-yellow-900 px-1 font-bold shadow-sm rounded">X-Ray</span>
-          </div>
-        )}
-      </div>
-
-      <Dialog open={viewerOpen} onOpenChange={setViewerOpen} modal={!isShared}>
-        <DialogContent 
-          className={cn(
-            "p-0 m-0 border-0 flex flex-col items-center justify-center bg-slate-900/95 rounded-none z-[150]",
-            isShared 
-              ? "max-w-[90vw] w-[1200px] h-auto aspect-auto border border-slate-700 shadow-2xl rounded-xl" 
-              : "max-w-[100vw] w-screen h-screen max-h-[100vh] z-[200]"
-          )}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <VisuallyHidden>
-            <DialogTitle>{isShared ? '이미지 크게 보기' : '치과 이미지 에디터'}</DialogTitle>
-            <DialogDescription>{isShared ? '상세 이미지를 확인합니다.' : '이미지 마킹을 확인하거나 수정할 수 있습니다.'}</DialogDescription>
-          </VisuallyHidden>
-          
-          {viewerOpen && (
-             isShared ? (
-                <div className="relative w-full h-full p-4 flex items-center justify-center">
-                  <DentalImageWithMark 
-                    imageUrl={img.img_url} 
-                    mark={img.mark} 
-                    aspectRatio="aspect-auto" 
-                    className="max-h-[80vh] w-full"
-                    noHover={true}
-                  />
-                  <Button 
-                    variant="ghost" 
-                    className="absolute top-4 right-4 text-white hover:bg-white/10" 
-                    onClick={() => setViewerOpen(false)}
-                  >
-                    닫기
-                  </Button>
-                </div>
-             ) : (
-                <DentalImageEditor 
-                  imageId={img.dental_image_id} 
-                  imageUrl={img.img_url} 
-                  initialMark={img.mark} 
-                  onClose={() => setViewerOpen(false)}
-                />
-             )
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
-  )
-}
 
 export default function DentalReportDetailed({ chartDetail, teeth, images, species, isShared }: Props) {
 
@@ -110,6 +29,37 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
   const generalImages   = filterByTag(images, 'general')
   const assessmentImages = filterByTag(images, 'assessment')
   const treatmentImages  = filterByTag(images, 'treatment')
+
+  // 4분면 이미지 추출
+  const img100 = images.find(img => img.tooth_ids?.includes('100'))
+  const img200 = images.find(img => img.tooth_ids?.includes('200'))
+  const img300 = images.find(img => img.tooth_ids?.includes('300'))
+  const img400 = images.find(img => img.tooth_ids?.includes('400'))
+
+  function QuadrantBox({ label, img }: { label: string, img?: DentalImage }) {
+    return (
+      <div className="flex flex-col border border-slate-200 bg-white shadow-sm overflow-hidden rounded">
+        <div className="text-[10px] font-bold text-center bg-slate-100 py-1 border-b uppercase text-slate-600 tracking-wider">
+          {label}
+        </div>
+        <div className="aspect-[4/3] bg-slate-50 flex items-center justify-center">
+          {img ? (
+            <DentalImageWithMark 
+              imageUrl={img.img_url} 
+              mark={img.mark} 
+              noHover 
+              aspectRatio="aspect-auto" 
+              className="h-full w-full" 
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-1 opacity-20">
+              <span className="text-[9px] font-medium text-slate-400">NO IMAGE</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   // recheck 라벨 맵
   const recheckLabel: Record<string, string> = {
@@ -242,7 +192,7 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
           </div>
         </div>
 
-        {/* 구강 전반 사진 (general 태그) */}
+        {/* 구강 전반 사진 (general 태그)
         {generalImages.length > 0 && (
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-slate-600 mb-3">구강 전반 사진</h3>
@@ -250,8 +200,21 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
               {generalImages.map(img => <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />)}
             </div>
           </div>
-        )}
-
+        )} */}
+        {/* 4분할 사진 */}
+        <div className="border-t pt-6 bg-slate-50/30 p-4 rounded-lg my-4">
+          <h3 className="text-sm font-semibold text-slate-600 mb-4 text-center uppercase tracking-widest">
+            Overall Quadrant Views
+          </h3>
+          <div className="max-w-[700px] mx-auto">
+            <div className="grid grid-cols-2 gap-4">
+              <QuadrantBox label="Rt Max" img={img100} />
+              <QuadrantBox label="Lt Max" img={img200} />
+              <QuadrantBox label="Rt Mand" img={img400} />
+              <QuadrantBox label="Lt Mand" img={img300} />
+            </div>
+          </div>
+        </div>
         {/* 치료 전 평가 사진 (assessment 태그) */}
         {assessmentImages.length > 0 && (
           <div className="border-t pt-4">
@@ -278,190 +241,15 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
         {teeth
           .filter(t => t.tooth_id)
           .sort((a,b) => a.tooth_id - b.tooth_id)
-          .map(tooth => {
-            
-            // 이 치아에 태그된 이미지 (치아 번호로 매핑되고, 비교용 태그가 없는 것)
-            const toothImages = images.filter(img => 
-              img.tooth_ids && img.tooth_ids.includes(String(tooth.tooth_id)) &&
-              !img.tooth_ids.includes('general') &&
-              !img.tooth_ids.includes('assessment') &&
-              !img.tooth_ids.includes('treatment') &&
-              !img.tooth_ids.includes('tooth-assessment') &&
-              !img.tooth_ids.includes('tooth-treatment')
-            )
-            // 이 치아에 assessment/treatment 태그도 함께 달린 이미지 (프리픽스 유무 모두 지원)
-            const toothAssessment = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) && 
-              (img.tooth_ids?.includes('assessment') || img.tooth_ids?.includes('tooth-assessment') || img.tooth_ids?.includes('tooth-assesment'))
-            )
-            const toothTreatment = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) && 
-              (img.tooth_ids?.includes('treatment') || img.tooth_ids?.includes('tooth-treatment'))
-            )
-            const allToothImages = [...toothImages, ...toothAssessment, ...toothTreatment]
-
-            // 병소 소견 추출
-            const findings: { label: string, detail: string }[] = []
-
-            const toothFields = [
-              'status', 'periodontal_stage', 'gingivitis', 'calculus', 'mobility', 'furcation',
-              'fracture', 'caries', 'resorption_stage', 'staining', 'attrition'
-            ]
-
-            toothFields.forEach(field => {
-              const val = (tooth as any)[field]
-              if (val && val !== 'none' && val !== 'normal' && val !== 'present' && val !== 'PD0') {
-                const testDef = DENTAL_TOOTH_TESTS[field]
-                if (testDef) {
-                  const optDef = testDef.options?.find(o => o.value === val)
-                  if (optDef) {
-                    findings.push({
-                      label: testDef.testNameKo || field,
-                      detail: (testDef.optComment as any)?.[val] || optDef.detail || val
-                    })
-                  }
-                }
-              }
-            })
-               // 치료 계획 (treatment_plan)
-            if (tooth.treatment_plan && Array.isArray(tooth.treatment_plan)) {
-              tooth.treatment_plan.forEach(code => {
-                const abbrev = getByAbbr(code)
-                let detailText = code
-                if (abbrev) {
-                  detailText = `${abbrev.definition} ${abbrev.definition_kr ? `(${abbrev.definition_kr})` : ''}`
-                }
-                findings.push({
-                  label: '계획 (Plan)',
-                  detail: detailText
-                })
-              })
-            }
-
-            // 치료 개입 (treatment_done)
-            if (tooth.treatment_done && Array.isArray(tooth.treatment_done)) {
-              tooth.treatment_done.forEach(code => {
-                const abbrev = getByAbbr(code)
-                let detailText = code
-                if (abbrev) {
-                  detailText = `${abbrev.definition} ${abbrev.definition_kr ? `(${abbrev.definition_kr})` : ''}`
-                }
-                findings.push({
-                  label: '치료 (Treatment)',
-                  detail: detailText
-                })
-              })
-            }
-
-         
-
-            if (findings.length === 0 && allToothImages.length === 0) return null
-
-            return (
-              <div key={tooth.tooth_id} className="border-l-4 border-teal-500 pl-4 py-2">
-                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4">
-                  <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-lg">
-                    {tooth.tooth_id}
-                  </span>
-                  <span className="text-slate-600 font-medium">
-                    {toothNames[String(tooth.tooth_id)]}
-                  </span>
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  
-                  {/* 좌: 발견된 소견 및 치료 목록 */}
-                  <div className="space-y-5">
-                    {(() => {
-                      const clinicalFindings = findings.filter(f => f.label !== '치료 (Treatment)' && f.label !== '계획 (Plan)')
-                      const treatmentFindings = findings.filter(f => f.label === '치료 (Treatment)')
-                      const planFindings = findings.filter(f => f.label === '계획 (Plan)')
-                      
-                      return (
-                        <>
-                          {/* 발견 소견 */}
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold text-slate-500 border-b pb-1">Clinical Findings</h4>
-                            {clinicalFindings.length > 0 ? (
-                              <ul className="space-y-1.5">
-                                {clinicalFindings.map((f, i) => (
-                                  <li key={i} className="text-sm text-slate-700 leading-relaxed">
-                                    <span className="font-bold mr-1 text-slate-900">[{f.label}]</span> 
-                                    {f.detail}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-slate-400">특이 병소 소견 없음</p>
-                            )}
-                          </div>
-
-                          {/* 치료 계획 */}
-                          {planFindings.length > 0 && (
-                            <div className="space-y-2 pt-2 border-t border-dashed">
-                              <h4 className="text-sm font-semibold text-indigo-700">Planned Treatments</h4>
-                              <ul className="space-y-1.5">
-                                {planFindings.map((f, i) => (
-                                  <li key={i} className="text-sm text-indigo-900 leading-relaxed bg-indigo-50/50 p-2 rounded border border-indigo-100">
-                                    {f.detail}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* 치료 내역 */}
-                          {treatmentFindings.length > 0 && (
-                            <div className="space-y-2 pt-2 border-t border-dashed">
-                              <h4 className="text-sm font-semibold text-teal-700">Done Treatments</h4>
-                              <ul className="space-y-1.5">
-                                {treatmentFindings.map((f, i) => (
-                                  <li key={i} className="text-sm text-teal-900 leading-relaxed bg-teal-50/50 p-2 rounded border border-teal-100">
-                                    {f.detail}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </>
-                      )
-                    })()}
-                  </div>
-
-                  {/* 우: 이미지 갤러리 */}
-                  {allToothImages.length > 0 && (
-                    <div className="flex flex-col gap-4">
-                      {/* 치아별 전/후 비교 */}
-                      {(toothAssessment.length > 0 || toothTreatment.length > 0) && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="flex flex-col gap-2">
-                            <div className="text-xs font-bold text-center bg-slate-200 py-1 rounded text-slate-700">치료 전 (평가)</div>
-                            {toothAssessment.map(img => (
-                              <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
-                            ))}
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <div className="text-xs font-bold text-center bg-teal-100 py-1 rounded text-teal-800">치료 후 (결과)</div>
-                            {toothTreatment.map(img => (
-                              <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 치아 번호만 태그된 기타 이미지 */}
-                      {toothImages.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t">
-                          {toothImages.map(img => <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />)}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                </div>
-              </div>
-            )
-          })}
+          .map(tooth => (
+            <div key={tooth.tooth_id} className="border-l-4 border-teal-500 pl-4 py-2">
+              <DentalToothDetailView 
+                tooth={tooth} 
+                images={images} 
+                isShared={isShared} 
+              />
+            </div>
+          ))}
       </div>
     </div>
   )
