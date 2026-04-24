@@ -218,7 +218,7 @@ export default function ShareResourceDialog({
                   <SelectTrigger className="h-9 bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[250]">
                     <SelectItem value="public">🌐 링크접속 모두 허용 (Public)</SelectItem>
                     <SelectItem value="hospital">🏥 특정 병원 지정 (이름)</SelectItem>
                     <SelectItem value="user">👤 특정 수의사 지정 (이메일)</SelectItem>
@@ -229,10 +229,10 @@ export default function ShareResourceDialog({
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">유효 기간</Label>
                 <Select value={durationDays} onValueChange={setDurationDays}>
-                  <SelectTrigger className="h-9 bg-white">
+                  <SelectTrigger className=" h-9 bg-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[250]">
                     <SelectItem value="1">1일 동안</SelectItem>
                     <SelectItem value="3">3일 동안</SelectItem>
                     <SelectItem value="7">7일 동안</SelectItem>
