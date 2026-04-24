@@ -247,21 +247,21 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
         urgency: 'none',
         suggestedTx: ['PRO']
       },
-      pd2: {
+      PD2: {
         label: 'PD 2 (초기 치주염)',
         optComment: '초기 치주염 소견. 치조골 소실 <25%. 치주 인대 부착 상실 시작.',
         generalComment: '잇몸 질환 초기 단계입니다. 스케일링과 정밀 치주 치료로 회복이 가능합니다.',
         urgency: 'recommended',
         suggestedTx: ['PRO', 'RP/C']
       },
-      pd3: {
+      PD3: {
         label: 'PD 3 (중등도 치주염)',
         optComment: '중등도 치주염 소견. 치조골 소실 25~50%. 치주 수술 또는 발치 고려.',
         generalComment: '잇몸 질환이 상당히 진행되었습니다. 적극적인 치주 수술이나 상태에 따른 발치가 필요할 수 있습니다.',
         urgency: 'urgent',
         suggestedTx: ['PRO', 'RP/O', 'GF/B', 'GTR']
       },
-      pd4: {
+      PD4: {
         label: 'PD 4 (진행성 치주염)',
         optComment: '진행성 치주염 소견. 치조골 소실 >50%. 대부분 발치 적응증.',
         generalComment: '잇몸 뼈가 대부분 손상되어 치아를 유지하기 어려운 상태입니다. 통증과 감염 예방을 위해 발치를 권장합니다.',

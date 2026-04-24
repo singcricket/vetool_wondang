@@ -346,6 +346,7 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
                 <DentalToothDetailView 
                   tooth={selectedTooth} 
                   images={images} 
+                  species={species}
                 />
               ) : (
                 <div className="flex flex-col gap-4">

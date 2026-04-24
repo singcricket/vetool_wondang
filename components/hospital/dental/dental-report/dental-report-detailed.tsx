@@ -333,6 +333,7 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
                     tooth={tooth} 
                     images={images} 
                     isShared={isShared} 
+                    species={species}
                   />
                 </div>
               )

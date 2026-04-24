@@ -1,5 +1,6 @@
 'use client'
 
+import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests'
 import DentalChartSvgPanel from './dental-chart-svg-panel'
 import type { DentalTooth, DentalImage } from '@/types/dental/dental-type'
 import { CameraIcon } from 'lucide-react'
@@ -20,18 +21,47 @@ const FELINE_MISSING = new Set([
   411, 410, 406, 405, 305, 306, 310, 311 // Lower
 ])
 
-function extractAbbrs(tooth: DentalTooth): string[] {
+function extractAbbrs(tooth: DentalTooth, species: string): string[] {
   const abbrs: string[] = []
+  const isFeline = species?.toLowerCase().startsWith('fel')
   
   if (tooth.status && tooth.status !== 'present') {
     if (tooth.status === 'extracted') abbrs.push('Ext')
     else abbrs.push(tooth.status)
   }
   if (tooth.is_deciduous) abbrs.push('Decid')
+
+  // PD (Probing Depth) - 6개 지점 중 최대값 판별 후 키(PD2, PD3 등) 노출
+  const probingValues = [
+    tooth.probing_ml, tooth.probing_l, tooth.probing_dl, 
+    tooth.probing_mb, tooth.probing_b, tooth.probing_db
+  ].filter((v): v is number => v !== null && v !== undefined)
+  const maxProbing = probingValues.length > 0 ? Math.max(...probingValues) : 0
+  
+  if (maxProbing > 0) {
+    const testDef = DENTAL_TOOTH_TESTS.probing_depth
+    const thresholds = isFeline ? testDef.thresholds_feline : testDef.thresholds_canine
+    if (thresholds) {
+      let rangeKey = ''
+      if (maxProbing > thresholds[2]) rangeKey = 'PD4'
+      else if (maxProbing > thresholds[1]) rangeKey = 'PD3'
+      else if (maxProbing > thresholds[0]) rangeKey = 'PD2'
+      if (rangeKey) abbrs.push(rangeKey)
+    }
+  }
+
+  // GR (Gingival Recession) - 6개 지점 중 가장 심각한 단계
+  const grRank: Record<string, number> = { 'none': 0, 'GR1': 1, 'GR2': 2, 'GR3': 3 }
+  const recessionRanks = [
+    tooth.recession_ml, tooth.recession_l, tooth.recession_dl, 
+    tooth.recession_mb, tooth.recession_b, tooth.recession_db
+  ].map(v => grRank[v || 'none'] || 0)
+  const maxGrRank = Math.max(...recessionRanks)
+  if (maxGrRank > 0) abbrs.push(`GR${maxGrRank}`)
   
   // The exact order requested by user: PD, GI, CI, PI, M, F, fracture, TR stage/type, caries, attrition, abrasion
   const fields = [
-    tooth.periodontal_stage,
+    maxProbing > 0 ? null : tooth.periodontal_stage,
     tooth.gingivitis,
     tooth.calculus,
     tooth.plaque,
@@ -46,7 +76,7 @@ function extractAbbrs(tooth: DentalTooth): string[] {
   ]
   
   fields.forEach(f => {
-    if (f && f !== 'none') abbrs.push(f)
+    if (f && f !== 'none' && f !== 'normal') abbrs.push(f)
   })
   
   // Treatment done
@@ -85,7 +115,7 @@ export default function DentalChartDetailPanel({
           <div className="grid grid-cols-[repeat(20,minmax(0,1fr))] gap-x-0.5 w-full text-[10px] sm:text-xs">
             {upperOrder.map(num => {
               const t = teeth.find(x => x.tooth_id === num)
-              const abbrs = t ? extractAbbrs(t) : []
+              const abbrs = t ? extractAbbrs(t, species) : []
               const hidden = shouldHideNum(num)
               
               return (
@@ -127,7 +157,7 @@ export default function DentalChartDetailPanel({
           <div className="grid grid-cols-[repeat(22,minmax(0,1fr))] gap-x-0.5 w-full text-[10px] sm:text-xs">
             {lowerOrder.map(num => {
               const t = teeth.find(x => x.tooth_id === num)
-              const abbrs = t ? extractAbbrs(t) : []
+              const abbrs = t ? extractAbbrs(t, species) : []
               const hidden = shouldHideNum(num)
 
               return (

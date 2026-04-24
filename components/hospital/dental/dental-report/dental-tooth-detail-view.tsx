@@ -17,10 +17,11 @@ interface DentalToothDetailViewProps {
   tooth: DentalTooth
   images: DentalImage[]
   isShared?: boolean
+  species: string
   chartDetail?: DentalChartDetail // Option for extra context if needed
 }
 
-export default function DentalToothDetailView({ tooth, images, isShared }: DentalToothDetailViewProps) {
+export default function DentalToothDetailView({ tooth, images, isShared, species }: DentalToothDetailViewProps) {
   const toothIdStr = String(tooth.tooth_id)
 
   // 이 치아에 태그된 이미지 필터링 로직
@@ -49,7 +50,14 @@ export default function DentalToothDetailView({ tooth, images, isShared }: Denta
     'fracture', 'caries', 'resorption_stage', 'staining', 'attrition'
   ]
 
+  const probingValues = [tooth.probing_ml, tooth.probing_l, tooth.probing_dl, tooth.probing_mb, tooth.probing_b, tooth.probing_db]
+    .filter((v): v is number => v !== null && v !== undefined)
+  const maxProbing = probingValues.length > 0 ? Math.max(...probingValues) : 0
+
   toothFields.forEach(field => {
+    // 치주낭 측정값(probing_depth)이 있으면 periodontal_stage는 중복이므로 제외
+    if (field === 'periodontal_stage' && maxProbing > 0) return
+
     const val = (tooth as any)[field]
     if (val && val !== 'none' && val !== 'normal' && val !== 'present' && val !== 'PD0') {
       // status 필드는 DENTAL_TOOTH_TESTS의 tooth_status 키를 사용함
@@ -98,6 +106,62 @@ export default function DentalToothDetailView({ tooth, images, isShared }: Denta
   }
 
   const clinicalFindings = findings.filter(f => f.label !== '치료 (Treatment)' && f.label !== '계획 (Plan)')
+  
+
+
+  // Probing Depth 코멘트 계산
+  let probingComment = ''
+  if (maxProbing > 0) {
+    const testDef = DENTAL_TOOTH_TESTS.probing_depth
+    if (testDef && testDef.rangeComments) {
+      const thresholds = species === 'feline' ? testDef.thresholds_feline : testDef.thresholds_canine
+      if (thresholds) {
+        let rangeKey = 'normal'
+        if (maxProbing > thresholds[2]) rangeKey = 'PD4'
+        else if (maxProbing > thresholds[1]) rangeKey = 'PD3'
+        else if (maxProbing > thresholds[0]) rangeKey = 'PD2'
+        
+        probingComment = testDef.rangeComments[rangeKey]?.optComment || ''
+      }
+    }
+  }
+
+  // Gingival Recession 코멘트 계산 (범주형 데이터: none, GR1, GR2, GR3)
+  const grRank: Record<string, number> = { 'none': 0, 'GR1': 1, 'GR2': 2, 'GR3': 3 }
+  const recessionRanks = [
+    tooth.recession_ml, tooth.recession_l, tooth.recession_dl, 
+    tooth.recession_mb, tooth.recession_b, tooth.recession_db
+  ].map(v => grRank[v || 'none'] || 0)
+  
+  const maxGrRank = Math.max(...recessionRanks)
+
+  let recessionComment = ''
+  if (maxGrRank > 0) {
+    const testDef = DENTAL_TOOTH_TESTS.gingival_recession
+    if (testDef && testDef.optComment) {
+      const rangeKey = maxGrRank === 3 ? 'GR3' : maxGrRank === 2 ? 'GR2' : 'GR1'
+      recessionComment = testDef.optComment[rangeKey] || ''
+    }
+  }
+
+  const probingPoints = [
+    { label: 'ML', val: tooth.probing_ml },
+    { label: 'L', val: tooth.probing_l },
+    { label: 'DL', val: tooth.probing_dl },
+    { label: 'MB', val: tooth.probing_mb },
+    { label: 'B', val: tooth.probing_b },
+    { label: 'DB', val: tooth.probing_db },
+  ].filter(p => p.val !== null && p.val !== undefined && p.val !== 0)
+
+  const recessionPoints = [
+    { label: 'ML', val: tooth.recession_ml },
+    { label: 'L', val: tooth.recession_l },
+    { label: 'DL', val: tooth.recession_dl },
+    { label: 'MB', val: tooth.recession_mb },
+    { label: 'B', val: tooth.recession_b },
+    { label: 'DB', val: tooth.recession_db },
+  ].filter(p => p.val !== null && p.val !== undefined && p.val !== '' && p.val !== '0')
+
   const treatmentFindings = findings.filter(f => f.label === '치료 (Treatment)')
   const planFindings = findings.filter(f => f.label === '계획 (Plan)')
 
@@ -118,7 +182,7 @@ export default function DentalToothDetailView({ tooth, images, isShared }: Denta
           {/* 발견 소견 */}
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-slate-500 border-b pb-1">Clinical Findings</h4>
-            {clinicalFindings.length > 0 ? (
+            {clinicalFindings.length > 0 || probingPoints.length > 0 || recessionPoints.length > 0 ? (
               <ul className="space-y-1.5">
                 {clinicalFindings.map((f, i) => (
                   <li key={i} className="text-sm text-slate-700 leading-relaxed">
@@ -126,6 +190,53 @@ export default function DentalToothDetailView({ tooth, images, isShared }: Denta
                     {f.detail}
                   </li>
                 ))}
+                
+                {/* 6포인트 데이터 표시 */}
+                {probingPoints.length > 0 && (
+                   <li className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-2 rounded border border-slate-100">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900">[치주낭 깊이 (PD)]</span>
+                        <span className="text-xs text-slate-600 font-medium">
+                          {probingPoints.map((p, idx) => (
+                            <span key={p.label} className="ml-3 first:ml-0 inline-block">
+                              <span className="text-[10px] text-slate-400 mr-0.5">{p.label}:</span>
+                              <span className="font-bold text-slate-700">{p.val}</span>
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                      {probingComment && (
+                        <div className="text-[11px] text-indigo-600 font-medium bg-white px-2 py-1 rounded border border-indigo-50 mt-1 italic">
+                          💡 {probingComment}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                )}
+
+                {recessionPoints.length > 0 && (
+                  <li className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-2 rounded border border-slate-100">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900">[치은 퇴축 (GR)]</span>
+                        <span className="text-xs text-slate-600 font-medium">
+                          {recessionPoints.map((p, idx) => (
+                            <span key={p.label} className="ml-3 first:ml-0 inline-block">
+                              <span className="text-[10px] text-slate-400 mr-0.5">{p.label}:</span>
+                              <span className="font-bold text-slate-700">{p.val}</span>
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                      {recessionComment && (
+                        <div className="text-[11px] text-amber-600 font-medium bg-white px-2 py-1 rounded border border-amber-50 mt-1 italic">
+                          💡 {recessionComment}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                )}
               </ul>
             ) : (
               <p className="text-sm text-slate-400">특이 병소 소견 없음</p>

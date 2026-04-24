@@ -434,12 +434,27 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
             // 병소 소견 추출 (보호자용: generalComment 위주)
             const findings: { label: string, detail: string }[] = []
 
+            // 6포인트 측정 데이터 계산 및 요약 (소견 루프 이전에 먼저 수행)
+            const probingValues = [tooth.probing_ml, tooth.probing_l, tooth.probing_dl, tooth.probing_mb, tooth.probing_b, tooth.probing_db]
+              .filter((v): v is number => v !== null && v !== undefined)
+            const maxProbing = probingValues.length > 0 ? Math.max(...probingValues) : 0
+
+            const grRank: Record<string, number> = { 'none': 0, 'GR1': 1, 'GR2': 2, 'GR3': 3 }
+            const recessionRanks = [
+              tooth.recession_ml, tooth.recession_l, tooth.recession_dl, 
+              tooth.recession_mb, tooth.recession_b, tooth.recession_db
+            ].map(v => grRank[v || 'none'] || 0)
+            const maxGrRank = Math.max(...recessionRanks)
+
             const toothFields = [
               'status', 'periodontal_stage', 'gingivitis', 'calculus', 'mobility', 'furcation',
               'fracture', 'caries', 'resorption_stage', 'staining', 'attrition'
             ]
 
             toothFields.forEach(field => {
+              // 치주낭 측정값(probing_depth)이 있으면 periodontal_stage는 중복이므로 제외
+              if (field === 'periodontal_stage' && maxProbing > 0) return
+
               const val = (tooth as any)[field]
               if (val && val !== 'none' && val !== 'normal' && val !== 'present' && val !== 'PD0') {
                 const testDef = DENTAL_TOOTH_TESTS[field]
@@ -486,8 +501,52 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
 
           
 
-            // 패스 조건: 사진도 없고 소견도 없으면 렌더링 안 함
-            if (findings.length === 0 && allToothImages.length === 0) return null
+
+            let probingAutoInfo: { points: any[], comment: string } | null = null
+            if (maxProbing > 0) {
+              const testDef = DENTAL_TOOTH_TESTS.probing_depth
+              if (testDef && testDef.rangeComments) {
+                const thresholds = species === 'feline' ? testDef.thresholds_feline : testDef.thresholds_canine
+                let rangeKey = 'normal'
+                if (maxProbing > (thresholds?.[2] || 0)) rangeKey = 'PD4'
+                else if (maxProbing > (thresholds?.[1] || 0)) rangeKey = 'PD3'
+                else if (maxProbing > (thresholds?.[0] || 0)) rangeKey = 'PD2'
+                
+                probingAutoInfo = {
+                  comment: testDef.rangeComments[rangeKey]?.generalComment || '',
+                  points: [
+                    { label: 'ML', val: tooth.probing_ml },
+                    { label: 'L', val: tooth.probing_l },
+                    { label: 'DL', val: tooth.probing_dl },
+                    { label: 'MB', val: tooth.probing_mb },
+                    { label: 'B', val: tooth.probing_b },
+                    { label: 'DB', val: tooth.probing_db },
+                  ].filter(p => p.val !== null && p.val !== undefined && p.val !== 0)
+                }
+              }
+            }
+
+            let recessionAutoInfo: { points: any[], comment: string } | null = null
+            if (maxGrRank > 0) {
+              const testDef = DENTAL_TOOTH_TESTS.gingival_recession
+              if (testDef && testDef.generalComment) {
+                const rangeKey = maxGrRank === 3 ? 'GR3' : maxGrRank === 2 ? 'GR2' : 'GR1'
+                recessionAutoInfo = {
+                  comment: (testDef.generalComment as any)?.[rangeKey] || '',
+                  points: [
+                    { label: 'ML', val: tooth.recession_ml },
+                    { label: 'L', val: tooth.recession_l },
+                    { label: 'DL', val: tooth.recession_dl },
+                    { label: 'MB', val: tooth.recession_mb },
+                    { label: 'B', val: tooth.recession_b },
+                    { label: 'DB', val: tooth.recession_db },
+                  ].filter(p => p.val !== null && p.val !== undefined && p.val !== '' && p.val !== '0' && p.val !== 'none')
+                }
+              }
+            }
+
+            // 패스 조건: 사진도 없고 소견도 없으며 6포인트 데이터도 없으면 렌더링 안 함
+            if (findings.length === 0 && allToothImages.length === 0 && !probingAutoInfo && !recessionAutoInfo) return null
 
             return (
               <div key={tooth.tooth_id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
@@ -514,13 +573,50 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                         <>
                           <div className="space-y-2">
                             <h4 className="text-sm font-bold text-amber-600">수의사 소견</h4>
-                            {clinicalFindings.length > 0 ? (
+                            {clinicalFindings.length > 0 || probingAutoInfo || recessionAutoInfo ? (
                               <div className="space-y-2">
                                 {clinicalFindings.map((f, i) => (
                                   <div key={i} className="bg-slate-50 p-3 rounded text-sm text-slate-700 leading-relaxed border border-slate-100 border-l-2 border-l-amber-300">
                                     {f.detail}
                                   </div>
                                 ))}
+
+                                {/* 6포인트 자동 소견 (보호자용) */}
+                                {probingAutoInfo && (
+                                  <div className="bg-amber-50/50 p-3 rounded border border-amber-100 border-l-2 border-l-amber-400">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-xs font-bold text-amber-800">[치주낭 깊이]</span>
+                                      <div className="flex gap-2">
+                                        {probingAutoInfo.points.map(p => (
+                                          <span key={p.label} className="text-[10px] text-slate-500">
+                                            {p.label}:<span className="font-bold text-slate-700">{p.val}</span>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <p className="text-sm text-slate-700 leading-relaxed italic">
+                                      💡 {probingAutoInfo.comment}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {recessionAutoInfo && (
+                                  <div className="bg-amber-50/50 p-3 rounded border border-amber-100 border-l-2 border-l-amber-400">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-xs font-bold text-amber-800">[치은 퇴축]</span>
+                                      <div className="flex gap-2">
+                                        {recessionAutoInfo.points.map(p => (
+                                          <span key={p.label} className="text-[10px] text-slate-500">
+                                            {p.label}:<span className="font-bold text-slate-700">{p.val}</span>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <p className="text-sm text-slate-700 leading-relaxed italic">
+                                      💡 {recessionAutoInfo.comment}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <p className="text-sm text-slate-400">특이 사항이 발견되지 않았습니다.</p>
