@@ -39,15 +39,19 @@ export default function ImageCard({ img, isShared }: { img: DentalImage; isShare
         )}
       </div>
 
-      <Dialog open={viewerOpen} onOpenChange={setViewerOpen} modal={!isShared}>
+      <Dialog open={viewerOpen} onOpenChange={setViewerOpen} modal={false}>
         <DialogContent 
           className={cn(
-            "p-0 m-0 border-0 flex flex-col items-center justify-center bg-slate-900/95 rounded-none z-[150]",
+            "p-0 m-0 border-0 flex flex-col items-center justify-center bg-slate-900/95 rounded-none z-[200]",
             isShared 
-              ? "max-w-[90vw] w-[1200px] h-auto aspect-auto border border-slate-700 shadow-2xl rounded-xl" 
-              : "max-w-[100vw] w-screen h-screen max-h-[100vh] z-[200]"
+              ? "max-w-[90vw] w-[1200px] h-auto aspect-auto border border-slate-700 shadow-2xl rounded-xl z-[150]" 
+              : "outline-none max-w-[100vw] w-screen h-screen max-h-[100vh] z-[200]"
           )}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
         >
           <VisuallyHidden>
             <DialogTitle>{isShared ? '이미지 크게 보기' : '치과 이미지 에디터'}</DialogTitle>

@@ -152,7 +152,7 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen} modal={false}>
+    <Dialog open={open} onOpenChange={setOpen} modal={true}>
       <DialogTrigger asChild>
         <Button 
           variant="secondary" 
@@ -165,7 +165,7 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
       </DialogTrigger>
       
       <DialogContent 
-        className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden bg-white z-[110]"
+        className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden bg-white z-[100]"
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >

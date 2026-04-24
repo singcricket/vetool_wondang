@@ -55,15 +55,19 @@ function ImageCard({ img, caption, isShared }: { img: DentalImage; caption?: str
         </div>
       </div>
 
-      <Dialog open={viewerOpen} onOpenChange={setViewerOpen} modal={!isShared}>
+      <Dialog open={viewerOpen} onOpenChange={setViewerOpen} modal={false}>
         <DialogContent 
            className={cn(
-            "p-0 m-0 border-0 flex flex-col items-center justify-center bg-slate-900/95 rounded-none z-[150]",
+            "p-0 m-0 border-0 flex flex-col items-center justify-center bg-slate-900/95 rounded-none z-[200]",
             isShared 
-              ? "max-w-[90vw] w-[1200px] h-auto aspect-auto border border-slate-700 shadow-2xl rounded-xl" 
-              : "max-w-[100vw] w-screen h-screen max-h-[100vh] z-[200]"
+              ? "max-w-[90vw] w-[1200px] h-auto aspect-auto border border-slate-700 shadow-2xl rounded-xl z-[150]" 
+              : "outline-none max-w-[100vw] w-screen h-screen max-h-[100vh] z-[200]"
           )}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
         >
           <VisuallyHidden>
             <DialogTitle>{isShared ? '이미지 크게 보기' : '치과 이미지 에디터'}</DialogTitle>
@@ -116,28 +120,85 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
   const img300 = images.find(img => img.tooth_ids?.includes('300'))
   const img400 = images.find(img => img.tooth_ids?.includes('400'))
 
-  function QuadrantBox({ label, img }: { label: string, img?: DentalImage }) {
+  function QuadrantBox({ label, img, isShared }: { label: string, img?: DentalImage, isShared?: boolean }) {
+    const [viewerOpen, setViewerOpen] = useState(false)
     return (
-      <div className="flex flex-col border border-amber-200 bg-white shadow-sm overflow-hidden rounded">
-        <div className="text-[10px] font-bold text-center bg-amber-50 py-1 border-b border-amber-100 uppercase text-amber-700 tracking-wider">
-          {label}
-        </div>
-        <div className="aspect-[4/3] bg-amber-50/30 flex items-center justify-center">
-          {img ? (
-            <DentalImageWithMark 
-              imageUrl={img.img_url} 
-              mark={img.mark} 
-              noHover 
-              aspectRatio="aspect-auto" 
-              className="h-full w-full" 
-            />
-          ) : (
-            <div className="flex flex-col items-center gap-1 opacity-20">
-              <span className="text-[9px] font-medium text-amber-400">NO IMAGE</span>
-            </div>
+      <>
+        <div 
+          className={cn(
+            "flex flex-col border border-amber-200 bg-white shadow-sm overflow-hidden rounded",
+            img && "cursor-pointer hover:ring-2 hover:ring-amber-500 transition-all"
           )}
+          onClick={() => img && setViewerOpen(true)}
+        >
+          <div className="text-[10px] font-bold text-center bg-amber-50 py-1 border-b border-amber-100 uppercase text-amber-700 tracking-wider">
+            {label}
+          </div>
+          <div className="aspect-[4/3] bg-amber-50/30 flex items-center justify-center relative">
+            {img ? (
+              <DentalImageWithMark 
+                imageUrl={img.img_url} 
+                mark={img.mark} 
+                noHover 
+                aspectRatio="aspect-auto" 
+                className="h-full w-full object-cover" 
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-1 opacity-20 py-8">
+                <span className="text-[9px] font-medium text-amber-400 uppercase italic">No photo</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+
+        <Dialog open={viewerOpen} onOpenChange={setViewerOpen} modal={!isShared}>
+          <DialogContent 
+            className={cn(
+              "p-0 m-0 border-0 flex flex-col items-center justify-center bg-slate-900/95 rounded-none z-[150]",
+              isShared 
+                ? "max-w-[90vw] w-[1200px] h-auto aspect-auto border border-slate-700 shadow-2xl rounded-xl z-[150]" 
+                : "max-w-[100vw] w-screen h-screen max-h-[100vh] z-[200] outline-none"
+            )}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            onCloseAutoFocus={(e) => e.preventDefault()}
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => e.preventDefault()}
+            onFocusOutside={(e) => e.preventDefault()}
+          >
+            <VisuallyHidden>
+              <DialogTitle>{isShared ? '이미지 크게 보기' : '치과 이미지 에디터'}</DialogTitle>
+              <DialogDescription>{isShared ? '상세 이미지를 확인합니다.' : '이미지 마킹을 확인하거나 수정할 수 있습니다.'}</DialogDescription>
+            </VisuallyHidden>
+            {viewerOpen && img && (
+              isShared ? (
+                <div className="relative w-full h-full p-4 flex items-center justify-center">
+                  <DentalImageWithMark 
+                    imageUrl={img.img_url} 
+                    mark={img.mark} 
+                    aspectRatio="aspect-auto" 
+                    className="max-h-[80vh] w-full"
+                    noHover={true}
+                  />
+                  <Button 
+                    variant="ghost" 
+                    className="absolute top-4 right-4 text-white hover:bg-white/10" 
+                    onClick={() => setViewerOpen(false)}
+                  >
+                    닫기
+                  </Button>
+                </div>
+              ) : (
+                <DentalImageEditor 
+                  imageId={img.dental_image_id} 
+                  imageUrl={img.img_url} 
+                  initialMark={img.mark} 
+                  onClose={() => setViewerOpen(false)}
+                />
+              )
+            )}
+          </DialogContent>
+        </Dialog>
+      </>
     )
   }
 
@@ -290,12 +351,12 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
           <h3 className="text-sm font-semibold text-amber-700 mb-4 text-center uppercase tracking-widest">
             구강 전반 사진
           </h3>
-          <div className="max-w-[700px] mx-auto">
-            <div className="grid grid-cols-2 gap-4">
-              <QuadrantBox label="Rt Max" img={img100} />
-              <QuadrantBox label="Lt Max" img={img200} />
-              <QuadrantBox label="Rt Mand" img={img400} />
-              <QuadrantBox label="Lt Mand" img={img300} />
+          <div className="w-full">
+            <div className="grid grid-cols-2 gap-6">
+              <QuadrantBox label="Rt Max" img={img100} isShared={isShared} />
+              <QuadrantBox label="Lt Max" img={img200} isShared={isShared} />
+              <QuadrantBox label="Rt Mand" img={img400} isShared={isShared} />
+              <QuadrantBox label="Lt Mand" img={img300} isShared={isShared} />
             </div>
           </div>
         </div>
@@ -328,10 +389,27 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
 
       {/* ── 치아별 소견 ── */}
       <div className="space-y-10">
-        {teeth
-          .filter(t => t.tooth_id)
-          .sort((a,b) => a.tooth_id - b.tooth_id)
-          .map(tooth => {
+        {(() => {
+          // 1. teeth 배열의 ID 수집
+          const toothIds = new Set(teeth.filter(t => t.tooth_id).map(t => Number(t.tooth_id)))
+          
+          // 2. images 배열에서 상/하악 치아 번호(101~411) 수집
+          images.forEach(img => {
+            img.tooth_ids?.forEach(tid => {
+              if (/^(10[1-9]|110|20[1-9]|210|30[1-9]|31[0-1]|40[1-9]|41[0-1])$/.test(tid)) {
+                toothIds.add(Number(tid))
+              }
+            })
+          })
+
+          return Array.from(toothIds)
+            .sort((a,b) => a - b)
+            .map(tid => {
+              const tooth = teeth.find(t => Number(t.tooth_id) === tid) || {
+                tooth_id: tid,
+                chart_id: chartDetail.id,
+                hos_id: chartDetail.hos_id,
+              } as DentalTooth
 
             // 이 치아에 번호로만 태그된 이미지 (글로벌 태그 및 비교 태그 제외)
             const toothImages = images.filter(img =>
@@ -516,7 +594,8 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                 </div>
               </div>
             )
-          })}
+          })
+        })()}
       </div>
     </div>
   )

@@ -300,6 +300,7 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
           onCloseAutoFocus={(e) => e.preventDefault()}
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
         >
           <VisuallyHidden>
             <DialogTitle>치과 이미지 에디터</DialogTitle>

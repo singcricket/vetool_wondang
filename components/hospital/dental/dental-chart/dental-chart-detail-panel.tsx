@@ -1,13 +1,15 @@
 'use client'
 
 import DentalChartSvgPanel from './dental-chart-svg-panel'
-import type { DentalTooth } from '@/types/dental/dental-type'
+import type { DentalTooth, DentalImage } from '@/types/dental/dental-type'
+import { CameraIcon } from 'lucide-react'
 
 interface Props {
   species: string
   selectedToothId: string | null
   onToothClick: (id: string) => void
   teeth: DentalTooth[]
+  images: DentalImage[]
 }
 
 const upperOrder = [110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210]
@@ -61,6 +63,7 @@ export default function DentalChartDetailPanel({
   selectedToothId,
   onToothClick,
   teeth,
+  images,
 }: Props) {
   const isFeline = species?.toLowerCase().startsWith('fel')
 
@@ -92,6 +95,11 @@ export default function DentalChartDetailPanel({
                       {a}
                     </div>
                   ))}
+                  {!hidden && images.some(img => img.tooth_ids?.includes(String(num))) && (
+                    <div className="flex items-center justify-center bg-indigo-100 text-indigo-600 rounded px-0.5 shadow-sm w-full py-0.5">
+                      <CameraIcon className="w-3 h-3" />
+                    </div>
+                  )}
                   <div 
                     onClick={() => !hidden && onToothClick(String(num))}
                     className={`font-bold border-t-2 border-slate-400 w-full text-center pt-1 mt-1 text-slate-900 ${hidden ? 'invisible' : 'cursor-pointer hover:bg-slate-200/50'}`}
@@ -130,6 +138,11 @@ export default function DentalChartDetailPanel({
                   >
                     {!hidden ? num : ''}
                   </div>
+                  {!hidden && images.some(img => img.tooth_ids?.includes(String(num))) && (
+                    <div className="flex items-center justify-center bg-indigo-100 text-indigo-600 rounded px-0.5 shadow-sm w-full py-0.5">
+                      <CameraIcon className="w-3 h-3" />
+                    </div>
+                  )}
                   {!hidden && abbrs.map((a, i) => (
                     <div key={i} className="text-center font-medium leading-tight whitespace-nowrap overflow-hidden text-ellipsis max-w-full text-slate-700 bg-slate-200 px-0.5 rounded shadow-sm w-full opacity-90">
                       {a}

@@ -28,7 +28,7 @@ export default function DentalImageUploadDialog({ chartDetail, teeth, hosId }: P
   const [activeTab, setActiveTab] = useState('upload')
 
   return (
-    <Dialog open={open} onOpenChange={setOpen} modal={false}>
+    <Dialog open={open} onOpenChange={setOpen} modal={true}>
       <DialogTrigger asChild>
         <Button 
           variant="default" 

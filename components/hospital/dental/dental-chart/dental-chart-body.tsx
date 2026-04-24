@@ -10,7 +10,9 @@ import DentalChartGeneralPanel from './dental-chart-general-panel'
 import DentalImageUploadDialog from '../dental-image-uploader/dental-image-upload-dialog'
 import DentalReportDialog from '../dental-report/dental-report-dialog'
 import DentalChartTestPanel from './dental-chart-test-panel'
-import { LayoutDashboard, Activity, SquareGanttChart, MonitorPlay } from 'lucide-react'
+import { LayoutDashboard, Activity, SquareGanttChart, MonitorPlay, ImageIcon } from 'lucide-react'
+import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
+import type { DentalImage } from '@/types/dental/dental-type'
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -21,6 +23,7 @@ type Props = {
 export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
   const [localChartDetail, setLocalChartDetail] = useState(chartDetail)
   const [localTeeth, setLocalTeeth] = useState(teeth)
+  const [localImages, setLocalImages] = useState<DentalImage[]>([])
   const [selectedToothId, setSelectedToothId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -75,9 +78,37 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
       )
       .subscribe()
 
+    // 3. 이미지 정보 구독 (dental_images)
+    const imagesChannel = supabase
+      .channel(`dental_images_${chartDetail.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dental_images',
+          filter: `chart_id=eq.${chartDetail.id}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setLocalImages(prev => [...prev, payload.new as DentalImage])
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as DentalImage
+            setLocalImages(prev => prev.map(img => img.dental_image_id === updated.dental_image_id ? updated : img))
+          } else if (payload.eventType === 'DELETE') {
+            setLocalImages(prev => prev.filter(img => img.dental_image_id !== payload.old.dental_image_id))
+          }
+        }
+      )
+      .subscribe()
+
+    // 초기 이미지 로드
+    getDentalImages(chartDetail.id).then(setLocalImages).catch(console.error)
+
     return () => {
       supabase.removeChannel(chartChannel)
       supabase.removeChannel(teethChannel)
+      supabase.removeChannel(imagesChannel)
     }
   }, [chartDetail.id])
 
@@ -130,6 +161,8 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
           <DentalChartGeneralPanel
             chartDetail={localChartDetail}
             hosId={hosId}
+            images={localImages}
+            onImagesChange={setLocalImages}
           />
         </TabsContent>
 
@@ -139,6 +172,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
             selectedToothId={selectedToothId}
             onToothClick={handleToothClick}
             teeth={localTeeth}
+            images={localImages}
           />
         </TabsContent>
 
@@ -146,6 +180,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
           <DentalChartTestPanel
             chartDetail={localChartDetail}
             teeth={localTeeth}
+            images={localImages}
           />
         </TabsContent>
       </Tabs>

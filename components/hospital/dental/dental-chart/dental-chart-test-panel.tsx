@@ -208,30 +208,17 @@ function getStatusStyle(tooth: DentalTooth | undefined): string {
 interface Props {
   chartDetail: DentalChartDetail
   teeth: DentalTooth[]
+  images: DentalImage[]
 }
 
-export default function DentalChartTestPanel({ chartDetail, teeth }: Props) {
+export default function DentalChartTestPanel({ chartDetail, teeth, images }: Props) {
   const species = (chartDetail.species ?? chartDetail.patient?.species ?? 'canine').toLowerCase()
   const isFeline = species.startsWith('fel')
   const toothNames = isFeline ? FELINE_TOOTH_NAMES : CANINE_TOOTH_NAMES
 
   const [selectedToothId, setSelectedToothId] = useState<string | null>(null)
-  const [images, setImages] = useState<DentalImage[]>([])
   // 개 전용: 구강 전개도 표시 토글
   const [showOpenmouth, setShowOpenmouth] = useState(false)
-
-  // 이미지 불러오기
-  useEffect(() => {
-    const fetchImages = async () => {
-      try {
-        const data = await getDentalImages(chartDetail.id)
-        setImages(data)
-      } catch (e) {
-        console.error('Failed to fetch dental images:', e)
-      }
-    }
-    fetchImages()
-  }, [chartDetail.id])
 
   const selectedTooth = teeth.find((t) => String(t.tooth_id) === selectedToothId)
 
@@ -312,7 +299,7 @@ export default function DentalChartTestPanel({ chartDetail, teeth }: Props) {
                 teeth={teeth}
                 onToothClick={setSelectedToothId}
                 label="치열 (정면)"
-                svgStyle={{ height: '640px', width: 'auto' }}
+                svgStyle={{ height: '500px', width: 'auto' }}
               />
             </div>
 
@@ -328,7 +315,7 @@ export default function DentalChartTestPanel({ chartDetail, teeth }: Props) {
                   teeth={teeth}
                   onToothClick={setSelectedToothId}
                   label="두개골 우측"
-                  svgStyle={{ height: '320px', width: 'auto' }}
+                  svgStyle={{ height: '250px', width: 'auto' }}
                 />
               </div>
 
@@ -341,7 +328,7 @@ export default function DentalChartTestPanel({ chartDetail, teeth }: Props) {
                   teeth={teeth}
                   onToothClick={setSelectedToothId}
                   label="두개골 좌측"
-                  svgStyle={{ height: '320px', width: 'auto' }}
+                  svgStyle={{ height: '250px', width: 'auto' }}
                 />
               </div>
 

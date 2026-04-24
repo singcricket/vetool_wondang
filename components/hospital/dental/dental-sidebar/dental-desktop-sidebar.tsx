@@ -6,6 +6,8 @@ import DentalPatientButton from './dental-patient-button'
 import DentalRegisterDialog from './dental-register-dialog'
 import DentalDateSelector from './dental-date-selector'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 interface DentalDesktopSidebarProps {
   hosId: string
@@ -21,7 +23,37 @@ export default function DentalDesktopSidebar({
   handleCloseMobileDrawer,
 }: DentalDesktopSidebarProps) {
   const pathname = usePathname()
-  const { refresh } = useRouter()
+  const router = useRouter()
+
+  // Realtime 리스트 연동: 다른 PC에서 환자 추가/삭제 시 리스트 갱신
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel('dental_sidebar_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dental_charts',
+          filter: `hos_id=eq.${hosId}`
+        },
+        (payload) => {
+          const newData = payload.new as any
+          const oldData = payload.old as any
+          
+          // 현재 보고 있는 날짜의 데이터가 변경되었을 때만 서버 데이터를 다시 불러옴
+          if (newData?.chart_date === targetDate || oldData?.chart_date === targetDate) {
+            router.refresh()
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [hosId, targetDate, router])
 
   const activeDentalId = pathname.split('/').pop()
 
@@ -36,7 +68,7 @@ export default function DentalDesktopSidebar({
       <DentalRegisterDialog
         hosId={hosId}
         targetDate={targetDate}
-        onRegistered={refresh}
+        onRegistered={() => router.refresh()}
       />
 
       {/* 환자 목록 */}
