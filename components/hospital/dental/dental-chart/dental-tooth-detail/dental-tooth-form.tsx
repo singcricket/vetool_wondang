@@ -29,7 +29,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 type SixPoint<T = number | null> = { ml: T; l: T; dl: T; mb: T; b: T; db: T }
 
 type Props = {
-  toothId: string
+  toothIds: string[]
   chartDetail: DentalChartDetail
   hosId: string
   existing: DentalTooth | undefined
@@ -155,7 +155,8 @@ function MultiCheckField({ label, selected, onChange, options, testId }: {
   )
 }
 
-export default function DentalToothForm({ toothId, chartDetail, hosId, existing, onSaved, onCancel, refreshKey }: Props) {
+export default function DentalToothForm({ toothIds, chartDetail, hosId, existing, onSaved, onCancel, refreshKey }: Props) {
+  const isMulti = toothIds.length > 1
   const species = chartDetail.species || 'canine'
   const { refresh } = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -171,30 +172,35 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
     fetchImages()
   }, [chartDetail.id, refreshKey])
 
-  const toothName = toothNames[toothId] ?? toothId
+  const firstToothId = toothIds[0]
+  const toothName = isMulti ? `${toothIds.length}개 치아` : (toothNames[firstToothId] ?? firstToothId)
 
   // ── state 초기값 ──
-  const [status, setStatus] = useState<string>(existing?.status ?? 'present')
-  const [isDeciduous, setIsDeciduous] = useState(existing?.is_deciduous ?? false)
-  const [periodontalStage, setPeriodontalStage] = useState<string>(existing?.periodontal_stage ?? '')
-  const [gingivitis, setGingivitis] = useState<string>(existing?.gingivitis ?? '')
-  const [calculus, setCalculus] = useState<string>(existing?.calculus ?? '')
-  const [plaque, setPlaque] = useState<string>(existing?.plaque ?? '')
-  const [mobility, setMobility] = useState<string>(existing?.mobility ?? '')
-  const [furcation, setFurcation] = useState<string>(existing?.furcation ?? '')
-  const [fracture, setFracture] = useState<string>(existing?.fracture ?? '')
-  const [pulpExposure, setPulpExposure] = useState(existing?.pulp_exposure ?? false)
-  const [caries, setCaries] = useState<string>(existing?.caries ?? '')
-  const [resorptionStage, setResorptionStage] = useState<string>(existing?.resorption_stage ?? '')
-  const [resorptionType, setResorptionType] = useState<string>(existing?.resorption_type ?? '')
-  const [attrition, setAttrition] = useState<string>(existing?.attrition ?? '')
-  const [abrasion, setAbrasion] = useState<string>(existing?.abrasion ?? '')
-  const predefinedDone = DENTAL_TOOTH_TESTS.treatment_done.options?.map((o) => o.value) || []
-  const initialDone = existing?.treatment_done ? [...existing.treatment_done] : []
+  // 다중 선택 시에는 기본적으로 비어있는 상태로 시작 (입력한 항목만 덮어씌우기 위해)
+  const [status, setStatus] = useState<string>(isMulti ? '' : (existing?.status ?? 'present'))
+  const [isDeciduous, setIsDeciduous] = useState(isMulti ? false : (existing?.is_deciduous ?? false))
+  const [periodontalStage, setPeriodontalStage] = useState<string>(isMulti ? '' : (existing?.periodontal_stage ?? ''))
+  const [gingivitis, setGingivitis] = useState<string>(isMulti ? '' : (existing?.gingivitis ?? ''))
+  const [calculus, setCalculus] = useState<string>(isMulti ? '' : (existing?.calculus ?? ''))
+  const [plaque, setPlaque] = useState<string>(isMulti ? '' : (existing?.plaque ?? ''))
+  const [mobility, setMobility] = useState<string>(isMulti ? '' : (existing?.mobility ?? ''))
+  const [furcation, setFurcation] = useState<string>(isMulti ? '' : (existing?.furcation ?? ''))
+  const [fracture, setFracture] = useState<string>(isMulti ? '' : (existing?.fracture ?? ''))
+  const [pulpExposure, setPulpExposure] = useState(isMulti ? false : (existing?.pulp_exposure ?? false))
+  const [caries, setCaries] = useState<string>(isMulti ? '' : (existing?.caries ?? ''))
+  const [resorptionStage, setResorptionStage] = useState<string>(isMulti ? '' : (existing?.resorption_stage ?? ''))
+  const [resorptionType, setResorptionType] = useState<string>(isMulti ? '' : (existing?.resorption_type ?? ''))
+  const [attrition, setAttrition] = useState<string>(isMulti ? '' : (existing?.attrition ?? ''))
+  const [abrasion, setAbrasion] = useState<string>(isMulti ? '' : (existing?.abrasion ?? ''))
   
-  // 방사선(xray_taken) 및 스케일링(procedure_scaling) 자동 포함 로직
-  if (chartDetail.xray_taken && !initialDone.includes('RAD')) initialDone.push('RAD')
-  if (chartDetail.procedure_scaling && !initialDone.includes('PRO')) initialDone.push('PRO')
+  const predefinedDone = DENTAL_TOOTH_TESTS.treatment_done.options?.map((o) => o.value) || []
+  const initialDone = isMulti ? [] : (existing?.treatment_done ? [...existing.treatment_done] : [])
+  
+  // 방사선(xray_taken) 및 스케일링(procedure_scaling) 자동 포함 로직 (단일 선택 시에만 적용)
+  if (!isMulti) {
+    if (chartDetail.xray_taken && !initialDone.includes('RAD')) initialDone.push('RAD')
+    if (chartDetail.procedure_scaling && !initialDone.includes('PRO')) initialDone.push('PRO')
+  }
 
   const [treatmentDone, setTreatmentDone] = useState<string[]>(initialDone.filter((x) => predefinedDone.includes(x)))
   const [treatmentDoneOther, setTreatmentDoneOther] = useState<string>(
@@ -204,72 +210,87 @@ export default function DentalToothForm({ toothId, chartDetail, hosId, existing,
   )
 
   const predefinedPlan = DENTAL_TOOTH_TESTS.treatment_plan.options?.map((o) => o.value) || []
-  const allPlan = existing?.treatment_plan ?? []
+  const allPlan = isMulti ? [] : (existing?.treatment_plan ?? [])
   const [treatmentPlan, setTreatmentPlan] = useState<string[]>(allPlan.filter((x) => predefinedPlan.includes(x)))
   const [treatmentPlanOther, setTreatmentPlanOther] = useState<string>(
     allPlan.filter((x) => !predefinedPlan.includes(x)).length > 0
       ? allPlan.filter((x) => !predefinedPlan.includes(x)).join(', ') + ', '
       : ''
   )
-  const [priority, setPriority] = useState(existing?.treatment_priority ?? null)
-  const [xrayFinding, setXrayFinding] = useState(existing?.xray_finding ?? '')
-  const [toothNote, setToothNote] = useState(existing?.tooth_note || '')
+  const [priority, setPriority] = useState(isMulti ? null : (existing?.treatment_priority ?? null))
+  const [xrayFinding, setXrayFinding] = useState(isMulti ? '' : (existing?.xray_finding ?? ''))
+  const [toothNote, setToothNote] = useState(isMulti ? '' : (existing?.tooth_note || ''))
 
   // 치주낭 깊이
   const [probing, setProbing] = useState<SixPoint<number | null>>({
-    ml: existing?.probing_ml ?? null, l: existing?.probing_l ?? null, dl: existing?.probing_dl ?? null,
-    mb: existing?.probing_mb ?? null, b: existing?.probing_b ?? null, db: existing?.probing_db ?? null,
+    ml: isMulti ? null : (existing?.probing_ml ?? null), 
+    l: isMulti ? null : (existing?.probing_l ?? null), 
+    dl: isMulti ? null : (existing?.probing_dl ?? null),
+    mb: isMulti ? null : (existing?.probing_mb ?? null), 
+    b: isMulti ? null : (existing?.probing_b ?? null), 
+    db: isMulti ? null : (existing?.probing_db ?? null),
   })
   // 치은 퇴축
   const [recession, setRecession] = useState<SixPoint<string | null>>({
-    ml: existing?.recession_ml ?? null, l: existing?.recession_l ?? null, dl: existing?.recession_dl ?? null,
-    mb: existing?.recession_mb ?? null, b: existing?.recession_b ?? null, db: existing?.recession_db ?? null,
+    ml: isMulti ? null : (existing?.recession_ml ?? null), 
+    l: isMulti ? null : (existing?.recession_l ?? null), 
+    dl: isMulti ? null : (existing?.recession_dl ?? null),
+    mb: isMulti ? null : (existing?.recession_mb ?? null), 
+    b: isMulti ? null : (existing?.recession_b ?? null), 
+    db: isMulti ? null : (existing?.recession_db ?? null),
   })
 
   function handleSave() {
     startTransition(async () => {
-      await upsertDentalTooth({
-        chart_id: chartDetail.id,
-        hos_id: hosId,
-        tooth_id: Number(toothId),
-        status,
-        is_deciduous: isDeciduous,
-        periodontal_stage: periodontalStage || null,
-        gingivitis: gingivitis || null,
-        calculus: calculus || null,
-        plaque: plaque || null,
-        mobility: mobility || null,
-        furcation: furcation || null,
-        fracture: fracture || null,
-        pulp_exposure: pulpExposure,
-        caries: caries || null,
-        resorption_stage: resorptionStage || null,
-        resorption_type: resorptionType || null,
-        attrition: attrition || null,
-        abrasion: abrasion || null,
-        probing_ml: probing.ml, probing_l: probing.l, probing_dl: probing.dl,
-        probing_mb: probing.mb, probing_b: probing.b, probing_db: probing.db,
-        recession_ml: recession.ml, recession_l: recession.l, recession_dl: recession.dl,
-        recession_mb: recession.mb, recession_b: recession.b, recession_db: recession.db,
-        treatment_done: (() => {
-          const arr = Array.from(new Set([...treatmentDone, ...treatmentDoneOther.split(',').map(s=>s.trim()).filter(Boolean)]))
-          return arr.length > 0 ? arr : null
-        })(),
-        treatment_plan: (() => {
-          const arr = Array.from(new Set([...treatmentPlan, ...treatmentPlanOther.split(',').map(s=>s.trim()).filter(Boolean)]))
-          return arr.length > 0 ? arr : null
-        })(),
-        treatment_priority: priority,
-        xray_finding: xrayFinding || null,
-        tooth_note: toothNote || null,
-      })
+      // 모든 선택된 치아에 대해 순차적으로 업데이트 수행
+      const promises = toothIds.map(tid => 
+        upsertDentalTooth({
+          chart_id: chartDetail.id,
+          hos_id: hosId,
+          tooth_id: Number(tid),
+          status: status || null,
+          is_deciduous: isDeciduous,
+          periodontal_stage: periodontalStage || null,
+          gingivitis: gingivitis || null,
+          calculus: calculus || null,
+          plaque: plaque || null,
+          mobility: mobility || null,
+          furcation: furcation || null,
+          fracture: fracture || null,
+          pulp_exposure: pulpExposure,
+          caries: caries || null,
+          resorption_stage: resorptionStage || null,
+          resorption_type: resorptionType || null,
+          attrition: attrition || null,
+          abrasion: abrasion || null,
+          probing_ml: probing.ml, probing_l: probing.l, probing_dl: probing.dl,
+          probing_mb: probing.mb, probing_b: probing.b, probing_db: probing.db,
+          recession_ml: recession.ml, recession_l: recession.l, recession_dl: recession.dl,
+          recession_mb: recession.mb, recession_b: recession.b, recession_db: recession.db,
+          treatment_done: (() => {
+            const arr = Array.from(new Set([...treatmentDone, ...treatmentDoneOther.split(',').map(s=>s.trim()).filter(Boolean)]))
+            return arr.length > 0 ? arr : null
+          })(),
+          treatment_plan: (() => {
+            const arr = Array.from(new Set([...treatmentPlan, ...treatmentPlanOther.split(',').map(s=>s.trim()).filter(Boolean)]))
+            return arr.length > 0 ? arr : null
+          })(),
+          treatment_priority: priority,
+          xray_finding: xrayFinding || null,
+          tooth_note: toothNote || null,
+        })
+      )
+      
+      await Promise.all(promises)
       refresh()
       onSaved?.()
     })
   }
 
-  // --- 이미지 필터링 로직 ---
-  const toothImages = images.filter(img => (img.tooth_ids || []).includes(String(toothId)))
+  // --- 이미지 필터링 로직 (선택된 치아 중 어느 하나라도 포함된 이미지) ---
+  const toothImages = images.filter(img => 
+    (img.tooth_ids || []).some(id => toothIds.includes(String(id)))
+  )
 
   const assessmentImgs = toothImages.filter(img => (img.tooth_ids || []).includes('tooth-assessment'))
   const treatmentImgs = toothImages.filter(img => (img.tooth_ids || []).includes('tooth-treatment'))

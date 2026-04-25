@@ -5,13 +5,17 @@ import DentalToothForm from '../dental-tooth-detail/dental-tooth-form'
 
 type Props = {
   selectedToothId: string | null
+  selectedToothIds?: string[]
   chartDetail: DentalChartDetail
   hosId: string
   teeth: DentalTooth[]
 }
 
-export default function DentalToothTab({ selectedToothId, chartDetail, hosId, teeth }: Props) {
-  if (!selectedToothId) {
+export default function DentalToothTab({ selectedToothId, selectedToothIds = [], chartDetail, hosId, teeth }: Props) {
+  const effectiveId = selectedToothId || (selectedToothIds.length === 1 ? selectedToothIds[0] : null)
+  const effectiveIds = selectedToothIds.length > 0 ? selectedToothIds : (effectiveId ? [effectiveId] : [])
+
+  if (effectiveIds.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
@@ -25,11 +29,11 @@ export default function DentalToothTab({ selectedToothId, chartDetail, hosId, te
     )
   }
 
-  const existing = teeth.find((t) => String(t.tooth_id) === selectedToothId)
+  const existing = teeth.find((t) => String(t.tooth_id) === effectiveId)
 
   return (
     <DentalToothForm
-      toothId={selectedToothId}
+      toothIds={effectiveIds}
       chartDetail={chartDetail}
       hosId={hosId}
       existing={existing}

@@ -13,6 +13,7 @@ import DentalChartTestPanel from './dental-chart-test-panel'
 import { LayoutDashboard, Activity, SquareGanttChart, MonitorPlay, ImageIcon } from 'lucide-react'
 import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
 import type { DentalImage } from '@/types/dental/dental-type'
+import { Button } from '@/components/ui/button'
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -24,7 +25,8 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
   const [localChartDetail, setLocalChartDetail] = useState(chartDetail)
   const [localTeeth, setLocalTeeth] = useState(teeth)
   const [localImages, setLocalImages] = useState<DentalImage[]>([])
-  const [selectedToothId, setSelectedToothId] = useState<string | null>(null)
+  const [selectedToothIds, setSelectedToothIds] = useState<string[]>([])
+  const [existingTooth, setExistingTooth] = useState<DentalTooth | undefined>(undefined)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   // Realtime 구독
@@ -114,12 +116,23 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
 
   const species = localChartDetail.species ?? localChartDetail.patient?.species ?? 'canine'
 
-  function handleToothClick(id: string) {
-    setSelectedToothId(id)
-    setDialogOpen(true)
-  }
+  function handleToothClick(id: string, e?: React.MouseEvent) {
+    const isAlreadySelected = selectedToothIds.includes(id)
 
-  const existingTooth = localTeeth.find((t) => String(t.tooth_id) === selectedToothId)
+    if (e?.ctrlKey || e?.metaKey) {
+      setSelectedToothIds(prev => 
+        prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+      )
+    } else if (isAlreadySelected && selectedToothIds.length > 1) {
+      // 이미 선택된 상태에서 클릭 시 (다중 선택 상태 유지하며 다이얼로그 오픈)
+      setExistingTooth(undefined)
+      setDialogOpen(true)
+    } else {
+      setSelectedToothIds([id])
+      setExistingTooth(localTeeth.find(t => String(t.tooth_id) === id))
+      setDialogOpen(true)
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
@@ -169,7 +182,8 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
         <TabsContent value="detail" className="m-0 flex-1 overflow-hidden focus-visible:ring-0">
           <DentalChartDetailPanel
             species={species}
-            selectedToothId={selectedToothId}
+            selectedToothId={selectedToothIds.length === 1 ? selectedToothIds[0] : null}
+            selectedToothIds={selectedToothIds}
             onToothClick={handleToothClick}
             teeth={localTeeth}
             images={localImages}
@@ -185,16 +199,34 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
         </TabsContent>
       </Tabs>
 
+      {/* ── 다중 선택 시 일괄 편집 버튼 ── */}
+      {selectedToothIds.length > 1 && !dialogOpen && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4">
+          <Button
+            onClick={() => {
+              setExistingTooth(undefined)
+              setDialogOpen(true)
+            }}
+            size="lg"
+            className="rounded-full shadow-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 gap-2 border-4 border-white"
+          >
+            <SquareGanttChart className="w-5 h-5" />
+            <span className="font-bold text-lg">{selectedToothIds.length}개 치아 일괄 편집</span>
+          </Button>
+        </div>
+      )}
+
       {/* ── 치아 상세 Dialog ── */}
-      {selectedToothId && (
+      {selectedToothIds.length > 0 && (
         <DentalToothDialog
-          key={selectedToothId}
+          key={selectedToothIds.join(',')}
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
-          toothId={selectedToothId}
+          toothIds={selectedToothIds}
           chartDetail={localChartDetail}
           hosId={hosId}
           existing={existingTooth}
+          teeth={localTeeth}
         />
       )}
 

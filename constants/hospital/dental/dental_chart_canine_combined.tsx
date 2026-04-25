@@ -35,7 +35,8 @@ import type { DentalTooth } from "@/types/dental/dental-type";
 
 export interface DentalChartCanineCombinedProps extends React.SVGProps<SVGSVGElement> {
   selectedToothId?: string | null;
-  onToothClick?: (toothId: string) => void;
+  selectedToothIds?: string[];
+  onToothClick?: (toothId: string, e?: React.MouseEvent) => void;
   teeth?: DentalTooth[];
 }
 
@@ -184,7 +185,7 @@ function ToothHit({
   id, x1, x2, srcW, rowY, rowH, selected, onClick, toothData
 }: {
   id: string; x1: number; x2: number; srcW: number;
-  rowY: number; rowH: number; selected: boolean; onClick: () => void;
+  rowY: number; rowH: number; selected: boolean; onClick: (e: React.MouseEvent) => void;
   toothData?: DentalTooth;
 }) {
   const dx = scaleX(x1, srcW);
@@ -246,12 +247,13 @@ function ToothHit({
 
 export const DentalChartCanineCombined = ({
   selectedToothId,
+  selectedToothIds = [],
   onToothClick,
   teeth = [],
   ...props
 }: DentalChartCanineCombinedProps) => {
-  const click = (id: string) => () => onToothClick?.(id);
-  const sel   = (id: string) => selectedToothId === id;
+  const click = (id: string) => (e: React.MouseEvent) => onToothClick?.(id, e);
+  const sel   = (id: string) => selectedToothIds.includes(id) || selectedToothId === id;
   const getData = (id: string) => teeth.find(t => String(t.tooth_id) === id);
 
   return (

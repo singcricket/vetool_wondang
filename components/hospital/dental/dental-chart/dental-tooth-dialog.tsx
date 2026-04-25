@@ -20,16 +20,19 @@ import { useRouter } from 'next/navigation'
 type Props = {
   open: boolean
   onClose: () => void
-  toothId: string
+  toothIds: string[]
   chartDetail: DentalChartDetail
   hosId: string
   existing: DentalTooth | undefined
+  teeth: DentalTooth[]
 }
 
 export default function DentalToothDialog({
-  open, onClose, toothId, chartDetail, hosId, existing
+  open, onClose, toothIds, chartDetail, hosId, existing, teeth = []
 }: Props) {
-  const toothName = toothNames[toothId] ?? toothId
+  const isMulti = toothIds.length > 1
+  const firstId = toothIds[0]
+  const toothName = isMulti ? `${toothIds.length}개 치아 선택됨` : (toothNames[firstId] ?? firstId)
   const [isUploading, setIsUploading] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -47,8 +50,10 @@ export default function DentalToothDialog({
 
       await insertDentalImages([{
         chart_id: chartDetail.id,
-        tooth_ids: [String(toothId)],
-        dental_chart_teeth_ids: existing?.id ? [existing.id] : [],
+        tooth_ids: toothIds,
+        dental_chart_teeth_ids: (teeth || [])
+          .filter(t => t.id && toothIds.includes(String(t.tooth_id)))
+          .map(t => t.id as string),
         other_tags: [],
         mark: null,
         img_url: url,
@@ -78,8 +83,13 @@ export default function DentalToothDialog({
         <DialogHeader className="shrink-0 border-b px-6 py-3">
           <div className="flex items-center justify-between gap-4">
             <DialogTitle className="flex items-center gap-2">
-              <span className="text-lg font-bold">{toothId}</span>
-              <span className="text-sm font-normal text-muted-foreground">— {toothName}</span>
+              <span className="text-lg font-bold">
+                {isMulti ? `다중 선택 (${toothIds.length})` : toothIds[0]}
+              </span>
+              <span className="text-sm font-normal text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px]">
+                — {isMulti ? toothIds.join(', ') : toothName}
+                {isMulti && <span className='ml-2 text-indigo-500 font-bold'>(일괄 입력 모드)</span>}
+              </span>
             </DialogTitle>
 
             <div className="flex items-center gap-2 mr-6">
@@ -134,7 +144,7 @@ export default function DentalToothDialog({
 
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           <DentalToothForm
-            toothId={toothId}
+            toothIds={toothIds}
             chartDetail={chartDetail}
             hosId={hosId}
             existing={existing}

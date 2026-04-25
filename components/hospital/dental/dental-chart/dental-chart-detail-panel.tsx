@@ -8,7 +8,8 @@ import { CameraIcon } from 'lucide-react'
 interface Props {
   species: string
   selectedToothId: string | null
-  onToothClick: (id: string) => void
+  selectedToothIds?: string[]
+  onToothClick: (id: string, e?: React.MouseEvent) => void
   teeth: DentalTooth[]
   images: DentalImage[]
 }
@@ -91,6 +92,7 @@ function extractAbbrs(tooth: DentalTooth, species: string): string[] {
 export default function DentalChartDetailPanel({
   species,
   selectedToothId,
+  selectedToothIds = [],
   onToothClick,
   teeth,
   images,
@@ -131,8 +133,10 @@ export default function DentalChartDetailPanel({
                     </div>
                   )}
                   <div 
-                    onClick={() => !hidden && onToothClick(String(num))}
-                    className={`font-bold border-t-2 border-slate-400 w-full text-center pt-1 mt-1 text-slate-900 ${hidden ? 'invisible' : 'cursor-pointer hover:bg-slate-200/50'}`}
+                    onClick={(e) => !hidden && onToothClick(String(num), e)}
+                    className={`font-bold border-t-2 border-slate-400 w-full text-center pt-1 mt-1 text-slate-900 ${
+                      hidden ? 'invisible' : 'cursor-pointer hover:bg-slate-200/50'
+                    } ${selectedToothIds?.includes(String(num)) ? 'bg-indigo-100 text-indigo-700' : ''}`}
                   >
                     {!hidden ? num : ''}
                   </div>
@@ -147,6 +151,7 @@ export default function DentalChartDetailPanel({
           <DentalChartSvgPanel
             species={species}
             selectedToothId={selectedToothId}
+            selectedToothIds={selectedToothIds}
             onToothClick={onToothClick}
             teeth={teeth}
           />
@@ -163,8 +168,10 @@ export default function DentalChartDetailPanel({
               return (
                 <div key={num} className="flex flex-col items-center justify-start min-h-[7rem] h-auto gap-0.5 pt-1 select-none">
                   <div 
-                    onClick={() => !hidden && onToothClick(String(num))}
-                    className={`font-bold border-b-2 border-slate-400 w-full text-center pb-1 mb-1 text-slate-900 ${hidden ? 'invisible' : 'cursor-pointer hover:bg-slate-200/50'}`}
+                    onClick={(e) => !hidden && onToothClick(String(num), e)}
+                    className={`font-bold border-b-2 border-slate-400 w-full text-center pb-1 mb-1 text-slate-900 ${
+                      hidden ? 'invisible' : 'cursor-pointer hover:bg-slate-200/50'
+                    } ${selectedToothIds?.includes(String(num)) ? 'bg-indigo-100 text-indigo-700' : ''}`}
                   >
                     {!hidden ? num : ''}
                   </div>

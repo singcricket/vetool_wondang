@@ -7,7 +7,7 @@ import DentalToothDetailView from '@/components/hospital/dental/dental-report/de
 
 // SVG imports
 import DogOpenteethSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_openteeth'
-import DogOpenmouthSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_openmouth'
+import DogOpenmouthSvgB from '@/constants/hospital/dental/dental_svg_imgs/canine_openmouthB'
 import DogSkullLeftSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_skull_left'
 import DogSkullRightSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_skull_right'
 import CatOpenteethSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_openteeth'
@@ -238,7 +238,7 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
         </p>
 
         {/* 개 전용: 구강 전개도 토글 */}
-        {!isFeline && (
+        { (
           <button
             onClick={() => setShowOpenmouth((v) => !v)}
             className={`ml-2 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
@@ -273,15 +273,16 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
         {/* ── SVG 패널 영역 ── */}
         <div className="flex-none overflow-auto p-3 border-r bg-white/40">
           {/* 구강 전개도 (개만, 토글 시) */}
-          {!isFeline && showOpenmouth && (
-            <div className="mb-4 border rounded-xl bg-white/60 p-3 shadow-sm">
+          { showOpenmouth && (
+            <div className="mb-4 border rounded-xl bg-white/60 p-3 shadow-sm w-fit mx-auto">
               <SvgPanel
                 containerId="svg-openmouth"
-                SvgComponent={DogOpenmouthSvg}
+                SvgComponent={DogOpenmouthSvgB}
                 selectedToothId={selectedToothId}
                 teeth={teeth}
                 onToothClick={setSelectedToothId}
                 label="구강 전개도"
+                svgStyle={{ height: '500px', width: 'auto' }}
               />
             </div>
           )}
@@ -349,19 +350,33 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
                   species={species}
                 />
               ) : (
-                <div className="flex flex-col gap-4">
-                  <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-lg">
-                      {selectedToothId}
-                    </span>
-                    <span className="text-slate-600 font-medium">
-                      {toothNames[selectedToothId] ?? `치아 #${selectedToothId}`}
-                    </span>
-                  </h3>
-                  <div className="p-8 border-2 border-dashed border-slate-200 rounded-xl text-center">
-                    <p className="text-slate-400 text-sm italic">기록된 차트 정보가 없습니다.</p>
-                  </div>
-                </div>
+                (() => {
+                  const hasImages = images.some(img => img.tooth_ids?.includes(selectedToothId!))
+                  if (hasImages) {
+                    return (
+                      <DentalToothDetailView 
+                        tooth={{ tooth_id: Number(selectedToothId), hos_id: '', chart_id: '' } as DentalTooth} 
+                        images={images} 
+                        species={species}
+                      />
+                    )
+                  }
+                  return (
+                    <div className="flex flex-col gap-4">
+                      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-lg">
+                          {selectedToothId}
+                        </span>
+                        <span className="text-slate-600 font-medium">
+                          {toothNames[selectedToothId!] ?? `치아 #${selectedToothId}`}
+                        </span>
+                      </h3>
+                      <div className="p-8 border-2 border-dashed border-slate-200 rounded-xl text-center">
+                        <p className="text-slate-400 text-sm italic">기록된 차트 정보가 없습니다.</p>
+                      </div>
+                    </div>
+                  )
+                })()
               )}
             </div>
           ) : (

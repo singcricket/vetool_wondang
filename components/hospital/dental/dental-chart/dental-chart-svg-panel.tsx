@@ -7,7 +7,8 @@ import type { DentalTooth } from '@/types/dental/dental-type'
 type Props = {
   species: string
   selectedToothId: string | null
-  onToothClick: (id: string) => void
+  selectedToothIds?: string[]
+  onToothClick: (id: string, e?: React.MouseEvent) => void
   teeth: DentalTooth[]
 }
 
@@ -29,6 +30,7 @@ function getRecordedToothIds(teeth: DentalTooth[]): Set<string> {
 export default function DentalChartSvgPanel({
   species,
   selectedToothId,
+  selectedToothIds,
   onToothClick,
   teeth,
 }: Props) {
@@ -41,6 +43,7 @@ export default function DentalChartSvgPanel({
         {isFeline ? (
           <DentalChartFelineCombined
             selectedToothId={selectedToothId}
+            selectedToothIds={selectedToothIds}
             onToothClick={onToothClick}
             teeth={teeth}
             style={{ width: '100%', height: 'auto', display: 'block' }}
@@ -48,6 +51,7 @@ export default function DentalChartSvgPanel({
         ) : (
           <DentalChartCanineCombined
             selectedToothId={selectedToothId}
+            selectedToothIds={selectedToothIds}
             onToothClick={onToothClick}
             teeth={teeth}
             style={{ width: '100%', height: 'auto', display: 'block' }}
