@@ -13,41 +13,13 @@ import DogSkullRightSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_sk
 import CatOpenteethSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_openteeth'
 import CatSkullLeftSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_skull_left'
 import CatSkullRightSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_skull_right'
+import {
+  CANINE_TOOTH_NAMES,
+  FELINE_TOOTH_NAMES,
+  DENTAL_CHART_COLORS
+} from '@/constants/hospital/dental/dental_svg_imgs/dental-svg-info'
 
-// ─── Tooth name maps ────────────────────────────────────────────────────────
-const CANINE_TOOTH_NAMES: Record<string, string> = {
-  '101': '우측 상악 제1절치', '102': '우측 상악 제2절치', '103': '우측 상악 제3절치',
-  '104': '우측 상악 견치', '105': '우측 상악 제1전구치', '106': '우측 상악 제2전구치',
-  '107': '우측 상악 제3전구치', '108': '우측 상악 제4전구치 (P4)',
-  '109': '우측 상악 제1후구치', '110': '우측 상악 제2후구치',
-  '201': '좌측 상악 제1절치', '202': '좌측 상악 제2절치', '203': '좌측 상악 제3절치',
-  '204': '좌측 상악 견치', '205': '좌측 상악 제1전구치', '206': '좌측 상악 제2전구치',
-  '207': '좌측 상악 제3전구치', '208': '좌측 상악 제4전구치 (P4)',
-  '209': '좌측 상악 제1후구치', '210': '좌측 상악 제2후구치',
-  '301': '좌측 하악 제1절치', '302': '좌측 하악 제2절치', '303': '좌측 하악 제3절치',
-  '304': '좌측 하악 견치', '305': '좌측 하악 제1전구치', '306': '좌측 하악 제2전구치',
-  '307': '좌측 하악 제3전구치', '308': '좌측 하악 제4전구치',
-  '309': '좌측 하악 제1후구치 (M1)', '310': '좌측 하악 제2후구치', '311': '좌측 하악 제3후구치',
-  '401': '우측 하악 제1절치', '402': '우측 하악 제2절치', '403': '우측 하악 제3절치',
-  '404': '우측 하악 견치', '405': '우측 하악 제1전구치', '406': '우측 하악 제2전구치',
-  '407': '우측 하악 제3전구치', '408': '우측 하악 제4전구치',
-  '409': '우측 하악 제1후구치 (M1)', '410': '우측 하악 제2후구치', '411': '우측 하악 제3후구치',
-}
 
-const FELINE_TOOTH_NAMES: Record<string, string> = {
-  '101': '우측 상악 제1절치', '102': '우측 상악 제2절치', '103': '우측 상악 제3절치',
-  '104': '우측 상악 견치', '106': '우측 상악 제3전구치', '107': '우측 상악 제4전구치 (P4)',
-  '108': '우측 상악 제1후구치',
-  '201': '좌측 상악 제1절치', '202': '좌측 상악 제2절치', '203': '좌측 상악 제3절치',
-  '204': '좌측 상악 견치', '206': '좌측 상악 제3전구치', '207': '좌측 상악 제4전구치 (P4)',
-  '208': '좌측 상악 제1후구치',
-  '301': '좌측 하악 제1절치', '302': '좌측 하악 제2절치', '303': '좌측 하악 제3절치',
-  '304': '좌측 하악 견치', '307': '좌측 하악 제3전구치', '308': '좌측 하악 제4전구치',
-  '309': '좌측 하악 제1후구치 (M1)',
-  '401': '우측 하악 제1절치', '402': '우측 하악 제2절치', '403': '우측 하악 제3절치',
-  '404': '우측 하악 견치', '407': '우측 하악 제3전구치', '408': '우측 하악 제4전구치',
-  '409': '우측 하악 제1후구치 (M1)',
-}
 
 // ─── CSS 생성 (뷰마다 고유 id를 사용해 격리) ──────────────────────────────
 function buildCss(containerId: string, selectedToothId: string | null, teeth: DentalTooth[]): string {
@@ -85,7 +57,7 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
         #${containerId} path[id="${tid}"],
         #${containerId} g[id="${tid}"] > path {
           opacity: 0.3 !important;
-          stroke: #94a3b8 !important;
+          stroke: ${DENTAL_CHART_COLORS.preExtracted} !important;
           stroke-width: 1.5px !important;
           stroke-dasharray: 3, 2 !important;
           ${isSelected ? 'transform: scale(1.1); transform-box: fill-box; transform-origin: center; opacity: 0.5 !important;' : ''}
@@ -93,13 +65,13 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
       `
     } else {
       let color = ''
-      if (isTreatmentExt) color = '#f987c2ff'    // Pink   — 치료발치
-      else if (isSelected) color = '#6366f1'   // Indigo — 선택
-      else if (priority === 'urgent') color = '#ef4444'      // Red    — 긴급
-      else if (priority === 'recommended') color = '#f97316' // Orange — 권장
-      else if (priority === 'elective') color = '#3b82f6'    // Blue   — 선택적
-      else if (priority === 'monitor') color = '#eab308'     // Yellow — 모니터링
-      else if (hasFindings) color = '#10b981'  // Green  — 기타 소견/치료
+      if (isTreatmentExt) color = DENTAL_CHART_COLORS.treatmentExt
+      else if (isSelected) color = DENTAL_CHART_COLORS.selected
+      else if (priority === 'urgent') color = DENTAL_CHART_COLORS.urgent
+      else if (priority === 'recommended') color = DENTAL_CHART_COLORS.recommended
+      else if (priority === 'elective') color = DENTAL_CHART_COLORS.elective
+      else if (priority === 'monitor') color = DENTAL_CHART_COLORS.monitor
+      else if (hasFindings) color = DENTAL_CHART_COLORS.findings
 
       if (color) {
         const isActuallySelected = isSelected && !isPreExtracted
@@ -129,7 +101,7 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
     }
     #${containerId} path[id]:hover,
     #${containerId} g[id]:hover > path {
-      stroke: #6366f1 !important;
+      stroke: ${DENTAL_CHART_COLORS.selected} !important;
       stroke-width: 2px !important;
       opacity: 0.9;
     }
@@ -225,7 +197,7 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
 
   const [selectedToothId, setSelectedToothId] = useState<string | null>(null)
   // 개 전용: 구강 전개도 표시 토글
-  const [showOpenmouth, setShowOpenmouth] = useState(false)
+  const [showOpenmouth, setShowOpenmouth] = useState(true)
 
   const selectedTooth = teeth.find((t) => String(t.tooth_id) === selectedToothId)
 
@@ -254,7 +226,7 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
                 : 'bg-white text-slate-500 border-slate-200 hover:border-violet-300 hover:text-violet-600'
             }`}
           >
-            👄 구강 전개도
+            {showOpenmouth ? "구강 전개도 숨기기" : "구강 전개도 보기"}
           </button>
         )}
 

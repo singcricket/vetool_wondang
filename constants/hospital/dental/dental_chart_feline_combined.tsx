@@ -31,6 +31,7 @@ export const toothNames_kr: Record<string, string> = {
   "407":"우측 하악 제3전구치","408":"우측 하악 제4전구치","409":"우측 하악 제1후구치 (M1)","410":"우측 하악 제2후구치","411":"우측 하악 제3후구치"
 };
 
+import { DENTAL_CHART_COLORS } from "./dental_svg_imgs/dental-svg-info";
 import type { DentalTooth } from "@/types/dental/dental-type";
 
 export interface DentalChartFelineCombinedProps extends React.SVGProps<SVGSVGElement> {
@@ -184,33 +185,46 @@ function ToothHit({
   let strokeDasharray = "none";
 
   if (selected) {
-    fill = "rgba(34,85,170,0.18)";
-    stroke = "#2255aa";
-    strokeWidth = 1.5;
+    fill = `${DENTAL_CHART_COLORS.selected}2e`; // ~18% alpha
+    stroke = DENTAL_CHART_COLORS.selected;
+    strokeWidth = 2;
     strokeDasharray = "4 2";
   } else if (toothData) {
-    const isExtractedDone =  toothData.treatment_done?.some(t => ['X', 'XS', 'XSS'].includes(t));
-    const isExtractionPlanned = toothData.treatment_plan?.some(t => ['X', 'XS', 'XSS'].includes(t));
-    const isMissing = toothData.status === 'FE' || toothData.status === 'ANO';
-    const hasOtherTx = toothData.treatment_done && toothData.treatment_done.some(t => !['X', 'XS', 'XSS'].includes(t));
+    const isExtractedDone = toothData.treatment_done?.some(t => ['X', 'XS', 'XSS', 'EXT'].includes(t.toUpperCase()));
+    const isExtractionPlanned = toothData.treatment_plan?.some(t => ['X', 'XS', 'XSS', 'EXT'].includes(t.toUpperCase()));
+    const isMissing = toothData.status === 'FE' || toothData.status === 'ANO' || toothData.status === 'EXTRACTED' || toothData.status === 'MISSING';
+    const hasOtherTx = toothData.treatment_done && toothData.treatment_done.some(t => !['X', 'XS', 'XSS', 'EXT'].includes(t.toUpperCase()));
     const hasLesion = (toothData.fracture && toothData.fracture !== 'none') || 
                       (toothData.caries && toothData.caries !== 'none') || 
                       (toothData.resorption_stage && toothData.resorption_stage !== 'none');
+    const priority = toothData.treatment_priority?.toLowerCase();
 
     if (isMissing) {
-      fill = "rgba(128, 128, 128, 0.5)";
+      fill = `${DENTAL_CHART_COLORS.preExtracted}80`; // 50% alpha
     } else if (isExtractedDone) {
-      fill = "rgba(255, 0, 0, 0.2)";
+      fill = `${DENTAL_CHART_COLORS.treatmentExt.slice(0, 7)}33`; // ~20% alpha
     } else if (isExtractionPlanned) {
-      fill = "rgba(255, 0, 0, 0.08)";
-      stroke = "red";
+      fill = `${DENTAL_CHART_COLORS.treatmentExt.slice(0, 7)}14`; // ~8% alpha
+      stroke = DENTAL_CHART_COLORS.treatmentExt.slice(0, 7);
       strokeWidth = 1.5;
       strokeDasharray = "4 2";
+    } else if (priority === 'urgent') {
+      stroke = DENTAL_CHART_COLORS.urgent;
+      strokeWidth = 2.5;
+    } else if (priority === 'recommended') {
+      stroke = DENTAL_CHART_COLORS.recommended;
+      strokeWidth = 2.5;
+    } else if (priority === 'elective') {
+      stroke = DENTAL_CHART_COLORS.elective;
+      strokeWidth = 2.5;
+    } else if (priority === 'monitor') {
+      stroke = DENTAL_CHART_COLORS.monitor;
+      strokeWidth = 2.5;
     } else if (hasOtherTx) {
-      stroke = "green";
+      stroke = DENTAL_CHART_COLORS.findings;
       strokeWidth = 1.5;
     } else if (hasLesion) {
-      stroke = "orange";
+      stroke = DENTAL_CHART_COLORS.recommended;
       strokeWidth = 2;
     }
   }
@@ -260,6 +274,7 @@ export const DentalChartFelineCombined = ({
           #dental-chart rect[id^="hit-"]:hover { fill: rgba(34,85,170,0.09) !important; }
           .dc-lbl { font: 9px sans-serif; fill: #888; }
           .dc-sec { font: bold 9px sans-serif; fill: #666; }
+          .dc-sel-text { fill: ${DENTAL_CHART_COLORS.selected} !important; font-weight: bold !important; }
         `}}/>
       </defs>
 
@@ -337,10 +352,10 @@ export const DentalChartFelineCombined = ({
           return (
             <text key={`n-${id}`}
               x={cx} y={ROW.maxB.y + ROW.maxB.h - 3}
+              className={sel(id) ? "dc-sel-text" : "dc-lbl"}
               textAnchor="middle"
               style={{
-                font: `${sel(id) ? "bold " : ""}10px sans-serif`,
-                fill: sel(id) ? "#2255aa" : "#ccc",
+                fontSize: "10px",
                 pointerEvents: "none",
               }}
             >{id}</text>
@@ -352,10 +367,10 @@ export const DentalChartFelineCombined = ({
           return (
             <text key={`n-${id}`}
               x={cx} y={ROW.manB.y + 9}
+              className={sel(id) ? "dc-sel-text" : "dc-lbl"}
               textAnchor="middle"
               style={{
-                font: `${sel(id) ? "bold " : ""}10px sans-serif`,
-                fill: sel(id) ? "#2255aa" : "#ccc",
+                fontSize: "10px",
                 pointerEvents: "none",
               }}
             >{id}</text>

@@ -11,6 +11,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { DialogTitle, DialogDescription } from '@radix-ui/react-dialog'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/utils'
+import { DENTAL_CHART_COLORS, PRIORITY_LABELS } from '@/constants/hospital/dental/dental_svg_imgs/dental-svg-info'
 
 const DentalImageWithMark = dynamic(() => import('../dental-image-with-mark'), { 
   ssr: false,
@@ -563,18 +564,10 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                         className="text-[10px] px-2 py-0.5 rounded-full text-white font-bold"
                         style={{ 
                           backgroundColor: 
-                            tooth.treatment_priority.toLowerCase() === 'urgent' ? '#ef4444' :
-                            tooth.treatment_priority.toLowerCase() === 'recommended' ? '#f97316' :
-                            tooth.treatment_priority.toLowerCase() === 'elective' ? '#3b82f6' :
-                            tooth.treatment_priority.toLowerCase() === 'monitor' ? '#eab308' :
-                            '#94a3b8'
+                            DENTAL_CHART_COLORS[tooth.treatment_priority.toLowerCase() as keyof typeof DENTAL_CHART_COLORS] || DENTAL_CHART_COLORS.preExtracted
                         }}
                       >
-                        {tooth.treatment_priority.toLowerCase() === 'urgent' ? '긴급' :
-                         tooth.treatment_priority.toLowerCase() === 'recommended' ? '권장' :
-                         tooth.treatment_priority.toLowerCase() === 'elective' ? '선택적' :
-                         tooth.treatment_priority.toLowerCase() === 'monitor' ? '모니터링' : 
-                         tooth.treatment_priority}
+                        {PRIORITY_LABELS[tooth.treatment_priority.toLowerCase()] || tooth.treatment_priority}
                       </span>
                     )}
                   </h3>

@@ -278,7 +278,7 @@ export default function DentalToothForm({ toothIds, chartDetail, hosId, existing
           treatment_priority: priority,
           xray_finding: xrayFinding || null,
           tooth_note: toothNote || null,
-        })
+        }, isMulti)
       )
       
       await Promise.all(promises)
