@@ -161,21 +161,34 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
     }
   }, [])
 
-  const handleImageClick = (img: ManageableImage, e: React.MouseEvent) => {
+  const handleImageClick = (img: ManageableImage, e: React.MouseEvent | React.TouchEvent) => {
     // 만약 롱클릭 상태였다면 클릭(선택) 이벤트 무시
     if (isLongPressed.current) {
       isLongPressed.current = false
       return
     }
-    toggleSelect(img.dental_image_id)
+
+    const isMultiKey = ('ctrlKey' in e && (e.ctrlKey || e.metaKey))
+
+    setImages(prev => prev.map(item => {
+      if (item.dental_image_id === img.dental_image_id) {
+        // 다중 선택 키를 누른 경우 토글, 아닌 경우 무조건 선택
+        return { ...item, selected: isMultiKey ? !item.selected : true }
+      }
+      // 다중 선택 키를 누르지 않은 경우 다른 이미지는 모두 선택 해제
+      return isMultiKey ? item : { ...item, selected: false }
+    }))
   }
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row bg-slate-50/50 h-[70vh]">
+    <div className="flex-1 flex flex-col bg-slate-50/50 h-[75vh] min-h-[500px] overflow-hidden">
+      
+      {/* 바디 컨텐츠 (좌우 판넬) */}
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           
-      {/* LEFT PANE: 등록된 이미지 목록 */}
-      <div className="flex-1 flex flex-col p-4 overflow-auto border-r h-full relative">
-        <div className="flex justify-between items-center mb-4 px-1 shrink-0">
+        {/* LEFT PANE: 등록된 이미지 목록 */}
+        <div className="flex-1 flex flex-col border-r min-h-0 relative bg-white/50 overflow-hidden">
+          <div className="flex justify-between items-center p-4 pb-2 shrink-0 bg-white/80 backdrop-blur-sm z-10 border-b">
           <h3 className="text-sm font-medium text-slate-700">기존 이미지 보관함 ({images.length})</h3>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={selectAll} className="text-xs h-7 text-blue-600">전체 선택</Button>
@@ -191,7 +204,8 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
              <p>아직 저장된 이미지가 없습니다.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 overflow-y-auto outline-none pb-4 px-1 content-start flex-1">
+          <div className="flex-1 overflow-y-auto min-h-0 p-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4 outline-none pb-12 content-start">
             {images.map((img) => (
               <div 
                 key={img.dental_image_id}
@@ -239,12 +253,13 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
                 )}
               </div>
             ))}
+            </div>
           </div>
         )}
       </div>
 
       {/* RIGHT PANE: 태그 관리 및 삭제 */}
-      <div className="w-full md:w-80 flex flex-col shrink-0 bg-white border-l h-full relative overflow-hidden">
+      <div className="w-full md:w-80 flex flex-col shrink-0 bg-white border-l min-h-0 relative overflow-hidden">
         <div className="p-4 bg-slate-50 border-b shrink-0">
           <h3 className="font-semibold text-slate-800">일괄 관리 하기</h3>
           <p className="text-xs text-slate-500 mt-1 flex gap-1 bg-amber-50 p-1.5 rounded text-amber-800 my-2">
@@ -252,7 +267,7 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
           </p>
         </div>
 
-        <div className={cn("p-4 flex-1 space-y-6 overflow-y-auto pb-44", selectedCount === 0 && "opacity-40 pointer-events-none")}>
+        <div className={cn("p-4 flex-1 space-y-6 overflow-y-auto min-h-0", selectedCount === 0 && "opacity-40 pointer-events-none")}>
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">방사선 사진 (X-Ray)</Label>
             <Switch checked={commonIsRadio} onCheckedChange={handleIsRadioChange} />
@@ -276,8 +291,11 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
         </div>
       </div>
 
-      {/* 하단 전체 액션 바 */}
-      <div className="p-4 border-t bg-white shrink-0 w-full h-20 flex absolute bottom-0 left-0 right-0 z-30 items-center shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+      {/* 바디 컨틴츠 (좌우 판넬) 끝 */}
+      </div>
+
+      {/* 하단 전체 액션 바 (Sticky Footer) */}
+      <div className="p-4 border-t bg-white shrink-0 w-full h-20 flex items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-30">
         <div className="w-full flex justify-between items-center px-4">
           <div className="text-sm text-slate-500">
             {images.length}개의 이미지 중 <span className="font-bold text-blue-600">{selectedCount}개</span> 선택됨
