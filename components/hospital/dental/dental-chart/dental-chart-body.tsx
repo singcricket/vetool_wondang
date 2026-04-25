@@ -10,7 +10,7 @@ import DentalChartGeneralPanel from './dental-chart-general-panel'
 import DentalImageUploadDialog from '../dental-image-uploader/dental-image-upload-dialog'
 import DentalReportDialog from '../dental-report/dental-report-dialog'
 import DentalChartTestPanel from './dental-chart-test-panel'
-import { LayoutDashboard, Activity, SquareGanttChart, MonitorPlay, ImageIcon } from 'lucide-react'
+import { LayoutDashboard, Activity, SquareGanttChart, MonitorPlay, ImageIcon, X } from 'lucide-react'
 import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
 import type { DentalImage } from '@/types/dental/dental-type'
 import { Button } from '@/components/ui/button'
@@ -201,7 +201,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
 
       {/* ── 다중 선택 시 일괄 편집 버튼 ── */}
       {selectedToothIds.length > 1 && !dialogOpen && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 flex items-center gap-2">
           <Button
             onClick={() => {
               setExistingTooth(undefined)
@@ -212,6 +212,16 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
           >
             <SquareGanttChart className="w-5 h-5" />
             <span className="font-bold text-lg">{selectedToothIds.length}개 치아 일괄 편집</span>
+          </Button>
+
+          <Button
+            onClick={() => setSelectedToothIds([])}
+            variant="outline"
+            size="icon"
+            className="rounded-full shadow-xl bg-white hover:bg-slate-50 border-4 border-white h-14 w-14 shrink-0 transition-all hover:scale-110 active:scale-95"
+            title="선택 해제"
+          >
+            <X className="w-6 h-6 text-slate-500" />
           </Button>
         </div>
       )}

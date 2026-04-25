@@ -29,7 +29,7 @@ const DentalImageWithMark = dynamic(() => import('../dental-image-with-mark'), {
   loading: () => <div className="aspect-square bg-slate-100 flex items-center justify-center text-[10px] text-slate-400">Loading...</div>
 })
 
-type ManageableImage = DentalImage & { selected?: boolean }
+type ManageableImage = DentalImage & { selected?: boolean; isDirty?: boolean }
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -53,7 +53,7 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
     setIsLoading(true)
     try {
       const data = await getDentalImages(chartDetail.id)
-      setImages(data.map(img => ({ ...img, selected: false })))
+      setImages(data.map(img => ({ ...img, selected: false, isDirty: false })))
     } catch (e: any) {
       toast.error('불러오기 실패', { description: e.message })
     } finally {
@@ -65,13 +65,12 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
     fetchImages()
   }, [chartDetail.id])
 
-  const toggleSelect = (id: string, e: React.MouseEvent | React.TouchEvent) => {
-    const isMulti = (e as React.MouseEvent).ctrlKey || (e as React.MouseEvent).metaKey
+  const toggleSelect = (id: string) => {
     setImages(prev => prev.map(img => {
       if (img.dental_image_id === id) {
-        return { ...img, selected: isMulti ? !img.selected : true }
+        return { ...img, selected: !img.selected }
       }
-      return isMulti ? img : { ...img, selected: false }
+      return img
     }))
   }
 
@@ -90,7 +89,7 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
     : []
 
   const updateSelectedImages = (updater: (img: ManageableImage) => ManageableImage) => {
-    setImages(prev => prev.map(img => img.selected ? updater(img) : img))
+    setImages(prev => prev.map(img => img.selected ? { ...updater(img), isDirty: true } : img))
   }
 
   const handleIsRadioChange = (checked: boolean) => updateSelectedImages(img => ({ ...img, is_radio: checked }))
@@ -98,7 +97,7 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
   const handleOtherTagsChange = (tags: string[]) => updateSelectedImages(img => ({ ...img, other_tags: tags }))
 
   const handleSaveUpdates = async () => {
-    const toUpdate = images.filter(img => img.selected)
+    const toUpdate = images.filter(img => img.isDirty)
     if (toUpdate.length === 0) return
 
     setIsProcessing(true)
@@ -119,8 +118,9 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
       })
 
       await updateDentalImages(payload, hosId)
-      toast.success(`${toUpdate.length}장의 설정이 저장되었습니다.`)
+      toast.success(`${toUpdate.length}장의 사진 정보가 저장되었습니다.`)
       await fetchImages()
+      setImages(prev => prev.map(img => ({ ...img, isDirty: false })))
     } catch (e: any) {
       toast.error('저장 실패', { description: e.message })
     } finally {
@@ -167,7 +167,7 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
       isLongPressed.current = false
       return
     }
-    toggleSelect(img.dental_image_id, e)
+    toggleSelect(img.dental_image_id)
   }
 
   return (
@@ -231,6 +231,12 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
                     <span className="text-xs font-bold text-wrap leading-none">✓</span>
                   </div>
                 )}
+
+                {img.isDirty && (
+                  <div className="absolute top-1 right-1 bg-amber-500 text-white px-1 reserved rounded text-[8px] font-bold z-10 shadow-sm animate-pulse">
+                    MODIFIED
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -285,8 +291,8 @@ export default function DentalImageManageTab({ chartDetail, teeth, hosId }: Prop
             >
                <Trash2 className="w-4 h-4 mr-2" /> 선택 삭제
             </Button>
-            <Button onClick={handleSaveUpdates} disabled={selectedCount === 0 || isProcessing} className="h-10 px-8 font-bold">
-              {isProcessing ? '처리 중...' : '변경사항 저장'}
+            <Button onClick={handleSaveUpdates} disabled={(images.filter(img => img.isDirty).length === 0) || isProcessing} className="h-10 px-8 font-bold">
+              {isProcessing ? '처리 중...' : `변경사항 저장 (${images.filter(img => img.isDirty).length})`}
             </Button>
           </div>
         </div>

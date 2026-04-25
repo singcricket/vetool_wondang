@@ -64,6 +64,9 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
     const status = t.status?.toUpperCase()
     const isPreExtracted = status === 'FE' || status === 'ANO' || status === 'EXTRACTED' || status === 'MISSING'
 
+    // 치료 우선순위 (urgent, recommended, elective, monitor)
+    const priority = t.treatment_priority?.toLowerCase()
+
     // 소견/치료 있음 (PRO, RAD 제외)
     const EXCLUDED_TREATMENTS = ['PRO', 'RAD']
     const hasFindings = [
@@ -75,7 +78,7 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
 
     let rule = ''
 
-    // 우선순위: FE/ANO > EXT > 선택 > 소견 있음
+    // 우선순위: FE/ANO > EXT > 선택 > 우선순위(U/R/E/M) > 소견 있음
     if (isPreExtracted) {
       // 기발치/결손: 반투명 + 점선 (형태는 보이게)
       rule = `
@@ -90,9 +93,13 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
       `
     } else {
       let color = ''
-      if (isTreatmentExt) color = '#f472b6'    // Pink  — 치료발치
+      if (isTreatmentExt) color = '#f987c2ff'    // Pink   — 치료발치
       else if (isSelected) color = '#6366f1'   // Indigo — 선택
-      else if (hasFindings) color = '#10b981'  // Green  — 소견/치료
+      else if (priority === 'urgent') color = '#ef4444'      // Red    — 긴급
+      else if (priority === 'recommended') color = '#f97316' // Orange — 권장
+      else if (priority === 'elective') color = '#3b82f6'    // Blue   — 선택적
+      else if (priority === 'monitor') color = '#eab308'     // Yellow — 모니터링
+      else if (hasFindings) color = '#10b981'  // Green  — 기타 소견/치료
 
       if (color) {
         const isActuallySelected = isSelected && !isPreExtracted

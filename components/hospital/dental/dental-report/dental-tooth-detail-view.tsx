@@ -174,6 +174,25 @@ export default function DentalToothDetailView({ tooth, images, isShared, species
         <span className="text-slate-600 font-medium">
           {toothNames[toothIdStr]}
         </span>
+        {tooth.treatment_priority && (
+          <span 
+            className="text-[10px] px-2 py-0.5 rounded-full text-white font-bold"
+            style={{ 
+              backgroundColor: 
+                tooth.treatment_priority.toLowerCase() === 'urgent' ? '#ef4444' :
+                tooth.treatment_priority.toLowerCase() === 'recommended' ? '#f97316' :
+                tooth.treatment_priority.toLowerCase() === 'elective' ? '#3b82f6' :
+                tooth.treatment_priority.toLowerCase() === 'monitor' ? '#eab308' :
+                '#94a3b8'
+            }}
+          >
+            {tooth.treatment_priority.toLowerCase() === 'urgent' ? '긴급' :
+             tooth.treatment_priority.toLowerCase() === 'recommended' ? '권장' :
+             tooth.treatment_priority.toLowerCase() === 'elective' ? '선택적' :
+             tooth.treatment_priority.toLowerCase() === 'monitor' ? '모니터링' : 
+             tooth.treatment_priority}
+          </span>
+        )}
       </h3>
 
       <div className="grid grid-cols-1 gap-6">
