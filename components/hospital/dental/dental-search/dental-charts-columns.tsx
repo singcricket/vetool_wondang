@@ -40,11 +40,16 @@ export const dentalChartsColumns = (hosId: string): ColumnDef<DentalChartWithPat
       )
     },
     filterFn: (row, columnId, filterValue) => {
-      const name = (row.original.patient.name) ?? ''
-      const hosPatientId = (row.original.patient.hos_patient_id) ?? ''
-      const tags = (row.original.tags as string) ?? ''
-      const search = filterValue.toLowerCase()
-      return name.toLowerCase().includes(search) || hosPatientId.toLowerCase().includes(search) || tags.toLowerCase().includes(search)
+      const name = row.original.patient?.name ?? ''
+      const hosPatientId = row.original.patient?.hos_patient_id ?? ''
+      const tags = row.original.tags ?? ''
+      const search = (filterValue as string ?? '').toLowerCase()
+
+      return (
+        name.toLowerCase().includes(search) || 
+        hosPatientId.toLowerCase().includes(search) || 
+        tags.toLowerCase().includes(search)
+      )
     }
   },
   {

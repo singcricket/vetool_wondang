@@ -181,6 +181,8 @@ export type DentalChart = {
   memo?: string | null
   general_note?: string | null
   anesthesia?: boolean | null
+  tags?: string | null
+  user_tags?: string | null
   created_at: string
   updated_at: string
 }

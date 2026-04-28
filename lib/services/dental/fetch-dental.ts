@@ -79,3 +79,22 @@ export async function getDentalCharts(
 
   return data as unknown as DentalChartWithPatient[]
 }
+
+// =============================================
+// 환자의 과거 차위 목록 조회
+// =============================================
+export async function fetchPatientDentalHistory(
+  patientId: string,
+): Promise<{ id: string; chart_date: string }[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('dental_charts')
+    .select('id, chart_date')
+    .eq('patient_id', patientId)
+    .order('chart_date', { ascending: false })
+
+  if (error) throw new Error(`fetchPatientDentalHistory: ${error.message}`)
+
+  return data ?? []
+}
