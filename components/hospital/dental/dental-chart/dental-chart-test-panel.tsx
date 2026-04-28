@@ -7,10 +7,11 @@ import DentalToothDetailView from '@/components/hospital/dental/dental-report/de
 
 // SVG imports
 import DogOpenteethSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_openteeth'
-import DogOpenmouthSvgB from '@/constants/hospital/dental/dental_svg_imgs/canine_openmouthB'
+import DogOpenmouthSvgA from '@/constants/hospital/dental/dental_svg_imgs/canine_openmouthA'
 import DogSkullLeftSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_skull_left'
 import DogSkullRightSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_skull_right'
 import CatOpenteethSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_openteeth'
+import CatOpenmouthSvgA from '@/constants/hospital/dental/dental_svg_imgs/cat_openmouthA'
 import CatSkullLeftSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_skull_left'
 import CatSkullRightSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_skull_right'
 import {
@@ -202,6 +203,7 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
   const selectedTooth = teeth.find((t) => String(t.tooth_id) === selectedToothId)
 
   // SVG 컴포넌트 결정
+  const OpenmouthSvg = isFeline ? CatOpenmouthSvgA : DogOpenmouthSvgA
   const OpenteethSvg = isFeline ? CatOpenteethSvg : DogOpenteethSvg
   const SkullRightSvg = isFeline ? CatSkullRightSvg : DogSkullRightSvg
   const SkullLeftSvg = isFeline ? CatSkullLeftSvg : DogSkullLeftSvg
@@ -251,12 +253,12 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
 
         {/* ── SVG 패널 영역 ── */}
         <div className="flex-none overflow-auto p-3 border-r bg-white/40">
-          {/* 구강 전개도 (개만, 토글 시) */}
+          {/* 구강 전개도 */}
           { showOpenmouth && (
             <div className="mb-4 border rounded-xl bg-white/60 p-3 shadow-sm w-fit mx-auto">
               <SvgPanel
                 containerId="svg-openmouth"
-                SvgComponent={DogOpenmouthSvgB}
+                SvgComponent={OpenmouthSvg}
                 selectedToothId={selectedToothId}
                 teeth={teeth}
                 onToothClick={setSelectedToothId}
