@@ -102,7 +102,32 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
 
       if (!reportRef.current) throw new Error('Ref not found')
 
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, logging: false })
+      // 요소의 실제 높이 계산
+      const element = reportRef.current
+      const height = element.scrollHeight
+      const width = element.scrollWidth
+      
+      // 브라우저 캔버스 제한(약 16384px)을 고려한 스케일 조정
+      let scale = 2
+      if (height * scale > 15000) {
+        scale = 15000 / height
+        if (scale < 1) scale = 1
+      }
+
+      const canvas = await html2canvas(element, { 
+        scale, 
+        useCORS: true, 
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        onclone: (clonedDoc) => {
+          // 클론된 문서에서 스크롤 컨테이너 등을 조정할 수 있음
+          const el = clonedDoc.getElementById('report-scroll-container')
+          if (el) el.style.overflow = 'visible'
+        }
+      })
+      
       const imgData = canvas.toDataURL('image/png')
       
       const pdf = new jsPDF('p', 'mm', 'a4')
@@ -112,20 +137,51 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
       const imgWidth = pageWidth - 20
       const imgHeight = imgWidth * imgRatio
 
-      // 페이지 분할 로직 탑재
+      // 페이지 분할 로직
       let yOffset = 0
+      let pageCount = 0
       while (yOffset < imgHeight) {
-        if (yOffset > 0) pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 10, 10 - yOffset, imgWidth, imgHeight)
-        yOffset += pageHeight - 20
+        if (pageCount > 0) pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 10, 10 - (pageCount * (pageHeight - 20) * (imgHeight / (pageHeight * imgRatio))), imgWidth, imgHeight)
+        
+        // 정교한 페이지 계산을 위해 비율 고려
+        yOffset += (pageHeight - 20) * (imgHeight / (pageHeight * imgRatio)) 
+        pageCount++
+        
+        // 무한 루프 방지
+        if (pageCount > 50) break 
       }
       
-      pdf.save(`dental_report_${chartDetail.patient?.name ?? 'patient'}_${chartDetail.chart_date}.pdf`)
+      // 실제로는 yOffset 기반보다 페이지 높이 비율로 자르는게 정확함
+      // 단순화된 페이지 분할 재구현 (더 정확한 버전)
+      const pdfFull = new jsPDF('p', 'mm', 'a4')
+      const pW = pdfFull.internal.pageSize.getWidth()
+      const pH = pdfFull.internal.pageSize.getHeight()
+      const contentW = pW - 20
+      const contentH = contentW * (canvas.height / canvas.width)
+      
+      let heightLeft = contentH
+      let position = 10
+      let page = 1
+
+      pdfFull.addImage(imgData, 'PNG', 10, position, contentW, contentH)
+      heightLeft -= (pH - 20)
+
+      while (heightLeft >= 0) {
+        position = heightLeft - contentH + 10
+        pdfFull.addPage()
+        pdfFull.addImage(imgData, 'PNG', 10, position, contentW, contentH)
+        heightLeft -= (pH - 20)
+        page++
+        if (page > 50) break
+      }
+
+      pdfFull.save(`dental_report_${chartDetail.patient?.name ?? 'patient'}_${chartDetail.chart_date}.pdf`)
       
       toast.success('PDF 생성 완료', { id: 'pdf-export' })
     } catch (e) {
-      console.error(e)
-      toast.error('PDF 내보내기 실패.', { id: 'pdf-export' })
+      console.error('PDF Export Error:', e)
+      toast.error('PDF 내보내기 실패. 리포트가 너무 길거나 이미지가 많을 수 있습니다.', { id: 'pdf-export' })
     }
   }
 
@@ -136,7 +192,21 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
 
       if (!reportRef.current) throw new Error('Ref not found')
 
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, logging: false })
+      const element = reportRef.current
+      const height = element.scrollHeight
+      
+      let scale = 2
+      if (height * scale > 15000) {
+        scale = 15000 / height
+        if (scale < 1) scale = 1
+      }
+
+      const canvas = await html2canvas(element, { 
+        scale, 
+        useCORS: true, 
+        logging: false,
+        backgroundColor: '#ffffff'
+      })
       const url = canvas.toDataURL('image/png')
       
       const link = document.createElement('a')
@@ -146,8 +216,8 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
       
       toast.success('이미지 저장 완료', { id: 'png-export' })
     } catch (e) {
-      console.error(e)
-      toast.error('PNG 내보내기 실패.', { id: 'png-export' })
+      console.error('PNG Export Error:', e)
+      toast.error('PNG 저장 실패.', { id: 'png-export' })
     }
   }
 

@@ -74,8 +74,20 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
 
     let rule = ''
 
-    // 우선순위: FE/ANO > EXT > 선택 > 우선순위(U/R/E/M) > 소견 있음
-    if (isPreExtracted) {
+    // 우선순위: 선택 > FE/ANO > EXT > 우선순위(U/R/E/M) > 소견 있음
+    if (isSelected) {
+      // 선택된 치아: 최우선순위
+      rule = `
+        #${containerId} path[id="${tid}"],
+        #${containerId} g[id="${tid}"] > path {
+          stroke: ${DENTAL_CHART_COLORS.selected} !important;
+          stroke-width: 3px !important;
+          opacity: 1 !important;
+          transform: scale(1.1); transform-box: fill-box; transform-origin: center; z-index: 10;
+          ${isPreExtracted ? 'stroke-dasharray: 3, 2; opacity: 0.6 !important;' : ''}
+        }
+      `
+    } else if (isPreExtracted) {
       // 기발치/결손: 반투명 + 점선 (형태는 보이게)
       rule = `
         #${containerId} path[id="${tid}"],
@@ -84,13 +96,11 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
           stroke: ${DENTAL_CHART_COLORS.preExtracted} !important;
           stroke-width: 1.5px !important;
           stroke-dasharray: 3, 2 !important;
-          ${isSelected ? 'transform: scale(1.1); transform-box: fill-box; transform-origin: center; opacity: 0.5 !important;' : ''}
         }
       `
     } else {
       let color = ''
       if (isTreatmentExt) color = DENTAL_CHART_COLORS.treatmentExt
-      else if (isSelected) color = DENTAL_CHART_COLORS.selected
       else if (priority === 'urgent') color = DENTAL_CHART_COLORS.urgent
       else if (priority === 'recommended') color = DENTAL_CHART_COLORS.recommended
       else if (priority === 'elective') color = DENTAL_CHART_COLORS.elective
@@ -98,14 +108,12 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
       else if (hasFindings) color = DENTAL_CHART_COLORS.findings
 
       if (color) {
-        const isActuallySelected = isSelected && !isPreExtracted
         rule = `
           #${containerId} path[id="${tid}"],
           #${containerId} g[id="${tid}"] > path {
             stroke: ${color} !important;
-            stroke-width: ${isActuallySelected ? '3px' : '2px'} !important;
-            opacity: ${isSelected ? '1' : '0.8'} !important;
-            ${isActuallySelected ? 'transform: scale(1.1); transform-box: fill-box; transform-origin: center; z-index: 10;' : ''}
+            stroke-width: 2px !important;
+            opacity: 0.8 !important;
           }
         `
       }
