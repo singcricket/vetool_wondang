@@ -168,13 +168,26 @@ export default function DentalToothDetailView({ tooth, images, isShared, species
 
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4">
-        <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-lg">
-          {tooth.tooth_id}
-        </span>
-        <span className="text-slate-600 font-medium">
-          {toothNames[toothIdStr]}
-        </span>
+      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-lg shrink-0">
+            {tooth.tooth_id}
+          </span>
+          <span className="text-slate-600 font-medium">
+            {toothNames[toothIdStr]}
+          </span>
+        </div>
+
+        {/* 모식도 */}
+        <div className="w-32 h-32 bg-white rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden p-2 shadow-sm ml-2">
+          <img 
+            src={`/dental/each/${species === 'feline' ? 'cat' : 'dog'}-${toothIdStr}.png`}
+            alt={`Tooth ${toothIdStr}`}
+            className="max-w-full max-h-full object-contain"
+            onError={(e) => (e.currentTarget.style.display = 'none')}
+          />
+        </div>
+
         {tooth.treatment_priority && (
           <span 
             className="text-[10px] px-2 py-0.5 rounded-full text-white font-bold"

@@ -27,7 +27,7 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
     optComment: {
       present:    '치아 존재. 추가 평가 진행.',
       ANO:        '선천성 결손(ANO). 방사선으로 매복 여부 확인 필요.',
-      extracted:  '기발치 확인. 치조 치유 상태 평가.',
+      FE:         '기발치 확인. 치조 치유 상태 평가.',
       'T/U':      '미맹출(T/U). 방사선으로 위치 및 연관 낭종(DTC) 확인 필요.',
       'T/I':      '매복치(T/I). 방사선 평가 필수. 주변 구조물 영향 평가.',
       'DT/P':     '유치 잔존(DT/P). 영구치 맹출 방해 및 부정교합 유발. 발치 강력 권장.',
@@ -35,7 +35,7 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
     generalComment: {
       present:    '치아가 존재합니다.',
       ANO:        '이 위치에 치아가 없습니다. X-ray로 확인이 필요합니다.',
-      extracted:  '이전에 발치된 치아입니다.',
+      FE:         '이전에 발치된 치아입니다(치아가 없습니다).',
       'T/U':      '이 치아는 아직 잇몸 밖으로 나오지 않았습니다. X-ray 확인이 필요합니다.',
       'T/I':      '이 치아는 잇몸 안에 묻혀 있습니다. X-ray 평가가 필요합니다.',
       'DT/P':     '빠져야 할 젖니가 아직 있습니다. 영구치 성장을 방해할 수 있어 발치가 필요합니다.',
@@ -43,7 +43,7 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
     urgency: {
       present:    'none',
       ANO:        'monitor',
-      extracted:  'none',
+      FE:         'none',
       'T/U':      'recommended',
       'T/I':      'recommended',
       'DT/P':     'urgent',
@@ -51,7 +51,7 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
     suggestedTx: {
       present:    [],
       ANO:        ['RAD'],
-      extracted:  [],
+      FE:         [],
       'T/U':      ['RAD', 'DTC/R'],
       'T/I':      ['RAD', 'XSS'],
       'DT/P':     ['X', 'RAD'],

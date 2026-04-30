@@ -458,7 +458,8 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
 
               const val = (tooth as any)[field]
               if (val && val !== 'none' && val !== 'normal' && val !== 'present' && val !== 'PD0') {
-                const testDef = DENTAL_TOOTH_TESTS[field]
+                const testKey = field === 'status' ? 'tooth_status' : field
+                const testDef = DENTAL_TOOTH_TESTS[testKey]
                 if (testDef) {
                   const comment = (testDef.generalComment as any)?.[val]
                   if (comment) {
@@ -552,13 +553,26 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
             return (
               <div key={tooth.tooth_id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
                 <div className="bg-amber-50/70 border-b border-amber-100 px-4 py-3">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span className="bg-amber-500 text-white px-2 py-0.5 rounded-full text-base">
-                      {tooth.tooth_id}
-                    </span>
-                    <span className="text-slate-700 font-medium">
-                      {toothNames_kr[String(tooth.tooth_id)]}
-                    </span>
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-amber-500 text-white px-2 py-0.5 rounded-full text-base shrink-0">
+                        {tooth.tooth_id}
+                      </span>
+                      <span className="text-slate-700 font-medium">
+                        {toothNames_kr[String(tooth.tooth_id)]}
+                      </span>
+                    </div>
+
+                    {/* 모식도 */}
+                    <div className="w-32 h-32 bg-white rounded-lg border border-amber-200 flex items-center justify-center overflow-hidden p-2 shadow-sm ml-2">
+                      <img 
+                        src={`/dental/each/${species === 'feline' ? 'cat' : 'dog'}-${tid}.png`}
+                        alt={`Tooth ${tid}`}
+                        className="max-w-full max-h-full object-contain"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                    </div>
+
                     {tooth.treatment_priority && (
                       <span 
                         className="text-[10px] px-2 py-0.5 rounded-full text-white font-bold"
@@ -574,7 +588,6 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                 </div>
 
                 <div className="flex flex-col md:flex-row p-4 gap-6">
-                  
                   {/* 왼쪽: 설명 */}
                   <div className="flex-1 space-y-5">
                     {(() => {
