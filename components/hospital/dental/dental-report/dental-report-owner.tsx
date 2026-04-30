@@ -23,6 +23,16 @@ const DentalImageEditor = dynamic(() => import('../dental-image-editor'), {
   loading: () => <div className="flex h-full items-center justify-center bg-slate-900 text-white">에디터 로딩 중...</div>
 })
 
+// SVG imports
+import DogOpenteethSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_openteeth'
+import DogOpenmouthSvgA from '@/constants/hospital/dental/dental_svg_imgs/canine_openmouthA'
+import DogSkullLeftSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_skull_left'
+import DogSkullRightSvg from '@/constants/hospital/dental/dental_svg_imgs/dog_skull_right'
+import CatOpenteethSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_openteeth'
+import CatOpenmouthSvgA from '@/constants/hospital/dental/dental_svg_imgs/cat_openmouthA'
+import CatSkullLeftSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_skull_left'
+import CatSkullRightSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_skull_right'
+
 type Props = {
   chartDetail: DentalChartDetail
   teeth: DentalTooth[]
@@ -33,6 +43,150 @@ type Props = {
 
 function filterByTag(images: DentalImage[], tag: string) {
   return images.filter(img => img.tooth_ids?.includes(tag))
+}
+
+// ─── CSS 생성 (뷰마다 고유 id를 사용해 격리) ──────────────────────────────
+function buildCss(containerId: string, selectedToothId: string | null, teeth: DentalTooth[]): string {
+  const toothRules = teeth.map(t => {
+    const tid = String(t.tooth_id)
+    const isSelected = tid === selectedToothId
+
+    // 치료 발치 (EXT)
+    const isTreatmentExt = t.treatment_done?.some(code =>
+      ['EXT', 'X', 'XS', 'XSS'].includes(code.toUpperCase())
+    )
+
+    // 기발치/결손 (FE/ANO) — 최우선
+    const status = t.status?.toUpperCase()
+    const isPreExtracted = status === 'FE' || status === 'ANO' || status === 'EXTRACTED' || status === 'MISSING'
+
+    // 치료 우선순위 (urgent, recommended, elective, monitor)
+    const priority = t.treatment_priority?.toLowerCase()
+
+    // 소견/치료 있음 (PRO, RAD 제외)
+    const EXCLUDED_TREATMENTS = ['PRO', 'RAD']
+    const hasFindings = [
+      t.periodontal_stage, t.gingivitis, t.calculus, t.plaque, t.mobility,
+      t.furcation, t.fracture, t.caries, t.resorption_stage, t.resorption_type,
+      t.staining, t.attrition, t.abrasion
+    ].some(v => v && v !== 'none' && v !== 'normal') ||
+    (t.treatment_done?.some(code => !EXCLUDED_TREATMENTS.includes(code.toUpperCase())) ?? false)
+
+    let rule = ''
+
+    // 우선순위: FE/ANO > EXT > 선택 > 우선순위(U/R/E/M) > 소견 있음
+    if (isPreExtracted) {
+      // 기발치/결손: 반투명 + 점선 (형태는 보이게)
+      rule = `
+        #${containerId} path[id="${tid}"],
+        #${containerId} g[id="${tid}"] > path {
+          opacity: 0.3 !important;
+          stroke: ${DENTAL_CHART_COLORS.preExtracted} !important;
+          stroke-width: 1.5px !important;
+          stroke-dasharray: 3, 2 !important;
+          ${isSelected ? 'transform: scale(1.1); transform-box: fill-box; transform-origin: center; opacity: 0.5 !important;' : ''}
+        }
+      `
+    } else {
+      let color = ''
+      if (isTreatmentExt) color = DENTAL_CHART_COLORS.treatmentExt
+      else if (isSelected) color = DENTAL_CHART_COLORS.selected
+      else if (priority === 'urgent') color = DENTAL_CHART_COLORS.urgent
+      else if (priority === 'recommended') color = DENTAL_CHART_COLORS.recommended
+      else if (priority === 'elective') color = DENTAL_CHART_COLORS.elective
+      else if (priority === 'monitor') color = DENTAL_CHART_COLORS.monitor
+      else if (hasFindings) color = DENTAL_CHART_COLORS.findings
+
+      if (color) {
+        const isActuallySelected = isSelected && !isPreExtracted
+        rule = `
+          #${containerId} path[id="${tid}"],
+          #${containerId} g[id="${tid}"] > path {
+            stroke: ${color} !important;
+            stroke-width: ${isActuallySelected ? '3px' : '2px'} !important;
+            opacity: ${isSelected ? '1' : '0.8'} !important;
+            ${isActuallySelected ? 'transform: scale(1.1); transform-box: fill-box; transform-origin: center; z-index: 10;' : ''}
+          }
+        `
+      }
+    }
+
+    return rule
+  }).join('\n')
+
+  return `
+    #${containerId} path[id],
+    #${containerId} g[id] {
+      cursor: pointer;
+      pointer-events: bounding-box;
+      transition: all 0.15s ease;
+      stroke: #94a3b8;
+      stroke-width: 0.5px;
+    }
+    #${containerId} path[id]:hover,
+    #${containerId} g[id]:hover > path {
+      stroke: ${DENTAL_CHART_COLORS.selected} !important;
+      stroke-width: 2px !important;
+      opacity: 0.9;
+    }
+    ${toothRules}
+  `
+}
+
+interface SvgPanelProps {
+  containerId: string
+  SvgComponent: React.ComponentType<{ style?: React.CSSProperties }>
+  selectedToothId: string | null
+  teeth: DentalTooth[]
+  onToothClick: (id: string) => void
+  label: string
+  className?: string
+  svgStyle?: React.CSSProperties
+}
+
+function SvgPanel({
+  containerId,
+  SvgComponent,
+  selectedToothId,
+  teeth,
+  onToothClick,
+  label,
+  className = '',
+  svgStyle,
+}: SvgPanelProps) {
+  const ref = React.useRef<HTMLDivElement>(null)
+
+  const handleClick = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      let el = e.target as Element | null
+      while (el && el !== ref.current) {
+        const id = el.getAttribute('id')
+        if (id && /^\d{3}$/.test(id)) {
+          onToothClick(id)
+          return
+        }
+        el = el.parentElement
+      }
+    },
+    [onToothClick],
+  )
+
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      <p className="text-[10px] font-semibold text-slate-400 text-center tracking-wider uppercase">
+        {label}
+      </p>
+      <div
+        id={containerId}
+        ref={ref}
+        onClick={handleClick}
+        className="w-full h-full flex items-center justify-center overflow-hidden"
+      >
+        <style>{buildCss(containerId, selectedToothId, teeth)}</style>
+        <SvgComponent style={svgStyle ?? { width: '100%', height: 'auto' }} />
+      </div>
+    </div>
+  )
 }
 
 function ImageCard({ img, caption, isShared }: { img: DentalImage; caption?: string; isShared?: boolean }) {
@@ -218,6 +372,13 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
     chartDetail.procedure_other     || null,
   ].filter(Boolean) as string[]
 
+  const [selectedToothId, setSelectedToothId] = useState<string | null>(null)
+
+  const OpenteethSvg = species === 'feline' ? CatOpenteethSvg : DogOpenteethSvg
+  const OpenmouthSvg = species === 'feline' ? CatOpenmouthSvgA : DogOpenmouthSvgA
+  const SkullLeftSvg = species === 'feline' ? CatSkullLeftSvg : DogSkullLeftSvg
+  const SkullRightSvg = species === 'feline' ? CatSkullRightSvg : DogSkullRightSvg
+
   return (
     <div className="space-y-12">
 
@@ -386,6 +547,108 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
             </div>
           </div>
         )}
+
+        {/* ── SVG 패널 영역 (추가됨) ── */}
+        <div className="border-t border-amber-200 pt-6 mt-4">
+          <h3 className="text-sm font-semibold text-amber-700 mb-4">구강 해부학 모식도</h3>
+          <div className="flex flex-col items-center bg-white/40 p-4 rounded-xl border border-amber-100 shadow-inner overflow-auto">
+            {/* 구강 전개도 */}
+            <div className="mb-4 border rounded-xl bg-white/60 p-3 shadow-sm w-fit mx-auto">
+              <SvgPanel
+                containerId="svg-openmouth-report"
+                SvgComponent={OpenmouthSvg}
+                selectedToothId={selectedToothId}
+                teeth={teeth}
+                onToothClick={setSelectedToothId}
+                label="구강 전개도"
+                svgStyle={{ height: '550px', width: 'auto' }}
+              />
+            </div>
+
+            {/* ── SVG 그림 영역: 왼쪽 치열 + 오른쪽 두개골 ── */}
+            <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-center w-full">
+              {/* 왼쪽: 치열 정면 */}
+              <div className="border rounded-xl bg-white/60 shadow-sm p-3 flex flex-col items-center w-fit shrink-0">
+                <SvgPanel
+                  containerId="svg-openteeth-report"
+                  SvgComponent={OpenteethSvg}
+                  selectedToothId={selectedToothId}
+                  teeth={teeth}
+                  onToothClick={setSelectedToothId}
+                  label="치열 (정면)"
+                  svgStyle={{ height: '500px', width: 'auto' }}
+                />
+              </div>
+
+              {/* 오른쪽: 두개골 우측 + 좌측 (위 / 아래) */}
+              <div className="flex flex-col gap-4 shrink-0">
+                {/* 두개골 우측 */}
+                <div className="border rounded-xl bg-white/60 shadow-sm p-2">
+                  <SvgPanel
+                    containerId="svg-skull-right-report"
+                    SvgComponent={SkullRightSvg}
+                    selectedToothId={selectedToothId}
+                    teeth={teeth}
+                    onToothClick={setSelectedToothId}
+                    label="두개골 우측"
+                    svgStyle={{ height: '250px', width: 'auto' }}
+                  />
+                </div>
+                {/* 두개골 좌측 */}
+                <div className="border rounded-xl bg-white/60 shadow-sm p-2">
+                  <SvgPanel
+                    containerId="svg-skull-left-report"
+                    SvgComponent={SkullLeftSvg}
+                    selectedToothId={selectedToothId}
+                    teeth={teeth}
+                    onToothClick={setSelectedToothId}
+                    label="두개골 좌측"
+                    svgStyle={{ height: '250px', width: 'auto' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ── 범례 (Legend) ── */}
+            <div className="mt-8 pt-4 border-t border-amber-100 w-full max-w-2xl">
+              <p className="text-xs font-bold text-amber-800 mb-3 text-center uppercase tracking-widest">색상 및 기호 설명</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DENTAL_CHART_COLORS.urgent }}></div>
+                  <span className="text-[11px] text-slate-600 font-medium">긴급 치료</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DENTAL_CHART_COLORS.recommended }}></div>
+                  <span className="text-[11px] text-slate-600 font-medium">권장 치료</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DENTAL_CHART_COLORS.elective }}></div>
+                  <span className="text-[11px] text-slate-600 font-medium">선택적 치료</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DENTAL_CHART_COLORS.monitor }}></div>
+                  <span className="text-[11px] text-slate-600 font-medium">모니터링</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DENTAL_CHART_COLORS.treatmentExt }}></div>
+                  <span className="text-[11px] text-slate-600 font-medium">치료적 발치</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DENTAL_CHART_COLORS.findings }}></div>
+                  <span className="text-[11px] text-slate-600 font-medium">소견/이상 발견</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full border border-slate-300 border-dashed" style={{ backgroundColor: 'transparent' }}></div>
+                  <span className="text-[11px] text-slate-600 font-medium">기발치/선천결손</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full border-2 border-indigo-500" style={{ backgroundColor: 'transparent' }}></div>
+                  <span className="text-[11px] text-slate-600 font-medium">선택된 치아</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ── 치아별 소견 ── */}
