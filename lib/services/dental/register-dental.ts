@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
+import { SupabaseClient } from '@supabase/supabase-js'
+
 // =============================================
 // tags 인코딩 (monitoring_sessions 패턴 동일)
 // #hos_patient_id#hos_owner_id#name#species#breed#gender#age_days
@@ -59,7 +61,72 @@ export async function registerDentalChart(params: {
     redirect(`/error?message=${error.message}`)
   }
 
+  // 이전 차트 상태 계승
+  await inheritPreviousTeeth(supabase, data.id, params.hosId, params.patientId)
+
   return data.id
+}
+
+// =============================================
+// 이전 차트 치아 상태 계승 로직
+// =============================================
+async function inheritPreviousTeeth(supabase: SupabaseClient, newChartId: string, hosId: string, patientId: string) {
+  // 1. 동일 환자의 직전 차트 조회 (가장 최근 것 1개)
+  const { data: previousCharts } = await supabase
+    .from('dental_charts')
+    .select('id, chart_date')
+    .eq('patient_id', patientId)
+    .neq('id', newChartId) // 현재 차트 제외
+    .order('chart_date', { ascending: false })
+    .limit(1)
+  
+  if (!previousCharts || previousCharts.length === 0) return
+
+  const prevChartId = previousCharts[0].id
+
+  // 2. 직전 차트의 치아 기록 조회
+  const { data: prevTeeth } = await supabase
+    .from('dental_chart_teeth')
+    .select('*')
+    .eq('chart_id', prevChartId)
+  
+  if (!prevTeeth || prevTeeth.length === 0) return
+
+  // 3. 계승할 치아 매핑
+  const newTeeth = prevTeeth.reduce((acc: any[], prevTooth) => {
+    const treatments = prevTooth.treatment_done || []
+    // 발치 처치 여부 확인
+    const hasExtraction = treatments.some((code: string) => 
+      ['X', 'XS', 'XSS'].includes(code.toUpperCase())
+    )
+    
+    if (hasExtraction) {
+      // 4. 이전 차트에서 발치된 경우 -> 새 차트에 'FE'로 생성
+      acc.push({
+         chart_id: newChartId,
+         hos_id: hosId,
+         tooth_id: prevTooth.tooth_id,
+         status: 'FE',
+      })
+    } else if (prevTooth.status && prevTooth.status !== 'present') {
+      // 5, 6. status가 'present'가 아니고 발치도 안 됐다면, 이전 status 그대로 계승 ('FE', 'ANO', 'T/U' 등)
+      acc.push({
+         chart_id: newChartId,
+         hos_id: hosId,
+         tooth_id: prevTooth.tooth_id,
+         status: prevTooth.status,
+      })
+    }
+    return acc
+  }, [])
+
+  // 4. 일괄 추가
+  if (newTeeth.length > 0) {
+    const { error } = await supabase.from('dental_chart_teeth').insert(newTeeth)
+    if (error) {
+      console.error('Failed to inherit previous teeth:', error)
+    }
+  }
 }
 
 // =============================================
