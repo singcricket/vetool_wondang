@@ -186,12 +186,14 @@ export default function DentalToothForm({ toothIds, chartDetail, hosId, existing
   const [mobility, setMobility] = useState<string>(isMulti ? '' : (existing?.mobility ?? ''))
   const [furcation, setFurcation] = useState<string>(isMulti ? '' : (existing?.furcation ?? ''))
   const [fracture, setFracture] = useState<string>(isMulti ? '' : (existing?.fracture ?? ''))
-  const [pulpExposure, setPulpExposure] = useState(isMulti ? false : (existing?.pulp_exposure ?? false))
+  const [pulpExposure, setPulpExposure] = useState<string>(isMulti ? '' : (existing?.pulp_exposure ?? ''))
   const [caries, setCaries] = useState<string>(isMulti ? '' : (existing?.caries ?? ''))
   const [resorptionStage, setResorptionStage] = useState<string>(isMulti ? '' : (existing?.resorption_stage ?? ''))
   const [resorptionType, setResorptionType] = useState<string>(isMulti ? '' : (existing?.resorption_type ?? ''))
   const [attrition, setAttrition] = useState<string>(isMulti ? '' : (existing?.attrition ?? ''))
   const [abrasion, setAbrasion] = useState<string>(isMulti ? '' : (existing?.abrasion ?? ''))
+  const [staining, setStaining] = useState<string>(isMulti ? '' : (existing?.staining ?? ''))
+  const [periapical, setPeriapical] = useState<string>(isMulti ? '' : (existing?.periapical ?? ''))
   
   const predefinedDone = DENTAL_TOOTH_TESTS.treatment_done.options?.map((o) => o.value) || []
   const initialDone = isMulti ? [] : (existing?.treatment_done ? [...existing.treatment_done] : [])
@@ -257,12 +259,14 @@ export default function DentalToothForm({ toothIds, chartDetail, hosId, existing
           mobility: mobility || null,
           furcation: furcation || null,
           fracture: fracture || null,
-          pulp_exposure: pulpExposure,
+          pulp_exposure: pulpExposure || null,
           caries: caries || null,
           resorption_stage: resorptionStage || null,
           resorption_type: resorptionType || null,
           attrition: attrition || null,
           abrasion: abrasion || null,
+          staining: staining || null,
+          periapical: periapical || null,
           probing_ml: probing.ml, probing_l: probing.l, probing_dl: probing.dl,
           probing_mb: probing.mb, probing_b: probing.b, probing_db: probing.db,
           recession_ml: recession.ml, recession_l: recession.l, recession_dl: recession.dl,
@@ -361,15 +365,14 @@ export default function DentalToothForm({ toothIds, chartDetail, hosId, existing
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">병변</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <SelectField label="치관 골절" value={fracture} onChange={setFracture} options={DENTAL_TOOTH_TESTS.tooth_fracture?.options || []} testId="tooth_fracture" />
+              <SelectField label="치수 노출" value={pulpExposure} onChange={setPulpExposure} options={DENTAL_TOOTH_TESTS.pulp_exposure?.options || []} testId="pulp_exposure" />
               <SelectField label="치아 흡수 병기 (Stage)" value={resorptionStage} onChange={setResorptionStage} options={DENTAL_TOOTH_TESTS.resorption_stage?.options || []} testId="resorption_stage" />
               <SelectField label="치아 흡수 유형 (TR Type)" value={resorptionType} onChange={setResorptionType} options={DENTAL_TOOTH_TESTS.resorption_type?.options || []} testId="resorption_type" />
               <SelectField label="우식 (충치)" value={caries} onChange={setCaries} options={DENTAL_TOOTH_TESTS.caries?.options || SEVERITY_OPTS} testId="caries" />
-              <SelectField label="마모 (교모)" value={attrition} onChange={setAttrition} options={SEVERITY_OPTS} testId="wear" />
-              <SelectField label="마모 (마찰)" value={abrasion} onChange={setAbrasion} options={SEVERITY_OPTS} testId="wear" />
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch id="pulp" checked={pulpExposure} onCheckedChange={setPulpExposure} />
-              <Label htmlFor="pulp" className="text-xs cursor-pointer">치수 노출 (Pulp Exposure)</Label>
+              <SelectField label="치아 착색/변색" value={staining} onChange={setStaining} options={DENTAL_TOOTH_TESTS.staining?.options || []} testId="staining" />
+              <SelectField label="마모 (교모)" value={attrition} onChange={setAttrition} options={DENTAL_TOOTH_TESTS.attrition?.options || SEVERITY_OPTS} testId="attrition" />
+              <SelectField label="마모 (마찰)" value={abrasion} onChange={setAbrasion} options={DENTAL_TOOTH_TESTS.abrasion?.options || SEVERITY_OPTS} testId="abrasion" />
+              <SelectField label="치근단 병소" value={periapical} onChange={setPeriapical} options={DENTAL_TOOTH_TESTS.periapical?.options || []} testId="periapical" />
             </div>
           </section>
 

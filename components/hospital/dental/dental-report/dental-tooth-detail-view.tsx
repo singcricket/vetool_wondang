@@ -48,7 +48,7 @@ export default function DentalToothDetailView({ tooth, images, isShared, species
   const findings: { label: string, detail: string }[] = []
   const toothFields = [
     'status', 'periodontal_stage', 'gingivitis', 'calculus', 'mobility', 'furcation',
-    'fracture', 'caries', 'resorption_stage', 'staining', 'attrition'
+    'fracture', 'pulp_exposure', 'caries', 'resorption_stage', 'resorption_type', 'staining', 'attrition', 'abrasion', 'periapical'
   ]
 
   const probingValues = [tooth.probing_ml, tooth.probing_l, tooth.probing_dl, tooth.probing_mb, tooth.probing_b, tooth.probing_db]
@@ -62,7 +62,7 @@ export default function DentalToothDetailView({ tooth, images, isShared, species
     const val = (tooth as any)[field]
     if (val && val !== 'none' && val !== 'normal' && val !== 'present' && val !== 'PD0') {
       // status 필드는 DENTAL_TOOTH_TESTS의 tooth_status 키를 사용함
-      const testKey = field === 'status' ? 'tooth_status' : field
+      const testKey = field === 'status' ? 'tooth_status' : field === 'fracture' ? 'tooth_fracture' : field
       const testDef = DENTAL_TOOTH_TESTS[testKey]
       if (testDef) {
         const optDef = testDef.options?.find(o => o.value === val)

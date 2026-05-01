@@ -47,8 +47,8 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
     const EXCLUDED_TREATMENTS = ['PRO', 'RAD']
     const hasFindings = [
       t.periodontal_stage, t.gingivitis, t.calculus, t.plaque, t.mobility,
-      t.furcation, t.fracture, t.caries, t.resorption_stage, t.resorption_type,
-      t.staining, t.attrition, t.abrasion
+      t.furcation, t.fracture, typeof t.pulp_exposure === 'string' ? t.pulp_exposure : null, t.caries, t.resorption_stage, t.resorption_type,
+      t.staining, t.attrition, t.abrasion, t.periapical
     ].some(v => v && v !== 'none' && v !== 'normal') ||
     (t.treatment_done?.some(code => !EXCLUDED_TREATMENTS.includes(code.toUpperCase())) ?? false)
 

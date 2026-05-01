@@ -73,7 +73,10 @@ function extractAbbrs(tooth: DentalTooth, species: string): string[] {
     tooth.resorption_type,
     tooth.caries,
     tooth.attrition,
-    tooth.abrasion
+    tooth.abrasion,
+    tooth.staining,
+    tooth.periapical,
+    typeof tooth.pulp_exposure === 'string' ? tooth.pulp_exposure : null
   ]
   
   fields.forEach(f => {

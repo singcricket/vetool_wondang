@@ -631,60 +631,86 @@ export const DENTAL_TOOTH_TESTS: Record<string, DentalTest> = {
     noteTags: ['resorption type', 'T1', 'T2', 'T3', 'ankylosis'],
   },
 
-  // ── 치아 마모/교모 ─────────────────────────────────────────
-  wear: {
-    testID:     'wear',
-    testName:   'Tooth Wear (Attrition / Abrasion)',
-    testNameKo: '치아 마모',
+  // ── 치아 교모 ─────────────────────────────────────────
+  attrition: {
+    testID:     'attrition',
+    testName:   'Tooth Attrition (AT)',
+    testNameKo: '치아 교모',
     testType:   'select',
-    testInfo:   'AT(교모, attrition) = 치아끼리 마찰. AB(마모, abrasion) = 외부 물질에 의한 마모. 치수 노출 여부 평가 필수.',
+    testInfo:   'AT(교모, attrition) = 치아끼리 마찰에 의한 손상. 치수 노출 여부 평가 필수.',
     affectedSpecies: ['canine', 'feline'],
     options: [
-      { value: 'none', detail: 'No tooth wear',           label: '없음' },
+      { value: 'none', detail: 'No attrition',           label: '없음' },
       { value: 'AT1',  detail: 'Mild attrition (AT)',     label: 'AT 1 (경도)' },
       { value: 'AT2',  detail: 'Moderate attrition (AT)',     label: 'AT 2 (중등도)' },
       { value: 'AT3',  detail: 'Severe attrition (AT)',   label: 'AT 3 (중증)' },
-      { value: 'AB1',  detail: 'Mild abrasion (AB)',      label: 'AB 1 (경도)' },
-      { value: 'AB2',  detail: 'Moderate abrasion (AB)',      label: 'AB 2 (중등도)' },
-      { value: 'AB3',  detail: 'Severe abrasion (AB)',    label: 'AB 3 (중증)' },
     ],
     optComment: {
-      none: '마모 없음.',
+      none: '교모 없음.',
       AT1:  '경도 교모(AT1). 법랑질 광택 소실. 원인(부정교합 등) 평가.',
       AT2:  '중등도 교모(AT2). 법랑질 소실, 상아질 노출 가능성. 치수 상태 평가 및 수복.',
       AT3:  '중증 교모(AT3). 상아질 노출, 치수 근접 가능성. 치수 상태 평가 및 수복.',
-      AB1:  '경도 마모(AB1). 원인(딱딱한 물체 씹기 등) 교육. 경과 관찰.',
-      AB2:  '중등도 마모(AB2). 상아질 노출, 치수 근접 가능성. 치수 상태 평가 및 수복.',
-      AB3:  '중증 마모(AB3). 상아질 또는 치수 노출 가능성. 수복 또는 VPT 고려.',
     },
     generalComment: {
-      none: '이 치아에 마모가 없습니다.',
+      none: '이 치아에 교모가 없습니다.',
       AT1:  '이 치아가 다른 치아와 마찰로 약간 닳았습니다.',
       AT2:  '이 치아가 다른 치아와 마찰로 중간 정도로 닳았습니다.',
       AT3:  '이 치아가 심하게 닳아 신경이 노출될 위험이 있습니다.',
-      AB1:  '이 치아가 딱딱한 물건을 씹어서 약간 마모되었습니다.',
-      AB2:  '이 치아가 딱딱한 물건을 씹어서 중간 정도로 마모되었습니다.',
-      AB3:  '이 치아가 심하게 마모되었습니다. 치료가 필요합니다.',
     },
     urgency: {
       none: 'none',
       AT1:  'monitor',
       AT2:  'monitor',
       AT3:  'recommended',
-      AB1:  'monitor',
-      AB2:  'monitor',
-      AB3:  'recommended',
     },
     suggestedTx: {
       none:      [],
       AT1:   ['OC'],
       AT2:   ['OC'],
       AT3:   ['R/C', 'PCI', 'VPT'],
+    },
+    noteTags: ['attrition', 'wear', 'AT'],
+  },
+
+  // ── 치아 마모 ─────────────────────────────────────────
+  abrasion: {
+    testID:     'abrasion',
+    testName:   'Tooth Abrasion (AB)',
+    testNameKo: '치아 마모',
+    testType:   'select',
+    testInfo:   'AB(마모, abrasion) = 외부 물질에 의한 마모. 치수 노출 여부 평가 필수.',
+    affectedSpecies: ['canine', 'feline'],
+    options: [
+      { value: 'none', detail: 'No abrasion',           label: '없음' },
+      { value: 'AB1',  detail: 'Mild abrasion (AB)',      label: 'AB 1 (경도)' },
+      { value: 'AB2',  detail: 'Moderate abrasion (AB)',      label: 'AB 2 (중등도)' },
+      { value: 'AB3',  detail: 'Severe abrasion (AB)',    label: 'AB 3 (중증)' },
+    ],
+    optComment: {
+      none: '마모 없음.',
+      AB1:  '경도 마모(AB1). 원인(딱딱한 물체 씹기 등) 교육. 경과 관찰.',
+      AB2:  '중등도 마모(AB2). 상아질 노출, 치수 근접 가능성. 치수 상태 평가 및 수복.',
+      AB3:  '중증 마모(AB3). 상아질 또는 치수 노출 가능성. 수복 또는 VPT 고려.',
+    },
+    generalComment: {
+      none: '이 치아에 마모가 없습니다.',
+      AB1:  '이 치아가 딱딱한 물건을 씹어서 약간 마모되었습니다.',
+      AB2:  '이 치아가 딱딱한 물건을 씹어서 중간 정도로 마모되었습니다.',
+      AB3:  '이 치아가 심하게 마모되었습니다. 치료가 필요합니다.',
+    },
+    urgency: {
+      none: 'none',
+      AB1:  'monitor',
+      AB2:  'monitor',
+      AB3:  'recommended',
+    },
+    suggestedTx: {
+      none:      [],
       AB1:   [],
       AB2:   [],
       AB3:   ['R/C', 'PCI', 'VPT'],
     },
-    noteTags: ['attrition', 'abrasion', 'wear', 'AT', 'AB'],
+    noteTags: ['abrasion', 'wear', 'AB'],
   },
 
   // ── 유치 잔존 ──────────────────────────────────────────────

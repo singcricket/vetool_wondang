@@ -67,6 +67,7 @@ export type Database = {
           id: string
           is_deciduous: boolean | null
           mobility: string | null
+          periapical: string | null
           periodontal_stage: string | null
           plaque: string | null
           probing_b: number | null
@@ -75,7 +76,7 @@ export type Database = {
           probing_l: number | null
           probing_mb: number | null
           probing_ml: number | null
-          pulp_exposure: boolean | null
+          pulp_exposure: string | null
           recession_b: string | null
           recession_db: string | null
           recession_dl: string | null
@@ -110,6 +111,7 @@ export type Database = {
           id?: string
           is_deciduous?: boolean | null
           mobility?: string | null
+          periapical?: string | null
           periodontal_stage?: string | null
           plaque?: string | null
           probing_b?: number | null
@@ -118,7 +120,7 @@ export type Database = {
           probing_l?: number | null
           probing_mb?: number | null
           probing_ml?: number | null
-          pulp_exposure?: boolean | null
+          pulp_exposure?: string | null
           recession_b?: string | null
           recession_db?: string | null
           recession_dl?: string | null
@@ -153,6 +155,7 @@ export type Database = {
           id?: string
           is_deciduous?: boolean | null
           mobility?: string | null
+          periapical?: string | null
           periodontal_stage?: string | null
           plaque?: string | null
           probing_b?: number | null
@@ -161,7 +164,7 @@ export type Database = {
           probing_l?: number | null
           probing_mb?: number | null
           probing_ml?: number | null
-          pulp_exposure?: boolean | null
+          pulp_exposure?: string | null
           recession_b?: string | null
           recession_db?: string | null
           recession_dl?: string | null

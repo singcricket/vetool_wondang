@@ -171,7 +171,7 @@ export default function DentalReportGeneral({ chartDetail, teeth, images, specie
                 // 치주/병변 검사항목 추출
                 const toothFields = [
                   'periodontal_stage', 'gingivitis', 'calculus', 'mobility', 'furcation',
-                  'fracture', 'caries', 'resorption_stage', 'staining', 'attrition'
+                  'fracture', 'pulp_exposure', 'caries', 'resorption_stage', 'resorption_type', 'staining', 'attrition', 'abrasion', 'periapical'
                 ]
 
                 toothFields.forEach(field => {

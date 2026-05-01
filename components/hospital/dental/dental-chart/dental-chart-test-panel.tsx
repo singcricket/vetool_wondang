@@ -44,8 +44,8 @@ function buildCss(containerId: string, selectedToothId: string | null, teeth: De
     const EXCLUDED_TREATMENTS = ['PRO', 'RAD']
     const hasFindings = [
       t.periodontal_stage, t.gingivitis, t.calculus, t.plaque, t.mobility,
-      t.furcation, t.fracture, t.caries, t.resorption_stage, t.resorption_type,
-      t.staining, t.attrition, t.abrasion
+      t.furcation, t.fracture, typeof t.pulp_exposure === 'string' ? t.pulp_exposure : null, t.caries, t.resorption_stage, t.resorption_type,
+      t.staining, t.attrition, t.abrasion, t.periapical
     ].some(v => v && v !== 'none' && v !== 'normal') ||
     (t.treatment_done?.some(code => !EXCLUDED_TREATMENTS.includes(code.toUpperCase())) ?? false)
 
@@ -186,8 +186,9 @@ function getStatusStyle(tooth: DentalTooth | undefined): string {
   if (status === 'ANO' || status === 'MISSING') return 'bg-slate-500 text-white border-slate-600'
   
   const hasFindings = [
-    tooth.periodontal_stage, tooth.gingivitis, tooth.calculus, tooth.plaque, tooth.mobility, 
-    tooth.furcation, tooth.fracture, tooth.caries, tooth.resorption_stage, tooth.staining, tooth.attrition
+    tooth.periodontal_stage, tooth.gingivitis, tooth.calculus, tooth.plaque, tooth.mobility,
+    tooth.furcation, tooth.fracture, typeof tooth.pulp_exposure === 'string' ? tooth.pulp_exposure : null, tooth.caries, tooth.resorption_stage, tooth.resorption_type,
+    tooth.staining, tooth.attrition, tooth.abrasion, tooth.periapical
   ].some(v => v && v !== 'none' && v !== 'normal') || (tooth.treatment_done && tooth.treatment_done.length > 0)
     
   if (hasFindings) return 'bg-emerald-100 text-emerald-800 border-emerald-300'

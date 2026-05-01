@@ -132,13 +132,14 @@ export type DentalTooth = {
 
   // 병변
   fracture: string | null
-  pulp_exposure: boolean
+  pulp_exposure: string | null
   caries: string | null
   resorption_stage: string | null
   resorption_type: string | null
   staining: string | null
   attrition: string | null
   abrasion: string | null
+  periapical: string | null
   supernumerary: boolean
 
   // 방사선 / 처치 / 계획
