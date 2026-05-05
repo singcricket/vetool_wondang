@@ -51,6 +51,7 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
           organ_name: organ.organ_name,
           status: organ.status,
           findings_data: organ.findings_data,
+          organ_memo: organ.organ_memo,
         })
       })
       
@@ -76,6 +77,7 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
     organ_name: activeOrgan,
     status: 'not_examined',
     findings_data: {},
+    organ_memo: '',
   }
 
   return (
@@ -107,8 +109,9 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
         </div>
 
         {/* Right Side: DDx & Summary Panel */}
-        <div className="w-64 sm:w-80 border-l bg-slate-50 h-full overflow-y-auto p-4">
-          <UltrasoundImpressionPanel organsData={organsData} />
+        <div className="w-64 sm:w-80 border-l bg-slate-50 h-full overflow-y-auto p-4 space-y-4">
+          <UltrasoundImpressionPanel organsData={organsData} lang="ko" />
+          <UltrasoundImpressionPanel organsData={organsData} lang="en" />
         </div>
       </div>
     </UltrasoundChartLayout>

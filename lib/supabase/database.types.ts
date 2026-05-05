@@ -1838,6 +1838,7 @@ export type Database = {
           created_at: string
           findings_data: Json
           id: string
+          organ_memo: string | null
           organ_name: string
           status: string
           updated_at: string
@@ -1847,6 +1848,7 @@ export type Database = {
           created_at?: string
           findings_data?: Json
           id?: string
+          organ_memo?: string | null
           organ_name: string
           status: string
           updated_at?: string
@@ -1856,6 +1858,7 @@ export type Database = {
           created_at?: string
           findings_data?: Json
           id?: string
+          organ_memo?: string | null
           organ_name?: string
           status?: string
           updated_at?: string

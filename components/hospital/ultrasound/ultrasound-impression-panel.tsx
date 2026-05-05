@@ -8,11 +8,21 @@ import {
 } from '@/constants/hospital/ultrasound/ultrasound_testref'
 import { UltrasoundChartOrgan } from '@/types/hospital/ultrasound-type'
 
+import { Copy } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+
 interface Props {
   organsData: Record<string, UltrasoundChartOrgan>
+  lang?: 'ko' | 'en'
 }
 
-export default function UltrasoundImpressionPanel({ organsData }: Props) {
+export default function UltrasoundImpressionPanel({ organsData, lang = 'ko' }: Props) {
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success(lang === 'ko' ? '클립보드에 복사되었습니다.' : 'Copied to clipboard')
+  }
+
   const allFindings: Record<string, any> = {}
   const summaries: string[] = []
 
@@ -28,22 +38,39 @@ export default function UltrasoundImpressionPanel({ organsData }: Props) {
       // 2. 요약용 (장기별)
       const organSummaries = buildChartSummary(
         organ.findings_data as Record<string, string | number>,
-        'ko',
+        lang,
         section.organ
       )
       summaries.push(...organSummaries)
     } else if (organ.status === 'normal') {
-      summaries.push(`[${section.organNameKo}] 특이적인 이상 소견이 관찰되지 않음`)
+      const normalPhrase = lang === 'ko' 
+        ? `[${section.organNameKo}] 특이적인 이상 소견이 관찰되지 않음`
+        : `[${section.organName}] No significant abnormalities observed`;
+      summaries.push(normalPhrase)
     }
   })
 
   const matchedRules = evaluateImpressionRules(allFindings)
 
+  const handleCopyDDx = () => {
+    const text = matchedRules.map(rule => {
+      const impression = lang === 'ko' ? rule.impressionKo : rule.impression
+      const ddx = lang === 'ko' ? rule.differentialsKo.join(', ') : rule.differentials.join(', ')
+      const rec = lang === 'ko' ? rule.recommendationKo : rule.recommendation
+      return `[${rule.severity.toUpperCase()}] ${impression}\n- DDx: ${ddx}${rec ? `\n- Rec: ${rec}` : ''}`
+    }).join('\n\n')
+    handleCopy(text)
+  }
+
   if (summaries.length === 0 && matchedRules.length === 0) {
     return (
       <div className="bg-white border rounded-lg p-5">
-        <h3 className="text-sm font-bold text-slate-700 mb-2">이상 소견 및 감별 진단 (DDx)</h3>
-        <p className="text-xs text-slate-400">입력된 이상 소견이 없습니다.</p>
+        <h3 className="text-sm font-bold text-slate-700 mb-2">
+          {lang === 'ko' ? '이상 소견 및 감별 진단 (DDx)' : 'Findings & DDx'}
+        </h3>
+        <p className="text-xs text-slate-400">
+          {lang === 'ko' ? '입력된 이상 소견이 없습니다.' : 'No abnormal findings entered.'}
+        </p>
       </div>
     )
   }
@@ -51,8 +78,19 @@ export default function UltrasoundImpressionPanel({ organsData }: Props) {
   return (
     <div className="bg-white border rounded-lg p-5 space-y-6 shadow-sm">
       <div>
-        <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-          📝 주요 이상 소견 요약
+        <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center justify-between group">
+          <div className="flex items-center gap-2">
+            {lang === 'ko' ? '📝 주요 이상 소견 요약' : '📝 Summary of Findings'}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => handleCopy(summaries.join('\n'))}
+            title={lang === 'ko' ? '복사' : 'Copy'}
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
         </h3>
         {summaries.length > 0 ? (
           <ul className="list-disc pl-5 text-sm text-slate-600 space-y-1">
@@ -61,14 +99,27 @@ export default function UltrasoundImpressionPanel({ organsData }: Props) {
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-slate-400">이상 소견 없음</p>
+          <p className="text-xs text-slate-400">
+            {lang === 'ko' ? '이상 소견 없음' : 'No abnormalities'}
+          </p>
         )}
       </div>
 
       {matchedRules.length > 0 && (
         <div className="pt-4 border-t">
-          <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-            💡 감별 진단 (DDx) 추천
+          <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center justify-between group">
+            <div className="flex items-center gap-2">
+              {lang === 'ko' ? '💡 감별 진단 (DDx) 추천' : '💡 DDx Recommendations'}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={handleCopyDDx}
+              title={lang === 'ko' ? '복사' : 'Copy'}
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
           </h3>
           <div className="space-y-4">
             {matchedRules.map((rule, idx) => (
@@ -77,14 +128,16 @@ export default function UltrasoundImpressionPanel({ organsData }: Props) {
                   <span className="text-xs font-bold bg-amber-200 text-amber-800 px-2 py-0.5 rounded">
                     {rule.severity.toUpperCase()}
                   </span>
-                  <span className="text-sm font-bold text-amber-900">{rule.impressionKo}</span>
+                  <span className="text-sm font-bold text-amber-900">
+                    {lang === 'ko' ? rule.impressionKo : rule.impression}
+                  </span>
                 </div>
                 <div className="text-xs text-amber-800 mb-2">
-                  <span className="font-semibold">DDx:</span> {rule.differentialsKo.join(', ')}
+                  <span className="font-semibold">DDx:</span> {lang === 'ko' ? rule.differentialsKo.join(', ') : rule.differentials.join(', ')}
                 </div>
-                {rule.recommendationKo && (
+                {((lang === 'ko' && rule.recommendationKo) || (lang === 'en' && rule.recommendation)) && (
                   <div className="text-xs text-amber-700 bg-white/50 p-2 rounded">
-                    <span className="font-semibold">권장:</span> {rule.recommendationKo}
+                    <span className="font-semibold">{lang === 'ko' ? '권장' : 'Rec'}:</span> {lang === 'ko' ? rule.recommendationKo : rule.recommendation}
                   </div>
                 )}
               </div>

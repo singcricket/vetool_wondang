@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 
 interface Props {
   organ: Organ
@@ -51,6 +52,13 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
     })
   }
 
+  const handleMemoChange = (value: string) => {
+    onUpdate({
+      ...organData,
+      organ_memo: value,
+    })
+  }
+
   // --- 렌더링 헬퍼 ---
   const renderTestInput = (test: UltrasoundTestItem) => {
     const value = findings[test.testID]
@@ -58,6 +66,7 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
     switch (test.testType) {
       case 'select':
         return (
+          <>
           <Select
             value={value || ''}
             onValueChange={(val) => handleFindingChange(test.testID, val)}
@@ -80,8 +89,20 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
                   </div>
                 </SelectItem>
               ))}
+              <SelectItem value="other">
+                <span className="text-slate-500 italic text-xs">기타 (직접 입력)</span>
+              </SelectItem>
             </SelectContent>
           </Select>
+          {value === 'other' && (
+            <Input
+              className="mt-2"
+              placeholder="내용을 직접 입력하세요..."
+              value={findings[test.testID + '_other'] || ''}
+              onChange={(e) => handleFindingChange(test.testID + '_other', e.target.value)}
+            />
+          )}
+          </>
         )
 
       case 'boolean':
@@ -139,6 +160,7 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
       case 'multiselect':
         const selectedValues = Array.isArray(value) ? value : []
         return (
+          <>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {test.options.map(opt => {
               const isChecked = selectedValues.includes(opt.value)
@@ -160,7 +182,29 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
                 </label>
               )
             })}
+            <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 p-1.5 rounded border border-dashed border-slate-200 hover:border-slate-400">
+              <Checkbox
+                checked={selectedValues.includes('other')}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    handleFindingChange(test.testID, [...selectedValues, 'other'])
+                  } else {
+                    handleFindingChange(test.testID, selectedValues.filter((v: string) => v !== 'other'))
+                  }
+                }}
+              />
+              <span className="text-slate-500 italic">기타</span>
+            </label>
           </div>
+          {selectedValues.includes('other') && (
+            <Input
+              className="mt-2"
+              placeholder="기타 내용을 입력하세요..."
+              value={findings[test.testID + '_other'] || ''}
+              onChange={(e) => handleFindingChange(test.testID + '_other', e.target.value)}
+            />
+          )}
+          </>
         )
 
       default:
@@ -233,6 +277,20 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
           })}
         </div>
       )}
+
+      {/* 장기별 메모 */}
+      <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Label className="text-base font-bold text-slate-800">장기별 특이사항 (수의사 메모)</Label>
+          <Badge variant="outline" className="bg-white">선택사항</Badge>
+        </div>
+        <Textarea 
+          placeholder="해당 장기에 대한 추가적인 관찰 내용이나 의견을 자유롭게 적어주세요."
+          className="min-h-[120px] bg-white border-slate-200 focus:border-blue-400 focus:ring-blue-400"
+          value={organData.organ_memo || ''}
+          onChange={(e) => handleMemoChange(e.target.value)}
+        />
+      </div>
     </div>
   )
 }

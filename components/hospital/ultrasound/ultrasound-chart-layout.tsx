@@ -18,8 +18,8 @@ export default function UltrasoundChartLayout({ chartDetail, children, onSave, i
 
   return (
     <div className="flex h-screen flex-col bg-slate-100 overflow-hidden">
-      {/* Header */}
-      <header className="flex h-14 items-center justify-between border-b bg-white px-4 lg:px-6 z-10 shrink-0 shadow-sm">
+      {/* Header - Fixed at top */}
+      <header className="sticky top-0 flex h-14 items-center justify-between border-b bg-white px-4 lg:px-6 z-50 shrink-0 shadow-sm">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
