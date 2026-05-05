@@ -63,9 +63,61 @@ export default function DentalImageUploadTab({ chartDetail, teeth, hosId, onSucc
     return () => window.removeEventListener('paste', handlePaste)
   }, [])
 
+  const convertBmpToJpeg = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      // Check MIME type or extension
+      if (file.type !== 'image/bmp' && !file.name.toLowerCase().endsWith('.bmp')) {
+        return resolve(file)
+      }
+      
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          URL.revokeObjectURL(url)
+          return resolve(file)
+        }
+        
+        // Fill white background in case of transparency (BMP doesn't usually have alpha, but to be safe)
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0)
+        
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(url)
+          if (!blob) return resolve(file)
+          
+          const newName = file.name.replace(/\.bmp$/i, '.jpeg')
+          const jpegFile = new File([blob], newName, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          })
+          resolve(jpegFile)
+        }, 'image/jpeg', 0.9)
+      }
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        resolve(file) // Fallback to original file if conversion fails
+      }
+      
+      img.src = url
+    })
+  }
+
   // 파일 추가 공통 로직
-  const addFiles = (files: File[] | FileList) => {
-    const newImages: StagedImage[] = Array.from(files).map((file) => ({
+  const addFiles = async (files: File[] | FileList) => {
+    const fileArray = Array.from(files)
+    
+    // BMP 파일이 있다면 JPEG로 변환
+    const processedFiles = await Promise.all(fileArray.map(f => convertBmpToJpeg(f)))
+    
+    const newImages: StagedImage[] = processedFiles.map((file) => ({
       id: Math.random().toString(36).substring(2, 9),
       file,
       previewUrl: URL.createObjectURL(file),

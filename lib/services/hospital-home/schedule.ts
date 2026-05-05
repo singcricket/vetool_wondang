@@ -9,6 +9,8 @@ export const upsertSchedule = async (
 ) => {
   const supabase = await createClient()
 
+  console.log('upsertSchedule payload:', schedule)
+
   const { error } = await supabase.from('schedules').upsert({
     ...schedule,
     updated_at: new Date().toISOString(),

@@ -202,7 +202,7 @@ export default function UpsertScheduleDialog({
   ) => {
     setIsSubmitting(true)
     try {
-      const { start_time, end_time, target_users, ...rest } = values
+      const { start_time, end_time, target_users, is_admin_only, ...rest } = values
 
       // 카테고리별 컬러 적용
       let selectedColor = rest.color
@@ -221,7 +221,7 @@ export default function UpsertScheduleDialog({
         start_time: start_time.toISOString(),
         end_time: end_time.toISOString(),
         target_users: (() => {
-          const users = target_users ? target_users.split(',').filter(u => Boolean(u) && u !== 'admin') : []
+          const users = target_users ? target_users.split(',').filter(u => u !== 'admin') : []
           if (values.is_admin_only) {
             users.push('admin')
           }
@@ -238,6 +238,7 @@ export default function UpsertScheduleDialog({
       setIsDialogOpen(false)
       await refetch()
     } catch (error) {
+      console.log(error);
       console.error(error)
       toast.error('저장에 실패했습니다')
     } finally {
