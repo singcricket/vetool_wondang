@@ -1832,6 +1832,112 @@ export type Database = {
           },
         ]
       }
+      ultrasound_chart_organs: {
+        Row: {
+          chart_id: string
+          created_at: string
+          findings_data: Json
+          id: string
+          organ_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          chart_id: string
+          created_at?: string
+          findings_data?: Json
+          id?: string
+          organ_name: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          chart_id?: string
+          created_at?: string
+          findings_data?: Json
+          id?: string
+          organ_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ultrasound_chart_organs_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "ultrasound_charts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ultrasound_charts: {
+        Row: {
+          chart_date: string
+          created_at: string
+          evaluator_id: string | null
+          hos_id: string
+          id: string
+          impression_summary: string | null
+          patient_id: string
+          tags: string | null
+          updated_at: string
+          vet_id: string | null
+        }
+        Insert: {
+          chart_date: string
+          created_at?: string
+          evaluator_id?: string | null
+          hos_id: string
+          id?: string
+          impression_summary?: string | null
+          patient_id: string
+          tags?: string | null
+          updated_at?: string
+          vet_id?: string | null
+        }
+        Update: {
+          chart_date?: string
+          created_at?: string
+          evaluator_id?: string | null
+          hos_id?: string
+          id?: string
+          impression_summary?: string | null
+          patient_id?: string
+          tags?: string | null
+          updated_at?: string
+          vet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ultrasound_charts_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ultrasound_charts_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "ultrasound_charts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+          {
+            foreignKeyName: "ultrasound_charts_vet_id_fkey"
+            columns: ["vet_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_approvals: {
         Row: {
           created_at: string

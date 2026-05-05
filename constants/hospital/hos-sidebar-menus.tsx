@@ -9,6 +9,7 @@ import {
   PawPrint,
   Syringe,
   Folder,
+  Waves,
 } from 'lucide-react'
 
 const ToothIcon = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...props }: { size?: number; color?: string; strokeWidth?: number; [key: string]: any }) => (
@@ -71,6 +72,13 @@ export const HOS_SIDEBAR_MENUS = [
     isReady: true,
     isVetOnly: true,
     icon: <ToothIcon />,
+  },
+  {
+    name: '복부초음파',
+    path: 'ultrasound',
+    isReady: true,
+    isVetOnly: true,
+    icon: <Waves />,
   },
   {
     name: '진료노트',
