@@ -52,6 +52,7 @@ export type PartOfOrgan =
   | 'left'
   | 'cranial'
   | 'caudal'
+  | 'parenchyma'
   | 'general';
 
 // ─── Select Option ───
@@ -1499,6 +1500,82 @@ const kidneyTests: UltrasoundTestItem[] = [
         ownerResultTextKo: '신장의 내부 구조가 거의 구분되지 않습니다. 신장 기능이 상당히 저하된 상태로 보입니다.',
         isAbnormal: true,
         severity: 'severe',
+      },
+    ],
+  },
+
+  {
+    testID: 'kidney_medullary_rim_sign',
+    testName: 'Medullary Rim Sign',
+    testNameKo: '피수질 경계 고에코 라인 (Medullary rim sign)',
+    organ: 'kidney',
+    partOfOrgan: ['bilateral', 'medulla'],
+    testType: 'select',
+    clinicalSignificance: 'medium',
+    species: 'both',
+    required: false,
+    displayLevel: 1,
+    options: [
+      {
+        value: 'absent',
+        label: 'Absent',
+        labelKo: '없음',
+        resultText: 'Medullary rim sign absent',
+        resultTextKo: '피수질 경계 고에코 라인 관찰되지 않음',
+        isAbnormal: false,
+      },
+      {
+        value: 'present',
+        label: 'Present',
+        labelKo: '있음',
+        resultText: 'Medullary rim sign observed; consider underlying kidney disease or non-specific finding',
+        resultTextKo: '피수질 경계 고에코 라인(Medullary rim sign) 관찰됨; 신장 질환 또는 비특이적 소견 고려',
+        ownerResultTextKo: '신장 내부에 비정상적인 밝은 선이 보입니다. 신장 질환의 신호일 수 있습니다.',
+        isAbnormal: true,
+        severity: 'mild',
+      },
+    ],
+  },
+
+  {
+    testID: 'kidney_nephrocalcinosis',
+    testName: 'Nephrocalcinosis',
+    testNameKo: '신석회증 (Nephrocalcinosis)',
+    organ: 'kidney',
+    partOfOrgan: ['bilateral', 'parenchyma'],
+    testType: 'select',
+    clinicalSignificance: 'medium',
+    species: 'both',
+    required: false,
+    displayLevel: 1,
+    options: [
+      {
+        value: 'none',
+        label: 'None',
+        labelKo: '없음',
+        resultText: 'No evidence of nephrocalcinosis',
+        resultTextKo: '신석회증 관찰되지 않음',
+        isAbnormal: false,
+      },
+      {
+        value: 'mild',
+        label: 'Mild',
+        labelKo: '경미',
+        resultText: 'Mild nephrocalcinosis observed; small hyperechoic foci without shadowing',
+        resultTextKo: '경미한 신석회증 관찰됨 (음영 없는 미세한 고에코 입자)',
+        ownerResultTextKo: '신장 조직 내부에 아주 미세한 석회화(딱딱한 침착물)가 보입니다. 현재로서는 큰 이상은 없으나 정기적인 관찰이 필요합니다.',
+        isAbnormal: true,
+        severity: 'mild',
+      },
+      {
+        value: 'moderate_to_severe',
+        label: 'Moderate to Severe',
+        labelKo: '중등도 이상',
+        resultText: 'Significant nephrocalcinosis observed; multiple hyperechoic foci with acoustic shadowing',
+        resultTextKo: '중등도 이상의 신석회증 관찰됨 (음영을 동반한 다수의 고에코 입자)',
+        ownerResultTextKo: '신장 내부에 뚜렷한 석회화가 진행되어 있습니다. 이는 신장 기능 저하나 대사 이상과 관련이 있을 수 있습니다.',
+        isAbnormal: true,
+        severity: 'moderate',
       },
     ],
   },
