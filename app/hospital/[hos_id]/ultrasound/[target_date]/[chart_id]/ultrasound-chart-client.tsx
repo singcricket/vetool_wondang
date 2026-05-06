@@ -7,7 +7,7 @@ import { getUltrasoundChartOrgans } from '@/lib/services/ultrasound/ultrasound-c
 import UltrasoundChartLayout from '@/components/hospital/ultrasound/ultrasound-chart-layout'
 import UltrasoundOrganTabs from '@/components/hospital/ultrasound/ultrasound-organ-tabs'
 import UltrasoundDynamicForm from '@/components/hospital/ultrasound/ultrasound-dynamic-form'
-import { organSections, Organ } from '@/constants/hospital/ultrasound/ultrasound_testref'
+import { organSections, Organ } from '@/constants/hospital/ultrasound'
 
 import { toast } from 'sonner'
 import UltrasoundImpressionPanel from '@/components/hospital/ultrasound/ultrasound-impression-panel'

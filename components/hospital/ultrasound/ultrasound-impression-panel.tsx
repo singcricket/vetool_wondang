@@ -5,7 +5,7 @@ import {
   evaluateImpressionRules,
   buildChartSummary,
   organSections,
-} from '@/constants/hospital/ultrasound/ultrasound_testref'
+} from '@/constants/hospital/ultrasound'
 import { UltrasoundChartOrgan } from '@/types/hospital/ultrasound-type'
 
 import { Copy } from 'lucide-react'

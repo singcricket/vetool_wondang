@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { OrganSection, Organ } from '@/constants/hospital/ultrasound/ultrasound_testref'
+import { OrganSection, Organ } from '@/constants/hospital/ultrasound'
 import { UltrasoundChartOrgan } from '@/types/hospital/ultrasound-type'
 import { cn } from '@/lib/utils/utils'
 import { CheckCircle2, Circle } from 'lucide-react'

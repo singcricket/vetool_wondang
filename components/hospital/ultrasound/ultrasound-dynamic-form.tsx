@@ -6,7 +6,7 @@ import {
   Organ,
   isTestVisible,
   UltrasoundTestItem,
-} from '@/constants/hospital/ultrasound/ultrasound_testref'
+} from '@/constants/hospital/ultrasound'
 import { UltrasoundChartOrgan } from '@/types/hospital/ultrasound-type'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
