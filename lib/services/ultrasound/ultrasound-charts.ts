@@ -42,6 +42,22 @@ export async function getUltrasoundChartOrgans(chartId: string) {
   return data
 }
 
+export async function getPatientUltrasoundCharts(patientId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('ultrasound_charts')
+    .select('*')
+    .eq('patient_id', patientId)
+    .order('chart_date', { ascending: false })
+
+  if (error) {
+    console.error('getPatientUltrasoundCharts error:', error)
+    return []
+  }
+  return data
+}
+
 export async function updateUltrasoundChart(chartId: string, updates: UltrasoundChartUpdate) {
   const supabase = await createClient()
   

@@ -2,9 +2,16 @@
 
 import React from 'react'
 import { UltrasoundChartDetail } from '@/types/hospital/ultrasound-type'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { useRouter, useParams } from 'next/navigation'
+import { ArrowLeft, Save, Trash2, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +34,8 @@ interface Props {
   isSaving?: boolean
   onDelete?: () => void
   isDeleting?: boolean
+  prevCharts?: UltrasoundChartDetail[]
+  currentChartId?: string
 }
 
 export default function UltrasoundChartLayout({ 
@@ -36,9 +45,13 @@ export default function UltrasoundChartLayout({
   onSave, 
   isSaving,
   onDelete,
-  isDeleting 
+  isDeleting,
+  prevCharts = [],
+  currentChartId,
 }: Props) {
   const router = useRouter()
+  const params = useParams()
+  const hos_id = params.hos_id as string
 
   return (
     <div className="flex h-screen flex-col bg-slate-100 overflow-hidden">
@@ -61,6 +74,34 @@ export default function UltrasoundChartLayout({
               {chartDetail.patient?.name} ({chartDetail.patient?.breed}) • {chartDetail.chart_date}
             </p>
           </div>
+
+          {/* Chart History Selector */}
+          {prevCharts.length > 1 && (
+            <div className="ml-4 flex items-center gap-2 border-l pl-4">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              <Select
+                value={currentChartId}
+                onValueChange={(val) => {
+                  if (val === currentChartId) return
+                  const selectedChart = prevCharts.find(c => c.id === val)
+                  if (selectedChart) {
+                    router.push(`/hospital/${hos_id}/ultrasound/${selectedChart.chart_date}/${selectedChart.id}` as any)
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 w-[160px] text-xs bg-slate-50 border-slate-200">
+                  <SelectValue placeholder="다른 차트 보기" />
+                </SelectTrigger>
+                <SelectContent>
+                  {prevCharts.map((chart) => (
+                    <SelectItem key={chart.id} value={chart.id} className="text-xs">
+                      {chart.chart_date} {chart.id === currentChartId ? '(현재)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
