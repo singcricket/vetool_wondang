@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { DentalTooth, DentalChartDetail, DentalImage } from '@/types/dental/dental-type'
 import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
+import { fetchPatientDentalHistory } from '@/lib/services/dental/fetch-dental'
+import { fetchDentalChartTeeth } from '@/lib/services/dental/fetch-dental-chart'
 import DentalToothDetailView from '@/components/hospital/dental/dental-report/dental-tooth-detail-view'
 
 // SVG imports
@@ -209,6 +211,38 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
   // 개 전용: 구강 전개도 표시 토글
   const [showOpenmouth, setShowOpenmouth] = useState(true)
 
+  // ─── 과거 차트 비교 기능 ───
+  const [prevTeeth, setPrevTeeth] = useState<DentalTooth[]>([])
+  const [prevImages, setPrevImages] = useState<DentalImage[]>([])
+  const [hasPrevData, setHasPrevData] = useState(false)
+  const [prevChartDate, setPrevChartDate] = useState<string>('')
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!chartDetail.patient_id) return
+      
+      try {
+        const history = await fetchPatientDentalHistory(chartDetail.patient_id)
+        const currentIndex = history.findIndex(h => h.id === chartDetail.id)
+        const prevChart = history[currentIndex + 1]
+
+        if (prevChart) {
+          const [pTeeth, pImages] = await Promise.all([
+            fetchDentalChartTeeth(prevChart.id),
+            getDentalImages(prevChart.id)
+          ])
+          setPrevTeeth(pTeeth)
+          setPrevImages(pImages)
+          setPrevChartDate(prevChart.chart_date)
+          setHasPrevData(true)
+        }
+      } catch (err) {
+        console.error('Failed to fetch dental history:', err)
+      }
+    }
+    fetchHistory()
+  }, [chartDetail.id, chartDetail.patient_id])
+
   const selectedTooth = teeth.find((t) => String(t.tooth_id) === selectedToothId)
 
   // SVG 컴포넌트 결정
@@ -329,52 +363,104 @@ export default function DentalChartTestPanel({ chartDetail, teeth, images }: Pro
         </div>
 
         {/* ── 정보 사이드바 ── */}
-        <div className="flex-1 min-w-[600px] border-l bg-white/70 backdrop-blur-sm overflow-y-auto flex flex-col">
+        <div className="flex-1 min-w-[700px] border-l bg-white/70 backdrop-blur-sm overflow-y-auto flex flex-col">
           {selectedToothId ? (
-            <div className="p-6 flex flex-col gap-6">
-              {/* 치아별 상세 내역 (Report Detailed와 동일) */}
-              {selectedTooth ? (
-                <DentalToothDetailView 
-                  tooth={selectedTooth} 
-                  images={images} 
-                  species={species}
-                />
+            <div className="flex h-full divide-x divide-slate-200">
+              
+              {/* 왼쪽: 현재 차트 정보 */}
+              <div className="flex-1 flex flex-col min-w-0">
+                <div className="bg-blue-50 px-4 py-2 border-b flex justify-between items-center shrink-0">
+                  <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Current Exam</span>
+                  <span className="text-[10px] text-blue-500 font-medium">{chartDetail.chart_date}</span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6">
+                  {selectedTooth ? (
+                    <DentalToothDetailView 
+                      tooth={selectedTooth} 
+                      images={images} 
+                      species={species}
+                    />
+                  ) : (
+                    (() => {
+                      const hasImages = images.some(img => img.tooth_ids?.includes(selectedToothId!))
+                      if (hasImages) {
+                        return (
+                          <DentalToothDetailView 
+                            tooth={{ tooth_id: Number(selectedToothId), hos_id: '', chart_id: '' } as DentalTooth} 
+                            images={images} 
+                            species={species}
+                          />
+                        )
+                      }
+                      return (
+                        <div className="flex flex-col gap-4">
+                          <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-lg">
+                              {selectedToothId}
+                            </span>
+                            <span className="text-slate-600 font-medium">
+                              {toothNames[selectedToothId!] ?? `치아 #${selectedToothId}`}
+                            </span>
+                          </h3>
+                          <div className="p-8 border-2 border-dashed border-slate-200 rounded-xl text-center">
+                            <p className="text-slate-400 text-sm italic">기록된 차트 정보가 없습니다.</p>
+                          </div>
+                        </div>
+                      )
+                    })()
+                  )}
+                </div>
+              </div>
+
+              {/* 오른쪽: 과거 차트 정보 (비교용) */}
+              {hasPrevData ? (
+                <div className="flex-1 flex flex-col min-w-0 bg-slate-50/30 border-l border-slate-200">
+                  <div className="bg-slate-100 px-4 py-2 border-b flex justify-between items-center shrink-0">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Previous Exam</span>
+                    <span className="text-[10px] text-slate-500 font-medium">{prevChartDate}</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-6 opacity-85 hover:opacity-100 transition-opacity">
+                    {(() => {
+                      const prevTooth = prevTeeth.find(t => t.tooth_id === Number(selectedToothId))
+                      const hasPrevImages = prevImages.some(img => img.tooth_ids?.includes(selectedToothId!))
+                      
+                      if (prevTooth || hasPrevImages) {
+                        return (
+                          <DentalToothDetailView 
+                            tooth={prevTooth || { tooth_id: Number(selectedToothId), hos_id: '', chart_id: '' } as DentalTooth} 
+                            images={prevImages} 
+                            species={species}
+                          />
+                        )
+                      }
+                      return (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2 py-10">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-2">
+                            <span className="text-slate-300">#</span>
+                          </div>
+                          <p className="text-xs italic">해당 일자에 기록된 치아 정보가 없습니다.</p>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
               ) : (
-                (() => {
-                  const hasImages = images.some(img => img.tooth_ids?.includes(selectedToothId!))
-                  if (hasImages) {
-                    return (
-                      <DentalToothDetailView 
-                        tooth={{ tooth_id: Number(selectedToothId), hos_id: '', chart_id: '' } as DentalTooth} 
-                        images={images} 
-                        species={species}
-                      />
-                    )
-                  }
-                  return (
-                    <div className="flex flex-col gap-4">
-                      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-lg">
-                          {selectedToothId}
-                        </span>
-                        <span className="text-slate-600 font-medium">
-                          {toothNames[selectedToothId!] ?? `치아 #${selectedToothId}`}
-                        </span>
-                      </h3>
-                      <div className="p-8 border-2 border-dashed border-slate-200 rounded-xl text-center">
-                        <p className="text-slate-400 text-sm italic">기록된 차트 정보가 없습니다.</p>
-                      </div>
-                    </div>
-                  )
-                })()
+                <div className="hidden lg:flex flex-1 flex-col items-center justify-center bg-slate-50/30 text-slate-400 p-10 text-center border-l border-slate-200">
+                  <p className="text-xs italic">이전 진료 기록이 없습니다.</p>
+                </div>
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center gap-3 px-4 py-8">
-              <div className="text-5xl opacity-20">🦷</div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                치아를 클릭하면 상세 정보가 여기에 표시됩니다
-              </p>
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-10 text-center space-y-4">
+              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-2 animate-pulse">
+                <span className="text-3xl font-bold text-slate-200">#</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-600">치아를 선택해 주세요</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
+                  왼쪽 도면에서 치아를 클릭하면 상세 정보와 과거 기록을 비교할 수 있습니다.
+                </p>
+              </div>
             </div>
           )}
         </div>
