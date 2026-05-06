@@ -10,7 +10,7 @@ import { organSections, Organ } from '@/constants/hospital/ultrasound/ultrasound
 
 import { toast } from 'sonner'
 import UltrasoundImpressionPanel from '@/components/hospital/ultrasound/ultrasound-impression-panel'
-import { updateUltrasoundChart, upsertUltrasoundOrgan } from '@/lib/services/ultrasound/ultrasound-charts'
+import { updateUltrasoundChart, upsertUltrasoundOrgan, deleteUltrasoundChart } from '@/lib/services/ultrasound/ultrasound-charts'
 
 interface Props {
   hosId: string
@@ -24,6 +24,7 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
   const [organsData, setOrgansData] = useState<Record<string, UltrasoundChartOrgan>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const fetchOrgans = async () => {
@@ -68,6 +69,22 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
     }
   }
 
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    const toastId = toast.loading('차트를 삭제하는 중...')
+
+    try {
+      await deleteUltrasoundChart(chartId)
+      toast.success('삭제되었습니다.', { id: toastId })
+      router.push(`/hospital/${hosId}/ultrasound`)
+    } catch (err) {
+      toast.error('삭제 중 오류가 발생했습니다.', { id: toastId })
+      console.error(err)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center">로딩 중...</div>
   }
@@ -81,7 +98,13 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
   }
 
   return (
-    <UltrasoundChartLayout chartDetail={chartDetail} onSave={handleSave} isSaving={isSaving}>
+    <UltrasoundChartLayout 
+      chartDetail={chartDetail} 
+      onSave={handleSave} 
+      isSaving={isSaving}
+      onDelete={handleDelete}
+      isDeleting={isDeleting}
+    >
       <div className="flex h-full w-full bg-slate-50 overflow-hidden">
         {/* Left Side: Organ Navigation Tabs */}
         <div className="w-48 sm:w-64 border-r bg-white h-full overflow-y-auto">

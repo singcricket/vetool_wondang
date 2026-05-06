@@ -31,17 +31,29 @@ export default function UltrasoundImpressionPanel({ organsData, lang = 'ko' }: P
     const organ = organsData[section.organ]
     if (!organ) return
 
-    if (organ.status === 'abnormal' && organ.findings_data) {
-      // 1. DDx용 (전체 병합)
-      Object.assign(allFindings, organ.findings_data)
+    // 1. 표준 소견 추출
+    const organSummaries = (organ.status === 'abnormal' || organ.status === 'absent') && organ.findings_data
+      ? buildChartSummary(
+          organ.findings_data as Record<string, string | number>,
+          lang,
+          section.organ
+        )
+      : []
 
-      // 2. 요약용 (장기별)
-      const organSummaries = buildChartSummary(
-        organ.findings_data as Record<string, string | number>,
-        lang,
-        section.organ
-      )
-      summaries.push(...organSummaries)
+    if ((organ.status === 'abnormal' || organ.status === 'absent') && organ.findings_data) {
+      Object.assign(allFindings, organ.findings_data)
+    }
+
+    // 2. 메모 추가
+    const organLines = [...organSummaries]
+    if (organ.organ_memo?.trim()) {
+      organLines.push(`(메모) ${organ.organ_memo.trim()}`)
+    }
+
+    // 3. 최종 요약문 구성
+    if (organLines.length > 0) {
+      const prefix = lang === 'ko' ? section.organNameKo : section.organName
+      summaries.push(`[${prefix}]\n${organLines.join('\n')}`)
     } else if (organ.status === 'normal') {
       const normalPhrase = lang === 'ko' 
         ? `[${section.organNameKo}] 특이적인 이상 소견이 관찰되지 않음`
@@ -93,9 +105,9 @@ export default function UltrasoundImpressionPanel({ organsData, lang = 'ko' }: P
           </Button>
         </h3>
         {summaries.length > 0 ? (
-          <ul className="list-disc pl-5 text-sm text-slate-600 space-y-1">
+          <ul className="list-disc pl-5 text-sm text-slate-600 space-y-3">
             {summaries.map((summary, idx) => (
-              <li key={idx}>{summary}</li>
+              <li key={idx} className="whitespace-pre-wrap leading-relaxed">{summary}</li>
             ))}
           </ul>
         ) : (

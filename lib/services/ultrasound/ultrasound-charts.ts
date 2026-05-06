@@ -74,3 +74,17 @@ export async function upsertUltrasoundOrgan(organData: UltrasoundChartOrganInser
   }
   return data
 }
+
+export async function deleteUltrasoundChart(chartId: string) {
+  const supabase = await createClient()
+  
+  const { error } = await supabase
+    .from('ultrasound_charts')
+    .delete()
+    .eq('id', chartId)
+    
+  if (error) {
+    console.error('deleteUltrasoundChart error:', error)
+    throw new Error('차트 삭제에 실패했습니다.')
+  }
+}

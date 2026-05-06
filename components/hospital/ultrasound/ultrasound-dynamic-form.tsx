@@ -248,10 +248,10 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
         </RadioGroup>
       </div>
 
-      {/* Level 1~3: Dynamic Test Items (Only shown if abnormal) */}
-      {organData.status === statusGate.abnormalValue && (
+      {/* Level 1~3: Dynamic Test Items (Only shown if abnormal or absent) */}
+      {(organData.status === 'abnormal' || organData.status === 'absent') && (
         <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-          {tests.filter(test => isTestVisible(test, findings)).map(test => {
+          {tests.filter(test => isTestVisible(test, { ...findings, [statusGate.testID]: organData.status })).map(test => {
             const isSubLevel = test.displayLevel > 1
             
             return (

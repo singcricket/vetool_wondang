@@ -572,7 +572,7 @@ const liverTests: UltrasoundTestItem[] = [
       testID: 'liver_nodule_presence',
       triggerValues: ['present'],
     },
-    relatedTests: ['liver_nodule_size', 'liver_nodule_echogenicity'],
+    relatedTests: ['liver_nodule_size', 'liver_nodule_echogenicity', 'liver_nodule_location'],
     options: [
       {
         value: 'solitary',
@@ -634,7 +634,7 @@ const liverTests: UltrasoundTestItem[] = [
       testID: 'liver_nodule_presence',
       triggerValues: ['present'],
     },
-    relatedTests: ['liver_nodule_echogenicity', 'liver_nodule_number'],
+    relatedTests: ['liver_nodule_echogenicity', 'liver_nodule_number', 'liver_nodule_location'],
     normalRange: { dog: { max: 0 }, cat: { max: 0 } },
     ranges: [
       {
@@ -683,7 +683,7 @@ const liverTests: UltrasoundTestItem[] = [
       testID: 'liver_nodule_presence',
       triggerValues: ['present'],
     },
-    relatedTests: ['liver_nodule_size', 'liver_nodule_number'],
+    relatedTests: ['liver_nodule_size', 'liver_nodule_number', 'liver_nodule_location'],
     options: [
       {
         value: 'hyperechoic_nodule',
@@ -735,6 +735,35 @@ const liverTests: UltrasoundTestItem[] = [
         isAbnormal: true,
         severity: 'severe',
       },
+    ],
+  },
+
+  // [Level 2] 결절 위치 ← liver_nodule_presence = 'present' 일 때만 표시
+  {
+    testID: 'liver_nodule_location',
+    testName: 'Hepatic Nodule Location',
+    testNameKo: '간 결절 위치',
+    organ: 'liver',
+    partOfOrgan: ['solitary', 'multiple'],
+    testType: 'multiselect',
+    clinicalSignificance: 'medium',
+    species: 'both',
+    required: false,
+    displayLevel: 2,
+    dependsOn: {
+      testID: 'liver_nodule_presence',
+      triggerValues: ['present'],
+    },
+    relatedTests: ['liver_nodule_size', 'liver_nodule_number', 'liver_nodule_echogenicity'],
+    resultTemplate: 'Hepatic nodule location(s): {values}',
+    resultTemplateKo: '간 결절 위치: {values}',
+    resultTemplateOwnerKo: '간의 다음 부위에서 결절(혹)이 관찰됩니다: {values}',
+    options: [
+      { value: 'left_lobe', label: 'Left lobe', labelKo: '좌엽', resultText: '', resultTextKo: '', isAbnormal: true },
+      { value: 'right_lobe', label: 'Right lobe', labelKo: '우엽', resultText: '', resultTextKo: '', isAbnormal: true },
+      { value: 'quadrate_lobe', label: 'Quadrate lobe', labelKo: '방형엽', resultText: '', resultTextKo: '', isAbnormal: true },
+      { value: 'caudate_lobe', label: 'Caudate lobe', labelKo: '미상엽', resultText: '', resultTextKo: '', isAbnormal: true },
+      { value: 'diffuse', label: 'Throughout all lobes', labelKo: '전체 간에 걸쳐', resultText: '', resultTextKo: '', isAbnormal: true },
     ],
   },
 
@@ -806,6 +835,26 @@ const liverTests: UltrasoundTestItem[] = [
 // ══════════════════════════════════════════════
 
 const gallbladderTests: UltrasoundTestItem[] = [
+  {
+    testID: 'organ_absent_reason',
+    testName: 'Reason for Absence',
+    testNameKo: '장기 결손/적출 사유',
+    organ: 'gallbladder',
+    partOfOrgan: 'general',
+    testType: 'select',
+    clinicalSignificance: 'medium',
+    species: 'both',
+    required: false,
+    displayLevel: 1,
+    dependsOn: { testID: 'organ_status', triggerValues: ['absent'] },
+    options: [
+      { value: 'surgical_removal', label: 'Surgical removal', labelKo: '수술적 적출', resultText: 'Previously removed surgically', resultTextKo: '기존 수술을 통해 적출됨', isAbnormal: true },
+      { value: 'congenital_absence', label: 'Congenital absence / Agenesis', labelKo: '선천적 결손', resultText: 'Congenital absence / agenesis', resultTextKo: '선천적 결손/미발달', isAbnormal: true },
+      { value: 'not_identified', label: 'Not identified (Gas, etc.)', labelKo: '관찰 불가 (가스 등)', resultText: 'Not identified on ultrasound', resultTextKo: '초음파상 관찰되지 않음', isAbnormal: true },
+      { value: 'ectopic', label: 'Ectopic location', labelKo: '이소성 위치', resultText: 'Ectopic location suspected', resultTextKo: '이소성 위치 의심', isAbnormal: true },
+      { value: 'contracted_gb', label: 'Contracted GB (chronic cholecystitis,fibrosis, post-prandial)', labelKo: '담낭 위축 (만성 담낭염, 섬유화, 식후 등)', resultText: 'Contracted gallbladder', resultTextKo: '위축된 담낭', isAbnormal: true },
+    ],
+  },
 
   // 담낭벽 두께
   {
@@ -958,6 +1007,7 @@ const gallbladderTests: UltrasoundTestItem[] = [
     species: 'both',
     required: false,
     displayLevel: 1,
+    dependsOn: { testID: 'gallbladder_status', triggerValues: ['abnormal', 'absent'] },
     normalRange: {
       dog: { max: 3 },
       cat: { max: 4 },
@@ -999,6 +1049,25 @@ const gallbladderTests: UltrasoundTestItem[] = [
 // ══════════════════════════════════════════════
 
 const spleenTests: UltrasoundTestItem[] = [
+  {
+    testID: 'organ_absent_reason',
+    testName: 'Reason for Absence',
+    testNameKo: '장기 결손/적출 사유',
+    organ: 'spleen',
+    partOfOrgan: 'general',
+    testType: 'select',
+    clinicalSignificance: 'medium',
+    species: 'both',
+    required: false,
+    displayLevel: 1,
+    dependsOn: { testID: 'organ_status', triggerValues: ['absent'] },
+    options: [
+      { value: 'surgical_removal', label: 'Surgical removal', labelKo: '수술적 적출', resultText: 'Previously removed surgically', resultTextKo: '기존 수술을 통해 적출됨', isAbnormal: true },
+      { value: 'congenital_absence', label: 'Congenital absence / Agenesis', labelKo: '선천적 결손', resultText: 'Congenital absence / agenesis', resultTextKo: '선천적 결손/미발달', isAbnormal: true },
+      { value: 'not_identified', label: 'Not identified (Gas, etc.)', labelKo: '관찰 불가 (가스 등)', resultText: 'Not identified on ultrasound', resultTextKo: '초음파상 관찰되지 않음', isAbnormal: true },
+      { value: 'ectopic', label: 'Ectopic location', labelKo: '이소성 위치', resultText: 'Ectopic location suspected', resultTextKo: '이소성 위치 의심', isAbnormal: true },
+    ],
+  },
 
   {
     testID: 'spleen_echogenicity',
@@ -1314,6 +1383,25 @@ const spleenTests: UltrasoundTestItem[] = [
 // ══════════════════════════════════════════════
 
 const kidneyTests: UltrasoundTestItem[] = [
+  {
+    testID: 'organ_absent_reason',
+    testName: 'Reason for Absence',
+    testNameKo: '장기 결손/적출 사유',
+    organ: 'left_kidney', // Placeholder, will be mapped in organSections
+    partOfOrgan: 'general',
+    testType: 'select',
+    clinicalSignificance: 'medium',
+    species: 'both',
+    required: false,
+    displayLevel: 1,
+    dependsOn: { testID: 'organ_status', triggerValues: ['absent'] },
+    options: [
+      { value: 'surgical_removal', label: 'Surgical removal', labelKo: '수술적 적출', resultText: 'Previously removed surgically', resultTextKo: '기존 수술을 통해 적출됨', isAbnormal: true },
+      { value: 'congenital_absence', label: 'Congenital absence / Agenesis', labelKo: '선천적 결손', resultText: 'Congenital absence / agenesis', resultTextKo: '선천적 결손/미발달', isAbnormal: true },
+      { value: 'not_identified', label: 'Not identified (Gas, etc.)', labelKo: '관찰 불가 (가스 등)', resultText: 'Not identified on ultrasound', resultTextKo: '초음파상 관찰되지 않음', isAbnormal: true },
+      { value: 'ectopic', label: 'Ectopic location', labelKo: '이소성 위치', resultText: 'Ectopic location suspected', resultTextKo: '이소성 위치 의심', isAbnormal: true },
+    ],
+  },
 
   {
     testID: 'kidney_cortex_echogenicity',
@@ -2903,6 +2991,25 @@ const giTractTests: UltrasoundTestItem[] = [
 // ══════════════════════════════════════════════
 
 const adrenalTests: UltrasoundTestItem[] = [
+  {
+    testID: 'organ_absent_reason',
+    testName: 'Reason for Absence',
+    testNameKo: '장기 결손/적출 사유',
+    organ: 'left_adrenal', // Placeholder
+    partOfOrgan: 'general',
+    testType: 'select',
+    clinicalSignificance: 'medium',
+    species: 'both',
+    required: false,
+    displayLevel: 1,
+    dependsOn: { testID: 'organ_status', triggerValues: ['absent'] },
+    options: [
+      { value: 'surgical_removal', label: 'Surgical removal', labelKo: '수술적 적출', resultText: 'Previously removed surgically', resultTextKo: '기존 수술을 통해 적출됨', isAbnormal: true },
+      { value: 'congenital_absence', label: 'Congenital absence / Agenesis', labelKo: '선천적 결손', resultText: 'Congenital absence / agenesis', resultTextKo: '선천적 결손/미발달', isAbnormal: true },
+      { value: 'not_identified', label: 'Not identified (Gas, etc.)', labelKo: '관찰 불가 (가스 등)', resultText: 'Not identified on ultrasound', resultTextKo: '초음파상 관찰되지 않음', isAbnormal: true },
+      { value: 'ectopic', label: 'Ectopic location', labelKo: '이소성 위치', resultText: 'Ectopic location suspected', resultTextKo: '이소성 위치 의심', isAbnormal: true },
+    ],
+  },
 
   {
     testID: 'adrenal_size',
@@ -3549,18 +3656,25 @@ export const impressionRules: ImpressionRule[] = [
 // ─────────────────────────────────────────────
 
 // helper: statusGate factory
-function makeGate(organID: string, organNameEn: string, organNameKo: string): OrganStatusGate {
+function makeGate(organID: string, organNameEn: string, organNameKo: string, includeAbsent: boolean = false): OrganStatusGate {
+  const options = [
+    { value: 'normal',      label: 'Normal — no further evaluation needed', labelKo: '정상 — 추가 평가 불필요' },
+    { value: 'abnormal',    label: 'Abnormal — evaluate sub-items',          labelKo: '이상 — 세부 항목 평가' },
+  ];
+
+  if (includeAbsent) {
+    options.push({ value: 'absent', label: 'Absent / Removed', labelKo: '결손 / 적출됨' });
+  }
+
+  options.push({ value: 'not_examined', label: 'Not examined', labelKo: '검사 불가' });
+
   return {
     testID: `${organID}_status`,
     testName: `${organNameEn} — Overall Assessment`,
     testNameKo: `${organNameKo} 전반적 평가`,
     normalValue: 'normal',
     abnormalValue: 'abnormal',
-    options: [
-      { value: 'normal',      label: 'Normal — no further evaluation needed', labelKo: '정상 — 추가 평가 불필요' },
-      { value: 'abnormal',    label: 'Abnormal — evaluate sub-items',          labelKo: '이상 — 세부 항목 평가' },
-      { value: 'not_examined',label: 'Not examined',                            labelKo: '검사 불가' },
-    ],
+    options: options,
   };
 }
 
@@ -3578,7 +3692,7 @@ export const organSections: OrganSection[] = [
     organName: 'Gallbladder & Biliary System',
     organNameKo: '담낭 및 담도계',
     scanningOrder: 2,
-    statusGate: makeGate('gallbladder', 'Gallbladder', '담낭'),
+    statusGate: makeGate('gallbladder', 'Gallbladder', '담낭', true),
     tests: gallbladderTests,
   },
   {
@@ -3586,7 +3700,7 @@ export const organSections: OrganSection[] = [
     organName: 'Spleen',
     organNameKo: '비장',
     scanningOrder: 3,
-    statusGate: makeGate('spleen', 'Spleen', '비장'),
+    statusGate: makeGate('spleen', 'Spleen', '비장', true),
     tests: spleenTests,
   },
   {
@@ -3602,7 +3716,7 @@ export const organSections: OrganSection[] = [
     organName: 'Left Kidney',
     organNameKo: '좌측 신장',
     scanningOrder: 5.1,
-    statusGate: makeGate('left_kidney', 'Left Kidney', '좌측 신장'),
+    statusGate: makeGate('left_kidney', 'Left Kidney', '좌측 신장', true),
     tests: kidneyTests.map(t => ({ ...t, organ: 'left_kidney' as Organ })),
   },
   {
@@ -3610,7 +3724,7 @@ export const organSections: OrganSection[] = [
     organName: 'Right Kidney',
     organNameKo: '우측 신장',
     scanningOrder: 5.2,
-    statusGate: makeGate('right_kidney', 'Right Kidney', '우측 신장'),
+    statusGate: makeGate('right_kidney', 'Right Kidney', '우측 신장', true),
     tests: kidneyTests.map(t => ({ ...t, organ: 'right_kidney' as Organ })),
   },
   {
@@ -3626,7 +3740,7 @@ export const organSections: OrganSection[] = [
     organName: 'Left Adrenal Gland',
     organNameKo: '좌측 부신',
     scanningOrder: 7.1,
-    statusGate: makeGate('left_adrenal', 'Left Adrenal Gland', '좌측 부신'),
+    statusGate: makeGate('left_adrenal', 'Left Adrenal Gland', '좌측 부신', true),
     tests: adrenalTests.map(t => ({ ...t, organ: 'left_adrenal' as Organ })),
   },
   {
@@ -3634,7 +3748,7 @@ export const organSections: OrganSection[] = [
     organName: 'Right Adrenal Gland',
     organNameKo: '우측 부신',
     scanningOrder: 7.2,
-    statusGate: makeGate('right_adrenal', 'Right Adrenal Gland', '우측 부신'),
+    statusGate: makeGate('right_adrenal', 'Right Adrenal Gland', '우측 부신', true),
     tests: adrenalTests.map(t => ({ ...t, organ: 'right_adrenal' as Organ })),
   },
   {
@@ -3728,21 +3842,34 @@ export function isOrganVisible(
  */
 export function isTestVisible(
   test: UltrasoundTestItem,
-  results: Record<string, string>
+  results: Record<string, any>
 ): boolean {
-  if (!test.dependsOn) return true;  // Level 1
+  // 장기 상태 가져오기 (results에 { [organ_status_id]: status } 가 포함되어 있다고 가정)
+  const organStatusID = test.organ + '_status';
+  const organStatus = results[organStatusID];
+
+  if (!test.dependsOn) {
+    // Level 1 항목은 기본적으로 'abnormal' 상태일 때만 표시
+    // 'absent' 상태일 때는 dependsOn이 설정된 전용 항목들만 표시됨
+    return organStatus === 'abnormal';
+  }
 
   const deps = Array.isArray(test.dependsOn) ? test.dependsOn : [test.dependsOn];
 
   return deps.every((dep) => {
-    const currentValue = results[dep.testID];
+    let currentValue = results[dep.testID];
+    
+    // 'organ_status'는 특별한 키로 처리하여 현재 장기의 상태를 참조함
+    if (dep.testID === 'organ_status') {
+      currentValue = organStatus;
+    }
+
     if (!currentValue) return false;
     const op = dep.operator ?? 'OR';
     if (op === 'OR') {
-      return dep.triggerValues.includes(currentValue);
+      return dep.triggerValues.includes(String(currentValue));
     } else {
-      // AND: 현재 값이 triggerValues 안에 있어야 함 (단일 값 기준)
-      return dep.triggerValues.includes(currentValue);
+      return dep.triggerValues.includes(String(currentValue));
     }
   });
 }
@@ -3870,13 +3997,7 @@ export function buildChartSummary(
       }
 
       if (resultText) {
-        // 좌/우측 구분이 있는 장기면 접두사 추가
-        if (targetOrgan && (section.organ.includes('left_') || section.organ.includes('right_'))) {
-          const prefix = lang === 'ko' ? section.organNameKo : section.organName;
-          lines.push(`[${prefix}] ${resultText}`);
-        } else {
-          lines.push(resultText);
-        }
+        lines.push(resultText);
       }
     }
   }
