@@ -1,4 +1,5 @@
 import { getUltrasoundChart } from '@/lib/services/ultrasound/ultrasound-charts'
+import { fetchUltrasoundLayoutData } from '@/lib/services/ultrasound/ultrasound-layout'
 import { redirect } from 'next/navigation'
 import UltrasoundChartClient from './ultrasound-chart-client'
 
@@ -18,7 +19,10 @@ export default async function UltrasoundChartPage({ params }: Props) {
   const resolvedParams = await params
   const { hos_id, chart_id, target_date } = resolvedParams
 
-  const chartDetail = await getUltrasoundChart(chart_id)
+  const [chartDetail, { vetList }] = await Promise.all([
+    getUltrasoundChart(chart_id),
+    fetchUltrasoundLayoutData(hos_id),
+  ])
 
   if (!chartDetail) {
     redirect(`/hospital/${hos_id}?error=chart_not_found`)
@@ -30,6 +34,7 @@ export default async function UltrasoundChartPage({ params }: Props) {
       chartId={chart_id}
       chartDate={target_date}
       chartDetail={chartDetail}
+      vetList={vetList}
     />
   )
 }

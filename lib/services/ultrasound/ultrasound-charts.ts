@@ -88,3 +88,100 @@ export async function deleteUltrasoundChart(chartId: string) {
     throw new Error('차트 삭제에 실패했습니다.')
   }
 }
+
+export async function updateUltrasoundVets(
+  chartId: string,
+  vetId: string | null,
+  evaluatorId: string | null,
+): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('ultrasound_charts')
+    .update({ vet_id: vetId, evaluator_id: evaluatorId })
+    .eq('id', chartId)
+  if (error) throw new Error(`updateUltrasoundVets: ${error.message}`)
+}
+
+export async function updateUltrasoundTag(
+  chartId: string,
+  userTags: string,
+  preTagsArray: string[],
+  hosPatientId: string,
+  hosOwnerId: string,
+  patientName: string,
+  patientGender: string,
+  patientSpecies: string,
+  patientBreed: string,
+  ageInDays: string,
+): Promise<boolean> {
+  const supabase = await createClient()
+
+  // 1. keywords 테이블에서 매칭되는 행들 가져오기 (필요 시)
+  const { data: keywordRows, error: keywordError } = await supabase
+    .from('keywords')
+    .select('tags')
+    .in('keyword', preTagsArray)
+
+  if (keywordError) {
+    console.error('Keyword fetch failed:', keywordError.message)
+    return false
+  }
+
+  // 2. 검색된 tags 합치기 (#으로 시작하는 구조)
+  let combinedTagsSet = new Set<string>()
+
+  keywordRows?.forEach((row) => {
+    if (row.tags) {
+      row.tags
+        .split('#')
+        .filter((t) => t.trim().length > 0)
+        .forEach((tag) => {
+          combinedTagsSet.add(tag)
+        })
+    }
+  })
+
+  // 3. 현재 입력된 사용자 태그 추가
+  if (userTags.length > 0) {
+    userTags.split(',').forEach((tag) => {
+      combinedTagsSet.add(tag.trim())
+    })
+  }
+
+  // 4. 최종 tags 문자열 생성 (#tag1#tag2...)
+  const _finalTagsString = Array.from(combinedTagsSet)
+    .map((tag) => `#${tag}`)
+    .join('')
+
+  const finalTagsString =
+    _finalTagsString +
+    '#' +
+    hosPatientId +
+    '#' +
+    (hosOwnerId ?? '') +
+    '#' +
+    patientName +
+    '#' +
+    patientSpecies +
+    '#' +
+    patientBreed +
+    '#' +
+    patientGender +
+    '#' +
+    ageInDays
+
+  // 5. DB 업데이트
+  const { error } = await supabase
+    .from('ultrasound_charts')
+    .update({
+      tags: finalTagsString,
+    })
+    .eq('id', chartId)
+
+  if (error) {
+    console.error('Update failed:', error.message)
+    return false
+  }
+
+  return true
+}

@@ -18,9 +18,10 @@ interface Props {
   chartId: string
   chartDate: string
   chartDetail: UltrasoundChartDetail
+  vetList: { user_id: string; name: string }[]
 }
 
-export default function UltrasoundChartClient({ hosId, chartId, chartDate, chartDetail }: Props) {
+export default function UltrasoundChartClient({ hosId, chartId, chartDate, chartDetail, vetList }: Props) {
   const router = useRouter()
   const [activeOrgan, setActiveOrgan] = useState<Organ>('liver')
   const [organsData, setOrgansData] = useState<Record<string, UltrasoundChartOrgan>>({})
@@ -106,6 +107,7 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
       isSaving={isSaving}
       onDelete={handleDelete}
       isDeleting={isDeleting}
+      vetList={vetList}
     >
       <div className="flex h-full w-full bg-slate-50 overflow-hidden">
         {/* Left Side: Organ Navigation Tabs */}

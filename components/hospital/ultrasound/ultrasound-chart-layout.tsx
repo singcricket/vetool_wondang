@@ -17,9 +17,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
+import UltrasoundInfoContainer from './ultrasound-info/ultrasound-info-container'
+
 interface Props {
   chartDetail: UltrasoundChartDetail
   children: React.ReactNode
+  vetList: { user_id: string; name: string }[]
   onSave?: () => void
   isSaving?: boolean
   onDelete?: () => void
@@ -29,6 +32,7 @@ interface Props {
 export default function UltrasoundChartLayout({ 
   chartDetail, 
   children, 
+  vetList,
   onSave, 
   isSaving,
   onDelete,
@@ -111,6 +115,7 @@ export default function UltrasoundChartLayout({
           </Button>
         </div>
       </header>
+      <UltrasoundInfoContainer chartDetail={chartDetail} vetList={vetList} />
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden relative">
