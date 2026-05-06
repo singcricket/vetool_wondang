@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { UltrasoundChartDetail, UltrasoundChartOrgan } from '@/types/hospital/ultrasound-type'
 import { getUltrasoundChartOrgans } from '@/lib/services/ultrasound/ultrasound-charts'
 import UltrasoundChartLayout from '@/components/hospital/ultrasound/ultrasound-chart-layout'
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export default function UltrasoundChartClient({ hosId, chartId, chartDate, chartDetail }: Props) {
+  const router = useRouter()
   const [activeOrgan, setActiveOrgan] = useState<Organ>('liver')
   const [organsData, setOrgansData] = useState<Record<string, UltrasoundChartOrgan>>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -76,7 +78,7 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
     try {
       await deleteUltrasoundChart(chartId)
       toast.success('삭제되었습니다.', { id: toastId })
-      router.push(`/hospital/${hosId}/ultrasound`)
+      router.push(`/hospital/${hosId}/ultrasound` as any)
     } catch (err) {
       toast.error('삭제 중 오류가 발생했습니다.', { id: toastId })
       console.error(err)

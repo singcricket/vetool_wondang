@@ -1,3 +1,4 @@
+import PatientQuickRegisterDialog from './patient-quick-register-dialog'
 import DeletePatientAlert from '@/components/common/patients/search/delete-patient-alert'
 import PatientUpdateDialog from '@/components/common/patients/upload/patient-update-dialog'
 import SpeciesToIcon from '@/components/common/species-to-icon'
@@ -23,7 +24,21 @@ export const searchedPatientsColumns = ({
   debouncedSearch,
   setIsIcuRegisterDialogOpen,
 }: Props): ColumnDef<Patient>[] => {
-  const columns: ColumnDef<Patient>[] = [
+  const columns: ColumnDef<Patient>[] = []
+
+  if (!isIcu) {
+    columns.push({
+      id: 'quick_register',
+      header: () => '차트등록',
+      size: 60,
+      cell: ({ row }) => {
+        const patient = row.original as Patient
+        return <PatientQuickRegisterDialog patient={patient} hosId={hosId} />
+      },
+    })
+  }
+
+  columns.push(
     {
       accessorKey: 'species',
       size: 60,
@@ -79,7 +94,7 @@ export const searchedPatientsColumns = ({
       accessorKey: 'birth',
       header: () => '나이 (생일)',
       size: 200,
-      cell: ({ row }) => {
+      cell: ({ row }: { row: any }) => {
         const birth = row.original.birth
         return (
           <div className="flex items-center justify-center gap-1">
@@ -95,7 +110,7 @@ export const searchedPatientsColumns = ({
     {
       accessorKey: 'owner_name',
       header: () => '보호자',
-      cell: ({ row }) => {
+      cell: ({ row }: { row: any }) => {
         const ownerName = row.original.owner_name
         return <>{ownerName}</>
       },
@@ -108,7 +123,7 @@ export const searchedPatientsColumns = ({
         return <FormattedMonoDate date={createdAt} className="text-xs" />
       },
     },
-  ]
+  )
 
   if (isIcu) {
     columns.push({

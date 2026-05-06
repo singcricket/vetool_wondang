@@ -1,9 +1,12 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import SpeciesToIcon from '@/components/common/species-to-icon'
+import { Button } from '@/components/ui/button'
+import type { Species } from '@/constants/hospital/register/signalments'
+import { cn, convertPascalCased } from '@/lib/utils/utils'
 import type { UltrasoundSidebarItem } from '@/lib/services/ultrasound/fetch-ultrasound'
-import { cn } from '@/lib/utils/utils'
-import { UserCircle } from 'lucide-react'
+import { UserIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface UltrasoundPatientButtonProps {
   item: UltrasoundSidebarItem
@@ -20,41 +23,45 @@ export default function UltrasoundPatientButton({
   isActive,
   onClick,
 }: UltrasoundPatientButtonProps) {
-  const router = useRouter()
-
-  const handleClick = () => {
-    router.push(`/hospital/${hosId}/ultrasound/${targetDate}/${item.id}`)
-    onClick?.()
-  }
+  const { push } = useRouter()
 
   return (
-    <button
-      onClick={handleClick}
+    <Button
+      variant="outline"
       className={cn(
-        'flex flex-col gap-1 rounded-md p-2 text-left transition-colors',
-        isActive
-          ? 'bg-blue-50 border border-blue-200'
-          : 'hover:bg-slate-100 border border-transparent',
+        isActive && 'border border-black bg-muted shadow-md',
+        'relative flex h-auto w-full flex-col gap-0 px-1.5 py-1',
       )}
+      onClick={() => {
+        push(`/hospital/${hosId}/ultrasound/${targetDate}/${item.id}`)
+        onClick?.()
+      }}
     >
-      <div className="flex items-center gap-2">
-        <UserCircle className={cn("w-4 h-4", isActive ? "text-blue-600" : "text-slate-400")} />
-        <span className={cn("text-xs font-bold", isActive ? "text-blue-700" : "text-slate-700")}>
-          {item.patient_name}
-        </span>
-        {item.breed && (
-          <span className="text-[10px] text-slate-400 truncate">
-            {item.breed}
-          </span>
-        )}
-      </div>
-      {item.vet_name && (
-        <div className="flex items-center gap-1 pl-6">
-          <span className="text-[10px] text-slate-500 bg-slate-100 px-1 rounded">
-            담당의: {item.vet_name}
-          </span>
+      {/* 환자명 + 차트번호 */}
+      <div className="flex w-full items-start justify-between gap-2">
+        <div className="flex items-center gap-1 text-sm">
+          <span className="font-bold">{item.patient_name}</span>
+          <span className="text-xs font-light">{item.hos_patient_id}</span>
         </div>
-      )}
-    </button>
+      </div>
+
+      {/* 담당의 */}
+      <div className="mt-1 flex w-full items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <UserIcon style={{ width: 15, height: 15 }} />
+          <div className="max-w-[60px] truncate text-xs">
+            {item.vet_name ?? '미지정'}
+          </div>
+        </div>
+      </div>
+
+      {/* 종 + 품종 */}
+      <div className="mt-1 flex w-full items-center gap-1">
+        <SpeciesToIcon species={item.species as Species} size={15} />
+        <div className="max-w-[120px] truncate text-xs text-left">
+          {convertPascalCased(item.breed)}
+        </div>
+      </div>
+    </Button>
   )
 }
