@@ -9,6 +9,7 @@ import { useDebouncedCallback } from 'use-debounce'
 import RegisterPatientButton from './register-patient-buttons'
 import { searchedPatientsColumns } from './searched-patient-columns'
 import TotalPatientCount from './total-paitent-count'
+import PatientDashboardDetail from './patient-dashboard-detail'
 
 type Props =
   | {
@@ -30,10 +31,12 @@ export default function SearchPatientContainer({
   const [searchTerm, setSearchTerm] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [searchedPatients, setSearchedPatients] = useState<Patient[]>([])
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
 
   const debouncedSearch = useDebouncedCallback(async () => {
     if (searchTerm.trim()) {
       setIsSearching(true)
+      setSelectedPatient(null)
 
       const result = await searchPatients(
         searchTerm.split(',').map((s) => s.trim()),
@@ -74,9 +77,14 @@ export default function SearchPatientContainer({
             hosId,
             debouncedSearch,
             setIsIcuRegisterDialogOpen,
+            onSelect: (patient) => setSelectedPatient(patient),
           })}
         />
       </div>
+
+      {selectedPatient && (
+        <PatientDashboardDetail patient={selectedPatient} hosId={hosId} />
+      )}
 
       <TotalPatientCount hosId={hosId} />
     </div>

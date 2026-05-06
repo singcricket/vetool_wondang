@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import PatientQuickRegisterDialog from './patient-quick-register-dialog'
 import DeletePatientAlert from '@/components/common/patients/search/delete-patient-alert'
 import PatientUpdateDialog from '@/components/common/patients/upload/patient-update-dialog'
@@ -16,6 +17,7 @@ type Props = {
   hosId: string
   debouncedSearch: DebouncedState<() => Promise<void>>
   setIsIcuRegisterDialogOpen?: Dispatch<SetStateAction<boolean>>
+  onSelect?: (patient: Patient) => void
 }
 
 export const searchedPatientsColumns = ({
@@ -23,8 +25,27 @@ export const searchedPatientsColumns = ({
   hosId,
   debouncedSearch,
   setIsIcuRegisterDialogOpen,
+  onSelect,
 }: Props): ColumnDef<Patient>[] => {
   const columns: ColumnDef<Patient>[] = []
+
+  if (onSelect) {
+    columns.push({
+      id: 'select_patient',
+      header: () => '선택',
+      size: 60,
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onSelect(row.original)}
+          className="h-8 px-2 text-xs font-semibold"
+        >
+          선택
+        </Button>
+      ),
+    })
+  }
 
   if (!isIcu) {
     columns.push({
