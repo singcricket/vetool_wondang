@@ -1,7 +1,7 @@
 'use client'
 
 import { Input } from "@/components/ui/input"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 
 type Props = {
   startTime: string | null
@@ -20,6 +20,13 @@ export default function MsClMinTimeInput({
   onKeyDown,
   disabled
 }: Props) {
+  const [isFocused, setIsFocused] = useState(false)
+  const valueRef = useRef(value)
+  
+  useEffect(() => {
+    valueRef.current = value
+  }, [value])
+
   useEffect(() => {
     if (!startTime) return
 
@@ -35,28 +42,32 @@ export default function MsClMinTimeInput({
         displayMinutes = Math.floor(actualDiffMinutes / intervalSetting) * intervalSetting
       }
 
-      // 0분 미만이거나 아직 도달하지 않았을 경우 처리 (선택)
       const finalValue = displayMinutes < 0 ? "0" : displayMinutes.toString()
       
-      onChange(finalValue)
+      // 값이 비어있고, 포커스 상태가 아닐 때만 자동 계산된 값을 넣어줌
+      if (valueRef.current === '' && !isFocused) {
+        onChange(finalValue)
+      }
     }
 
     // 마운트 시 또는 startTime 변경 시 즉시 계산
-    if (value === '') {
+    if (valueRef.current === '') {
       calculateElapsed()
     }
 
-    // 1초마다 재계산하여 헤더 타이머와 동기화
+    // 1초마다 재계산하여 타이머 동기화 (불필요한 빈번한 업데이트 방지)
     const timer = setInterval(calculateElapsed, 1000)
 
     return () => clearInterval(timer)
-  }, [startTime, intervalSetting, onChange, value === ''])
+  }, [startTime, intervalSetting, onChange])
 
   return (
     <Input
       className="h-11 rounded-none border-0 pr-11 ring-inset"
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
       placeholder="분(min)"
       onKeyDown={onKeyDown}
       disabled={disabled}

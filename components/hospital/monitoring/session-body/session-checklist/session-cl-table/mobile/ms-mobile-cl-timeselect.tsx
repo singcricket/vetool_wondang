@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { VitalResults } from "@/types/monitoring/monitoring-type"
 import { PlusIcon } from "lucide-react"
 import { SelectedSlotMode } from "./ms-mobile-cl-table"
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 
 type Props = {
   vitalResults: VitalResults
@@ -30,6 +30,12 @@ export default function MsMobileClTimeSelect({
   onAddSlot,
   isSaving,
 }: Props) {
+  const [isFocused, setIsFocused] = useState(false)
+  const newMinTimeRef = useRef(newMinTime)
+
+  useEffect(() => {
+    newMinTimeRef.current = newMinTime
+  }, [newMinTime])
 
   // 자동 시간 계산 (데스크탑 MsClMinTimeInput과 동일한 로직)
   useEffect(() => {
@@ -45,11 +51,13 @@ export default function MsMobileClTimeSelect({
       }
       const finalValue = displayMinutes < 0 ? "0" : displayMinutes.toString()
       
-      // 데스크탑과 동일하게 매초 업데이트 (값이 비어있을 때 초기화 포함)
-      setNewMinTime(finalValue)
+      // 값이 비어있고, 포커스 상태가 아닐 때만 자동 계산된 값을 넣어줌
+      if (newMinTimeRef.current === '' && !isFocused) {
+        setNewMinTime(finalValue)
+      }
     }
 
-    if (newMinTime === '') {
+    if (newMinTimeRef.current === '') {
       calculateElapsed()
     }
 
@@ -75,6 +83,8 @@ export default function MsMobileClTimeSelect({
           placeholder="분(min)"
           value={newMinTime}
           onChange={(e) => setNewMinTime(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()
