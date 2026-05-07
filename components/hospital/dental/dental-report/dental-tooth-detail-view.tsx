@@ -295,6 +295,32 @@ export default function DentalToothDetailView({ tooth, images, isShared, species
               </ul>
             </div>
           )}
+
+          {/* 방사선 소견 */}
+          {tooth.xray_finding && (
+            <div className="space-y-2 pt-2 border-t border-dashed">
+              <h4 className="text-sm font-semibold text-slate-700 font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                X-ray Findings
+              </h4>
+              <div className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded border border-slate-100">
+                {tooth.xray_finding}
+              </div>
+            </div>
+          )}
+
+          {/* 수의사 메모 */}
+          {tooth.tooth_note && (
+            <div className="space-y-2 pt-2 border-t border-dashed">
+              <h4 className="text-sm font-semibold text-amber-700 font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                Special Notes
+              </h4>
+              <div className="text-sm text-amber-900 leading-relaxed bg-amber-50 p-3 rounded border border-amber-100 italic">
+                {tooth.tooth_note}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 이미지 갤러리 */}

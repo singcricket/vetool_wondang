@@ -919,6 +919,26 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                             )}
                           </div>
 
+                          {/* 방사선 소견 */}
+                          {tooth.xray_finding && (
+                            <div className="space-y-2 border-t pt-4">
+                              <h4 className="text-sm font-bold text-slate-600">방사선 검사 결과</h4>
+                              <div className="bg-slate-50 p-3 rounded text-sm text-slate-700 leading-relaxed border border-slate-100">
+                                {tooth.xray_finding}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 수의사 메모 */}
+                          {tooth.tooth_note && (
+                            <div className="space-y-2 border-t pt-4">
+                              <h4 className="text-sm font-bold text-amber-700">수의사 특별 메모</h4>
+                              <div className="bg-amber-50 p-3 rounded text-sm text-amber-900 leading-relaxed border border-amber-100 italic whitespace-pre-wrap">
+                                {tooth.tooth_note}
+                              </div>
+                            </div>
+                          )}
+
                           {planFindings.length > 0 && (
                             <div className="space-y-2 border-t pt-4">
                               <h4 className="text-sm font-bold text-indigo-700">예정된 치료</h4>
