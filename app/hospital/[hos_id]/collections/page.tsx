@@ -22,7 +22,6 @@ export default async function CollectionsPage(props: { params: Promise<{ hos_id:
       items:resource_collection_items(*)
     `)
     .eq('hos_id', hos_id)
-    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
   const collections = (data || []) as any[]
