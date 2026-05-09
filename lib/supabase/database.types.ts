@@ -1340,6 +1340,67 @@ export type Database = {
           },
         ]
       }
+      neuro_charts: {
+        Row: {
+          chart_date: string
+          created_at: string
+          evaluator_id: string | null
+          hos_id: string
+          id: string
+          localisations: Json | null
+          patient_id: string
+          results: Json | null
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          chart_date: string
+          created_at?: string
+          evaluator_id?: string | null
+          hos_id: string
+          id?: string
+          localisations?: Json | null
+          patient_id: string
+          results?: Json | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chart_date?: string
+          created_at?: string
+          evaluator_id?: string | null
+          hos_id?: string
+          id?: string
+          localisations?: Json | null
+          patient_id?: string
+          results?: Json | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neuro_charts_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "neuro_charts_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "neuro_charts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           content: Json | null

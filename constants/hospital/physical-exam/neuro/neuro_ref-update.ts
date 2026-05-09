@@ -3995,8 +3995,6 @@ export interface NeuroReference {
   speciesModifiers: Record<'dog' | 'cat', SpeciesModifier[]>;
   // Engine
   runLocalisationEngine: typeof runLocalisationEngine;
-  runFullLocalisationEngine: typeof runFullLocalisationEngine;
-  appendLateralisationToChart: typeof appendLateralisationToChart;
   buildNeuroChartSummary: typeof buildNeuroChartSummary;
   isDomainVisible: typeof isDomainVisible;
   isNeuroTestVisible: typeof isNeuroTestVisible;
@@ -4015,8 +4013,6 @@ export const neuroReference: NeuroReference = {
   speciesModifiers,
   // Engine functions bound for convenience
   runLocalisationEngine,
-  runFullLocalisationEngine,
-  appendLateralisationToChart,
   buildNeuroChartSummary,
   isDomainVisible,
   isNeuroTestVisible,
@@ -4647,8 +4643,7 @@ export function assessCerebralLateralisation(
 
 /**
  * Extended localisation engine output — adds cerebral lateralisation.
- * Always runs cerebral lateralisation assessment.
- * Returns null in hemisphere field only if no lateralising signs are found.
+ * Drop-in replacement for runLocalisationEngine() when forebrain is suspected.
  */
 export function runFullLocalisationEngine(
   results: Record<string, string | string[]>,
@@ -4665,18 +4660,22 @@ export function runFullLocalisationEngine(
   // Run base engine
   const base = runLocalisationEngine(results, context, domainSections);
 
-  // Always collect signs and run lateralisation engine
-  const activeSignsSet = collectSigns(results, domainSections);
-  const lateralisationResult = assessCerebralLateralisation(activeSignsSet, results);
+  // Only run cerebral lateralisation if forebrain is among top candidates
+  const forebrainLocations: NeuroLocation[] = [
+    'cerebral_cortex', 'thalamus_hypothalamus', 'basal_ganglia',
+  ];
+  const forebrainSuspected = base.localisationCandidates
+    .slice(0, 4)
+    .some(c => forebrainLocations.includes(c.location));
 
-  // Only expose lateralisation when there's actual evidence (votes > 0)
-  const cerebralLateralisation = lateralisationResult.votes.length > 0
-    ? lateralisationResult
+  const activeSignsSet = collectSigns(results, domainSections);
+
+  const cerebralLateralisation = forebrainSuspected
+    ? assessCerebralLateralisation(activeSignsSet, results)
     : null;
 
   return { ...base, cerebralLateralisation };
 }
-
 
 /**
  * Append cerebral lateralisation to chart summary if forebrain suspected.
