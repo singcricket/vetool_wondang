@@ -4333,6 +4333,7 @@ export function buildNeuroChartSummary(
   localisationText: string;
   syndromeText: string;
   recommendationText: string;
+  summaryText: string;
 } {
   const domainSummaries: Array<{ domain: string; lines: string[] }> = [];
 
@@ -4429,7 +4430,16 @@ export function buildNeuroChartSummary(
             : ''))
     : '';
 
-  return { domainSummaries, localisationText, syndromeText, recommendationText };
+  const summaryText = [
+    domainSummaries
+      .map(d => `▶ ${d.domain}\n` + d.lines.map(l => `  - ${l}`).join('\n'))
+      .join('\n\n'),
+    localisationText,
+    syndromeText,
+    recommendationText,
+  ].filter(Boolean).join('\n\n');
+
+  return { domainSummaries, localisationText, syndromeText, recommendationText, summaryText };
 }
 
 // Location name maps for chart text
@@ -5201,19 +5211,12 @@ export function runFullLocalisationEngine(
  */
 export function appendLateralisationToChart(
   chartSummary: ReturnType<typeof buildNeuroChartSummary>,
-  lateralisation: CerebralLateralisationResult | null,
+  lateralisation: CerebralLateralisationResult | SpinalLateralisationResult | null,
   lang: 'ko' | 'en' = 'ko'
 ): string {
-  const baseText = [
-    chartSummary.domainSummaries
-      .map(d => `▶ ${d.domain}\n` + d.lines.map(l => `  - ${l}`).join('\n'))
-      .join('\n\n'),
-    chartSummary.localisationText,
-    chartSummary.syndromeText,
-    chartSummary.recommendationText,
-  ].filter(Boolean).join('\n\n');
+  const baseText = chartSummary.summaryText;
 
-  if (!lateralisation || lateralisation.hemisphere === 'undetermined') {
+  if (!lateralisation || (lateralisation as any).hemisphere === 'undetermined' || (lateralisation as any).side === 'undetermined') {
     return baseText;
   }
 

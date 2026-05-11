@@ -13,6 +13,7 @@ import OphthalmicChartLayout from '@/components/hospital/ophthalmic/ophthalmic-c
 import OphthalmicDynamicForm from '@/components/hospital/ophthalmic/ophthalmic-dynamic-form'
 import OphthalmicDiagnosisPanel from '@/components/hospital/ophthalmic/ophthalmic-diagnosis-panel'
 import OphthalmicPreviousComparison from '@/components/hospital/ophthalmic/ophthalmic-previous-comparison'
+import OphthalmicTreatmentForm from '@/components/hospital/ophthalmic/ophthalmic-treatment-form'
 import { toast } from 'sonner'
 import { 
   Sheet, 
@@ -40,6 +41,7 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
   // State
   const [results, setResults] = useState<Record<string, string | string[]>>(chartDetail.results as any || {})
   const [summary, setSummary] = useState<string | null>(chartDetail.summary)
+  const [treatment, setTreatment] = useState<Record<string, any>>(chartDetail.treatment || {})
   const [userTags, setUserTags] = useState<string | null>(chartDetail.user_tags)
   const [activeDomain, setActiveDomain] = useState<string>(ophthalmicReference.domainSections[0].domain)
   
@@ -70,6 +72,10 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
     return ophthalmicReference.runFullAnalysis(results)
   }, [results])
 
+  const liveSummary = useMemo(() => {
+    return ophthalmicReference.buildChartSummary(results)
+  }, [results])
+
   const handleUpdateResults = (newResults: Record<string, string | string[]>) => {
     setResults(newResults)
   }
@@ -85,15 +91,16 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
         .map(d => d.rule.diagnosisNameKo)
         .join(',')
 
-      setSummary(currentSummary)
+      // setSummary(currentSummary) // No longer needed as we use liveSummary for UI
 
       await updateOphthalmicChartResults(
         chartId,
         results,
         engineOutput,
-        currentSummary,
+        liveSummary,
         userTags,
-        tagsString
+        tagsString,
+        treatment
       )
 
       toast.success('안과 차트가 저장되었습니다.')
@@ -142,6 +149,7 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
       currentResults={results}
       onResetAll={handleResetAll}
       engineOutput={engineOutput}
+      treatmentData={treatment}
     >
       <div className="flex h-full w-full flex-col lg:flex-row lg:overflow-hidden bg-slate-50/50">
         
@@ -149,11 +157,18 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
         <div className="flex-1 h-full overflow-y-auto p-4 sm:p-6 border-r flex">
           {/* Main Form */}
           <div className="flex-1 min-w-0">
-            <OphthalmicDynamicForm
-              domain={ophthalmicReference.domainSections.find(d => d.domain === activeDomain)!}
-              results={results}
-              onUpdate={handleUpdateResults}
-            />
+            {activeDomain === 'treatment' ? (
+              <OphthalmicTreatmentForm 
+                treatmentData={treatment}
+                onUpdate={setTreatment}
+              />
+            ) : (
+              <OphthalmicDynamicForm
+                domain={ophthalmicReference.domainSections.find(d => d.domain === activeDomain)!}
+                results={results}
+                onUpdate={handleUpdateResults}
+              />
+            )}
           </div>
           
           {/* Previous Chart Comparison */}
@@ -169,10 +184,11 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
 
         {/* Right: Diagnosis Panel - Desktop only */}
         <div className="hidden lg:block w-[450px] shrink-0 h-full overflow-y-auto bg-white border-l shadow-sm z-10">
-          <OphthalmicDiagnosisPanel 
+          <OphthalmicDiagnosisPanel
             engineOutput={engineOutput}
             results={results}
-            summary={summary}
+            summary={liveSummary}
+            treatmentData={treatment}
           />
         </div>
 
@@ -195,7 +211,7 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
                 <OphthalmicDiagnosisPanel 
                   engineOutput={engineOutput}
                   results={results}
-                  summary={summary}
+                  summary={liveSummary}
                 />
               </div>
             </SheetContent>

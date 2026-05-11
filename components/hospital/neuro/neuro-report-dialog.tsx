@@ -32,8 +32,7 @@ export default function NeuroReportDialog({ chartDetail, results, localisations 
   const { 
     localisationCandidates: candidates = [], 
     detectedSyndromes: syndromes = [],
-    cerebralLateralisation = null,
-    spinalLateralisation = null
+    cerebralLateralisation = null 
   } = localisations
 
   const handlePrint = () => {
@@ -237,40 +236,9 @@ export default function NeuroReportDialog({ chartDetail, results, localisations 
                     {cerebralLateralisation.hemisphere === 'left' ? '좌측 반구 병변 의심' : 
                      cerebralLateralisation.hemisphere === 'right' ? '우측 반구 병변 의심' : '양측성 병변 의심'}
                   </div>
-                  <div className="flex-1">
                     <p className="text-xs text-violet-800 leading-tight">
                       {cerebralLateralisation.summaryKo.split('\n')[1]}
                     </p>
-                    {cerebralLateralisation.caveatKo && (
-                      <p className="text-[10px] text-violet-600 mt-1 italic">※ {cerebralLateralisation.caveatKo}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Spinal Lateralisation */}
-            {spinalLateralisation && spinalLateralisation.side !== 'undetermined' && (
-              <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl">
-                <h4 className="text-sm font-bold text-teal-700 flex items-center gap-2 mb-2">
-                  <Activity className="h-4 w-4" />
-                  척수 편측화 분석 (Spinal Lateralisation)
-                </h4>
-                <div className="flex items-center gap-4">
-                  <div className="px-3 py-1 bg-teal-600 text-white rounded font-bold text-sm">
-                    {spinalLateralisation.side === 'left' ? '좌측 척수 병변 의심' : 
-                     spinalLateralisation.side === 'right' ? '우측 척수 병변 의심' : '양측성 척수 병변 의심'}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-teal-800 leading-tight">
-                      {spinalLateralisation.side === 'left' ? '좌측 편측화 소견이 우세합니다.' : 
-                       spinalLateralisation.side === 'right' ? '우측 편측화 소견이 우세합니다.' : '양측성 또는 다발성 소견이 관찰됩니다.'}
-                      {spinalLateralisation.brownSequardSuspected && ' Brown-Séquard 증후군이 의심됩니다.'}
-                    </p>
-                    <p className="text-[10px] text-teal-600 mt-1 italic">
-                      신뢰도: {spinalLateralisation.confidenceScore}% ({spinalLateralisation.confidence === 'high' ? '높음' : spinalLateralisation.confidence === 'medium' ? '중간' : '낮음'})
-                    </p>
-                  </div>
                 </div>
               </div>
             )}

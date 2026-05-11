@@ -1518,6 +1518,7 @@ export type Database = {
           results: Json
           summary: string | null
           tags: string | null
+          treatment: Json | null
           updated_at: string
           user_tags: string | null
           vet_id: string | null
@@ -1533,6 +1534,7 @@ export type Database = {
           results?: Json
           summary?: string | null
           tags?: string | null
+          treatment?: Json | null
           updated_at?: string
           user_tags?: string | null
           vet_id?: string | null
@@ -1548,6 +1550,7 @@ export type Database = {
           results?: Json
           summary?: string | null
           tags?: string | null
+          treatment?: Json | null
           updated_at?: string
           user_tags?: string | null
           vet_id?: string | null

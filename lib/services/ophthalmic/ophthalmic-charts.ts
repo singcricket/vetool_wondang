@@ -66,7 +66,8 @@ export async function updateOphthalmicChartResults(
   diagnosis: Record<string, any>,
   summary: string | null,
   user_tags: string | null,
-  tags: string | null
+  tags: string | null,
+  treatment?: any
 ) {
   const supabase = await createClient()
 
@@ -78,6 +79,7 @@ export async function updateOphthalmicChartResults(
       summary,
       user_tags,
       tags,
+      treatment,
       updated_at: new Date().toISOString(),
     })
     .eq('id', chartId)

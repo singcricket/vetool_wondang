@@ -1,26 +1,47 @@
 'use client'
 
 import React from 'react'
-import { Eye, AlertCircle, Activity, ClipboardList, AlertTriangle, ShieldCheck } from 'lucide-react'
-import type { OphEngineOutput } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
+import { Eye, AlertCircle, Activity, ClipboardList, AlertTriangle, ShieldCheck, Droplets, Pill, Stethoscope, Scissors } from 'lucide-react'
+import type { OphEngineOutput, OphTreatmentCategory, OphTreatmentData } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
+import { ophthalmicTreatmentOptions } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
 import { cn } from '@/lib/utils/utils'
 
 interface Props {
   engineOutput: OphEngineOutput
   results: Record<string, string | string[]>
   summary: string | null
+  treatmentData?: Record<string, OphTreatmentData> | null
 }
 
-export default function OphthalmicDiagnosisPanel({ engineOutput, results, summary }: Props) {
-  const { 
-    activeSigns = [], 
-    diagnoses = [], 
-    criticalFindings = [], 
-    visionStatus 
+const CATEGORY_ICON: Record<OphTreatmentCategory, React.ReactNode> = {
+  topical: <Droplets className="w-3 h-3 text-blue-500" />,
+  oral: <Pill className="w-3 h-3 text-emerald-500" />,
+  procedure: <Stethoscope className="w-3 h-3 text-amber-500" />,
+  surgery: <Scissors className="w-3 h-3 text-rose-500" />,
+  general: <ClipboardList className="w-3 h-3 text-slate-400" />,
+}
+
+const CATEGORY_LABEL: Record<OphTreatmentCategory, string> = {
+  topical: '점안',
+  oral: '내복약',
+  procedure: '시술',
+  surgery: '수술',
+  general: '기타',
+}
+
+export default function OphthalmicDiagnosisPanel({ engineOutput, results, summary, treatmentData }: Props) {
+  const {
+    activeSigns = [],
+    diagnoses = [],
+    criticalFindings = [],
+    visionStatus
   } = engineOutput
 
   const hasAnyResults = Object.keys(results).length > 0
   const isNormal = activeSigns.length === 0 && hasAnyResults
+
+  const hasTreatment = treatmentData &&
+    Object.values(treatmentData).some(t => t.selectedIds.length > 0 || t.comment)
 
   if (!hasAnyResults) {
     return (
@@ -121,10 +142,10 @@ export default function OphthalmicDiagnosisPanel({ engineOutput, results, summar
                       {diag.confidenceScore}% Confidence
                     </span>
                   </div>
-                  
+
                   {/* Progress bar */}
                   <div className="w-full bg-slate-100 h-1.5 rounded-full mb-4 overflow-hidden">
-                    <div 
+                    <div
                       className={cn(
                         "h-full rounded-full transition-all duration-1000 ease-out",
                         diag.confidenceScore >= 80 ? 'bg-blue-600' :
@@ -186,11 +207,61 @@ export default function OphthalmicDiagnosisPanel({ engineOutput, results, summar
         {summary && (
           <section className="pt-6 border-t border-slate-100">
             <h4 className="text-[11px] font-black text-slate-400 mb-3 uppercase tracking-[0.2em]">Automatic Summary</h4>
-            <div className="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs leading-relaxed font-mono shadow-inner border border-slate-800">
+            <div className="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs leading-relaxed font-mono shadow-inner border border-slate-800 whitespace-pre-wrap">
               {summary}
             </div>
           </section>
         )}
+
+        {/* Treatment Plan Summary */}
+        {hasTreatment && (
+          <section className="pt-6 border-t border-slate-100">
+            <h4 className="text-[11px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+              <Stethoscope className="w-3.5 h-3.5" />
+              Tx Plan (치료 처방)
+            </h4>
+            <div className="space-y-3">
+              {(Object.entries(treatmentData!) as [OphTreatmentCategory, OphTreatmentData][]).map(([cat, data]) => {
+                if (data.selectedIds.length === 0 && !data.comment) return null
+                const options = ophthalmicTreatmentOptions[cat]
+                return (
+                  <div key={cat} className="bg-slate-50 rounded-xl border border-slate-100 p-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      {CATEGORY_ICON[cat]}
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                        {CATEGORY_LABEL[cat]}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {data.selectedIds.map((id) => {
+                        const opt = options?.find(o => o.id === id)
+                        if (!opt) return null
+                        return (
+                          <div key={id} className="flex items-start justify-between gap-2 bg-white rounded-lg px-2.5 py-1.5 border border-slate-100 shadow-sm">
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-slate-800 leading-tight truncate">{opt.nameKo}</p>
+                              {(data.frequencies?.[id] || opt.frequency) && (
+                                <p className="text-[10px] font-bold text-indigo-500 leading-tight mt-0.5">
+                                  {data.frequencies?.[id] || opt.frequency}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {data.comment && (
+                        <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed whitespace-pre-wrap pl-1 border-l-2 border-slate-200">
+                          {data.comment}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
       </div>
     </div>
   )

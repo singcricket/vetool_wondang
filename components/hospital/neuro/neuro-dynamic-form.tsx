@@ -73,7 +73,7 @@ export default function NeuroDynamicForm({ domain, results, onUpdate }: Props) {
       {isGateOpen && (
         <div className="space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
           {domain.tests.filter(test => neuroReference.isNeuroTestVisible(test, results)).map(test => (
-            <div key={test.testID} className="bg-white p-4 rounded-lg border shadow-sm">
+            <div key={test.testID} id={`test-${test.testID}`} className="bg-white p-4 rounded-lg border shadow-sm">
               <Label className="text-base font-semibold mb-1 block">
                 {test.testNameKo}
                 <span className="text-sm font-normal text-slate-500 ml-1.5 italic">({test.testName})</span>

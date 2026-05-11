@@ -168,6 +168,7 @@ export default function NeuroChartClient({ hosId, chartId, chartDate, chartDetai
       currentResults={results}
       currentLocalisations={localisations}
       onResetAll={handleResetAll}
+      onResultsChange={handleUpdateResults}
     >
       <div className="flex h-full w-full flex-col lg:flex-row lg:overflow-hidden bg-slate-50/50">
         

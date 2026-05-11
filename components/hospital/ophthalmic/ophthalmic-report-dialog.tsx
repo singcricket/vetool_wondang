@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { FileText, Printer, Eye, Activity, ClipboardList, AlertTriangle, ShieldCheck, Stethoscope } from 'lucide-react'
+import { FileText, Printer, Eye, Activity, ClipboardList, AlertTriangle, ShieldCheck, Stethoscope, Pill, Droplets, Scissors, ChevronRight } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -18,9 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ophthalmicReference } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
+import { ophthalmicReference, ophthalmicTreatmentOptions } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
 import type { OphthalmicChartDetail } from '@/types/hospital/ophthalmic-type'
-import type { OphEngineOutput } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
+import type { OphEngineOutput, OphTreatmentCategory } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
 import { cn } from '@/lib/utils/utils'
 
 interface Props {
@@ -123,11 +123,11 @@ export default function OphthalmicReportDialog({ chartDetail, results, engineOut
             <InfoBlock label="Species / Breed" value={`${patient?.species === 'cat' ? '고양이' : '개'} / ${patient?.breed || '-'}`} />
             <InfoBlock label="Gender / Age" value={`${patient?.gender === 'male' ? '수컷' : '암컷'} / ${patient?.birth || '-'}`} />
             <InfoBlock label="Exam Date" value={chartDetail.chart_date} />
-            {chartDetail.evaluator_name && (
+            {chartDetail.evaluator?.name && (
               <div className="col-span-full mt-2 pt-4 border-t border-slate-200 flex items-center gap-2 text-slate-600">
                 <Stethoscope size={14} className="text-blue-500" />
                 <span className="text-xs font-bold uppercase tracking-wider opacity-60 mr-2">Evaluator:</span>
-                <span className="text-sm font-black">{chartDetail.evaluator_name}</span>
+                <span className="text-sm font-black">{chartDetail.evaluator.name}</span>
               </div>
             )}
           </section>
@@ -240,7 +240,16 @@ export default function OphthalmicReportDialog({ chartDetail, results, engineOut
                           </span>
                         </div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">{diag.rule.diagnosisName}</p>
-                        <p className="text-xs text-slate-600 leading-relaxed italic">"{diag.rule.descriptionKo}"</p>
+                        <p className="text-xs text-slate-600 leading-relaxed italic mb-3">"{diag.rule.descriptionKo}"</p>
+                        {diag.rule.treatmentHintKo && (
+                          <div className="mt-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
+                              <Stethoscope size={10} />
+                              Management / Treatment
+                            </p>
+                            <p className="text-xs font-bold text-slate-700 leading-normal">{diag.rule.treatmentHintKo}</p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -264,10 +273,71 @@ export default function OphthalmicReportDialog({ chartDetail, results, engineOut
                   )}
                 </div>
                 
-                {/* Treatment Hint Placeholder */}
-                <div className="mt-6 p-5 bg-blue-50/50 rounded-2xl border border-blue-100 border-dashed">
-                  <h5 className="text-[10px] font-black text-blue-400 uppercase mb-2">Notice</h5>
-                  <p className="text-[11px] text-blue-700 leading-relaxed font-medium">
+                {/* Treatment Plan Section */}
+                {chartDetail.treatment && Object.values(chartDetail.treatment).some(t => t.selectedIds.length > 0 || t.comment) && (
+                  <div className="mt-8 pt-8 border-t border-slate-100 space-y-6">
+                    <h4 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                      <Stethoscope className="w-4 h-4 text-indigo-600" />
+                      치료 계획 및 처방 (Treatment Plan)
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      {Object.entries(chartDetail.treatment).map(([category, data]) => {
+                        if (data.selectedIds.length === 0 && !data.comment) return null
+                        const cat = category as OphTreatmentCategory
+                        const options = ophthalmicTreatmentOptions[cat]
+                        
+                        return (
+                          <div key={category} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              {cat === 'topical' && <Droplets className="w-3.5 h-3.5 text-blue-500" />}
+                              {cat === 'oral' && <Pill className="w-3.5 h-3.5 text-emerald-500" />}
+                              {cat === 'procedure' && <Stethoscope className="w-3.5 h-3.5 text-amber-500" />}
+                              {cat === 'surgery' && <Scissors className="w-3.5 h-3.5 text-rose-500" />}
+                              <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                {cat === 'topical' ? '점안 처방' : cat === 'oral' ? '내복약 처방' : cat === 'procedure' ? '시술' : cat === 'surgery' ? '수술' : '기타 관리'}
+                              </h5>
+                            </div>
+
+                            {data.selectedIds.length > 0 && options && (
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {data.selectedIds.map((id: string) => {
+                                  const opt = options.find(o => o.id === id)
+                                  if (!opt) return null
+                                  return (
+                                    <div key={id} className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-sm">
+                                      <p className="text-xs font-black text-slate-800">{opt.nameKo}</p>
+                                      {(data.frequencies?.[id] || opt.frequency) && (
+                                        <p className="text-[9px] font-black text-indigo-500">
+                                          {data.frequencies?.[id] || opt.frequency}
+                                        </p>
+                                      )}
+                                      <p className="text-[9px] font-bold text-blue-600 italic">{opt.clientTerm}</p>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+
+                            {data.comment && (
+                              <div className="bg-white/80 rounded-lg p-2.5 border border-slate-100">
+                                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap flex items-start gap-1.5">
+                                  <ChevronRight className="w-3 h-3 text-slate-300 mt-0.5 shrink-0" />
+                                  {data.comment}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Legal Disclaimer */}
+                <div className="mt-8 p-5 bg-slate-900 rounded-2xl border border-slate-800">
+                  <h5 className="text-[10px] font-black text-slate-500 uppercase mb-2">Notice & Disclaimer</h5>
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
                     본 리포트는 Vetool AI 엔진에 의한 자동 생성 분석 결과입니다. 
                     최종 진단 및 치료 계획은 수의사의 임상적 판단에 따라 결정되어야 합니다.
                   </p>

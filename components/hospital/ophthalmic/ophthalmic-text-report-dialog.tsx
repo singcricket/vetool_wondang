@@ -12,17 +12,26 @@ import { Button } from '@/components/ui/button'
 import { Type, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { useState } from 'react'
-import { ophthalmicReference } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
+import { ophthalmicReference, ophthalmicTreatmentOptions } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
 import type { OphthalmicChartDetail } from '@/types/hospital/ophthalmic-type'
-import type { OphEngineOutput } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
+import type { OphEngineOutput, OphTreatmentCategory, OphTreatmentData } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
+
+const CATEGORY_LABEL_KO: Record<OphTreatmentCategory, string> = {
+  topical: '점안 (Topical)',
+  oral: '내복약 (Oral)',
+  procedure: '시술 (Procedure)',
+  surgery: '수술 (Surgery)',
+  general: '기타/관리 (General)',
+}
 
 interface Props {
   chartDetail: OphthalmicChartDetail
   results: Record<string, string | string[]>
   engineOutput: OphEngineOutput
+  treatmentData?: Record<string, OphTreatmentData> | null
 }
 
-export default function OphthalmicTextReportDialog({ chartDetail, results, engineOutput }: Props) {
+export default function OphthalmicTextReportDialog({ chartDetail, results, engineOutput, treatmentData }: Props) {
   const [copied, setCopied] = useState(false)
 
   const generateTextReport = () => {
@@ -84,6 +93,31 @@ export default function OphthalmicTextReportDialog({ chartDetail, results, engin
     
     if (engineOutput.activeSigns.length > 0) {
       report += `Active Signs: ${engineOutput.activeSigns.join(', ')}\n`
+    }
+
+    // 4. Treatment Plan
+    const hasTreatment = treatmentData &&
+      Object.values(treatmentData).some(t => t.selectedIds.length > 0 || t.comment)
+
+    if (hasTreatment) {
+      report += `\n[Treatment Plan & Prescription]\n`
+      ;(Object.keys(treatmentData!) as OphTreatmentCategory[]).forEach(cat => {
+        const data = treatmentData![cat]
+        if (!data || (data.selectedIds.length === 0 && !data.comment)) return
+
+        report += `\n${CATEGORY_LABEL_KO[cat]}:\n`
+        const options = ophthalmicTreatmentOptions[cat]
+        data.selectedIds.forEach(id => {
+          const opt = options?.find(o => o.id === id)
+          if (!opt) return
+          const userFreq = data.frequencies?.[id]
+          const freqPart = userFreq ? ` — ${userFreq}` : opt.frequency ? ` (권장: ${opt.frequency})` : ''
+          report += `  - ${opt.nameKo}${freqPart}\n`
+        })
+        if (data.comment) {
+          report += `  Note: ${data.comment}\n`
+        }
+      })
     }
 
     return report

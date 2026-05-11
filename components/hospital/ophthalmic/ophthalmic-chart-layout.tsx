@@ -34,12 +34,13 @@ interface Props {
   currentResults: Record<string, string | string[]>
   onResetAll?: () => void
   engineOutput: any
+  treatmentData?: Record<string, any> | null
 }
 
-export default function OphthalmicChartLayout({ 
-  chartDetail, 
-  children, 
-  onSave, 
+export default function OphthalmicChartLayout({
+  chartDetail,
+  children,
+  onSave,
   isSaving,
   onDelete,
   isDeleting,
@@ -49,6 +50,7 @@ export default function OphthalmicChartLayout({
   currentResults,
   onResetAll,
   engineOutput,
+  treatmentData,
 }: Props) {
   const router = useRouter()
   const params = useParams()
@@ -126,10 +128,11 @@ export default function OphthalmicChartLayout({
             </AlertDialog>
           )}
           
-          <OphthalmicTextReportDialog 
+          <OphthalmicTextReportDialog
             chartDetail={chartDetail}
             results={currentResults}
             engineOutput={engineOutput}
+            treatmentData={treatmentData}
           />
 
           <OphthalmicReportDialog 
@@ -166,6 +169,17 @@ export default function OphthalmicChartLayout({
               {section.domainNameKo}
             </button>
           ))}
+          <button
+            onClick={() => setActiveDomain('treatment')}
+            className={cn(
+              "px-4 py-2 text-xs font-bold rounded-full transition-all whitespace-nowrap ring-1 ring-inset",
+              activeDomain === 'treatment'
+                ? "bg-indigo-600 text-white shadow-md ring-indigo-600"
+                : "bg-indigo-50 text-indigo-700 ring-indigo-200 hover:bg-indigo-100"
+            )}
+          >
+            치료 계획 / 처방
+          </button>
         </div>
 
         {onResetAll && (

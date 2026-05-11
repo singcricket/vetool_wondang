@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Trash2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import NeuroReportDialog from './neuro-report-dialog'
 import NeuroTextReportDialog from './neuro-text-report-dialog'
+import NeuroTestSearch from './neuro-test-search'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ interface Props {
   currentResults: Record<string, string | string[]>
   currentLocalisations: any
   onResetAll?: () => void
+  onResultsChange?: (results: Record<string, string | string[]>) => void
 }
 
 export default function NeuroChartLayout({ 
@@ -48,6 +50,7 @@ export default function NeuroChartLayout({
   currentResults,
   currentLocalisations,
   onResetAll,
+  onResultsChange,
 }: Props) {
   const router = useRouter()
   const params = useParams()
@@ -149,7 +152,53 @@ export default function NeuroChartLayout({
           ))}
         </div>
 
-        {onResetAll && (
+        <div className="flex items-center gap-2 ml-auto pr-2">
+          <NeuroTestSearch 
+            onSelect={(test) => {
+              // 1. 결과 업데이트 (게이트 열기 및 의존성 충족)
+              if (onResultsChange) {
+                const newResults = { ...currentResults }
+                const domain = neuroReference.domainSections.find(d => d.domain === test.domain)
+                
+                if (domain) {
+                  // 해당 도메인 게이트 열기
+                  newResults[domain.statusGate.testID] = domain.statusGate.abnormalValue
+                  
+                  // 의존성(dependsOn) 처리
+                  const processDeps = (t: any) => {
+                    if (!t.dependsOn) return
+                    const deps = Array.isArray(t.dependsOn) ? t.dependsOn : [t.dependsOn]
+                    deps.forEach((dep: any) => {
+                      const currentVal = newResults[dep.testID]
+                      if (!dep.triggerValues.includes(currentVal)) {
+                        newResults[dep.testID] = dep.triggerValues[0]
+                      }
+                      // 부모 의존성도 재귀적으로 처리
+                      const parentTest = domain.tests.find(pt => pt.testID === dep.testID)
+                      if (parentTest) processDeps(parentTest)
+                    })
+                  }
+                  processDeps(test)
+                }
+                onResultsChange(newResults)
+              }
+
+              // 2. 탭 전환 및 스크롤
+              setActiveDomain(test.domain)
+              setTimeout(() => {
+                const element = document.getElementById(`test-${test.testID}`)
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  element.classList.add('ring-4', 'ring-indigo-500/30', 'border-indigo-500', 'shadow-lg')
+                  setTimeout(() => {
+                    element.classList.remove('ring-4', 'ring-indigo-500/30', 'border-indigo-500', 'shadow-lg')
+                  }, 3000)
+                }
+              }, 300) // 렌더링 시간을 위해 지연 시간 소폭 증가
+            }}
+          />
+
+          {onResetAll && (
           <div className="flex items-center ml-auto pl-4 border-l my-2">
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -183,6 +232,7 @@ export default function NeuroChartLayout({
           </div>
         )}
       </div>
+    </div>
 
       {/* Content Area - Scrollable */}
       <main className="flex-1 overflow-hidden relative">
