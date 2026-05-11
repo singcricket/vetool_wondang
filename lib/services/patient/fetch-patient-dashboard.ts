@@ -26,12 +26,20 @@ export type PatientDashboardData = {
     id: string
     chart_date: string
   }[]
+  neuro: {
+    id: string
+    chart_date: string
+  }[]
+  ophthalmic: {
+    id: string
+    chart_date: string
+  }[]
 }
 
 export async function fetchPatientDashboardData(patientId: string): Promise<PatientDashboardData> {
   const supabase = await createClient()
 
-  const [icuRes, msRes, usRes, echoRes, dentalRes] = await Promise.all([
+  const [icuRes, msRes, usRes, echoRes, dentalRes, neuroRes, ophthalmicRes] = await Promise.all([
     // ICU (icu_io)
     supabase
       .from('icu_io')
@@ -66,6 +74,20 @@ export async function fetchPatientDashboardData(patientId: string): Promise<Pati
       .select('id, chart_date')
       .eq('patient_id', patientId)
       .order('chart_date', { ascending: false }),
+
+    // Neuro
+    supabase
+      .from('neuro_charts')
+      .select('id, chart_date')
+      .eq('patient_id', patientId)
+      .order('chart_date', { ascending: false }),
+
+    // Ophthalmic
+    supabase
+      .from('ophthalmic_charts')
+      .select('id, chart_date')
+      .eq('patient_id', patientId)
+      .order('chart_date', { ascending: false }),
   ])
 
   return {
@@ -79,5 +101,7 @@ export async function fetchPatientDashboardData(patientId: string): Promise<Pati
     ultrasound: usRes.data ?? [],
     echo: echoRes.data ?? [],
     dental: dentalRes.data ?? [],
+    neuro: neuroRes.data ?? [],
+    ophthalmic: ophthalmicRes.data ?? [],
   }
 }

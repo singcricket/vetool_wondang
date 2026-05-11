@@ -22,6 +22,8 @@ import { registerMonitoringSession } from '@/lib/services/monitoring/ms-register
 import { registerEchoChart } from '@/lib/services/echocardio/register-echo'
 import { registerDentalChart } from '@/lib/services/dental/register-dental'
 import { registerUltrasoundChart } from '@/lib/services/ultrasound/register-ultrasound'
+import { registerNeuroChart } from '@/lib/services/neuro/register-neuro'
+import { registerOphthalmicChart } from '@/lib/services/ophthalmic/register-ophthalmic'
 import { useRouter } from 'next/navigation'
 
 type Props = {
@@ -29,7 +31,7 @@ type Props = {
   hosId: string
 }
 
-type ServiceType = 'icu' | 'monitoring' | 'echocardio' | 'dental' | 'ultrasound'
+type ServiceType = 'icu' | 'monitoring' | 'echocardio' | 'dental' | 'ultrasound' | 'neuro' | 'ophthalmic'
 
 const SERVICES: { id: ServiceType; label: string; color: string }[] = [
   { id: 'icu', label: '입원 (ICU)', color: 'text-rose-500' },
@@ -37,6 +39,8 @@ const SERVICES: { id: ServiceType; label: string; color: string }[] = [
   { id: 'echocardio', label: '심장초음파', color: 'text-red-500' },
   { id: 'dental', label: '치과', color: 'text-blue-500' },
   { id: 'ultrasound', label: '복부초음파', color: 'text-emerald-500' },
+  { id: 'neuro', label: '신경계', color: 'text-indigo-500' },
+  { id: 'ophthalmic', label: '안과', color: 'text-sky-500' },
 ]
 
 export default function PatientQuickRegisterDialog({ patient, hosId }: Props) {
@@ -121,6 +125,22 @@ export default function PatientQuickRegisterDialog({ patient, hosId }: Props) {
             })
             results.push({ label: '복부초음파', id: chartId, type: 'ultrasound' })
             break
+          case 'neuro':
+            chartId = await registerNeuroChart({
+              hosId,
+              patientId: patient.patient_id,
+              targetDate,
+            })
+            results.push({ label: '신경계', id: chartId, type: 'neuro' })
+            break
+          case 'ophthalmic':
+            chartId = await registerOphthalmicChart({
+              hosId,
+              patientId: patient.patient_id,
+              targetDate,
+            })
+            results.push({ label: '안과', id: chartId, type: 'ophthalmic' })
+            break
         }
       } catch (e: any) {
         errors.push(`${SERVICES.find(s => s.id === serviceId)?.label}: ${e.message}`)
@@ -186,17 +206,17 @@ export default function PatientQuickRegisterDialog({ patient, hosId }: Props) {
               className="flex items-center space-x-3 space-y-0 rounded-md border p-4 hover:bg-slate-50 cursor-pointer transition-colors"
               onClick={() => toggleService(service.id)}
             >
-              <Checkbox
-                id={service.id}
-                checked={selectedServices.includes(service.id)}
-                onCheckedChange={() => toggleService(service.id)}
-              />
-              <Label
-                htmlFor={service.id}
-                className={`flex-1 text-sm font-semibold cursor-pointer ${service.color}`}
-              >
-                {service.label}
-              </Label>
+              <div className="flex items-center space-x-3 pointer-events-none">
+                <Checkbox
+                  id={service.id}
+                  checked={selectedServices.includes(service.id)}
+                />
+                <Label
+                  className={`flex-1 text-sm font-semibold ${service.color}`}
+                >
+                  {service.label}
+                </Label>
+              </div>
             </div>
           ))}
         </div>

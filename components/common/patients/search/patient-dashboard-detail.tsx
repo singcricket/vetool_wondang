@@ -14,7 +14,9 @@ import {
   Stethoscope, 
   ChevronRight,
   Calendar,
-  Timer
+  Timer,
+  Brain,
+  Eye
 } from 'lucide-react'
 import Link from 'next/link'
 import { format, differenceInDays } from 'date-fns'
@@ -162,6 +164,28 @@ export default function PatientDashboardDetail({ patient, hosId }: Props) {
             id: d.id, 
             date: d.chart_date, 
             href: `/hospital/${hosId}/dental/${d.chart_date}/${d.id}`
+          }))}
+        />
+
+        {/* 신경계 */}
+        <ChartListCard 
+          title="신경계" 
+          icon={<Brain className="h-5 w-5 text-indigo-600" />} 
+          data={data.neuro.map(n => ({ 
+            id: n.id, 
+            date: n.chart_date, 
+            href: `/hospital/${hosId}/neuro/${n.chart_date}/${n.id}`
+          }))}
+        />
+
+        {/* 안과 */}
+        <ChartListCard 
+          title="안과" 
+          icon={<Eye className="h-5 w-5 text-sky-600" />} 
+          data={data.ophthalmic.map(o => ({ 
+            id: o.id, 
+            date: o.chart_date, 
+            href: `/hospital/${hosId}/ophthalmic/${o.chart_date}/${o.id}`
           }))}
         />
       </div>
