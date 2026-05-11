@@ -26,6 +26,7 @@ import {
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import OphthalmicImageUploadDialog from '@/components/hospital/ophthalmic/ophthalmic-image-uploader/ophthalmic-image-upload-dialog'
 
 interface Props {
   hosId: string
@@ -167,6 +168,9 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
                 domain={ophthalmicReference.domainSections.find(d => d.domain === activeDomain)!}
                 results={results}
                 onUpdate={handleUpdateResults}
+                species={chartDetail.patient?.species || 'dog'}
+                chartId={chartId}
+                hosId={hosId}
               />
             )}
           </div>
@@ -218,6 +222,14 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
           </Sheet>
         </div>
       </div>
+
+      {/* Floating Image Uploader Trigger */}
+      {!guestMode && (
+        <OphthalmicImageUploadDialog 
+          chartId={chartId} 
+          hosId={hosId} 
+        />
+      )}
     </OphthalmicChartLayout>
   )
 }

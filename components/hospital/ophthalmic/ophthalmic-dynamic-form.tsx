@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { ophthalmicReference } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
 import type { 
   OphDomainSection, 
@@ -18,16 +18,23 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, ChevronUp, ChevronDown, Image as ImageIcon } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
+
+import OphthalmicSchematicCanvas, { OphthalmicSchematicKind, OphthalmicMarker, OphthalmicPath } from './ophthalmic-schematic-canvas'
+import OphthalmicDomainImages from './ophthalmic-domain-images'
 
 interface Props {
   domain: OphDomainSection
-  results: Record<string, string | string[]>
-  onUpdate: (newResults: Record<string, string | string[]>) => void
+  results: Record<string, any>
+  onUpdate: (newResults: Record<string, any>) => void
+  species?: string
+  chartId?: string
+  hosId?: string
 }
 
-export default function OphthalmicDynamicForm({ domain, results, onUpdate }: Props) {
+export default function OphthalmicDynamicForm({ domain, results, onUpdate, species = 'dog', chartId, hosId }: Props) {
+  const [isSchematicCollapsed, setIsSchematicCollapsed] = React.useState(true)
   const isGateOpen = results[domain.statusGate.testID] === domain.statusGate.abnormalValue
   const gateTest = domain.statusGate
 
@@ -78,6 +85,70 @@ export default function OphthalmicDynamicForm({ domain, results, onUpdate }: Pro
     return { od, os, ou, global }
   }, [domain.tests, results])
 
+  // Schematic mapping
+  const schematicKind = useMemo((): OphthalmicSchematicKind | null => {
+    switch (domain.domain) {
+      case 'gross_inspection': return 'external'
+      case 'slit_lamp_cornea': return 'cornea'
+      case 'slit_lamp_lens': return 'lens'
+      case 'fundoscopy': return 'fundus'
+      default: return null
+    }
+  }, [domain.domain])
+
+  const markingsKey = `markings_${domain.domain}`
+  const drawingsKey = `drawings_${domain.domain}`
+  
+  const currentMarkings = (results[markingsKey] as OphthalmicMarker[]) || []
+  const currentDrawings = (results[drawingsKey] as OphthalmicPath[]) || []
+
+  const handleAddMarking = (marking: OphthalmicMarker) => {
+    onUpdate({
+      ...results,
+      [markingsKey]: [...currentMarkings, marking]
+    })
+  }
+
+  const handleRemoveMarking = (id: string) => {
+    onUpdate({
+      ...results,
+      [markingsKey]: currentMarkings.filter(m => m.id !== id)
+    })
+  }
+
+  const handleAddPath = (path: OphthalmicPath) => {
+    onUpdate({
+      ...results,
+      [drawingsKey]: [...currentDrawings, path]
+    })
+  }
+
+  const handleRemovePath = (id: string) => {
+    onUpdate({
+      ...results,
+      [drawingsKey]: currentDrawings.filter(p => p.id !== id)
+    })
+  }
+
+  const handleClearAll = () => {
+    if (!window.confirm('모든 마킹과 그림을 삭제하시겠습니까?')) return
+    onUpdate({
+      ...results,
+      [markingsKey]: [],
+      [drawingsKey]: []
+    })
+  }
+
+  const domainToTagMap: Record<string, string> = {
+    'gross_inspection': 'External',
+    'slit_lamp_cornea': 'Cornea',
+    'slit_lamp_ac': 'Anterior Chamber',
+    'slit_lamp_iris': 'Iris',
+    'slit_lamp_lens': 'Lens',
+    'fundoscopy': 'Fundus',
+    'ocular_ultrasound': 'Ultrasound',
+  }
+
   return (
     <div className="space-y-6 w-full max-w-5xl mx-auto">
       {/* Domain Header & Gate */}
@@ -111,6 +182,77 @@ export default function OphthalmicDynamicForm({ domain, results, onUpdate }: Pro
       {isGateOpen && (
         <div className="space-y-8 animate-in fade-in slide-in-from-top-2 duration-300 pb-12">
           
+          {/* Schematic Marking Area */}
+          {schematicKind && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div 
+                className="flex items-center justify-between px-6 py-3 bg-slate-50 border-b border-slate-100 cursor-pointer hover:bg-slate-100/80 transition-colors"
+                onClick={() => setIsSchematicCollapsed(!isSchematicCollapsed)}
+              >
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-slate-400" />
+                  <h3 className="text-sm font-black text-slate-600 uppercase tracking-wider">
+                    {domain.domainNameKo} 모식도 마킹
+                  </h3>
+                </div>
+                <Button variant="ghost" size="sm" className="h-7 text-[11px] font-bold gap-1 text-slate-400">
+                  {isSchematicCollapsed ? (
+                    <>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                      모식도 펼치기
+                    </>
+                  ) : (
+                    <>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                      모식도 접기
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {!isSchematicCollapsed && (
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-1">
+                      <div className="w-2 h-6 bg-blue-500 rounded-full" />
+                      <h3 className="text-lg font-bold text-blue-700">OD Marking</h3>
+                    </div>
+                    <OphthalmicSchematicCanvas
+                      kind={schematicKind}
+                      species={species}
+                      side="OD"
+                      markings={currentMarkings}
+                      paths={currentDrawings}
+                      onAddMarking={handleAddMarking}
+                      onRemoveMarking={handleRemoveMarking}
+                      onAddPath={handleAddPath}
+                      onRemovePath={handleRemovePath}
+                      onClearAll={handleClearAll}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-1">
+                      <div className="w-2 h-6 bg-orange-500 rounded-full" />
+                      <h3 className="text-lg font-bold text-orange-700">OS Marking</h3>
+                    </div>
+                    <OphthalmicSchematicCanvas
+                      kind={schematicKind}
+                      species={species}
+                      side="OS"
+                      markings={currentMarkings}
+                      paths={currentDrawings}
+                      onAddMarking={handleAddMarking}
+                      onRemoveMarking={handleRemoveMarking}
+                      onAddPath={handleAddPath}
+                      onRemovePath={handleRemovePath}
+                      onClearAll={handleClearAll}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Global / OU Tests (Full Width) */}
           {[...groupedTests.global, ...groupedTests.ou].length > 0 && (
             <div className="space-y-4">
@@ -145,6 +287,14 @@ export default function OphthalmicDynamicForm({ domain, results, onUpdate }: Pro
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Related Images for this domain */}
+          {chartId && domainToTagMap[domain.domain] && (
+            <OphthalmicDomainImages 
+              chartId={chartId} 
+              tag={domainToTagMap[domain.domain]} 
+            />
           )}
         </div>
       )}
@@ -299,5 +449,3 @@ function renderTestInput(test: OphTestItem, value: any, onChange: (val: any) => 
   }
 }
 
-// React useMemo needs to be imported or handled
-import { useMemo } from 'react'

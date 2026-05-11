@@ -1586,6 +1586,51 @@ export type Database = {
           },
         ]
       }
+      ophthalmic_images: {
+        Row: {
+          chart_id: string
+          created_at: string
+          hos_id: string
+          id: string
+          img_url: string
+          side: string | null
+          tags: string[] | null
+        }
+        Insert: {
+          chart_id: string
+          created_at?: string
+          hos_id: string
+          id?: string
+          img_url: string
+          side?: string | null
+          tags?: string[] | null
+        }
+        Update: {
+          chart_id?: string
+          created_at?: string
+          hos_id?: string
+          id?: string
+          img_url?: string
+          side?: string | null
+          tags?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ophthalmic_images_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "ophthalmic_charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ophthalmic_images_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
       owners: {
         Row: {
           created_at: string

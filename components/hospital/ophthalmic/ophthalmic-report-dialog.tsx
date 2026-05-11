@@ -1,15 +1,15 @@
-'use client'
-
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { FileText, Printer, Eye, Activity, ClipboardList, AlertTriangle, ShieldCheck, Stethoscope, Pill, Droplets, Scissors, ChevronRight } from 'lucide-react'
+import { FileText, Printer, Eye, Activity, ClipboardList, AlertTriangle, ShieldCheck, Stethoscope, Pill, Droplets, Scissors, ChevronRight, ImageIcon, Maximize2, CheckCircle2 } from 'lucide-react'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import {
   Table,
   TableBody,
@@ -22,6 +22,9 @@ import { ophthalmicReference, ophthalmicTreatmentOptions } from '@/constants/hos
 import type { OphthalmicChartDetail } from '@/types/hospital/ophthalmic-type'
 import type { OphEngineOutput, OphTreatmentCategory } from '@/constants/hospital/ophthalmic/ophthalmic_ref'
 import { cn } from '@/lib/utils/utils'
+import OphthalmicReportSchematics from './ophthalmic-report-schematics'
+import { getOphthalmicImages } from '@/lib/actions/ophthalmic/get-ophthalmic-images'
+import OphthalmicImageWithMark from './ophthalmic-image-with-mark'
 
 interface Props {
   chartDetail: OphthalmicChartDetail
@@ -29,7 +32,19 @@ interface Props {
   engineOutput: OphEngineOutput
 }
 
+const domainToTagMap: Record<string, string> = {
+  '육안적 검사': 'External',
+  '세극등 검사-각막': 'Cornea',
+  '세극등 검사-전안방': 'Anterior Chamber',
+  '세극등 검사-홍채': 'Iris',
+  '세극등검사-수정체': 'Lens',
+  '안저 검사': 'Fundus',
+  '안구 초음파 검사': 'Ultrasound'
+}
+
 export default function OphthalmicReportDialog({ chartDetail, results, engineOutput }: Props) {
+  const [images, setImages] = useState<any[]>([])
+  const [selectedZoomImg, setSelectedZoomImg] = useState<any | null>(null)
   const patient = chartDetail.patient
   const { 
     diagnoses = [], 
@@ -37,6 +52,14 @@ export default function OphthalmicReportDialog({ chartDetail, results, engineOut
     visionStatus,
     activeSigns = []
   } = engineOutput
+
+  useEffect(() => {
+    async function fetchImages() {
+      const data = await getOphthalmicImages(chartDetail.id)
+      setImages(data || [])
+    }
+    fetchImages()
+  }, [chartDetail.id])
 
   const handlePrint = () => {
     window.print()
@@ -174,6 +197,13 @@ export default function OphthalmicReportDialog({ chartDetail, results, engineOut
               <Activity className="h-6 w-6 text-blue-600" />
               정밀 검사 소견 (Detailed Findings)
             </h3>
+
+            {/* Ophthalmic Schematics (Read-only) */}
+            <OphthalmicReportSchematics 
+              results={results} 
+              species={patient?.species || 'dog'} 
+            />
+
             <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
               <Table>
                 <TableHeader>
@@ -184,35 +214,91 @@ export default function OphthalmicReportDialog({ chartDetail, results, engineOut
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visibleData.map((d, idx) => (
-                    <TableRow key={idx} className="border-b last:border-0 hover:bg-slate-50/30">
-                      <TableCell className="font-black text-slate-900 bg-slate-50 text-center align-top pt-4 border-r">
-                        {d.domain}
-                      </TableCell>
-                      <TableCell className="p-0 align-top border-r">
-                        <div className="p-3 space-y-2">
-                          {d.od.map((r: any, i: number) => (
-                            <ResultRow key={i} name={r.name} value={r.value} color="blue" />
-                          ))}
-                          {d.ou.map((r: any, i: number) => (
-                            <ResultRow key={i} name={r.name} value={r.value} color="slate" isOU />
-                          ))}
-                          {d.od.length === 0 && d.ou.length === 0 && <p className="text-[10px] text-slate-300 italic text-center py-2">No records</p>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="p-0 align-top">
-                        <div className="p-3 space-y-2">
-                          {d.os.map((r: any, i: number) => (
-                            <ResultRow key={i} name={r.name} value={r.value} color="orange" />
-                          ))}
-                          {d.ou.map((r: any, i: number) => (
-                            <ResultRow key={i} name={r.name} value={r.value} color="slate" isOU />
-                          ))}
-                          {d.os.length === 0 && d.ou.length === 0 && <p className="text-[10px] text-slate-300 italic text-center py-2">No records</p>}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {visibleData.map((d, idx) => {
+                    const targetTag = domainToTagMap[d.domain]
+                    const odImages = images.filter(img => img.tags?.includes(targetTag) && (img.side === 'OD' || img.side === 'OU'))
+                    const osImages = images.filter(img => img.tags?.includes(targetTag) && (img.side === 'OS' || img.side === 'OU'))
+
+                    return (
+                      <TableRow key={idx} className="border-b last:border-0 hover:bg-slate-50/30">
+                        <TableCell className="font-black text-slate-900 bg-slate-50 text-center align-top pt-4 border-r">
+                          {d.domain}
+                        </TableCell>
+                        <TableCell className="p-0 align-top border-r">
+                          <div className="p-3 space-y-4">
+                            <div className="space-y-2">
+                              {d.od.map((r: any, i: number) => (
+                                <ResultRow key={i} name={r.name} value={r.value} color="blue" />
+                              ))}
+                              {d.ou.map((r: any, i: number) => (
+                                <ResultRow key={i} name={r.name} value={r.value} color="slate" isOU />
+                              ))}
+                            </div>
+                            
+                            {/* Images for OD */}
+                            {odImages.length > 0 && (
+                              <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
+                                {odImages.map((img, i) => (
+                                  <div key={i} className="group relative cursor-zoom-in" onClick={() => setSelectedZoomImg(img)}>
+                                    <OphthalmicImageWithMark 
+                                      imageUrl={img.img_url} 
+                                      mark={img.mark} 
+                                      className="w-full h-auto rounded-lg shadow-sm border border-slate-200 group-hover:shadow-md transition-shadow" 
+                                      noHover 
+                                    />
+                                    <div className="absolute top-2 right-2 p-1.5 bg-black/40 backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Maximize2 className="h-4 w-4 text-white" />
+                                    </div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase text-center mt-1.5 tracking-tighter">{img.side || 'OU'}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {d.od.length === 0 && d.ou.length === 0 && odImages.length === 0 && (
+                              <p className="text-[10px] text-slate-300 italic text-center py-2">No records</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="p-0 align-top">
+                          <div className="p-3 space-y-4">
+                            <div className="space-y-2">
+                              {d.os.map((r: any, i: number) => (
+                                <ResultRow key={i} name={r.name} value={r.value} color="orange" />
+                              ))}
+                              {d.ou.map((r: any, i: number) => (
+                                <ResultRow key={i} name={r.name} value={r.value} color="slate" isOU />
+                              ))}
+                            </div>
+
+                            {/* Images for OS */}
+                            {osImages.length > 0 && (
+                              <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
+                                {osImages.map((img, i) => (
+                                  <div key={i} className="group relative cursor-zoom-in" onClick={() => setSelectedZoomImg(img)}>
+                                    <OphthalmicImageWithMark 
+                                      imageUrl={img.img_url} 
+                                      mark={img.mark} 
+                                      className="w-full h-auto rounded-lg shadow-sm border border-slate-200 group-hover:shadow-md transition-shadow" 
+                                      noHover 
+                                    />
+                                    <div className="absolute top-2 right-2 p-1.5 bg-black/40 backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Maximize2 className="h-4 w-4 text-white" />
+                                    </div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase text-center mt-1.5 tracking-tighter">{img.side || 'OU'}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {d.os.length === 0 && d.ou.length === 0 && osImages.length === 0 && (
+                              <p className="text-[10px] text-slate-300 italic text-center py-2">No records</p>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -346,6 +432,52 @@ export default function OphthalmicReportDialog({ chartDetail, results, engineOut
             </div>
           </section>
         </div>
+
+        {/* Zoomed Image Viewer Dialog */}
+        <Dialog open={!!selectedZoomImg} onOpenChange={(open) => !open && setSelectedZoomImg(null)}>
+          <DialogContent className="max-w-4xl p-0 bg-black/95 border-none flex flex-col items-center justify-center overflow-hidden z-[300]">
+            <VisuallyHidden>
+              <DialogTitle>안과 사진 확대 보기</DialogTitle>
+              <DialogDescription>선택한 사진을 고해상도로 크게 봅니다.</DialogDescription>
+            </VisuallyHidden>
+            {selectedZoomImg && (
+              <div className="relative w-full h-full flex items-center justify-center p-8">
+                <OphthalmicImageWithMark 
+                  imageUrl={selectedZoomImg.img_url} 
+                  mark={selectedZoomImg.mark} 
+                  className="max-h-[80vh] w-auto h-auto rounded-xl shadow-2xl ring-1 ring-white/20" 
+                  noHover 
+                />
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 bg-white/10 backdrop-blur-xl px-8 py-4 rounded-3xl border border-white/20 shadow-2xl">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Examination Tag</span>
+                      <span className="text-base font-black text-white">{selectedZoomImg.tags?.[0] || 'Unassigned'}</span>
+                   </div>
+                   <div className="w-[1px] h-8 bg-white/20" />
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Target Eye</span>
+                      <span className={cn(
+                        "text-base font-black px-2 py-0.5 rounded",
+                        selectedZoomImg.side === 'OD' ? "text-blue-400" :
+                        selectedZoomImg.side === 'OS' ? "text-orange-400" :
+                        "text-slate-300"
+                      )}>
+                        {selectedZoomImg.side || 'OU'}
+                      </span>
+                   </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setSelectedZoomImg(null)}
+                  className="absolute top-4 right-4 text-white/50 hover:text-white hover:bg-white/10 rounded-full h-10 w-10"
+                >
+                  <ChevronRight className="h-6 w-6 rotate-90" />
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   )
