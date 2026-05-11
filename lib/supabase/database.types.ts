@@ -1506,6 +1506,83 @@ export type Database = {
           },
         ]
       }
+      ophthalmic_charts: {
+        Row: {
+          chart_date: string
+          created_at: string
+          diagnosis: Json
+          evaluator_id: string | null
+          hos_id: string
+          id: string
+          patient_id: string
+          results: Json
+          summary: string | null
+          tags: string | null
+          updated_at: string
+          user_tags: string | null
+          vet_id: string | null
+        }
+        Insert: {
+          chart_date: string
+          created_at?: string
+          diagnosis?: Json
+          evaluator_id?: string | null
+          hos_id: string
+          id?: string
+          patient_id: string
+          results?: Json
+          summary?: string | null
+          tags?: string | null
+          updated_at?: string
+          user_tags?: string | null
+          vet_id?: string | null
+        }
+        Update: {
+          chart_date?: string
+          created_at?: string
+          diagnosis?: Json
+          evaluator_id?: string | null
+          hos_id?: string
+          id?: string
+          patient_id?: string
+          results?: Json
+          summary?: string | null
+          tags?: string | null
+          updated_at?: string
+          user_tags?: string | null
+          vet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ophthalmic_charts_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ophthalmic_charts_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "ophthalmic_charts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+          {
+            foreignKeyName: "ophthalmic_charts_vet_id_fkey"
+            columns: ["vet_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       owners: {
         Row: {
           created_at: string

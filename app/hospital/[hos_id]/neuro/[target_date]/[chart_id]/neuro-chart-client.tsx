@@ -68,7 +68,7 @@ export default function NeuroChartClient({ hosId, chartId, chartDate, chartDetai
       progression: (results['progression'] as any) || 'static',
       painPresent: results['neck_pain'] === 'present' || results['back_pain'] === 'present',
     }
-    const engineResults = neuroReference.runFullLocalisationEngine(
+    const engineResults = neuroReference.runCompleteLocalisationEngine(
       results,
       context,
       neuroReference.domainSections,
@@ -97,20 +97,28 @@ export default function NeuroChartClient({ hosId, chartId, chartDate, chartDetai
       )
 
       // 포맷팅된 문자열 생성 + 편측화 결과 추가
-      const lateralisation = (localisations as any)?.cerebralLateralisation ?? null
-      const summaryString = neuroReference.appendLateralisationToChart(
-        currentSummary,
-        lateralisation,
-        'ko',
-      )
+      const cerebralLat = (localisations as any)?.cerebralLateralisation ?? null
+      const spinalLat = (localisations as any)?.spinalLateralisation ?? null
+      
+      let finalSummary = currentSummary.summaryText
+      if (cerebralLat) {
+        finalSummary = neuroReference.appendLateralisationToChart(currentSummary, cerebralLat, 'ko')
+      }
+      if (spinalLat) {
+        finalSummary = neuroReference.appendLateralisationToChart(
+          { ...currentSummary, summaryText: finalSummary }, 
+          spinalLat as any, 
+          'ko'
+        )
+      }
 
-      setSummary(summaryString)
+      setSummary(finalSummary)
 
       await updateNeuroChartResults(
         chartId,
         results,
         localisations,
-        summaryString,
+        finalSummary,
       )
 
 

@@ -16,6 +16,7 @@ export default function NeuroLocalisationPanel({ localisations, results, summary
     detectedSyndromes: syndromes = [], 
     activeSigns = [],
     cerebralLateralisation = null,
+    spinalLateralisation = null,
   } = localisations
 
   // 검사 결과가 전혀 없는 경우에만 빈 화면 표시
@@ -32,7 +33,8 @@ export default function NeuroLocalisationPanel({ localisations, results, summary
     )
   }
 
-  const lat = cerebralLateralisation
+  const cerebralLat = cerebralLateralisation
+  const spinalLat = spinalLateralisation
 
   return (
     <div className="h-full flex flex-col">
@@ -148,7 +150,7 @@ export default function NeuroLocalisationPanel({ localisations, results, summary
         </section>
 
         {/* ─── Cerebral Lateralisation Section ─────────────────────── */}
-        {lat && lat.hemisphere !== 'undetermined' && (
+        {cerebralLat && cerebralLat.hemisphere !== 'undetermined' && (
           <section>
             <h4 className="text-sm font-semibold text-violet-700 mb-3 flex items-center gap-2 uppercase tracking-wider">
               <Brain className="w-4 h-4" />
@@ -157,11 +159,11 @@ export default function NeuroLocalisationPanel({ localisations, results, summary
 
             {/* Main result card */}
             <div className={`p-4 rounded-xl border-2 mb-3 ${
-              lat.hemisphere === 'bilateral' 
+              cerebralLat.hemisphere === 'bilateral' 
                 ? 'bg-amber-50 border-amber-300' 
-                : lat.confidence === 'high'
+                : cerebralLat.confidence === 'high'
                   ? 'bg-violet-50 border-violet-300'
-                  : lat.confidence === 'medium'
+                  : cerebralLat.confidence === 'medium'
                     ? 'bg-indigo-50 border-indigo-200'
                     : 'bg-slate-50 border-slate-200'
             }`}>
@@ -171,41 +173,41 @@ export default function NeuroLocalisationPanel({ localisations, results, summary
                   <div className="flex gap-1.5">
                     {/* Left brain */}
                     <div className={`w-8 h-8 rounded-l-full border-2 flex items-center justify-center text-[10px] font-bold transition-all ${
-                      lat.hemisphere === 'left' || lat.hemisphere === 'bilateral'
+                      cerebralLat.hemisphere === 'left' || cerebralLat.hemisphere === 'bilateral'
                         ? 'bg-violet-500 border-violet-600 text-white shadow-md scale-110'
                         : 'bg-slate-100 border-slate-300 text-slate-400'
                     }`}>L</div>
                     {/* Right brain */}
                     <div className={`w-8 h-8 rounded-r-full border-2 flex items-center justify-center text-[10px] font-bold transition-all ${
-                      lat.hemisphere === 'right' || lat.hemisphere === 'bilateral'
+                      cerebralLat.hemisphere === 'right' || cerebralLat.hemisphere === 'bilateral'
                         ? 'bg-violet-500 border-violet-600 text-white shadow-md scale-110'
                         : 'bg-slate-100 border-slate-300 text-slate-400'
                     }`}>R</div>
                   </div>
                   <div>
                     <p className="font-bold text-slate-900 text-base leading-tight">
-                      {lat.hemisphere === 'left' ? '좌측 반구' 
-                        : lat.hemisphere === 'right' ? '우측 반구'
+                      {cerebralLat.hemisphere === 'left' ? '좌측 반구' 
+                        : cerebralLat.hemisphere === 'right' ? '우측 반구'
                         : '양측성'}
-                      {lat.conflicting && ' (⚠ 양측 근거)'}
+                      {cerebralLat.conflicting && ' (⚠ 양측 근거)'}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {lat.hemisphere === 'left' ? '병변: 좌측 (Left hemisphere lesion suspected)'
-                        : lat.hemisphere === 'right' ? '병변: 우측 (Right hemisphere lesion suspected)'
+                      {cerebralLat.hemisphere === 'left' ? '병변: 좌측 (Left hemisphere lesion suspected)'
+                        : cerebralLat.hemisphere === 'right' ? '병변: 우측 (Right hemisphere lesion suspected)'
                         : '양측 또는 다발성 병변 가능'}
                     </p>
                   </div>
                 </div>
                 {/* Confidence badge */}
                 <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                  lat.confidence === 'high' ? 'bg-emerald-100 text-emerald-700'
-                  : lat.confidence === 'medium' ? 'bg-amber-100 text-amber-700'
+                  cerebralLat.confidence === 'high' ? 'bg-emerald-100 text-emerald-700'
+                  : cerebralLat.confidence === 'medium' ? 'bg-amber-100 text-amber-700'
                   : 'bg-slate-100 text-slate-500'
                 }`}>
-                  {lat.confidence === 'high' ? '높은 신뢰도'
-                    : lat.confidence === 'medium' ? '중간 신뢰도'
+                  {cerebralLat.confidence === 'high' ? '높은 신뢰도'
+                    : cerebralLat.confidence === 'medium' ? '중간 신뢰도'
                     : '낮은 신뢰도'}
-                  {' '}({lat.confidenceScore}%)
+                  {' '}({cerebralLat.confidenceScore}%)
                 </span>
               </div>
 
@@ -216,26 +218,26 @@ export default function NeuroLocalisationPanel({ localisations, results, summary
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-violet-400 rounded-full transition-all duration-500"
-                      style={{ width: `${(lat.leftScore / Math.max(lat.leftScore + lat.rightScore, 1)) * 100}%` }}
+                      style={{ width: `${(cerebralLat.leftScore / Math.max(cerebralLat.leftScore + cerebralLat.rightScore, 1)) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[11px] w-5 text-slate-400 text-right">{lat.leftScore}</span>
+                  <span className="text-[11px] w-5 text-slate-400 text-right">{cerebralLat.leftScore}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] w-12 text-slate-500 shrink-0">우측 (R)</span>
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-violet-400 rounded-full transition-all duration-500"
-                      style={{ width: `${(lat.rightScore / Math.max(lat.leftScore + lat.rightScore, 1)) * 100}%` }}
+                      style={{ width: `${(cerebralLat.rightScore / Math.max(cerebralLat.leftScore + cerebralLat.rightScore, 1)) * 100}%` }}
                     />
                   </div>
-                  <span className="text-[11px] w-5 text-slate-400 text-right">{lat.rightScore}</span>
+                  <span className="text-[11px] w-5 text-slate-400 text-right">{cerebralLat.rightScore}</span>
                 </div>
               </div>
             </div>
 
             {/* Conflicting warning */}
-            {lat.conflicting && (
+            {cerebralLat.conflicting && (
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-800">
@@ -246,18 +248,18 @@ export default function NeuroLocalisationPanel({ localisations, results, summary
             )}
 
             {/* Caveat */}
-            {lat.caveatKo && (
-              <p className="text-[11px] text-slate-500 italic px-1">{lat.caveatKo}</p>
+            {cerebralLat.caveatKo && (
+              <p className="text-[11px] text-slate-500 italic px-1">{cerebralLat.caveatKo}</p>
             )}
 
             {/* Supporting votes */}
-            {lat.votes && lat.votes.length > 0 && (
+            {cerebralLat.votes && cerebralLat.votes.length > 0 && (
               <details className="mt-3">
                 <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600 select-none">
-                  근거 소견 보기 ({lat.votes.length}개)
+                  근거 소견 보기 ({cerebralLat.votes.length}개)
                 </summary>
                 <div className="mt-2 space-y-1.5">
-                  {lat.votes.map((v: any, i: number) => (
+                  {cerebralLat.votes.map((v: any, i: number) => (
                     <div key={i} className={`flex items-start gap-2 text-[11px] p-2 rounded ${
                       v.side === 'left' ? 'bg-violet-50' : 'bg-indigo-50'
                     }`}>
@@ -270,6 +272,71 @@ export default function NeuroLocalisationPanel({ localisations, results, summary
                 </div>
               </details>
             )}
+          </section>
+        )}
+
+        {/* ─── Spinal Lateralisation Section ─────────────────────── */}
+        {spinalLat && spinalLat.side !== 'undetermined' && (
+          <section>
+            <h4 className="text-sm font-semibold text-teal-700 mb-3 flex items-center gap-2 uppercase tracking-wider">
+              <Activity className="w-4 h-4" />
+              척수 편측화 (Spinal Lateralisation)
+            </h4>
+
+            {/* Main result card */}
+            <div className={`p-4 rounded-xl border-2 mb-3 ${
+              spinalLat.side === 'bilateral_symmetric' 
+                ? 'bg-slate-50 border-slate-300' 
+                : spinalLat.confidence === 'high'
+                  ? 'bg-teal-50 border-teal-300'
+                  : spinalLat.confidence === 'medium'
+                    ? 'bg-emerald-50 border-emerald-200'
+                    : 'bg-slate-50 border-slate-200'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <p className="font-bold text-slate-900 text-base leading-tight">
+                    {spinalLat.side === 'left' ? '좌측 편측화' 
+                      : spinalLat.side === 'right' ? '우측 편측화'
+                      : spinalLat.side === 'bilateral_asymmetric' ? '양측성 (비대칭)'
+                      : '양측성 (대칭)'}
+                    {spinalLat.brownSequardSuspected && ' (⚠ Brown-Séquard 의심)'}
+                  </p>
+                </div>
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                  spinalLat.confidence === 'high' ? 'bg-emerald-100 text-emerald-700'
+                  : spinalLat.confidence === 'medium' ? 'bg-amber-100 text-amber-700'
+                  : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {spinalLat.confidence === 'high' ? '높은 신뢰도'
+                    : spinalLat.confidence === 'medium' ? '중간 신뢰도'
+                    : '낮은 신뢰도'}
+                  {' '}({spinalLat.confidenceScore}%)
+                </span>
+              </div>
+              
+              <p className="text-xs text-slate-600 mb-3">
+                {spinalLat.side === 'left' ? '병변: 좌측 척수 (Left hemicord lesion suspected)'
+                  : spinalLat.side === 'right' ? '병변: 우측 척수 (Right hemicord lesion suspected)'
+                  : '양측 또는 다발성 척수 병변 가능'}
+              </p>
+
+              {/* Supporting votes */}
+              {spinalLat.votes && spinalLat.votes.length > 0 && (
+                <div className="space-y-1.5">
+                  {spinalLat.votes.map((v: any, i: number) => (
+                    <div key={i} className={`flex items-start gap-2 text-[10px] p-1.5 rounded ${
+                      v.side === 'left' ? 'bg-teal-50/50' : v.side === 'right' ? 'bg-emerald-50/50' : 'bg-slate-50'
+                    }`}>
+                      <span className={`font-bold shrink-0 ${v.side === 'left' ? 'text-teal-600' : 'text-emerald-600'}`}>
+                        [{v.side === 'left' ? 'L' : v.side === 'right' ? 'R' : 'B'}]
+                      </span>
+                      <span className="text-slate-600 leading-tight">{v.reasoningKo}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
         )}
 

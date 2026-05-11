@@ -11,6 +11,7 @@ import {
   Folder,
   Waves,
   BrainCircuit,
+  Eye,
 } from 'lucide-react'
 
 const ToothIcon = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...props }: { size?: number; color?: string; strokeWidth?: number; [key: string]: any }) => (
@@ -89,6 +90,13 @@ export const HOS_SIDEBAR_MENUS = [
     icon: <BrainCircuit />,
   },
   {
+    name: '안과',
+    path: 'ophthalmic',
+    isReady: true,
+    isVetOnly: true,
+    icon: <Eye />,
+  },
+  {
     name: '진료노트',
     path: 'notes',
     isReady: true,
@@ -110,4 +118,3 @@ export const HOS_SIDEBAR_MENUS = [
     icon: <Building />,
   },
 ] as const
-

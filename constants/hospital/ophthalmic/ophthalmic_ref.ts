@@ -1148,3 +1148,442 @@ const visionAssessmentTests: OphTestItem[] = [
     ],
   },
 ]
+
+// ============================================================
+// SECTION 14: DOMAIN SECTIONS ASSEMBLY
+// ============================================================
+
+export const ophthalmicDomainSections: OphDomainSection[] = [
+  {
+    domain: 'gross_inspection', domainName: 'Gross Inspection', domainNameKo: '육안적 검사',
+    examOrder: 1,
+    statusGate: makeGate('gross_inspection'),
+    tests: grossInspectionTests,
+  },
+  {
+    domain: 'functional_tests', domainName: 'Functional Tests', domainNameKo: '기능 검사 (STT / FDT / PLR / Menace / Dazzle / RAPD)',
+    examOrder: 2,
+    statusGate: makeGate('functional_tests'),
+    tests: functionalTests,
+  },
+  {
+    domain: 'iop', domainName: 'Intraocular Pressure (Tonometry)', domainNameKo: '안압 검사 (Tonometry)',
+    examOrder: 3,
+    statusGate: makeGate('iop'),
+    tests: iopTests,
+  },
+  {
+    domain: 'slit_lamp_cornea', domainName: 'Slit Lamp — Cornea', domainNameKo: '세극등 검사 — 각막',
+    examOrder: 4,
+    statusGate: makeGate('slit_lamp_cornea'),
+    tests: slitLampCorneaTests,
+  },
+  {
+    domain: 'slit_lamp_ac', domainName: 'Slit Lamp — Anterior Chamber', domainNameKo: '세극등 검사 — 전안방',
+    examOrder: 5,
+    statusGate: makeGate('slit_lamp_ac'),
+    tests: slitLampACTests,
+  },
+  {
+    domain: 'slit_lamp_iris', domainName: 'Slit Lamp — Iris', domainNameKo: '세극등 검사 — 홍채',
+    examOrder: 6,
+    statusGate: makeGate('slit_lamp_iris'),
+    tests: slitLampIrisTests,
+  },
+  {
+    domain: 'slit_lamp_lens', domainName: 'Slit Lamp — Lens (Cataract Grading)', domainNameKo: '세극등 검사 — 수정체 (백내장 분류)',
+    examOrder: 7,
+    statusGate: makeGate('slit_lamp_lens'),
+    tests: slitLampLensTests,
+  },
+  {
+    domain: 'fundoscopy', domainName: 'Fundoscopy', domainNameKo: '안저 검사',
+    examOrder: 8,
+    statusGate: makeGate('fundoscopy'),
+    tests: fundoscopyTests,
+  },
+  {
+    domain: 'ocular_ultrasound', domainName: 'Ocular Ultrasound', domainNameKo: '안구 초음파 검사',
+    examOrder: 9,
+    statusGate: makeGate('ocular_ultrasound'),
+    tests: ocularUltrasoundTests,
+  },
+  {
+    domain: 'vision_assessment', domainName: 'Vision Assessment', domainNameKo: '시각 기능 평가',
+    examOrder: 10,
+    statusGate: makeGate('vision_assessment'),
+    tests: visionAssessmentTests,
+  },
+]
+
+// ============================================================
+// SECTION 15: DIAGNOSIS RULES (with confidence scoring)
+// ============================================================
+
+export const ophthalmicDiagnosisRules: DiagnosisRule[] = [
+  // ── CORNEA ─────────────────────────────────────────────────
+  {
+    diagnosisID: 'kcs', diagnosisName: 'Keratoconjunctivitis Sicca (KCS)', diagnosisNameKo: '건성각막결막염 (KCS)',
+    abbreviation: 'KCS', category: 'cornea',
+    requiredSigns: ['dry_eye_od'],
+    supportingSigns: ['corneal_opacity_od', 'corneal_vascularization_od', 'corneal_pigmentation_od', 'epiphora_od', 'dry_eye_os'],
+    baseConfidence: 70, supportingWeight: 8, maxConfidence: 98,
+    descriptionKo: 'STT 감소로 진단. 만성화 시 각막 색소 침착, 혈관 신생, 각막 혼탁 동반. 개에서 주로 면역 매개성.',
+    treatmentHintKo: 'Cyclosporine 0.2% 또는 Tacrolimus 0.02~0.03% 점안, 인공눈물 병용.',
+    ddx: ['conjunctivitis', 'corneal_ulcer'],
+  },
+  {
+    diagnosisID: 'kcs_os', diagnosisName: 'KCS (OS)', diagnosisNameKo: '건성각막결막염 (좌안)',
+    abbreviation: 'KCS-OS', category: 'cornea',
+    requiredSigns: ['dry_eye_os'],
+    supportingSigns: ['corneal_opacity_os', 'corneal_vascularization_os', 'corneal_pigmentation_os', 'epiphora_os'],
+    baseConfidence: 70, supportingWeight: 8, maxConfidence: 98,
+    descriptionKo: '좌안 STT 감소. 건성각막결막염.',
+    ddx: ['kcs'],
+  },
+  {
+    diagnosisID: 'corneal_ulcer_superficial', diagnosisName: 'Superficial Corneal Ulcer', diagnosisNameKo: '표층 각막 궤양',
+    category: 'cornea',
+    requiredSigns: ['corneal_ulcer_od'],
+    supportingSigns: ['corneal_opacity_od', 'epiphora_od', 'corneal_vascularization_od'],
+    exclusionSigns: ['deep_ulcer_od', 'descemetocele_od'],
+    baseConfidence: 80, supportingWeight: 5, maxConfidence: 95,
+    descriptionKo: 'FDT 양성 표층 궤양. 원인: 외상, KCS, 이물, 첩모난생.',
+    treatmentHintKo: '국소 항생제 (ciprofloxacin/ofloxacin). E-collar 필수. 3-5일 재평가.',
+    ddx: ['deep_corneal_ulcer', 'descemetocele'],
+  },
+  {
+    diagnosisID: 'deep_corneal_ulcer', diagnosisName: 'Deep / Stromal Corneal Ulcer', diagnosisNameKo: '심층/기질성 각막 궤양',
+    category: 'cornea',
+    requiredSigns: ['deep_ulcer_od'],
+    supportingSigns: ['corneal_opacity_od', 'corneal_vascularization_od', 'uveitis_od', 'low_iop_od'],
+    baseConfidence: 80, supportingWeight: 6, maxConfidence: 97,
+    descriptionKo: 'Stroma 침범 심층 궤양. 천공 위험. 즉시 외과적 처치 고려.',
+    treatmentHintKo: 'Conjunctival flap 또는 corneal grafting. 전신 항생제 + 항콜라게나제 (EDTA, serum).',
+    ddx: ['descemetocele', 'corneal_perforation'],
+  },
+  {
+    diagnosisID: 'descemetocele', diagnosisName: 'Descemetocele', diagnosisNameKo: '데스메막 탈출',
+    category: 'cornea',
+    requiredSigns: ['descemetocele_od'],
+    supportingSigns: ['corneal_opacity_od', 'low_iop_od'],
+    baseConfidence: 90, supportingWeight: 4, maxConfidence: 99,
+    descriptionKo: '데스메막 노출 — 즉각적 외과 처치 없으면 천공 불가피.',
+    treatmentHintKo: '긴급 수술 필요: conjunctival flap, corneoconjunctival transposition, or keratoplasty.',
+    ddx: ['corneal_perforation'],
+  },
+  {
+    diagnosisID: 'pannus', diagnosisName: 'Chronic Superficial Keratitis (Pannus)', diagnosisNameKo: '만성 표층 각막염 (파누스)',
+    category: 'cornea',
+    requiredSigns: ['corneal_vascularization_od'],
+    supportingSigns: ['corneal_pigmentation_od', 'corneal_opacity_od'],
+    baseConfidence: 65, supportingWeight: 10, maxConfidence: 92,
+    descriptionKo: '면역 매개성 각막염. German Shepherd 등 소인 품종. UV 악화.',
+    treatmentHintKo: 'Cyclosporine 0.2% + prednisolone 점안. UV 차단 권고.',
+    ddx: ['kcs', 'chronic_uveitis'],
+  },
+
+  // ── GLAUCOMA ──────────────────────────────────────────────
+  {
+    diagnosisID: 'glaucoma_primary_od', diagnosisName: 'Primary Glaucoma (OD)', diagnosisNameKo: '원발성 녹내장 (우안)',
+    abbreviation: 'POAG/PACG', category: 'glaucoma',
+    requiredSigns: ['high_iop_od'],
+    supportingSigns: ['very_high_iop_od', 'mydriasis_od', 'optic_disc_cupping_od', 'blind_od', 'deep_ac_od'],
+    exclusionSigns: ['uveitis_od', 'lens_luxation_od', 'iris_bombe_od'],
+    baseConfidence: 65, supportingWeight: 10, maxConfidence: 95,
+    descriptionKo: 'IOP 상승 (>25 mmHg) + 이차 원인 없음. 개에서 품종 소인 (American Cocker Spaniel, Shiba Inu 등).',
+    treatmentHintKo: 'Latanoprost (dog) 또는 dorzolamide/timolol. 반대안 예방 치료 고려.',
+    ddx: ['glaucoma_secondary', 'uveitis'],
+  },
+  {
+    diagnosisID: 'glaucoma_secondary_od', diagnosisName: 'Secondary Glaucoma (OD)', diagnosisNameKo: '속발성 녹내장 (우안)',
+    abbreviation: 'Secondary Glaucoma', category: 'glaucoma',
+    requiredSigns: ['high_iop_od'],
+    supportingSigns: ['uveitis_od', 'lens_luxation_od', 'iris_bombe_od', 'synechia_posterior_od', 'hyphema_od', 'intraocular_mass_od'],
+    baseConfidence: 60, supportingWeight: 12, maxConfidence: 96,
+    descriptionKo: '포도막염, 수정체 탈구, 홍채 팽융 등에 의한 이차적 IOP 상승.',
+    treatmentHintKo: '원인 치료 우선. 포도막염 → 소염 치료. 수정체 탈구 → 외과 제거.',
+    ddx: ['glaucoma_primary_od'],
+  },
+  {
+    diagnosisID: 'glaucoma_primary_os', diagnosisName: 'Primary Glaucoma (OS)', diagnosisNameKo: '원발성 녹내장 (좌안)',
+    abbreviation: 'Glaucoma-OS', category: 'glaucoma',
+    requiredSigns: ['high_iop_os'],
+    supportingSigns: ['very_high_iop_os', 'mydriasis_os', 'optic_disc_cupping_os', 'blind_os'],
+    exclusionSigns: ['uveitis_os', 'lens_luxation_os', 'iris_bombe_os'],
+    baseConfidence: 65, supportingWeight: 10, maxConfidence: 95,
+    descriptionKo: '좌안 원발성 녹내장.',
+    treatmentHintKo: '우안과 동일한 예방적 처치 고려.',
+    ddx: ['glaucoma_secondary_os'],
+  },
+
+  // ── UVEITIS ───────────────────────────────────────────────
+  {
+    diagnosisID: 'anterior_uveitis', diagnosisName: 'Anterior Uveitis (AAU)', diagnosisNameKo: '전방 포도막염',
+    abbreviation: 'AAU', category: 'uveitis',
+    requiredSigns: ['uveitis_od'],
+    supportingSigns: ['ac_flare_od', 'miosis_od', 'low_iop_od', 'hyphema_od', 'hypopyon_od', 'synechia_posterior_od', 'corneal_opacity_od'],
+    baseConfidence: 70, supportingWeight: 8, maxConfidence: 97,
+    descriptionKo: '전방 플레어, 세포, 동공 수축, 저안압 조합. 감염성(Toxoplasma, FIV, Leishmania 등) vs 면역 매개성 감별 필요.',
+    treatmentHintKo: '국소 + 전신 NSAID/스테로이드. 원인 감별 위해 감염 패널 검사.',
+    ddx: ['glaucoma', 'corneal_ulcer', 'infectious_uveitis'],
+  },
+  {
+    diagnosisID: 'infectious_uveitis', diagnosisName: 'Infectious Uveitis', diagnosisNameKo: '감염성 포도막염',
+    category: 'uveitis',
+    requiredSigns: ['uveitis_od'],
+    supportingSigns: ['chorioretinitis_od', 'retinal_detachment_od', 'infectious_uveitis_suspect', 'bilateral_blindness'],
+    baseConfidence: 55, supportingWeight: 12, maxConfidence: 90,
+    descriptionKo: '맥락망막염, 양안 이환, 전신 증상 동반 시 감염성 원인 의심. DDx: Toxoplasma, Neospora, FIV, FIP, Leishmania, Brucella, 진균.',
+    treatmentHintKo: '감염 원인 특정 후 항원충/항바이러스/항진균 치료.',
+    ddx: ['immune_uveitis', 'hypertensive_retinopathy'],
+  },
+
+  // ── LENS ──────────────────────────────────────────────────
+  {
+    diagnosisID: 'cataract_diabetic', diagnosisName: 'Diabetic Cataract', diagnosisNameKo: '당뇨성 백내장',
+    category: 'lens',
+    requiredSigns: ['cataract_od', 'diabetic_cataract_suspect_od'],
+    supportingSigns: ['cataract_os', 'mature_cataract_od', 'blind_od'],
+    baseConfidence: 80, supportingWeight: 10, maxConfidence: 98,
+    descriptionKo: '개에서 당뇨 합병증. 양측성, 급격히 진행, 피질성. 수술 전 당뇨 조절 필수.',
+    treatmentHintKo: '혈당 안정화 후 백내장 수술 (phacoemulsification) 고려.',
+    ddx: ['hereditary_cataract', 'post_uveitis_cataract'],
+  },
+  {
+    diagnosisID: 'lens_induced_uveitis', diagnosisName: 'Lens-Induced Uveitis (LIU)', diagnosisNameKo: '수정체 유발성 포도막염',
+    category: 'lens',
+    requiredSigns: ['cataract_od', 'uveitis_od'],
+    supportingSigns: ['hypermature_cataract_od', 'ac_flare_od', 'synechia_posterior_od', 'low_iop_od'],
+    baseConfidence: 75, supportingWeight: 8, maxConfidence: 95,
+    descriptionKo: '과성숙 백내장의 수정체 단백 누출로 인한 포도막염. 수술 전 항염증 치료로 조절 필요.',
+    treatmentHintKo: '수술 전 최소 2주간 항염증 치료. Phacoemulsification으로 수정체 제거.',
+    ddx: ['anterior_uveitis', 'glaucoma_secondary'],
+  },
+  {
+    diagnosisID: 'lens_luxation', diagnosisName: 'Lens Luxation', diagnosisNameKo: '수정체 탈구',
+    category: 'lens',
+    requiredSigns: ['lens_luxation_od'],
+    supportingSigns: ['high_iop_od', 'shallow_ac_od', 'deep_ac_od', 'blind_od', 'uveitis_od'],
+    baseConfidence: 90, supportingWeight: 5, maxConfidence: 99,
+    descriptionKo: '전방 탈구 → 급성 녹내장 위험. Jack Russell Terrier, Tibetan Terrier 소인. 긴급 처치.',
+    treatmentHintKo: '전방 탈구: 즉각적 외과적 제거. 후방 탈구: 모니터링 + IOP 관리.',
+    ddx: ['glaucoma_secondary', 'anterior_uveitis'],
+  },
+
+  // ── RETINA / OPTIC NERVE ──────────────────────────────────
+  {
+    diagnosisID: 'pra', diagnosisName: 'Progressive Retinal Atrophy (PRA)', diagnosisNameKo: '진행성 망막 위축 (PRA)',
+    abbreviation: 'PRA', category: 'retina',
+    requiredSigns: ['pra_suspect_od', 'pra_suspect_os'],
+    supportingSigns: ['tapetal_hyperreflectivity_od', 'tapetal_hyperreflectivity_os', 'retinal_degeneration_od', 'retinal_degeneration_os', 'menace_deficit_od', 'menace_deficit_os', 'bilateral_blindness'],
+    baseConfidence: 75, supportingWeight: 8, maxConfidence: 95,
+    descriptionKo: '양안 미만성 망막 과반사, 혈관 감소, 야맹증으로 시작하여 완전 실명 진행. 유전성.',
+    treatmentHintKo: '현재 치료 없음. 항산화 보충제 연구 중. 유전자 검사 권고.',
+    ddx: ['sard', 'optic_neuritis', 'retinal_detachment'],
+  },
+  {
+    diagnosisID: 'sard', diagnosisName: 'Sudden Acquired Retinal Degeneration (SARD)', diagnosisNameKo: '돌발성 후천성 망막 변성 (SARD)',
+    abbreviation: 'SARD', category: 'retina',
+    requiredSigns: ['sard_suspect', 'bilateral_blindness'],
+    supportingSigns: ['sudden_blindness', 'menace_deficit_od', 'menace_deficit_os', 'plr_direct_deficit_od', 'plr_direct_deficit_os'],
+    baseConfidence: 75, supportingWeight: 8, maxConfidence: 95,
+    descriptionKo: '갑작스러운 완전 양안 실명. ERG 소실. 안저 초기 정상 → 이후 PRA 유사 변화. 원인 불명.',
+    treatmentHintKo: '현재 치료 없음. 면역 억제 치료 연구 중. 내과 이상 검사(cushing, 당뇨).',
+    ddx: ['optic_neuritis', 'central_blindness', 'pra'],
+  },
+  {
+    diagnosisID: 'retinal_detachment', diagnosisName: 'Retinal Detachment', diagnosisNameKo: '망막 박리',
+    category: 'retina',
+    requiredSigns: ['retinal_detachment_od'],
+    supportingSigns: ['retinal_detachment_os', 'subretinal_fluid_od', 'retinal_hemorrhage_od', 'hypertensive_retinopathy_suspect', 'blind_od'],
+    baseConfidence: 80, supportingWeight: 6, maxConfidence: 97,
+    descriptionKo: '삼출성(고혈압, 감염, 면역 매개) vs 열공성 vs 견인성. 즉각 원인 진단 필요.',
+    treatmentHintKo: '삼출성: 원인 치료(혈압 조절, 항염증). 열공성: 레이저/냉동 응고.',
+    ddx: ['hypertensive_retinopathy', 'chorioretinitis', 'intraocular_mass'],
+  },
+  {
+    diagnosisID: 'hypertensive_retinopathy', diagnosisName: 'Hypertensive Retinopathy', diagnosisNameKo: '고혈압성 망막병증',
+    category: 'retina',
+    requiredSigns: ['hypertensive_retinopathy_suspect'],
+    supportingSigns: ['retinal_hemorrhage_od', 'retinal_detachment_od', 'retinal_hemorrhage_os', 'retinal_detachment_os', 'bilateral_blindness', 'sudden_blindness'],
+    baseConfidence: 65, supportingWeight: 10, maxConfidence: 94,
+    descriptionKo: '혈압 >160~180 mmHg. 망막 출혈, 삼출성 박리, 급성 실명. 고양이에서 만성 신부전/갑상선 기능항진증 연관.',
+    treatmentHintKo: '혈압 측정 필수. Amlodipine (cat 0.625mg/일) 또는 enalapril.',
+    ddx: ['retinal_detachment', 'chorioretinitis', 'sard'],
+  },
+  {
+    diagnosisID: 'chorioretinitis_dx', diagnosisName: 'Chorioretinitis', diagnosisNameKo: '맥락망막염',
+    category: 'retina',
+    requiredSigns: ['chorioretinitis_od'],
+    supportingSigns: ['chorioretinitis_os', 'retinal_detachment_od', 'infectious_uveitis_suspect', 'uveitis_od'],
+    baseConfidence: 75, supportingWeight: 8, maxConfidence: 94,
+    descriptionKo: '감염성(Toxoplasma, FHV-1, Cryptococcus, Leishmania) 또는 면역 매개성. 양안 이환+전신 증상은 감염성 강력 의심.',
+    treatmentHintKo: '감염 패널 검사 시행. 원인에 따라 항원충/항바이러스/항진균 치료.',
+    ddx: ['pra', 'hypertensive_retinopathy'],
+  },
+  {
+    diagnosisID: 'optic_neuritis', diagnosisName: 'Optic Neuritis', diagnosisNameKo: '시신경염',
+    category: 'optic_nerve',
+    requiredSigns: ['optic_neuritis_od'],
+    supportingSigns: ['optic_neuritis_os', 'blind_od', 'rapd_od', 'plr_direct_deficit_od', 'menace_deficit_od', 'bilateral_blindness'],
+    baseConfidence: 80, supportingWeight: 7, maxConfidence: 95,
+    descriptionKo: '시신경 유두 부종+충혈, 급성 실명, PLR 소실, ERG 정상. 원인: GME, 감염, 특발성.',
+    treatmentHintKo: '면역억제 치료(prednisolone). 뇌척수액 검사 권고.',
+    ddx: ['papilledema', 'sard', 'central_blindness'],
+  },
+
+  // ── VISION LOSS ──────────────────────────────────────────
+  {
+    diagnosisID: 'bilateral_vision_loss', diagnosisName: 'Bilateral Vision Loss', diagnosisNameKo: '양안 시각 소실',
+    category: 'vision_loss',
+    requiredSigns: ['bilateral_blindness'],
+    supportingSigns: ['sudden_blindness', 'menace_deficit_od', 'menace_deficit_os', 'blind_od', 'blind_os'],
+    baseConfidence: 85, supportingWeight: 5, maxConfidence: 99,
+    descriptionKo: '양안 기능적 실명 확인. 원인 감별: SARD, PRA, 고혈압, 시신경염, 망막 박리, 뇌 병변.',
+    treatmentHintKo: '혈압, ERG, 뇌MRI, 감염 패널 등 추가 검사로 원인 진단.',
+    ddx: ['sard', 'pra', 'hypertensive_retinopathy', 'optic_neuritis', 'retinal_detachment'],
+  },
+
+  // ── NEUROLOGICAL ─────────────────────────────────────────
+  {
+    diagnosisID: 'horner_syndrome', diagnosisName: "Horner's Syndrome", diagnosisNameKo: '호르너 증후군',
+    category: 'neurological',
+    requiredSigns: ['miosis_od', 'ptosis_od', 'enophthalmos_od', 'third_eyelid_protrusion_od'],
+    supportingSigns: ['horner_od'],
+    baseConfidence: 85, supportingWeight: 5, maxConfidence: 98,
+    descriptionKo: '동공 수축+안검 하수+안구 함몰+제3안검 돌출(동측). 교감신경 차단. 원인: 이중이염, 흉부 종양, 척수 병변, 특발성.',
+    treatmentHintKo: '원인 진단(X-ray 흉부, 신경학적 검사). 특발성은 수주~수개월 자연 회복.',
+    ddx: ['anterior_uveitis', 'third_eyelid_prolapse'],
+  },
+]
+
+// ============================================================
+// SECTION 16: DIAGNOSIS ENGINE
+// ============================================================
+
+function collectOphSigns(results: Record<string, string | string[]>): OphthalmicSign[] {
+  const active = new Set<OphthalmicSign>()
+
+  ophthalmicDomainSections.forEach(section => {
+    section.tests.forEach(test => {
+      const val = results[test.testID]
+      if (val === undefined || val === null || val === '') return
+
+      if (test.testType === 'select') {
+        const opt = (test as SelectOphTest).options.find(o => o.value === val)
+        opt?.signs?.forEach(s => active.add(s))
+      } else if (test.testType === 'multiselect' && Array.isArray(val)) {
+        const opts = (test as MultiSelectOphTest).options.filter(o => (val as string[]).includes(o.value))
+        opts.forEach(o => o.signs?.forEach(s => active.add(s)))
+      } else if (test.testType === 'boolean') {
+        const t = test as BooleanOphTest
+        if (val === 'true' && t.positiveSigns) t.positiveSigns.forEach(s => active.add(s))
+        if (val === 'false' && t.negativeSigns) t.negativeSigns.forEach(s => active.add(s))
+      } else if (test.testType === 'range' && typeof val === 'string') {
+        const num = parseFloat(val)
+        if (!isNaN(num)) {
+          const t = test as RangeOphTest
+          const seg = t.ranges.find(r => (r.min === null || num >= r.min) && (r.max === null || num < r.max))
+          seg?.signs?.forEach(s => active.add(s))
+        }
+      }
+    })
+  })
+
+  // bilateral blindness inference
+  if (active.has('blind_od') && active.has('blind_os')) active.add('bilateral_blindness')
+
+  return Array.from(active)
+}
+
+function runOphDiagnosisEngine(activeSigns: OphthalmicSign[]): OphDiagnosisResult[] {
+  const signSet = new Set(activeSigns)
+  const results: OphDiagnosisResult[] = []
+
+  for (const rule of ophthalmicDiagnosisRules) {
+    // Check exclusions
+    if (rule.exclusionSigns?.some(s => signSet.has(s))) continue
+
+    const matched = rule.requiredSigns.filter(s => signSet.has(s))
+    const missing = rule.requiredSigns.filter(s => !signSet.has(s))
+
+    if (matched.length === 0) continue
+
+    const matchRatio = matched.length / rule.requiredSigns.length
+    if (matchRatio < 0.5) continue
+
+    const supportMatches = rule.supportingSigns.filter(s => signSet.has(s))
+    const score = Math.min(
+      rule.maxConfidence,
+      Math.round(rule.baseConfidence * matchRatio + supportMatches.length * rule.supportingWeight)
+    )
+
+    if (score >= 40) {
+      results.push({ rule, confidenceScore: score, matchedSigns: [...matched, ...supportMatches], missingRequiredSigns: missing })
+    }
+  }
+
+  return results.sort((a, b) => b.confidenceScore - a.confidenceScore)
+}
+
+function assessVisionStatus(activeSigns: OphthalmicSign[]) {
+  const s = new Set(activeSigns)
+  return {
+    od: s.has('blind_od') ? 'blind' : s.has('menace_deficit_od') || s.has('plr_direct_deficit_od') ? 'impaired' : 'visual' as any,
+    os: s.has('blind_os') ? 'blind' : s.has('menace_deficit_os') || s.has('plr_direct_deficit_os') ? 'impaired' : 'visual' as any,
+  }
+}
+
+function buildOphChartSummary(results: Record<string, string | string[]>): string {
+  const signs = collectOphSigns(results)
+  const diagnoses = runOphDiagnosisEngine(signs)
+  const vision = assessVisionStatus(signs)
+
+  const lines: string[] = ['[안과 검사 소견 요약]']
+  lines.push(`시각 상태: OD ${vision.od === 'visual' ? '정상' : vision.od === 'impaired' ? '장애' : '실명'} / OS ${vision.os === 'visual' ? '정상' : vision.os === 'impaired' ? '장애' : '실명'}`)
+
+  if (diagnoses.length > 0) {
+    lines.push('\n[진단/감별진단]')
+    diagnoses.slice(0, 5).forEach(d => {
+      lines.push(`• ${d.rule.diagnosisNameKo} — 신뢰도 ${d.confidenceScore}%`)
+      if (d.rule.descriptionKo) lines.push(`  ${d.rule.descriptionKo}`)
+    })
+  }
+
+  return lines.join('\n')
+}
+
+// ============================================================
+// SECTION 17: MAIN EXPORT
+// ============================================================
+
+export const ophthalmicReference = {
+  domainSections: ophthalmicDomainSections,
+  diagnosisRules: ophthalmicDiagnosisRules,
+
+  isDomainVisible(section: OphDomainSection, results: Record<string, string>): boolean {
+    return results[section.statusGate.testID] === section.statusGate.abnormalValue
+  },
+
+  collectSigns: collectOphSigns,
+  runDiagnosisEngine: runOphDiagnosisEngine,
+  assessVisionStatus,
+  buildChartSummary: buildOphChartSummary,
+
+  runFullAnalysis(results: Record<string, string | string[]>): OphEngineOutput {
+    const activeSigns = collectOphSigns(results)
+    const diagnoses = runOphDiagnosisEngine(activeSigns)
+    const visionStatus = assessVisionStatus(activeSigns)
+
+    const criticalFindings: string[] = []
+    if (activeSigns.includes('bilateral_blindness')) criticalFindings.push('양안 실명')
+    if (activeSigns.includes('descemetocele_od') || activeSigns.includes('descemetocele_os')) criticalFindings.push('데스메막 탈출 — 즉각 처치 필요')
+    if (activeSigns.includes('very_high_iop_od') || activeSigns.includes('very_high_iop_os')) criticalFindings.push('심각한 안압 상승 — 급성 녹내장')
+    if (activeSigns.includes('retinal_detachment_od') || activeSigns.includes('retinal_detachment_os')) criticalFindings.push('망막 박리')
+    if (activeSigns.includes('proptosis_od') || activeSigns.includes('proptosis_os')) criticalFindings.push('안구 돌출 — 응급 처치 필요')
+    if (activeSigns.includes('lens_luxation_od') || activeSigns.includes('lens_luxation_os')) criticalFindings.push('수정체 탈구 — 즉각 처치 필요')
+
+    return { activeSigns, diagnoses, criticalFindings, visionStatus }
+  },
+}
