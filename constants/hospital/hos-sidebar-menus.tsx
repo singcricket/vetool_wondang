@@ -69,13 +69,6 @@ export const HOS_SIDEBAR_MENUS = [
     icon: <HeartPulse />,
   },
   {
-    name: '치과',
-    path: 'dental',
-    isReady: true,
-    isVetOnly: true,
-    icon: <ToothIcon />,
-  },
-  {
     name: '복부초음파',
     path: 'ultrasound',
     isReady: true,
@@ -83,11 +76,11 @@ export const HOS_SIDEBAR_MENUS = [
     icon: <Waves />,
   },
   {
-    name: '신경계',
-    path: 'neuro',
+    name: '치과',
+    path: 'dental',
     isReady: true,
     isVetOnly: true,
-    icon: <BrainCircuit />,
+    icon: <ToothIcon />,
   },
   {
     name: '안과',
@@ -96,6 +89,14 @@ export const HOS_SIDEBAR_MENUS = [
     isVetOnly: true,
     icon: <Eye />,
   },
+  {
+    name: '신경계',
+    path: 'neuro',
+    isReady: true,
+    isVetOnly: true,
+    icon: <BrainCircuit />,
+  },
+  
   {
     name: '진료노트',
     path: 'notes',

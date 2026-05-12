@@ -59,17 +59,17 @@ export default function OphthalmicDiagnosisPanel({ engineOutput, results, summar
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="p-5 border-b bg-slate-50 shrink-0">
-        <h3 className="font-extrabold text-slate-800 flex items-center gap-2.5">
-          <Activity className="w-5 h-5 text-blue-600" />
+      <div className="p-4 border-b bg-slate-50 shrink-0">
+        <h3 className="font-extrabold text-slate-800 flex items-center gap-2">
+          <Activity className="w-4 h-4 text-blue-600" />
           지능형 안과 분석 엔진
         </h3>
-        <p className="text-[11px] text-slate-500 mt-1 font-medium italic">
+        <p className="text-[10px] text-slate-500 mt-0.5 font-medium italic">
           Real-time pattern matching & diagnostic inference
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-8 no-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar">
 
         {/* Vision Status Section */}
         <section className="bg-slate-50 p-4 rounded-2xl border border-slate-200">

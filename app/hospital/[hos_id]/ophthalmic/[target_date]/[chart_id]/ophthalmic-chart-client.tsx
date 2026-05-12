@@ -155,9 +155,9 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
       <div className="flex h-full w-full flex-col lg:flex-row lg:overflow-hidden bg-slate-50/50">
         
         {/* Center: Dynamic Form Area */}
-        <div className="flex-1 h-full overflow-y-auto p-4 sm:p-6 border-r flex">
+        <div className="flex-1 h-full overflow-hidden p-4 sm:p-6 border-r flex">
           {/* Main Form */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 h-full overflow-y-auto no-scrollbar">
             {activeDomain === 'treatment' ? (
               <OphthalmicTreatmentForm 
                 treatmentData={treatment}
@@ -177,7 +177,7 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
           
           {/* Previous Chart Comparison */}
           {prevChart && (
-            <div className="w-1/2 border-l pl-4 ml-4 hidden xl:block opacity-70 pointer-events-none">
+            <div className="w-1/2 border-l pl-4 ml-4 hidden xl:block opacity-70 h-full overflow-y-auto no-scrollbar pb-20">
               <OphthalmicPreviousComparison
                 domain={ophthalmicReference.domainSections.find(d => d.domain === activeDomain)!}
                 prevResults={prevChart.results as any}
@@ -187,7 +187,7 @@ export default function OphthalmicChartClient({ hosId, chartId, chartDate, chart
         </div>
 
         {/* Right: Diagnosis Panel - Desktop only */}
-        <div className="hidden lg:block w-[450px] shrink-0 h-full overflow-y-auto bg-white border-l shadow-sm z-10">
+        <div className="hidden lg:block w-[380px] xl:w-[450px] shrink-0 h-full overflow-y-auto bg-white border-l shadow-sm z-10 no-scrollbar">
           <OphthalmicDiagnosisPanel
             engineOutput={engineOutput}
             results={results}
