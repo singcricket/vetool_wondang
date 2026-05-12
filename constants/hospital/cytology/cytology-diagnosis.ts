@@ -650,6 +650,15 @@ export function collectCytologySigns(
   const signs = new Set<CytologySign>()
   const sampleDef = cytologyRoutineMap[sampleType]
 
+  // Build identified cell set once — used to filter specialist morphTest lookups.
+  // If 'identified_cells' key exists, only signs from those cells are active.
+  // If the key is absent (routine forms, old data), no filter is applied.
+  const identifiedCellsRaw = findings['identified_cells']
+  const identifiedCellIds: Set<string> | null =
+    identifiedCellsRaw != null
+      ? new Set(Array.isArray(identifiedCellsRaw) ? identifiedCellsRaw : [identifiedCellsRaw])
+      : null
+
   for (const [testId, raw] of Object.entries(findings)) {
     if (!raw) continue
     const values = Array.isArray(raw) ? raw : [raw]
@@ -697,7 +706,9 @@ export function collectCytologySigns(
       }
 
       // 2. Look up via specialist cell type morphTests
+      //    When identified_cells is set, skip cells the user has deselected.
       for (const cellType of cytologyCellTypes) {
+        if (identifiedCellIds !== null && !identifiedCellIds.has(cellType.cellId)) continue
         const morphTest = cellType.morphTests.find((t) => t.testId === testId)
         if (morphTest) {
           const opt = morphTest.options?.find((o) => o.value === v)
