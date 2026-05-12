@@ -5,6 +5,7 @@ import {
   HeartPulse,
   Home,
   ListChecks,
+  Microscope,
   NotebookPen,
   PawPrint,
   Syringe,
@@ -97,7 +98,13 @@ export const HOS_SIDEBAR_MENUS = [
     isVetOnly: true,
     icon: <BrainCircuit />,
   },
-  
+  {
+    name: '세포학',
+    path: 'cytology',
+    isReady: true,
+    isVetOnly: true,
+    icon: <Microscope />,
+  },
   {
     name: '진료노트',
     path: 'notes',

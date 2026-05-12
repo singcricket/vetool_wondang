@@ -52,6 +52,130 @@ export type Database = {
           },
         ]
       }
+      cytology_charts: {
+        Row: {
+          ai_findings: Json | null
+          ai_raw: Json | null
+          chart_date: string
+          created_at: string | null
+          diagnosis: Json | null
+          evaluator_id: string | null
+          findings: Json | null
+          hos_id: string
+          id: string
+          mode: string
+          patient_id: string
+          sample_info: Json | null
+          sample_type: string
+          summary: string | null
+          tags: string | null
+          updated_at: string | null
+          user_tags: string | null
+          vet_id: string | null
+        }
+        Insert: {
+          ai_findings?: Json | null
+          ai_raw?: Json | null
+          chart_date: string
+          created_at?: string | null
+          diagnosis?: Json | null
+          evaluator_id?: string | null
+          findings?: Json | null
+          hos_id: string
+          id?: string
+          mode?: string
+          patient_id: string
+          sample_info?: Json | null
+          sample_type: string
+          summary?: string | null
+          tags?: string | null
+          updated_at?: string | null
+          user_tags?: string | null
+          vet_id?: string | null
+        }
+        Update: {
+          ai_findings?: Json | null
+          ai_raw?: Json | null
+          chart_date?: string
+          created_at?: string | null
+          diagnosis?: Json | null
+          evaluator_id?: string | null
+          findings?: Json | null
+          hos_id?: string
+          id?: string
+          mode?: string
+          patient_id?: string
+          sample_info?: Json | null
+          sample_type?: string
+          summary?: string | null
+          tags?: string | null
+          updated_at?: string | null
+          user_tags?: string | null
+          vet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cytology_charts_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cytology_charts_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "cytology_charts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+          {
+            foreignKeyName: "cytology_charts_vet_id_fkey"
+            columns: ["vet_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cytology_images: {
+        Row: {
+          chart_id: string
+          created_at: string | null
+          id: string
+          image_label: string | null
+          image_url: string
+        }
+        Insert: {
+          chart_id: string
+          created_at?: string | null
+          id?: string
+          image_label?: string | null
+          image_url: string
+        }
+        Update: {
+          chart_id?: string
+          created_at?: string | null
+          id?: string
+          image_label?: string | null
+          image_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cytology_images_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "cytology_charts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dental_chart_teeth: {
         Row: {
           abrasion: string | null
@@ -1593,6 +1717,7 @@ export type Database = {
           hos_id: string
           id: string
           img_url: string
+          mark: Json | null
           side: string | null
           tags: string[] | null
         }
@@ -1602,6 +1727,7 @@ export type Database = {
           hos_id: string
           id?: string
           img_url: string
+          mark?: Json | null
           side?: string | null
           tags?: string[] | null
         }
@@ -1611,6 +1737,7 @@ export type Database = {
           hos_id?: string
           id?: string
           img_url?: string
+          mark?: Json | null
           side?: string | null
           tags?: string[] | null
         }
