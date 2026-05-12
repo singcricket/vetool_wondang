@@ -75,3 +75,17 @@ export async function fetchOphthalmicLayoutData(hosId: string) {
     vetList: vetData ?? [],
   }
 }
+
+export async function fetchPatientOphthalmicHistory(patientId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('ophthalmic_charts')
+    .select('id, chart_date')
+    .eq('patient_id', patientId)
+    .order('chart_date', { ascending: false })
+
+  if (error) throw new Error(`fetchPatientOphthalmicHistory: ${error.message}`)
+
+  return data ?? []
+}

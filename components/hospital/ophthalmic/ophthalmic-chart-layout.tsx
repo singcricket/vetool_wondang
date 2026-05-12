@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Trash2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import OphthalmicReportDialog from './ophthalmic-report-dialog'
 import OphthalmicTextReportDialog from './ophthalmic-text-report-dialog'
+import OphthalmicChartHistorySelect from './ophthalmic-chart-history-select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,7 +97,7 @@ export default function OphthalmicChartLayout({
                   {chartDetail.patient?.name} ({chartDetail.patient?.species === 'cat' ? '고양이' : '개'})
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">
-                  {chartDetail.patient_id.slice(0, 8)}
+                  {chartDetail.patient?.hos_patient_id}
                 </span>
               </div>
             )}
@@ -127,6 +128,12 @@ export default function OphthalmicChartLayout({
               </AlertDialogContent>
             </AlertDialog>
           )}
+
+          <OphthalmicChartHistorySelect 
+            hosId={hos_id}
+            currentChartId={chartDetail.id}
+            patientId={chartDetail.patient_id}
+          />
           
           <OphthalmicTextReportDialog
             chartDetail={chartDetail}

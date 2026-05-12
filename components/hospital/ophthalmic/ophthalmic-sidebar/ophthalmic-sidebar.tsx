@@ -1,5 +1,6 @@
 import { fetchOphthalmicSidebarData } from '@/lib/services/ophthalmic/fetch-ophthalmic'
 import OphthalmicDesktopSidebar from './ophthalmic-desktop-sidebar'
+import { MobileOphthalmicSidebarSheet } from './mobile/mobile-ophthalmic-sidebar-sheet'
 
 interface OphthalmicSidebarProps {
   hosId: string
@@ -15,6 +16,11 @@ export default async function OphthalmicSidebar({
   return (
     <>
       <OphthalmicDesktopSidebar
+        hosId={hosId}
+        targetDate={targetDate}
+        items={initialItems}
+      />
+      <MobileOphthalmicSidebarSheet
         hosId={hosId}
         targetDate={targetDate}
         items={initialItems}
