@@ -12,6 +12,7 @@ import {
   Waves,
   BrainCircuit,
   Eye,
+  Cone,
 } from 'lucide-react'
 
 const ToothIcon = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...props }: { size?: number; color?: string; strokeWidth?: number; [key: string]: any }) => (
@@ -73,7 +74,7 @@ export const HOS_SIDEBAR_MENUS = [
     path: 'ultrasound',
     isReady: true,
     isVetOnly: true,
-    icon: <Waves />,
+    icon: <Cone />,
   },
   {
     name: '치과',
