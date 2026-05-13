@@ -136,9 +136,9 @@ export default function MsTxMemoGroup({
   const doneCount = planMemos.filter((m) => m.is_done).length
 
   return (
-    <div className="flex w-full flex-col rounded-xl border-2 border-blue-200 bg-white overflow-hidden shadow-sm">
+    <div className="flex w-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-blue-50 border-b-2 border-blue-200">
+      <div className="flex items-center justify-between py-2.5 border-b-2 border-blue-200">
         <div className="flex items-center gap-2">
           <ClipboardListIcon size={16} className="text-blue-600 shrink-0" />
           <span className="text-sm font-black text-blue-700">{memoName}</span>
@@ -171,89 +171,92 @@ export default function MsTxMemoGroup({
 
       {!isCollapsed && (
         <>
-
-      {/* Memo List */}
-      <ScrollArea className="h-56 bg-blue-50/20 p-2">
-        <ReactSortable
-          id="memo-tx"
-          list={sortedMemos}
-          setList={setSortedMemos}
-          className="space-y-0"
-          animation={250}
-          handle=".handle"
-          onEnd={handleReorderMemo}
-          disabled={isUpdating || !isVet}
-        >
-          {planMemos.length === 0 ? (
-            <NoResultSquirrel
-              text="처치 계획 없음"
-              size="sm"
-              className="h-48 flex-col font-normal text-blue-300"
-            />
-          ) : (
-            planMemos.map((memo) => (
-              <SingleMsTxMemo
-                isMemoNameSetting={false}
-                key={memo.id}
-                memo={memo}
-                memoIndex={memo.id}
-                handleEditMemo={handleEditMemo}
-                onDelete={() => handleDeleteMemo(memo.id)}
-                msData={msData}
-                isVet={isVet}
-              />
-            ))
+          {/* Input — 기본 숨김, 토글로 표시 */}
+          {isInputOpen && isVet && (
+            <div className="bg-blue-50/30 p-3 border-b border-blue-100">
+              <div className="relative flex flex-col rounded-xl border-2 border-blue-200 bg-white shadow-sm focus-within:border-blue-400 transition-all duration-200">
+                <Textarea
+                  disabled={isUpdating || isUploading}
+                  placeholder="처치 항목 추가 (Enter: 입력, Shift+Enter: 줄바꿈)"
+                  id="memo-tx"
+                  value={memoInput}
+                  onChange={(e) => setMemoInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleAddMemo()
+                    }
+                  }}
+                  className="w-full min-h-[80px] rounded-t-xl border-0 bg-transparent px-3 py-2.5 text-sm placeholder:text-blue-300 focus-visible:ring-0 resize-none"
+                />
+                <div className="flex items-center justify-between border-t border-blue-50 bg-blue-50/10 px-2 py-2 rounded-b-xl">
+                  <div className="flex items-center gap-1">
+                    <MsMemoSchedulePicker
+                      schedule={memoSchedule}
+                      onScheduleChange={setMemoSchedule}
+                      memos={sortedMemos}
+                      msData={msData}
+                    />
+                    <MsMemoImageUploadButtons
+                      isUploading={isUploading}
+                      cameraInputRef={cameraInputRef}
+                      galleryInputRef={galleryInputRef}
+                      handleFileUpload={handleFileUpload}
+                    />
+                    <MemoColorPicker
+                      memoColor={memoColor}
+                      setMemoColor={setMemoColor}
+                      className="static inset-auto"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-8 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors rounded-lg"
+                    onClick={() => handleAddMemo()}
+                    disabled={isUpdating || isUploading || !memoInput.trim()}
+                  >
+                    추가하기
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
-        </ReactSortable>
-        <ScrollBar orientation="vertical" />
-      </ScrollArea>
 
-      {/* Input — 기본 숨김, 토글로 표시 */}
-      {isInputOpen && isVet && (
-      <div className="relative border-t-2 border-blue-200">
-        <Textarea
-          disabled={isUpdating || isUploading}
-          placeholder="처치 항목 추가 → Enter ⏎  |  줄바꿈 → Shift + Enter"
-          id="memo-tx"
-          value={memoInput}
-          onChange={(e) => setMemoInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              handleAddMemo()
-            }
-          }}
-          className="w-full rounded-none border-0 bg-white pl-3 pr-44 text-sm placeholder:text-xs placeholder:text-blue-300 focus-visible:ring-blue-200 resize-none"
-        />
-        <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-          <MsMemoSchedulePicker
-            schedule={memoSchedule}
-            onScheduleChange={setMemoSchedule}
-            memos={sortedMemos}
-            msData={msData}
-          />
-          <MsMemoImageUploadButtons
-            isUploading={isUploading}
-            cameraInputRef={cameraInputRef}
-            galleryInputRef={galleryInputRef}
-            handleFileUpload={handleFileUpload}
-          />
-          <MemoColorPicker
-            memoColor={memoColor}
-            setMemoColor={setMemoColor}
-            className="static inset-auto"
-          />
-          <Button
-            size="sm"
-            className="h-6 px-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-            onClick={() => handleAddMemo()}
-            disabled={isUpdating || isUploading || !memoInput.trim()}
-          >
-            입력
-          </Button>
-        </div>
-      </div>
-      )}
+          {/* Memo List */}
+          <ScrollArea className="h-[600px] py-2">
+            <ReactSortable
+              id="memo-tx"
+              list={sortedMemos}
+              setList={setSortedMemos}
+              className="space-y-0"
+              animation={250}
+              handle=".handle"
+              onEnd={handleReorderMemo}
+              disabled={isUpdating || !isVet}
+            >
+              {planMemos.length === 0 ? (
+                <NoResultSquirrel
+                  text="처치 계획 없음"
+                  size="sm"
+                  className="h-48 flex-col font-normal text-blue-300"
+                />
+              ) : (
+                planMemos.map((memo) => (
+                  <SingleMsTxMemo
+                    isMemoNameSetting={false}
+                    key={memo.id}
+                    memo={memo}
+                    memoIndex={memo.id}
+                    handleEditMemo={handleEditMemo}
+                    onDelete={() => handleDeleteMemo(memo.id)}
+                    msData={msData}
+                    isVet={isVet}
+                  />
+                ))
+              )}
+            </ReactSortable>
+            <ScrollBar orientation="vertical" />
+          </ScrollArea>
         </>
       )}
     </div>

@@ -2,6 +2,9 @@
 const nextConfig = {
   experimental: {
     typedEnv: true,
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   transpilePackages: ['fabric'],
   webpack: (config, { isServer }) => {

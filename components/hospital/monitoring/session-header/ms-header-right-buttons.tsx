@@ -36,45 +36,46 @@ export default function MsHeaderRightButtons({
 
   return (
     <div className="2xl:absolute 2xl:right-2 2xl:top-1.5 flex items-center gap-1">
-      {userId && (
-        <>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setIsCollectionOpen(true)}
-            className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
-            title="컬렉션에 추가"
-          >
-            <FolderPlus size={16} />
-          </Button>
-          <AddToCollectionDialog 
-            isOpen={isCollectionOpen}
-            onOpenChange={setIsCollectionOpen}
-            hosId={hosId}
-            userId={userId}
-            resourceType="monitoring"
-            resourceId={session_id}
-            resourceTitle={session_id}
-          />
-        </>
-      )}
+      <div className="hidden sm:flex items-center gap-1">
+        {userId && (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsCollectionOpen(true)}
+              className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
+              title="컬렉션에 추가"
+            >
+              <FolderPlus size={16} />
+            </Button>
+            <AddToCollectionDialog 
+              isOpen={isCollectionOpen}
+              onOpenChange={setIsCollectionOpen}
+              hosId={hosId}
+              userId={userId}
+              resourceType="monitoring"
+              resourceId={session_id}
+              resourceTitle={session_id}
+            />
+          </>
+        )}
 
-      <MsAddTemplateDialog 
-      hosId={hosId}
-      msData={msData} />
-     
+        <MsAddTemplateDialog 
+          hosId={hosId}
+          msData={msData} 
+        />
+        
+        <MsReportContainer msData={msData} />
 
-      <MsReportContainer  msData={msData} />
-
-      <MsMonitorDialog
-       msData={msData}
-      />
+        <MsMonitorDialog msData={msData} />
+      
 
       <DeleteMsChartDialog
-       msData={msData}
-       hosId={hosId}
-       targetDate={targetDate}
+        msData={msData}
+        hosId={hosId}
+        targetDate={targetDate}
       />
+      </div>
     </div>
   )
 }

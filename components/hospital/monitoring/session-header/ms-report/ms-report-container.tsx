@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
@@ -44,6 +46,10 @@ export default function MsReportContainer({ msData }: Props) {
       </DialogTrigger>
 
       <DialogContent className="flex w-[95vw] max-w-5xl max-h-[90vh] sm:max-h-[85vh] flex-col overflow-hidden sm:p-6 p-4">
+        <DialogTitle className="sr-only">모니터링 리포트</DialogTitle>
+        <DialogDescription className="sr-only">
+          환자의 모니터링 세션 데이터를 리포트 형식으로 확인하고 공유할 수 있습니다.
+        </DialogDescription>
         <MsReportContent 
           msData={msData} 
           isSharedView={false} 

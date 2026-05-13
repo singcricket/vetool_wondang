@@ -235,16 +235,53 @@ export default function CytologyAiForm({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp']
 
-  function handleFile(file: File) {
+  function convertBmpToPng(
+    file: File,
+  ): Promise<{ base64: string; mediaType: string; previewDataUrl: string }> {
+    return new Promise((resolve, reject) => {
+      const blobUrl = URL.createObjectURL(file)
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { reject(new Error('canvas context unavailable')); return }
+        ctx.drawImage(img, 0, 0)
+        URL.revokeObjectURL(blobUrl)
+        const dataUrl = canvas.toDataURL('image/png')
+        const [header, base64] = dataUrl.split(',')
+        const mediaType = header.replace('data:', '').replace(';base64', '')
+        resolve({ base64, mediaType, previewDataUrl: dataUrl })
+      }
+      img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error('이미지 로드 실패')) }
+      img.src = blobUrl
+    })
+  }
+
+  async function handleFile(file: File) {
     setSizeError(null)
 
-    if (!file.type.startsWith('image/')) {
-      setSizeError('이미지 파일만 업로드할 수 있습니다 (JPEG, PNG, WebP).')
+    if (!ALLOWED_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
+      setSizeError('이미지 파일만 업로드할 수 있습니다 (JPEG, PNG, WebP, BMP).')
       return
     }
     if (file.size > MAX_BYTES) {
       setSizeError('파일 크기는 5MB 이하여야 합니다.')
+      return
+    }
+
+    // BMP → PNG 변환 (Anthropic API는 BMP 미지원)
+    if (file.type === 'image/bmp' || file.name.toLowerCase().endsWith('.bmp')) {
+      try {
+        const { base64, mediaType, previewDataUrl } = await convertBmpToPng(file)
+        setPreviewUrl(previewDataUrl)
+        void onAnalyze(base64, mediaType, selectedStain)
+      } catch {
+        setSizeError('BMP 변환에 실패했습니다. 다른 형식으로 저장 후 업로드해주세요.')
+      }
       return
     }
 
@@ -254,7 +291,6 @@ export default function CytologyAiForm({
     const reader = new FileReader()
     reader.onload = () => {
       const result = reader.result as string
-      // result = "data:image/jpeg;base64,..."
       const [header, base64] = result.split(',')
       const mediaType = header.replace('data:', '').replace(';base64', '')
       void onAnalyze(base64, mediaType, selectedStain)
@@ -264,7 +300,7 @@ export default function CytologyAiForm({
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) handleFile(file)
+    if (file) void handleFile(file)
     e.target.value = ''
   }
 
@@ -272,7 +308,7 @@ export default function CytologyAiForm({
     e.preventDefault()
     setDragOver(false)
     const file = e.dataTransfer.files?.[0]
-    if (file) handleFile(file)
+    if (file) void handleFile(file)
   }
 
   // Collect all tests from sampleDef for editable findings section
@@ -358,14 +394,14 @@ export default function CytologyAiForm({
               이미지를 드래그하거나{' '}
               <span className="font-medium text-violet-600">클릭하여 업로드</span>
             </p>
-            <p className="text-xs text-gray-400">JPEG, PNG, WebP · 최대 5MB</p>
+            <p className="text-xs text-gray-400">JPEG, PNG, WebP, BMP · 최대 5MB</p>
           </>
         )}
 
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/bmp,.bmp"
           className="hidden"
           onChange={handleInputChange}
         />
