@@ -14,6 +14,7 @@ import CytologySpecialistForm from '@/components/hospital/cytology/cytology-spec
 import CytologyAiForm from '@/components/hospital/cytology/cytology-ai-form'
 import CytologyDiagnosisPanel from '@/components/hospital/cytology/cytology-diagnosis-panel'
 import CytologyReportDialog from '@/components/hospital/cytology/cytology-report-dialog'
+import CytologyAiFillButton from '@/components/hospital/cytology/cytology-ai-fill-button'
 
 interface Props {
   hosId: string
@@ -74,6 +75,14 @@ export default function CytologyChartClient({
   const handleModeChange = (newMode: CytologyMode) => {
     setMode(newMode)
   }
+
+  const handleAiAutoFill = useCallback(
+    (aiFill: Record<string, string | string[]>, summary: string) => {
+      setFindings((prev) => ({ ...prev, ...aiFill }))
+      if (summary) setAiSummary(summary)
+    },
+    [],
+  )
 
   const handleAiAnalyze = async (base64: string, mediaType: string, stain: string) => {
     setIsAnalyzing(true)
@@ -177,13 +186,21 @@ export default function CytologyChartClient({
             <div className="text-sm text-slate-500">
               검사일: <span className="font-medium text-slate-700">{chartDate}</span>
             </div>
-            <CytologyReportDialog
-              chartDetail={chartDetail}
-              sampleType={sampleType}
-              findings={activeFindings}
-              engineOutput={engineOutput}
-              aiSummary={aiSummary}
-            />
+            <div className="flex items-center gap-2">
+              {mode === 'specialist' && !guestMode && (
+                <CytologyAiFillButton
+                  sampleType={sampleType}
+                  onFill={handleAiAutoFill}
+                />
+              )}
+              <CytologyReportDialog
+                chartDetail={chartDetail}
+                sampleType={sampleType}
+                findings={activeFindings}
+                engineOutput={engineOutput}
+                aiSummary={aiSummary}
+              />
+            </div>
           </div>
 
           {/* Form by mode */}

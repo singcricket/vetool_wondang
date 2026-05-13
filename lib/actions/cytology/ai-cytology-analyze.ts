@@ -2,6 +2,7 @@
 
 import { getAnthropicClient } from '@/lib/ai/anthropic'
 import type { CytologySampleType } from '@/constants/hospital/cytology/cytology-types'
+import { cytologyRoutineMap } from '@/constants/hospital/cytology/cytology-routine'
 
 const SAMPLE_TYPE_LABELS: Record<CytologySampleType, string> = {
   otic: '귀도말 (Otic Swab)',
@@ -104,5 +105,127 @@ export async function analyzeCytologyImage(
       confidence: 30,
       key_findings: ['AI 응답 파싱 오류 — 수동 입력 필요'],
     }
+  }
+}
+
+// ── Form-field-aware auto-fill ────────────────────────────────
+// Returns findings keyed by exact form testIds so they can be
+// applied directly to the specialist / routine form state.
+
+interface FormFillResult {
+  findings: Record<string, string | string[]>
+  summary: string
+}
+
+const SPECIALIST_SCHEMA = `{
+  "sq_cellularity": "low|moderate|high",
+  "sq_hemodilution": "none|mild|moderate|severe",
+  "sq_necrosis": "none|present",
+  "infl_type": "neutrophilic_pure|neutrophilic_septic|macrophagic|eosinophilic|lymphocytic|mixed|none",
+  "infl_degenerate_neutrophils": "false|true",
+  "infl_giant_cells": "false|true",
+  "infl_plasma_cells": "false|true",
+  "identified_cells": ["one or more of: epi_squamous, epi_glandular, epi_transitional, epi_hepatocyte, epi_sebaceous, mes_spindle, mes_adipocyte, mes_chondrocyte, rc_mast_cell, rc_lymphocyte, rc_plasma_cell, rc_histiocyte, rc_tvt — use [] if no dominant neoplastic/round cell type"],
+  "sq_cell_arrangement": "cohesive|loosely_cohesive|discohesive",
+  "gl_arrangement": "acinar|papillary|solid|single_cells",
+  "sp_cell_shape": "spindle|stellate|pleomorphic",
+  "mast_granules": "abundant|reduced|absent",
+  "mast_nuclear_atypia": "none|mild|moderate|severe",
+  "lym_cell_size": "small|medium|large",
+  "lym_blast_proportion": "none|occasional|increased|dominant",
+  "lym_population_uniformity": "polymorphic|monomorphic",
+  "malig_criteria_1": "false|true",
+  "malig_criteria_2": "false|true",
+  "malig_criteria_3": "false|true",
+  "malig_criteria_4": "false|true",
+  "malig_criteria_5": "false|true",
+  "summary": "1-2 sentence Korean cytological interpretation"
+}`
+
+function buildRoutineSchema(sampleType: CytologySampleType): string {
+  const def = cytologyRoutineMap[sampleType]
+  if (!def) return '{}'
+
+  const lines: string[] = []
+  for (const section of def.sections) {
+    lines.push(`  // ${section.label}`)
+    for (const test of section.tests) {
+      if (test.testType === 'semiquant') {
+        lines.push(`  "${test.testId}": "none|rare|few|moderate|many",  // ${test.label}`)
+      } else if (test.testType === 'boolean') {
+        const vals = test.options
+          ? test.options.map((o) => `"${o.value}"`).join('|')
+          : '"absent"|"present"'
+        lines.push(`  "${test.testId}": ${vals},  // ${test.label}`)
+      } else if (test.testType === 'select' && test.options) {
+        const vals = test.options.map((o) => `"${o.value}"`).join('|')
+        lines.push(`  "${test.testId}": ${vals},  // ${test.label}`)
+      }
+      // skip text/multiselect — AI can't reliably fill free text
+    }
+  }
+  lines.push('  "summary": "1-2 sentence Korean cytological interpretation"')
+  return `{\n${lines.join('\n')}\n}`
+}
+
+function buildFormFillPrompt(sampleType: CytologySampleType, stain: string): string {
+  const isRoutine = sampleType in cytologyRoutineMap
+  const schema = isRoutine ? buildRoutineSchema(sampleType) : SPECIALIST_SCHEMA
+
+  return `You are an expert veterinary clinical cytologist.
+Analyze this ${SAMPLE_TYPE_LABELS[sampleType]} cytology image (stain: ${stain}).
+
+Return ONLY valid JSON using EXACTLY the field names and allowed values below.
+Omit any field you cannot clearly assess. Use normal/absent/none for negative findings.
+
+${schema}`
+}
+
+export async function analyzeToFormFields(
+  imageBase64: string,
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp',
+  sampleType: CytologySampleType,
+  stain: string = 'Diff-Quik',
+): Promise<FormFillResult> {
+  const client = getAnthropicClient()
+
+  const response = await client.messages.create({
+    model: 'claude-opus-4-7',
+    max_tokens: 1500,
+    system: 'You are an expert veterinary cytologist. Respond exclusively in valid JSON — no prose, no markdown fences.',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: imageBase64 },
+          },
+          { type: 'text', text: buildFormFillPrompt(sampleType, stain) },
+        ],
+      },
+    ],
+  })
+
+  const text = response.content[0].type === 'text' ? response.content[0].text : ''
+
+  try {
+    const cleaned = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+    const parsed = JSON.parse(cleaned) as Record<string, unknown>
+
+    const { summary, ...rest } = parsed
+    const findings: Record<string, string | string[]> = {}
+
+    for (const [k, v] of Object.entries(rest)) {
+      if (Array.isArray(v)) {
+        findings[k] = v.map(String)
+      } else if (v !== null && v !== undefined) {
+        findings[k] = String(v)
+      }
+    }
+
+    return { findings, summary: typeof summary === 'string' ? summary : '' }
+  } catch {
+    return { findings: {}, summary: 'AI 응답 파싱 오류 — 수동 입력 필요' }
   }
 }
