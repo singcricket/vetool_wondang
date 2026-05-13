@@ -148,23 +148,32 @@ export type Database = {
         Row: {
           chart_id: string
           created_at: string | null
+          hos_id: string | null
           id: string
           image_label: string | null
           image_url: string
+          marks: Json | null
+          tags: string | null
         }
         Insert: {
           chart_id: string
           created_at?: string | null
+          hos_id?: string | null
           id?: string
           image_label?: string | null
           image_url: string
+          marks?: Json | null
+          tags?: string | null
         }
         Update: {
           chart_id?: string
           created_at?: string | null
+          hos_id?: string | null
           id?: string
           image_label?: string | null
           image_url?: string
+          marks?: Json | null
+          tags?: string | null
         }
         Relationships: [
           {
@@ -173,6 +182,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cytology_charts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cytology_images_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
           },
         ]
       }

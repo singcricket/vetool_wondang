@@ -4,6 +4,17 @@ import { getAnthropicClient } from '@/lib/ai/anthropic'
 import type { CytologySampleType } from '@/constants/hospital/cytology/cytology-types'
 import { cytologyRoutineMap } from '@/constants/hospital/cytology/cytology-routine'
 
+function toUserFriendlyError(err: unknown): never {
+  const msg = err instanceof Error ? err.message : String(err)
+  if (msg.includes('credit balance') || msg.includes('insufficient_quota')) {
+    throw new Error('Anthropic API 크레딧이 부족합니다. Plans & Billing에서 충전 후 다시 시도해주세요.')
+  }
+  if (msg.includes('invalid_api_key') || msg.includes('authentication')) {
+    throw new Error('Anthropic API 키가 유효하지 않습니다. 환경 변수를 확인해주세요.')
+  }
+  throw new Error('AI 판독 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+}
+
 const SAMPLE_TYPE_LABELS: Record<CytologySampleType, string> = {
   otic: '귀도말 (Otic Swab)',
   skin_impression: '피부 인상도말 (Skin Impression Smear)',
@@ -26,8 +37,14 @@ Respond exclusively in valid JSON — no prose, no markdown fences.
 Be specific about cell types, microorganisms, and abundance using veterinary cytology terminology.
 Use semi-quantitative grading: none, rare (1-2/HPF), few (3-5/HPF), moderate (6-20/HPF), many (>20/HPF).`
 
-function buildUserPrompt(sampleType: CytologySampleType, stain: string): string {
-  return `Analyze this ${SAMPLE_TYPE_LABELS[sampleType]} cytology image (stain: ${stain}).
+function buildClinicalBlock(clinicalInfo?: string): string {
+  if (!clinicalInfo?.trim()) return ''
+  return `\nClinical context provided by the clinician:\n${clinicalInfo.trim()}\n`
+}
+
+function buildUserPrompt(sampleType: CytologySampleType, stain: string, clinicalInfo?: string): string {
+  const clinicalBlock = buildClinicalBlock(clinicalInfo)
+  return `Analyze this ${SAMPLE_TYPE_LABELS[sampleType]} cytology image (stain: ${stain}).${clinicalBlock}
 
 Return a JSON object with these fields based on what you observe:
 {
@@ -58,42 +75,55 @@ interface AIAnalysisResult {
 }
 
 export async function analyzeCytologyImage(
-  imageBase64: string,
-  mediaType: 'image/jpeg' | 'image/png' | 'image/webp',
+  images: Array<{ base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }>,
   sampleType: CytologySampleType,
   stain: string = 'Diff-Quik',
+  clinicalInfo?: string,
 ): Promise<AIAnalysisResult> {
   const client = getAnthropicClient()
 
-  const response = await client.messages.create({
-    model: 'claude-opus-4-7',
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: mediaType,
-              data: imageBase64,
+  const imageBlocks = images.map((img) => ({
+    type: 'image' as const,
+    source: {
+      type: 'base64' as const,
+      media_type: img.mediaType,
+      data: img.base64,
+    },
+  }))
+
+  const countNote =
+    images.length > 1
+      ? `You are given ${images.length} images of the same sample site. Integrate findings across all images.`
+      : ''
+
+  let response
+  try {
+    response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            ...imageBlocks,
+            {
+              type: 'text',
+              text: countNote
+                ? `${countNote}\n\n${buildUserPrompt(sampleType, stain, clinicalInfo)}`
+                : buildUserPrompt(sampleType, stain, clinicalInfo),
             },
-          },
-          {
-            type: 'text',
-            text: buildUserPrompt(sampleType, stain),
-          },
-        ],
-      },
-    ],
-  })
+          ],
+        },
+      ],
+    })
+  } catch (err) {
+    toUserFriendlyError(err)
+  }
 
   const text = response.content[0].type === 'text' ? response.content[0].text : ''
 
   try {
-    // Strip any accidental markdown fences
     const cleaned = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
     return JSON.parse(cleaned) as AIAnalysisResult
   } catch {
@@ -189,23 +219,28 @@ export async function analyzeToFormFields(
 ): Promise<FormFillResult> {
   const client = getAnthropicClient()
 
-  const response = await client.messages.create({
-    model: 'claude-opus-4-7',
-    max_tokens: 1500,
-    system: 'You are an expert veterinary cytologist. Respond exclusively in valid JSON — no prose, no markdown fences.',
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: imageBase64 },
-          },
-          { type: 'text', text: buildFormFillPrompt(sampleType, stain) },
-        ],
-      },
-    ],
-  })
+  let response
+  try {
+    response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      system: 'You are an expert veterinary cytologist. Respond exclusively in valid JSON — no prose, no markdown fences.',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: imageBase64 },
+            },
+            { type: 'text', text: buildFormFillPrompt(sampleType, stain) },
+          ],
+        },
+      ],
+    })
+  } catch (err) {
+    toUserFriendlyError(err)
+  }
 
   const text = response.content[0].type === 'text' ? response.content[0].text : ''
 

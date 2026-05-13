@@ -9,47 +9,20 @@ import type { CytologySampleDefinition } from './cytology-types'
 
 const semiquantOptions = (
   signPrefix: string,
-): import('./cytology-types').CytologyFindingOption[] => [
-  {
-    value: 'none',
-    label: '없음',
-    labelEn: 'None',
-    isAbnormal: false,
-    signs: [],
-  },
-  {
-    value: 'rare',
-    label: '소수 (1-2/HPF)',
-    labelEn: 'Rare (1-2/HPF)',
-    isAbnormal: true,
-    severity: 'mild',
-    signs: [`${signPrefix}_rare` as import('./cytology-types').CytologySign],
-  },
-  {
-    value: 'few',
-    label: '적음 (3-5/HPF)',
-    labelEn: 'Few (3-5/HPF)',
-    isAbnormal: true,
-    severity: 'mild',
-    signs: [`${signPrefix}_few` as import('./cytology-types').CytologySign],
-  },
-  {
-    value: 'moderate',
-    label: '중등도 (6-20/HPF)',
-    labelEn: 'Moderate (6-20/HPF)',
-    isAbnormal: true,
-    severity: 'moderate',
-    signs: [`${signPrefix}_moderate` as import('./cytology-types').CytologySign],
-  },
-  {
-    value: 'many',
-    label: '다수 (>20/HPF)',
-    labelEn: 'Many (>20/HPF)',
-    isAbnormal: true,
-    severity: 'severe',
-    signs: [`${signPrefix}_many` as import('./cytology-types').CytologySign],
-  },
-]
+): import('./cytology-types').CytologyFindingOption[] => {
+  type S = import('./cytology-types').CytologySign
+  const rare = `${signPrefix}_rare` as S
+  const few  = `${signPrefix}_few`  as S
+  const mod  = `${signPrefix}_moderate` as S
+  const many = `${signPrefix}_many` as S
+  return [
+    { value: 'none',     label: '없음',              labelEn: 'None',            isAbnormal: false, signs: [] },
+    { value: 'rare',     label: '소수 (1-2/HPF)',    labelEn: 'Rare (1-2/HPF)',  isAbnormal: true,  severity: 'mild',     signs: [rare] },
+    { value: 'few',      label: '적음 (3-5/HPF)',    labelEn: 'Few (3-5/HPF)',   isAbnormal: true,  severity: 'mild',     signs: [few, rare] },
+    { value: 'moderate', label: '중등도 (6-20/HPF)', labelEn: 'Moderate (6-20/HPF)', isAbnormal: true, severity: 'moderate', signs: [mod, few, rare] },
+    { value: 'many',     label: '다수 (>20/HPF)',    labelEn: 'Many (>20/HPF)',  isAbnormal: true,  severity: 'severe',   signs: [many, mod, few, rare] },
+  ]
+}
 
 // semiquant options that mark moderate/many as 'present' sign (single sign name, not tiered)
 const semiquantOptionsSingleSign = (

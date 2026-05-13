@@ -1,34 +1,61 @@
 'use client'
 
-import React, { useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { cytologyReference } from '@/constants/hospital/cytology/cytology_ref'
 import type {
   CytologySampleType,
   CytologyRoutineTest,
   CytologyFindingOption,
 } from '@/constants/hospital/cytology/cytology-types'
+import { CheckCircle2, Microscope } from 'lucide-react'
+import { cn } from '@/lib/utils/utils'
+
+// ── Types ─────────────────────────────────────────────────────
+
+export interface CytologyImageData {
+  base64: string
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp'
+}
+
+export interface ExistingCytologyImage {
+  id: string
+  image_url: string
+  tags: string | null
+}
 
 // ── Stain options ─────────────────────────────────────────────
 
-const STAIN_OPTIONS = [
-  'Diff-Quik',
-  'Wright-Giemsa',
-  'H&E',
-  'PAS',
-  'Gram',
-  'Ziehl-Neelsen',
-]
+const STAIN_OPTIONS = ['Diff-Quik', 'Wright-Giemsa', 'H&E', 'PAS', 'Gram', 'Ziehl-Neelsen']
 
-// ── Abnormal helper ───────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 
-function isAbnormalOption(
-  options: CytologyFindingOption[] | undefined,
-  value: string,
-): boolean {
+function isAbnormalOption(options: CytologyFindingOption[] | undefined, value: string): boolean {
   return options?.find((o) => o.value === value)?.isAbnormal ?? false
 }
 
-// ── Editable finding field (AI-prefilled) ─────────────────────
+async function urlToImageData(url: string): Promise<CytologyImageData | null> {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const dataUrl = reader.result as string
+        const [header, base64] = dataUrl.split(',')
+        const rawType = header.replace('data:', '').replace(';base64', '')
+        const mediaType: CytologyImageData['mediaType'] =
+          rawType === 'image/png' || rawType === 'image/webp' ? rawType : 'image/jpeg'
+        resolve({ base64, mediaType })
+      }
+      reader.onerror = () => reject(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
+// ── Finding field (AI-prefilled, editable) ────────────────────
 
 interface FieldProps {
   test: CytologyRoutineTest
@@ -64,47 +91,27 @@ function AiField({ test, value, onChange, hasAiValue }: FieldProps) {
           >
             <option value="">-- 선택 --</option>
             {test.options?.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         )
 
       case 'semiquant': {
         const sqVals = ['none', 'rare', 'few', 'moderate', 'many'] as const
-        const sqLabels: Record<string, string> = {
-          none: '없음',
-          rare: '소수',
-          few: '적음',
-          moderate: '중등도',
-          many: '다수',
-        }
-        const sqBase: Record<string, string> = {
-          none: 'bg-gray-100 border-gray-300 text-gray-600',
-          rare: 'bg-blue-100 border-blue-400 text-blue-800',
-          few: 'bg-yellow-100 border-yellow-400 text-yellow-800',
-          moderate: 'bg-orange-100 border-orange-400 text-orange-800',
-          many: 'bg-red-100 border-red-400 text-red-800',
-        }
-        const sqSel: Record<string, string> = {
-          none: 'bg-gray-300 border-gray-500 text-gray-900 font-semibold',
-          rare: 'bg-blue-300 border-blue-600 text-blue-900 font-semibold',
-          few: 'bg-yellow-300 border-yellow-600 text-yellow-900 font-semibold',
-          moderate: 'bg-orange-300 border-orange-600 text-orange-900 font-semibold',
-          many: 'bg-red-300 border-red-600 text-red-900 font-semibold',
+        const sqLabels: Record<string, string> = { none: '없음', rare: '소수', few: '적음', moderate: '중등도', many: '다수' }
+        const base = 'bg-white border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+        const sel: Record<string, string> = {
+          none: 'bg-gray-200 border-gray-400 text-gray-800 font-semibold',
+          rare: 'bg-blue-500 border-blue-600 text-white font-semibold',
+          few: 'bg-yellow-400 border-yellow-500 text-yellow-900 font-semibold',
+          moderate: 'bg-orange-500 border-orange-600 text-white font-semibold',
+          many: 'bg-red-600 border-red-700 text-white font-semibold',
         }
         return (
           <div className="flex flex-wrap gap-1">
             {sqVals.map((sq) => (
-              <button
-                key={sq}
-                type="button"
-                onClick={() => onChange(test.testId, sq)}
-                className={`rounded border px-2.5 py-0.5 text-xs transition-all ${
-                  strVal === sq ? sqSel[sq] : sqBase[sq]
-                }`}
-              >
+              <button key={sq} type="button" onClick={() => onChange(test.testId, sq)}
+                className={`rounded border px-2.5 py-0.5 text-xs transition-all ${strVal === sq ? sel[sq] : base}`}>
                 {sqLabels[sq]}
               </button>
             ))}
@@ -120,20 +127,16 @@ function AiField({ test, value, onChange, hasAiValue }: FieldProps) {
         return (
           <div className="flex gap-2">
             {opts.map((opt) => {
-              const sel = strVal === opt.value
+              const active = strVal === opt.value
               return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => onChange(test.testId, opt.value)}
+                <button key={opt.value} type="button" onClick={() => onChange(test.testId, opt.value)}
                   className={`rounded border px-3 py-1 text-sm transition-all ${
-                    sel
+                    active
                       ? opt.isAbnormal
                         ? 'border-rose-500 bg-rose-500 text-white font-semibold'
                         : 'border-violet-500 bg-violet-500 text-white font-semibold'
                       : 'border-gray-300 bg-white text-gray-700'
-                  }`}
-                >
+                  }`}>
                   {opt.label}
                 </button>
               )
@@ -142,53 +145,33 @@ function AiField({ test, value, onChange, hasAiValue }: FieldProps) {
         )
       }
 
-      case 'multiselect': {
+      case 'multiselect':
         return (
           <div className="flex flex-wrap gap-1.5">
             {test.options?.map((opt) => {
-              const sel = arrVal.includes(opt.value)
+              const active = arrVal.includes(opt.value)
               return (
-                <label
-                  key={opt.value}
+                <label key={opt.value}
                   className={`flex cursor-pointer items-center gap-1 rounded border px-2 py-0.5 text-xs select-none ${
-                    sel
-                      ? 'border-violet-500 bg-violet-100 text-violet-900 font-medium'
-                      : 'border-gray-300 bg-white text-gray-700'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    checked={sel}
-                    onChange={() => {
-                      if (sel) {
-                        onChange(test.testId, arrVal.filter((v) => v !== opt.value))
-                      } else {
-                        onChange(test.testId, [...arrVal, opt.value])
-                      }
-                    }}
-                  />
+                    active ? 'border-violet-500 bg-violet-100 text-violet-900 font-medium' : 'border-gray-300 bg-white text-gray-700'
+                  }`}>
+                  <input type="checkbox" className="sr-only" checked={active}
+                    onChange={() => onChange(test.testId, active ? arrVal.filter((v) => v !== opt.value) : [...arrVal, opt.value])} />
                   {opt.label}
                 </label>
               )
             })}
           </div>
         )
-      }
 
       case 'text':
         return (
           <textarea
             className={`w-full rounded border px-2 py-1.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-400 ${
-              hasAiValue
-                ? 'border-amber-300 bg-amber-50'
-                : 'border-gray-300 bg-white'
+              hasAiValue ? 'border-amber-300 bg-amber-50' : 'border-gray-300 bg-white'
             }`}
-            rows={2}
-            placeholder={test.placeholder ?? '소견 입력'}
-            value={strVal}
-            onChange={(e) => onChange(test.testId, e.target.value)}
-          />
+            rows={2} placeholder={test.placeholder ?? '소견 입력'}
+            value={strVal} onChange={(e) => onChange(test.testId, e.target.value)} />
         )
 
       default:
@@ -214,8 +197,9 @@ interface Props {
   sampleType: CytologySampleType
   findings: Record<string, string | string[]>
   aiSummary: string | null
-  imageUrls: string[]
-  onAnalyze: (base64: string, mediaType: string, stain: string) => Promise<void>
+  existingImages: ExistingCytologyImage[]
+  hasClinicalInfo: boolean
+  onAnalyze: (images: CytologyImageData[], stain: string) => Promise<void>
   isAnalyzing: boolean
   onChange: (testId: string, value: string | string[]) => void
 }
@@ -224,272 +208,245 @@ export default function CytologyAiForm({
   sampleType,
   findings,
   aiSummary,
+  existingImages,
+  hasClinicalInfo,
   onAnalyze,
   isAnalyzing,
   onChange,
 }: Props) {
   const [selectedStain, setSelectedStain] = useState('Diff-Quik')
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [dragOver, setDragOver] = useState(false)
-  const [sizeError, setSizeError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isFetching, setIsFetching] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
-  const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp']
-
-  function convertBmpToPng(
-    file: File,
-  ): Promise<{ base64: string; mediaType: string; previewDataUrl: string }> {
-    return new Promise((resolve, reject) => {
-      const blobUrl = URL.createObjectURL(file)
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = img.naturalWidth
-        canvas.height = img.naturalHeight
-        const ctx = canvas.getContext('2d')
-        if (!ctx) { reject(new Error('canvas context unavailable')); return }
-        ctx.drawImage(img, 0, 0)
-        URL.revokeObjectURL(blobUrl)
-        const dataUrl = canvas.toDataURL('image/png')
-        const [header, base64] = dataUrl.split(',')
-        const mediaType = header.replace('data:', '').replace(';base64', '')
-        resolve({ base64, mediaType, previewDataUrl: dataUrl })
-      }
-      img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error('이미지 로드 실패')) }
-      img.src = blobUrl
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
     })
   }
 
-  async function handleFile(file: File) {
-    setSizeError(null)
+  function selectAll() {
+    setSelectedIds(new Set(existingImages.map((img) => img.id)))
+  }
 
-    if (!ALLOWED_TYPES.includes(file.type) && !file.type.startsWith('image/')) {
-      setSizeError('이미지 파일만 업로드할 수 있습니다 (JPEG, PNG, WebP, BMP).')
-      return
-    }
-    if (file.size > MAX_BYTES) {
-      setSizeError('파일 크기는 5MB 이하여야 합니다.')
-      return
-    }
+  function deselectAll() {
+    setSelectedIds(new Set())
+  }
 
-    // BMP → PNG 변환 (Anthropic API는 BMP 미지원)
-    if (file.type === 'image/bmp' || file.name.toLowerCase().endsWith('.bmp')) {
-      try {
-        const { base64, mediaType, previewDataUrl } = await convertBmpToPng(file)
-        setPreviewUrl(previewDataUrl)
-        void onAnalyze(base64, mediaType, selectedStain)
-      } catch {
-        setSizeError('BMP 변환에 실패했습니다. 다른 형식으로 저장 후 업로드해주세요.')
+  async function handleAnalyze() {
+    if (selectedIds.size === 0 || isAnalyzing || isFetching) return
+    setFetchError(null)
+    setIsFetching(true)
+
+    try {
+      const selected = existingImages.filter((img) => selectedIds.has(img.id))
+      const imageDataList: CytologyImageData[] = []
+
+      for (const img of selected) {
+        const data = await urlToImageData(img.image_url)
+        if (data) imageDataList.push(data)
       }
-      return
+
+      if (imageDataList.length === 0) {
+        setFetchError('이미지를 불러오지 못했습니다. 다시 시도해주세요.')
+        return
+      }
+
+      await onAnalyze(imageDataList, selectedStain)
+    } finally {
+      setIsFetching(false)
     }
-
-    const objectUrl = URL.createObjectURL(file)
-    setPreviewUrl(objectUrl)
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      const [header, base64] = result.split(',')
-      const mediaType = header.replace('data:', '').replace(';base64', '')
-      void onAnalyze(base64, mediaType, selectedStain)
-    }
-    reader.readAsDataURL(file)
   }
 
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (file) void handleFile(file)
-    e.target.value = ''
-  }
-
-  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) void handleFile(file)
-  }
-
-  // Collect all tests from sampleDef for editable findings section
   const sampleDef = cytologyReference.routineMap[sampleType]
-  const allTests: CytologyRoutineTest[] = sampleDef
-    ? sampleDef.sections.flatMap((s) => s.tests)
-    : []
-
   const hasAnyFindings = Object.keys(findings).length > 0
+  const selectedCount = selectedIds.size
+  const busy = isAnalyzing || isFetching
 
   return (
     <div className="space-y-4">
-      {/* Stain selector */}
+      {/* 염색 방법 */}
       <div className="space-y-1">
         <label className="text-sm font-medium text-gray-800">염색 방법 선택</label>
         <div className="flex flex-wrap gap-2">
           {STAIN_OPTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSelectedStain(s)}
+            <button key={s} type="button" onClick={() => setSelectedStain(s)}
               className={`rounded border px-3 py-1 text-sm transition-all ${
                 selectedStain === s
                   ? 'border-violet-600 bg-violet-600 text-white font-semibold'
                   : 'border-gray-300 bg-white text-gray-700 hover:border-violet-300'
-              }`}
-            >
+              }`}>
               {s}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Drop zone */}
-      <div
-        onClick={() => fileInputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setDragOver(true)
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        className={`relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 transition-all ${
-          dragOver
-            ? 'border-violet-400 bg-violet-50'
-            : 'border-gray-300 bg-gray-50 hover:border-violet-300 hover:bg-violet-50'
-        }`}
-      >
-        {isAnalyzing ? (
-          <div className="flex flex-col items-center gap-2 py-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-200 border-t-violet-600" />
-            <span className="text-sm font-medium text-violet-700">AI 분석 중...</span>
+      {/* 업로드된 이미지 선택 */}
+      {existingImages.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10">
+          <div className="p-3 bg-slate-100 rounded-full">
+            <Microscope className="w-7 h-7 text-slate-400" />
           </div>
-        ) : previewUrl ? (
-          /* Preview + re-upload hint */
-          <div className="flex flex-col items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={previewUrl}
-              alt="업로드된 세포학 이미지"
-              className="max-h-48 rounded-md object-contain shadow"
-            />
-            <span className="text-xs text-gray-500">
-              다른 이미지를 업로드하려면 클릭하세요
-            </span>
-          </div>
-        ) : (
-          <>
-            <svg
-              className="h-8 w-8 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 16.5V18a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18v-1.5M16.5 12l-4.5-4.5m0 0L7.5 12m4.5-4.5V18"
-              />
-            </svg>
-            <p className="text-sm text-gray-600">
-              이미지를 드래그하거나{' '}
-              <span className="font-medium text-violet-600">클릭하여 업로드</span>
+          <div className="text-center">
+            <p className="text-sm font-semibold text-slate-500">이 탭에 업로드된 사진이 없습니다</p>
+            <p className="text-xs text-slate-400 mt-1">
+              화면 우측 하단 카메라 버튼을 눌러 현미경 사진을 먼저 업로드해주세요
             </p>
-            <p className="text-xs text-gray-400">JPEG, PNG, WebP, BMP · 최대 5MB</p>
-          </>
-        )}
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/bmp,.bmp"
-          className="hidden"
-          onChange={handleInputChange}
-        />
-      </div>
-
-      {/* Size / type error */}
-      {sizeError && (
-        <p className="rounded bg-rose-50 px-3 py-2 text-xs text-rose-700 border border-rose-200">
-          {sizeError}
-        </p>
-      )}
-
-      {/* AI summary */}
-      {aiSummary && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 space-y-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
-              AI 분석 결과
-            </span>
           </div>
-          <p className="text-sm text-amber-900 leading-relaxed whitespace-pre-wrap">
-            {aiSummary}
-          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-800">
+              분석할 이미지 선택{' '}
+              <span className="text-xs text-gray-400">({existingImages.length}장)</span>
+            </span>
+            <div className="flex gap-2">
+              <button type="button" onClick={selectAll}
+                className="text-xs text-violet-600 hover:text-violet-700 font-medium transition-colors">
+                전체 선택
+              </button>
+              <span className="text-xs text-gray-300">|</span>
+              <button type="button" onClick={deselectAll}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                선택 해제
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {existingImages.map((img) => {
+              const selected = selectedIds.has(img.id)
+              return (
+                <div
+                  key={img.id}
+                  onClick={() => toggleSelect(img.id)}
+                  className={cn(
+                    'group relative aspect-square overflow-hidden rounded-xl border-2 cursor-pointer transition-all',
+                    selected
+                      ? 'border-violet-500 ring-4 ring-violet-100'
+                      : 'border-slate-200 hover:border-slate-300',
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.image_url} alt="현미경 이미지" className="h-full w-full object-cover" />
+                  {selected && (
+                    <div className="absolute top-1.5 left-1.5 bg-violet-600 text-white rounded-full p-0.5 shadow-md border border-white z-10">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+                  {!selected && (
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* 임상소견 누락 안내 */}
+          {!hasClinicalInfo && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                <span className="font-semibold">임상소견을 먼저 입력하면 더 정확한 판독이 가능합니다.</span>
+                {' '}전문가 모드 1단계(임상 소견)에 병변 위치·크기·임상 상황을 기입 후 판독을 의뢰해 주세요.
+              </p>
+            </div>
+          )}
+
+          {/* 에러 */}
+          {fetchError && (
+            <p className="rounded bg-rose-50 px-3 py-2 text-xs text-rose-700 border border-rose-200">{fetchError}</p>
+          )}
+
+          {/* 판독 버튼 */}
+          <button
+            type="button"
+            onClick={() => void handleAnalyze()}
+            disabled={selectedCount === 0 || busy}
+            className={`w-full rounded-lg py-2.5 text-sm font-semibold transition-all ${
+              selectedCount === 0
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : busy
+                ? 'bg-violet-100 text-violet-400 cursor-not-allowed'
+                : 'bg-violet-600 text-white hover:bg-violet-700 active:scale-[0.99]'
+            }`}
+          >
+            {isFetching ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-300 border-t-white" />
+                이미지 로딩 중...
+              </span>
+            ) : isAnalyzing ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-300 border-t-white" />
+                AI 판독 중... ({selectedCount}장)
+              </span>
+            ) : selectedCount === 0 ? (
+              '이미지를 선택하세요'
+            ) : (
+              `AI 판독 시작 — ${selectedCount}장 분석`
+            )}
+          </button>
         </div>
       )}
 
-      {/* Editable findings */}
-      {(hasAnyFindings || aiSummary) && allTests.length > 0 && (
+      {/* AI 판독 결과 */}
+      {aiSummary && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 space-y-1">
+          <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">AI 판독 결과</span>
+          <p className="text-sm text-amber-900 leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
+        </div>
+      )}
+
+      {/* 소견 검토 */}
+      {(hasAnyFindings || aiSummary) && sampleDef && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold text-gray-800">
-              소견 검토 및 수정
-            </h4>
+            <h4 className="text-sm font-semibold text-gray-800">소견 검토 및 수정</h4>
             {aiSummary && (
               <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
                 AI 제안값 수정 가능
               </span>
             )}
           </div>
-
-          {sampleDef ? (
-            sampleDef.sections.map((section) => (
-              <div
-                key={section.sectionId}
-                className="rounded-lg border bg-white p-3 space-y-3"
-              >
-                <div className="flex items-baseline gap-1.5 border-b pb-1.5">
-                  <span className="text-xs font-semibold text-violet-700">
-                    {section.label}
-                  </span>
-                  <span className="text-xs text-gray-400 italic">
-                    {section.labelEn}
-                  </span>
-                </div>
-                {section.tests.map((test) => (
-                  <AiField
-                    key={test.testId}
-                    test={test}
-                    value={findings[test.testId] ?? ''}
-                    onChange={onChange}
-                    hasAiValue={test.testId in findings && aiSummary !== null}
-                  />
-                ))}
+          {sampleDef.sections.map((section) => (
+            <div key={section.sectionId} className="rounded-lg border bg-white p-3 space-y-3">
+              <div className="flex items-baseline gap-1.5 border-b pb-1.5">
+                <span className="text-xs font-semibold text-violet-700">{section.label}</span>
+                <span className="text-xs text-gray-400 italic">{section.labelEn}</span>
               </div>
-            ))
-          ) : (
-            /* Fallback: flat list for specialist-mode samples without routine sections */
-            <div className="rounded-lg border bg-white p-3 space-y-3">
-              {allTests.map((test) => (
-                <AiField
-                  key={test.testId}
-                  test={test}
+              {section.tests.map((test) => (
+                <AiField key={test.testId} test={test}
                   value={findings[test.testId] ?? ''}
                   onChange={onChange}
-                  hasAiValue={test.testId in findings && aiSummary !== null}
-                />
+                  hasAiValue={test.testId in findings && aiSummary !== null} />
               ))}
             </div>
-          )}
+          ))}
         </div>
       )}
 
-      {/* Empty-state prompt */}
-      {!aiSummary && !isAnalyzing && (
-        <p className="text-center text-xs text-gray-400 py-2">
-          이미지를 업로드하면 AI가 세포학적 소견을 자동 분석합니다.
-        </p>
-      )}
+      {/*
+        ── 아래는 이전 업로드 UI (주석 처리) ───────────────────────────────
+        이미지 업로드는 화면 우측 하단 카메라 버튼(CytologyImageUploadDialog)으로 통합됨.
+
+      const [images, setImages] = useState<UploadedImage[]>([])
+      const [dragOver, setDragOver] = useState(false)
+      const [error, setError] = useState<string | null>(null)
+      const fileInputRef = useRef<HTMLInputElement>(null)
+      const nextId = useRef(0)
+
+      <div onClick={() => fileInputRef.current?.click()} onDragOver=... onDrop=...>
+        드래그하거나 클릭하여 추가 / Ctrl+V 붙여넣기
+      </div>
+      ────────────────────────────────────────────────────────────────────── */}
     </div>
   )
 }

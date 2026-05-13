@@ -132,19 +132,13 @@ function MorphField({ test, value, onChange }: FieldProps) {
         moderate: '중등도',
         many: '다수',
       }
-      const sqBase: Record<string, string> = {
-        none: 'bg-gray-100 border-gray-300 text-gray-600',
-        rare: 'bg-blue-100 border-blue-400 text-blue-800',
-        few: 'bg-yellow-100 border-yellow-400 text-yellow-800',
-        moderate: 'bg-orange-100 border-orange-400 text-orange-800',
-        many: 'bg-red-100 border-red-400 text-red-800',
-      }
+      const sqBase = 'bg-white border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
       const sqSel: Record<string, string> = {
-        none: 'bg-gray-300 border-gray-500 text-gray-900 font-semibold',
-        rare: 'bg-blue-300 border-blue-600 text-blue-900 font-semibold',
-        few: 'bg-yellow-300 border-yellow-600 text-yellow-900 font-semibold',
-        moderate: 'bg-orange-300 border-orange-600 text-orange-900 font-semibold',
-        many: 'bg-red-300 border-red-600 text-red-900 font-semibold',
+        none: 'bg-gray-200 border-gray-400 text-gray-800 font-semibold',
+        rare: 'bg-blue-500 border-blue-600 text-white font-semibold',
+        few: 'bg-yellow-400 border-yellow-500 text-yellow-900 font-semibold',
+        moderate: 'bg-orange-500 border-orange-600 text-white font-semibold',
+        many: 'bg-red-600 border-red-700 text-white font-semibold',
       }
       return (
         <div className="flex flex-wrap gap-1">
@@ -154,7 +148,7 @@ function MorphField({ test, value, onChange }: FieldProps) {
               type="button"
               onClick={() => onChange(test.testId, sq)}
               className={`rounded border px-2.5 py-0.5 text-xs transition-all ${
-                strVal === sq ? sqSel[sq] : sqBase[sq]
+                strVal === sq ? sqSel[sq] : sqBase
               }`}
             >
               {sqLabels[sq]}
@@ -183,11 +177,11 @@ function MorphField({ test, value, onChange }: FieldProps) {
 // ── Step navigation ───────────────────────────────────────────
 
 const STEP_LABELS = [
+  '임상 소견',
   '검체 품질',
   '염증 평가',
   '세포 분류',
   '악성도 기준',
-  '임상 소견',
 ]
 
 function StepNav({
@@ -702,15 +696,15 @@ export default function CytologySpecialistForm({
   function renderStep() {
     switch (step) {
       case 0:
-        return <Step1Quality findings={findings} onChange={onChange} />
-      case 1:
-        return <Step2Inflammation findings={findings} onChange={onChange} />
-      case 2:
-        return <Step3Cells findings={findings} onChange={onChange} />
-      case 3:
-        return <Step4Malignancy findings={findings} onChange={onChange} />
-      case 4:
         return <Step5Clinical findings={findings} onChange={onChange} />
+      case 1:
+        return <Step1Quality findings={findings} onChange={onChange} />
+      case 2:
+        return <Step2Inflammation findings={findings} onChange={onChange} />
+      case 3:
+        return <Step3Cells findings={findings} onChange={onChange} />
+      case 4:
+        return <Step4Malignancy findings={findings} onChange={onChange} />
       default:
         return null
     }

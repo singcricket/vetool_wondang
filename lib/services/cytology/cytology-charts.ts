@@ -60,6 +60,7 @@ export async function updateCytologyChart(
     summary?: string | null                       // human-readable text summary
     sample_info?: Record<string, unknown> | null  // { imageUrls, stain }
     evaluator_id?: string | null
+    vet_id?: string | null
     user_tags?: string | null
   },
 ) {

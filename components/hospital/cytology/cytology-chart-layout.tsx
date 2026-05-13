@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Save, Trash2, Microscope } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Microscope, Info, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import CytologyImageUploadDialog from './cytology-image-uploader/cytology-image-upload-dialog'
 import type { CytologyChartDetail } from '@/types/hospital/cytology-type'
 import type {
   CytologySampleType,
@@ -174,26 +175,68 @@ export default function CytologyChartLayout({
       </header>
 
       {/* Sample Type Tabs */}
-      <div className="flex shrink-0 overflow-x-auto bg-white border-b px-4 no-scrollbar shadow-sm z-10">
-        <div className="flex space-x-1 py-2">
-          {SAMPLE_TYPES.map((type) => (
-            <button
-              key={type}
-              onClick={() => onSampleTypeChange(type)}
-              className={`
-                px-4 py-2 text-sm font-semibold rounded-full transition-all whitespace-nowrap
-                ${
-                  currentSampleType === type
-                    ? 'bg-violet-100 text-violet-700 ring-1 ring-violet-300'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }
-              `}
-            >
-              {SAMPLE_LABELS[type]}
-            </button>
-          ))}
-        </div>
-      </div>
+      {(() => {
+        // findings/summary/diagnosis 중 하나라도 있으면 "검체 확정" 상태
+        const isCommitted = !!(
+          (chartDetail.findings && Object.keys(chartDetail.findings as object).length > 0) ||
+          (chartDetail.ai_findings && Object.keys(chartDetail.ai_findings as object).length > 0) ||
+          chartDetail.summary ||
+          chartDetail.diagnosis
+        )
+        const committedType: CytologySampleType | null = isCommitted
+          ? (chartDetail.sample_type ?? null)
+          : null
+
+        return (
+          <>
+            <div className="flex shrink-0 overflow-x-auto bg-white border-b px-4 no-scrollbar shadow-sm z-10">
+              <div className="flex space-x-1 py-2">
+                {SAMPLE_TYPES.map((type) => {
+                  const isActive = currentSampleType === type
+                  const isThisCommitted = committedType === type
+                  const isDimmed = committedType !== null && !isThisCommitted
+
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => onSampleTypeChange(type)}
+                      className={`
+                        flex items-center gap-1.5 rounded-full transition-all whitespace-nowrap font-semibold
+                        ${isThisCommitted && isActive
+                          ? 'px-4 py-2 text-sm bg-violet-600 text-white shadow-sm ring-2 ring-violet-300'
+                          : isThisCommitted
+                          ? 'px-4 py-2 text-sm bg-violet-100 text-violet-700 ring-1 ring-violet-300'
+                          : isActive && isDimmed
+                          ? 'px-3 py-1.5 text-xs bg-slate-100 text-slate-600 ring-1 ring-slate-300'
+                          : isActive
+                          ? 'px-4 py-2 text-sm bg-slate-100 text-slate-700 ring-1 ring-slate-300'
+                          : isDimmed
+                          ? 'px-3 py-1.5 text-xs text-slate-300 hover:text-slate-400 hover:bg-slate-50'
+                          : 'px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
+                      `}
+                    >
+                      {isThisCommitted && (
+                        <CheckCircle2 className="h-3 w-3 shrink-0" />
+                      )}
+                      {SAMPLE_LABELS[type]}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Single-sample notice: 미확정일 때만 표시 */}
+            {!committedType && (
+              <div className="flex shrink-0 items-center gap-1.5 bg-blue-50 border-b border-blue-100 px-4 py-1.5">
+                <Info className="h-3 w-3 shrink-0 text-blue-500" />
+                <p className="text-[11px] text-blue-600 font-medium">
+                  1개의 차트에는 1종의 검체만 기록할 수 있습니다. 저장하면 검체 종류가 확정됩니다.
+                </p>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {/* Mode Tabs */}
       <div className="flex shrink-0 overflow-x-auto bg-white border-b px-4 no-scrollbar z-10">
@@ -229,6 +272,13 @@ export default function CytologyChartLayout({
 
       {/* Content Area */}
       <main className="flex-1 overflow-auto">{children}</main>
+      {/* Image Hub Button (Ophthalmic Style) */}
+      {chartDetail && (
+        <CytologyImageUploadDialog 
+          chartId={chartDetail.id} 
+          hosId={params.hos_id as string} 
+        />
+      )}
     </div>
   )
 }
