@@ -465,8 +465,8 @@ export function runOphDiagnosisEngine(activeSigns: OphthalmicSign[]): OphDiagnos
 export function assessVisionStatus(activeSigns: OphthalmicSign[]) {
   const s = new Set(activeSigns)
   return {
-    od: s.has('blind_od') ? 'blind' : s.has('menace_deficit_od') || s.has('plr_direct_deficit_od') ? 'impaired' : 'visual' as any,
-    os: s.has('blind_os') ? 'blind' : s.has('menace_deficit_os') || s.has('plr_direct_deficit_os') ? 'impaired' : 'visual' as any,
+    od: s.has('blind_od') ? 'blind' : s.has('menace_deficit_od') ? 'impaired' : 'visual' as any,
+    os: s.has('blind_os') ? 'blind' : s.has('menace_deficit_os') ? 'impaired' : 'visual' as any,
   }
 }
 

@@ -228,7 +228,7 @@ const functionalTests: OphTestItem[] = [
     options: [
       { value: 'brisk', label: 'Brisk / Normal', labelKo: '신속/정상', resultText: 'PLR direct brisk OD', resultTextKo: '우안 직접 동공 반사 정상', isAbnormal: false },
       { value: 'sluggish', label: 'Sluggish', labelKo: '느림/감소', resultText: 'PLR direct sluggish OD', resultTextKo: '우안 직접 동공 반사 감소', isAbnormal: true, severity: 'moderate', signs: ['plr_direct_deficit_od'] },
-      { value: 'absent', label: 'Absent', labelKo: '소실', resultText: 'PLR direct absent OD', resultTextKo: '우안 직접 동공 반사 소실', isAbnormal: true, severity: 'critical', signs: ['plr_direct_deficit_od', 'blind_od'] },
+      { value: 'absent', label: 'Absent', labelKo: '소실', resultText: 'PLR direct absent OD', resultTextKo: '우안 직접 동공 반사 소실', isAbnormal: true, severity: 'critical', signs: ['plr_direct_deficit_od'] },
     ],
   },
   {
@@ -238,7 +238,7 @@ const functionalTests: OphTestItem[] = [
     options: [
       { value: 'brisk', label: 'Brisk', labelKo: '정상', resultText: 'PLR direct brisk OS', resultTextKo: '좌안 직접 동공 반사 정상', isAbnormal: false },
       { value: 'sluggish', label: 'Sluggish', labelKo: '느림', resultText: 'PLR direct sluggish OS', resultTextKo: '좌안 직접 동공 반사 감소', isAbnormal: true, severity: 'moderate', signs: ['plr_direct_deficit_os'] },
-      { value: 'absent', label: 'Absent', labelKo: '소실', resultText: 'PLR direct absent OS', resultTextKo: '좌안 직접 동공 반사 소실', isAbnormal: true, severity: 'critical', signs: ['plr_direct_deficit_os', 'blind_os'] },
+      { value: 'absent', label: 'Absent', labelKo: '소실', resultText: 'PLR direct absent OS', resultTextKo: '좌안 직접 동공 반사 소실', isAbnormal: true, severity: 'critical', signs: ['plr_direct_deficit_os'] },
     ],
   },
   {
