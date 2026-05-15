@@ -30,7 +30,7 @@ import { uploadAndExtractDiagnosis } from '@/lib/actions/oncology/document-extra
 import { useOncologyContext } from '@/providers/oncology-context-provider'
 import type { OncologyCaseDetail } from '@/types/hospital/oncology-type'
 import type { OncologyDiagnosisInputRow } from '@/lib/services/oncology/fetch-oncology-case'
-import { AlertTriangle, BookOpen, Brain, ChevronDown, ChevronUp, Clock, FileText, Loader2, RefreshCw, Save, Sparkles, StethoscopeIcon, UploadCloud, X } from 'lucide-react'
+import { AlertTriangle, BookOpen, Brain, ChevronDown, ChevronUp, Clock, FileText, Loader2, RefreshCw, Save, Sparkles, StethoscopeIcon, UploadCloud, Users, X } from 'lucide-react'
 
 const DIAGNOSIS_METHODS = [
   { value: 'biopsy', label: '생검(Biopsy)' },
@@ -239,6 +239,7 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
   const [clinicalSigns, setClinicalSigns] = useState(diagnosisInput?.clinical_signs ?? '')
   const [clinicalCourse, setClinicalCourse] = useState(diagnosisInput?.clinical_course ?? '')
   const [rawText, setRawText] = useState(diagnosisInput?.raw_text ?? '')
+  const [ownerNote, setOwnerNote] = useState(diagnosisInput?.additional_notes ?? '')
 
   const [saving, setSaving] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
@@ -316,6 +317,7 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
       if (result.clinical_signs) setClinicalSigns(result.clinical_signs)
       if (result.clinical_course) setClinicalCourse(result.clinical_course)
       if (result.raw_text) setRawText(result.raw_text)
+      if (result.owner_note) setOwnerNote(result.owner_note)
       setSavedFiles(result.uploadedFiles)
       setDocFiles([])
       toast.success(`${docFiles.length}개 문서에서 임상 정보를 추출했습니다. 내용을 확인 후 저장해주세요.`)
@@ -340,6 +342,7 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
         clinical_signs: clinicalSigns,
         clinical_course: clinicalCourse,
         raw_text: rawText,
+        additional_notes: ownerNote || null,
       })
       await updateCaseInfo(caseDetail.id, {
         diagnosis_name: diagnosisName.trim() || '미입력',
@@ -680,6 +683,28 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
             className="text-sm resize-none h-24"
           />
         </div>
+      </div>
+
+      {/* Owner guidance note */}
+      <div className="rounded-lg border border-indigo-200 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-indigo-500" />
+            <h3 className="font-semibold text-slate-800">보호자 안내문</h3>
+            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+              보호자 페이지 공개 예정
+            </span>
+          </div>
+        </div>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          진단 경위, 진단명 및 질환 설명을 보호자가 이해하기 쉽게 작성합니다. 진단 문서를 AI로 분석하면 자동으로 생성됩니다.
+        </p>
+        <Textarea
+          value={ownerNote}
+          onChange={(e) => setOwnerNote(e.target.value)}
+          placeholder="예: ○○이는 이번에 ○○ 검사를 통해 ○○ 종양으로 진단받았습니다. ○○ 종양은 ..."
+          className="text-sm resize-none h-40 border-indigo-200 focus-visible:ring-indigo-400"
+        />
       </div>
 
       {/* Vet select dialog */}

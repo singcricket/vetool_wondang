@@ -1661,6 +1661,7 @@ export type Database = {
           event_date: string
           event_type: string
           id: string
+          reported_by: string
           resolved: boolean
           resolved_date: string | null
           vcog_grade: number
@@ -1676,6 +1677,7 @@ export type Database = {
           event_date: string
           event_type: string
           id?: string
+          reported_by?: string
           resolved?: boolean
           resolved_date?: string | null
           vcog_grade: number
@@ -1691,6 +1693,7 @@ export type Database = {
           event_date?: string
           event_type?: string
           id?: string
+          reported_by?: string
           resolved?: boolean
           resolved_date?: string | null
           vcog_grade?: number
@@ -2110,40 +2113,64 @@ export type Database = {
       }
       onco_qol_records: {
         Row: {
-          appetite_score: number | null
+          behavior_checklist: Json | null
           body_weight: number | null
           case_id: string
-          created_at: string
+          created_at: string | null
           created_by: string | null
+          good_days_score: number | null
+          happiness_score: number | null
+          hunger_score: number | null
+          hydration_score: number | null
+          hygiene_score: number | null
           id: string
+          lethargy_days: number | null
+          mobility_score: number | null
+          nausea_vomiting_days: number | null
           notes: string | null
-          owner_score: number | null
+          pain_score: number | null
+          reported_by: string | null
           visit_date: string
-          vitality_score: number | null
         }
         Insert: {
-          appetite_score?: number | null
+          behavior_checklist?: Json | null
           body_weight?: number | null
           case_id: string
-          created_at?: string
+          created_at?: string | null
           created_by?: string | null
+          good_days_score?: number | null
+          happiness_score?: number | null
+          hunger_score?: number | null
+          hydration_score?: number | null
+          hygiene_score?: number | null
           id?: string
+          lethargy_days?: number | null
+          mobility_score?: number | null
+          nausea_vomiting_days?: number | null
           notes?: string | null
-          owner_score?: number | null
+          pain_score?: number | null
+          reported_by?: string | null
           visit_date: string
-          vitality_score?: number | null
         }
         Update: {
-          appetite_score?: number | null
+          behavior_checklist?: Json | null
           body_weight?: number | null
           case_id?: string
-          created_at?: string
+          created_at?: string | null
           created_by?: string | null
+          good_days_score?: number | null
+          happiness_score?: number | null
+          hunger_score?: number | null
+          hydration_score?: number | null
+          hygiene_score?: number | null
           id?: string
+          lethargy_days?: number | null
+          mobility_score?: number | null
+          nausea_vomiting_days?: number | null
           notes?: string | null
-          owner_score?: number | null
+          pain_score?: number | null
+          reported_by?: string | null
           visit_date?: string
-          vitality_score?: number | null
         }
         Relationships: [
           {
@@ -2152,13 +2179,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "onco_cases"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "onco_qol_records_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -2223,44 +2243,74 @@ export type Database = {
         Row: {
           case_id: string
           case_protocol_id: string | null
-          created_at: string
+          clinical_impression: string | null
+          created_at: string | null
           created_by: string | null
+          criteria_system: string
           eval_date: string
           id: string
-          image_urls: Json
-          measurement_after: number | null
-          measurement_before: number | null
-          modality: string
+          marker_baseline: number | null
+          marker_current: number | null
+          marker_name: string | null
+          marker_unit: string | null
+          modalities: string[]
+          new_lesions: boolean
+          new_lesions_desc: string | null
+          non_target_status: string | null
           notes: string | null
-          response_type: string
+          overall_response: string
+          percent_change: number | null
+          sum_baseline_mm: number | null
+          sum_current_mm: number | null
+          target_lesions: Json
         }
         Insert: {
           case_id: string
           case_protocol_id?: string | null
-          created_at?: string
+          clinical_impression?: string | null
+          created_at?: string | null
           created_by?: string | null
+          criteria_system?: string
           eval_date: string
           id?: string
-          image_urls?: Json
-          measurement_after?: number | null
-          measurement_before?: number | null
-          modality: string
+          marker_baseline?: number | null
+          marker_current?: number | null
+          marker_name?: string | null
+          marker_unit?: string | null
+          modalities?: string[]
+          new_lesions?: boolean
+          new_lesions_desc?: string | null
+          non_target_status?: string | null
           notes?: string | null
-          response_type: string
+          overall_response: string
+          percent_change?: number | null
+          sum_baseline_mm?: number | null
+          sum_current_mm?: number | null
+          target_lesions?: Json
         }
         Update: {
           case_id?: string
           case_protocol_id?: string | null
-          created_at?: string
+          clinical_impression?: string | null
+          created_at?: string | null
           created_by?: string | null
+          criteria_system?: string
           eval_date?: string
           id?: string
-          image_urls?: Json
-          measurement_after?: number | null
-          measurement_before?: number | null
-          modality?: string
+          marker_baseline?: number | null
+          marker_current?: number | null
+          marker_name?: string | null
+          marker_unit?: string | null
+          modalities?: string[]
+          new_lesions?: boolean
+          new_lesions_desc?: string | null
+          non_target_status?: string | null
           notes?: string | null
-          response_type?: string
+          overall_response?: string
+          percent_change?: number | null
+          sum_baseline_mm?: number | null
+          sum_current_mm?: number | null
+          target_lesions?: Json
         }
         Relationships: [
           {
@@ -2276,13 +2326,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "onco_case_protocols"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "onco_response_evals_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
           },
         ]
       }

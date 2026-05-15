@@ -11,7 +11,7 @@ import Tab4Adverse from './tab4-adverse'
 import Tab5Response from './tab5-response'
 import Tab6Qol from './tab6-qol'
 import OncologyCaseHeaderButtons from './oncology-case-header-buttons'
-import { CalendarDays, Dog, User } from 'lucide-react'
+import { CalendarDays, Cat, Dog, PawPrint, User } from 'lucide-react'
 
 const STATUS_LABEL: Record<string, string> = {
   active: '진행 중',
@@ -66,11 +66,16 @@ export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClient
     <div className="flex flex-col h-full w-full">
       {/* Case header */}
       <div className="shrink-0 border-b bg-white px-4 py-3">
-        <div className="flex items-start gap-4 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
           {/* Patient info */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
-              <Dog size={18} className="text-rose-600" />
+              {/^(cat|feline)$/i.test(p.species)
+                ? <Cat size={18} className="text-rose-600" />
+                : /^(dog|canine)$/i.test(p.species)
+                  ? <Dog size={18} className="text-rose-600" />
+                  : <PawPrint size={18} className="text-rose-600" />
+              }
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -160,7 +165,7 @@ export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClient
       {/* Tabs */}
       <div className="flex-1 overflow-y-auto">
         <Tabs defaultValue="tab1" className="h-full flex flex-col">
-          <TabsList className="shrink-0 w-full rounded-none border-b bg-white h-10 px-2 justify-start gap-0">
+          <TabsList className="shrink-0 w-full rounded-none border-b bg-white h-10 px-2 justify-start gap-0 overflow-x-auto scrollbar-none">
             <TabsTrigger value="tab1" className="text-xs h-9 px-3 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-rose-600 data-[state=active]:text-rose-700">
               진단 & AI 가이드
             </TabsTrigger>
@@ -180,9 +185,19 @@ export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClient
             </TabsTrigger>
             <TabsTrigger value="tab5" className="text-xs h-9 px-3 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-rose-600 data-[state=active]:text-rose-700">
               치료 반응 평가
+              {responseEvals.length > 0 && (
+                <span className="ml-1.5 bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full leading-none">
+                  {responseEvals.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="tab6" className="text-xs h-9 px-3 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-rose-600 data-[state=active]:text-rose-700">
               QoL 트래킹
+              {qolRecords.length > 0 && (
+                <span className="ml-1.5 bg-emerald-100 text-emerald-800 text-xs px-1.5 py-0.5 rounded-full leading-none">
+                  {qolRecords.length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -196,11 +211,11 @@ export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClient
             </TabsContent>
 
             <TabsContent value="tab3" className="mt-0">
-              <Tab3Dosing caseProtocols={caseProtocols} />
+              <Tab3Dosing caseId={c.id} caseProtocols={caseProtocols} species={c.patient.species} />
             </TabsContent>
 
             <TabsContent value="tab4" className="mt-0">
-              <Tab4Adverse caseId={c.id} adverseEvents={adverseEvents} />
+              <Tab4Adverse caseId={c.id} adverseEvents={adverseEvents} caseProtocols={caseProtocols} />
             </TabsContent>
 
             <TabsContent value="tab5" className="mt-0">

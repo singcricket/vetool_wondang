@@ -8,7 +8,7 @@ export interface DiagnosisInputData {
   clinical_signs?: string
   clinical_course?: string
   raw_text?: string
-  additional_notes?: string
+  additional_notes?: string | null
 }
 
 export interface CaseInfoData {

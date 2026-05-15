@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,119 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils/utils'
 import { updateScheduleStatus } from '@/lib/actions/oncology/schedule-actions'
 import type { OncologyCaseProtocolRow, OncologyScheduleRow } from '@/lib/services/oncology/fetch-oncology-case'
-import { CheckCircle, ChevronDown, ChevronUp, ClipboardList } from 'lucide-react'
+import type { DrugItem, AdverseEffectItem } from '@/lib/actions/oncology/ai-oncology-guide'
+import { CheckCircle, ChevronDown, ChevronUp, ClipboardList, FlaskConical, AlertTriangle, ShieldAlert, TriangleAlert } from 'lucide-react'
+import AdverseEventDialog from './adverse-event-dialog'
+
+// ── Route helpers ─────────────────────────────────────────────────────────────
+function isOralRoute(route: string): boolean {
+  return /^po$/i.test(route.trim()) || /\boral\b/i.test(route)
+}
+
+// ── BSA (Meeh's formula) ──────────────────────────────────────────────────────
+function calcBsa(weightKg: number, species: string): number {
+  const k = species === 'feline' ? 0.100 : 0.101
+  return k * Math.pow(weightKg, 2 / 3)
+}
+
+// ── Dose calculator ───────────────────────────────────────────────────────────
+function calcDoseMg(
+  weightKg: number,
+  dosePerKg: number | null,
+  dosePerM2: number | null,
+  doseCalculated: number | null,
+  species: string,
+): number | null {
+  if (dosePerKg != null) return Math.round(dosePerKg * weightKg * 100) / 100
+  if (dosePerM2 != null) return Math.round(dosePerM2 * calcBsa(weightKg, species) * 100) / 100
+  return doseCalculated // fixed dose — unchanged
+}
+
+// ── VCOG grade badge ──────────────────────────────────────────────────────────
+const VCOG_COLORS: Record<number, string> = {
+  1: 'bg-green-100 text-green-700',
+  2: 'bg-yellow-100 text-yellow-700',
+  3: 'bg-orange-100 text-orange-700',
+  4: 'bg-red-100 text-red-700',
+  5: 'bg-red-200 text-red-900',
+}
+const VCOG_LABELS: Record<number, string> = {
+  1: 'G1 경증', 2: 'G2 중등도', 3: 'G3 중증', 4: 'G4 생명위협', 5: 'G5 사망',
+}
+
+type InfoTab = 'adverse' | 'caution'
+
+function ProtocolInfoPanel({
+  protocol,
+  activeTab,
+}: {
+  protocol: OncologyCaseProtocolRow['protocol']
+  activeTab: InfoTab
+}) {
+  const adverseEffects = (protocol.adverse_effects as AdverseEffectItem[]) ?? []
+  const warnings = (protocol.owner_warning_signs as string[]) ?? []
+
+  if (activeTab === 'adverse') {
+    return (
+      <div className="px-4 py-3 bg-amber-50 border-b border-amber-200 space-y-2">
+        <p className="text-xs font-semibold text-amber-800 flex items-center gap-1">
+          <AlertTriangle size={12} /> 부작용 (Adverse Effects)
+        </p>
+        {adverseEffects.length === 0 ? (
+          <p className="text-xs text-slate-400">등록된 부작용 정보가 없습니다.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {adverseEffects.map((ae, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs">
+                <span className={cn('shrink-0 rounded px-1.5 py-0.5 font-medium text-[10px]', VCOG_COLORS[ae.vcog_grade] ?? 'bg-slate-100 text-slate-600')}>
+                  {VCOG_LABELS[ae.vcog_grade] ?? `G${ae.vcog_grade}`}
+                </span>
+                <span className="font-medium text-slate-700">{ae.name}</span>
+                {ae.frequency && <span className="text-slate-400">({ae.frequency})</span>}
+                {ae.description && <span className="text-slate-500">— {ae.description}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-4 py-3 bg-red-50 border-b border-red-200 space-y-3">
+      <p className="text-xs font-semibold text-red-800 flex items-center gap-1">
+        <ShieldAlert size={12} /> 금기 / 주의사항
+      </p>
+      {protocol.contraindications && (
+        <div>
+          <p className="text-[10px] font-semibold text-red-700 uppercase mb-1">금기 (Contraindications)</p>
+          <p className="text-xs text-slate-700 whitespace-pre-wrap">{protocol.contraindications}</p>
+        </div>
+      )}
+      {protocol.precautions && (
+        <div>
+          <p className="text-[10px] font-semibold text-orange-700 uppercase mb-1">주의사항 (Precautions)</p>
+          <p className="text-xs text-slate-700 whitespace-pre-wrap">{protocol.precautions}</p>
+        </div>
+      )}
+      {warnings.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold text-slate-600 uppercase mb-1">보호자 주의 징후</p>
+          <ul className="space-y-0.5">
+            {warnings.map((w, i) => (
+              <li key={i} className="text-xs text-slate-700 flex items-start gap-1">
+                <span className="text-red-400 shrink-0">•</span> {w}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {!protocol.contraindications && !protocol.precautions && warnings.length === 0 && (
+        <p className="text-xs text-slate-400">등록된 금기/주의사항 정보가 없습니다.</p>
+      )}
+    </div>
+  )
+}
 
 const STATUS_OPTIONS = [
   { value: 'scheduled', label: '미실시', className: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
@@ -20,21 +132,151 @@ const STATUS_OPTIONS = [
   { value: 'skipped', label: '건너뜀', className: 'bg-red-100 text-red-700 hover:bg-red-200' },
 ]
 
+function DoseCalcDisplay({
+  weightKg,
+  schedule,
+  strength,
+  species,
+  oral,
+  dosesPerDay,
+  dispDays,
+}: {
+  weightKg: number | null
+  schedule: OncologyScheduleRow
+  strength: number | null       // mg/mL (주사) or mg/정(캡) (경구)
+  species: string
+  oral: boolean
+  dosesPerDay?: number
+  dispDays?: number
+}) {
+  if (weightKg == null || weightKg <= 0) return null
+
+  const calcMg = calcDoseMg(weightKg, schedule.dose_per_kg, schedule.dose_per_m2, schedule.dose_calculated, species)
+  if (calcMg == null) return null
+
+  const baseLabel = schedule.dose_per_kg != null
+    ? `${schedule.dose_per_kg} mg/kg`
+    : schedule.dose_per_m2 != null
+      ? `${schedule.dose_per_m2} mg/m²`
+      : `고정 용량`
+
+  const weightLabel = schedule.dose_per_m2 != null
+    ? `BSA ${calcBsa(weightKg, species).toFixed(3)} m²`
+    : `${weightKg} kg`
+
+  if (oral) {
+    const perDose = strength && strength > 0
+      ? Math.round((calcMg / strength) * 10) / 10
+      : null
+    const total = perDose != null && dosesPerDay && dispDays
+      ? Math.round(perDose * dosesPerDay * dispDays * 10) / 10
+      : null
+
+    return (
+      <div className="rounded-md bg-blue-50 border border-blue-200 px-3 py-2 space-y-1.5">
+        <div className="flex items-center gap-1">
+          <FlaskConical size={11} className="text-blue-500" />
+          <span className="text-xs font-medium text-blue-700">경구 정제 자동 계산</span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          <span className="text-slate-500">{baseLabel}</span>
+          <span className="text-slate-400">×</span>
+          <span className="font-medium text-slate-700">{weightLabel}</span>
+          <span className="text-slate-400">=</span>
+          <span className="font-bold text-blue-700">{calcMg} mg</span>
+        </div>
+        {strength && strength > 0 ? (
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <span className="font-bold text-blue-700">{calcMg} mg</span>
+            <span className="text-slate-400">÷</span>
+            <span className="text-slate-500">{strength} mg/정(캡)</span>
+            <span className="text-slate-400">=</span>
+            <span className="font-bold text-emerald-700">{perDose} 정(캡)/회</span>
+            {total != null && dosesPerDay && dispDays && (
+              <>
+                <span className="text-slate-400">×</span>
+                <span className="text-slate-500">{dosesPerDay}회/일 × {dispDays}일</span>
+                <span className="text-slate-400">=</span>
+                <span className="font-bold text-rose-700">총 {total} 정(캡)</span>
+              </>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400 italic">정제 용량 미설정 (정수 계산 불가)</span>
+        )}
+      </div>
+    )
+  }
+
+  // 주사제
+  const calcMl = strength && strength > 0 ? Math.round((calcMg / strength) * 100) / 100 : null
+  return (
+    <div className="rounded-md bg-blue-50 border border-blue-200 px-3 py-2">
+      <div className="flex items-center gap-1 mb-1.5">
+        <FlaskConical size={11} className="text-blue-500" />
+        <span className="text-xs font-medium text-blue-700">자동 계산</span>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <span className="text-slate-500">{baseLabel}</span>
+        <span className="text-slate-400">×</span>
+        <span className="font-medium text-slate-700">{weightLabel}</span>
+        <span className="text-slate-400">=</span>
+        <span className="font-bold text-blue-700">{calcMg} mg</span>
+        {calcMl != null && (
+          <>
+            <span className="text-slate-400">÷</span>
+            <span className="text-slate-500">{strength} mg/mL</span>
+            <span className="text-slate-400">=</span>
+            <span className="font-bold text-emerald-700">{calcMl} mL</span>
+          </>
+        )}
+        {calcMl == null && strength == null && (
+          <span className="text-slate-400 italic">농도 미설정 (mL 계산 불가)</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ScheduleRow({
   schedule,
+  concentration,
+  species,
+  caseId,
+  caseProtocols,
   onUpdate,
 }: {
   schedule: OncologyScheduleRow
+  concentration: number | null
+  species: string
+  caseId: string
+  caseProtocols: OncologyCaseProtocolRow[]
   onUpdate: () => void
 }) {
+  const oral = isOralRoute(schedule.drug_route ?? '')
+
   const [activeStatus, setActiveStatus] = useState(schedule.status)
   const [showForm, setShowForm] = useState(false)
   const [bodyWeight, setBodyWeight] = useState(schedule.body_weight_at_visit?.toString() ?? '')
+  const [strengthInput, setStrengthInput] = useState(concentration?.toString() ?? '')
+  const [dosesPerDay, setDosesPerDay] = useState(1)
+  const [dispDays, setDispDays] = useState(1)
   const [doseActual, setDoseActual] = useState(schedule.dose_actual?.toString() ?? '')
   const [notes, setNotes] = useState(schedule.notes ?? '')
   const [delayReason, setDelayReason] = useState(schedule.delay_reason ?? '')
   const [reductionReason, setReductionReason] = useState(schedule.reduction_reason ?? '')
   const [saving, setSaving] = useState(false)
+
+  const weightKgNum = bodyWeight ? parseFloat(bodyWeight) : null
+  const strengthNum = strengthInput ? parseFloat(strengthInput) : null
+
+  // Auto-fill doseActual when body weight changes
+  useEffect(() => {
+    if (weightKgNum && weightKgNum > 0) {
+      const mg = calcDoseMg(weightKgNum, schedule.dose_per_kg, schedule.dose_per_m2, schedule.dose_calculated, species)
+      if (mg != null) setDoseActual(String(mg))
+    }
+  }, [bodyWeight])
 
   const handleStatusClick = (status: string) => {
     if (status === 'completed' || status === 'reduced') {
@@ -51,7 +293,7 @@ function ScheduleRow({
     try {
       await updateScheduleStatus(schedule.id, s, {
         dose_actual: doseActual ? parseFloat(doseActual) : null,
-        body_weight_at_visit: bodyWeight ? parseFloat(bodyWeight) : null,
+        body_weight_at_visit: weightKgNum,
         notes: notes || null,
         delay_reason: delayReason || null,
         reduction_reason: reductionReason || null,
@@ -66,8 +308,6 @@ function ScheduleRow({
     }
   }
 
-  const currentStatusStyle = STATUS_OPTIONS.find((o) => o.value === (showForm ? activeStatus : schedule.status))
-
   return (
     <div className="border rounded-lg overflow-hidden">
       <div className="px-3 py-2 flex items-center gap-3 flex-wrap">
@@ -75,7 +315,13 @@ function ScheduleRow({
         <span className="text-sm font-medium text-slate-800 flex-1 min-w-[100px]">{schedule.drug_name}</span>
         <span className="text-xs text-slate-400 uppercase">{schedule.drug_route}</span>
         <span className="text-xs text-slate-600">
-          {schedule.dose_calculated != null ? `${schedule.dose_calculated} ${schedule.dose_unit}` : '—'}
+          {schedule.dose_per_kg != null
+            ? `${schedule.dose_per_kg} mg/kg`
+            : schedule.dose_per_m2 != null
+              ? `${schedule.dose_per_m2} mg/m²`
+              : schedule.dose_calculated != null
+                ? `${schedule.dose_calculated} mg`
+                : '—'}
         </span>
 
         {/* Status buttons */}
@@ -96,35 +342,108 @@ function ScheduleRow({
             </button>
           ))}
         </div>
+
+        {/* Adverse event shortcut */}
+        <AdverseEventDialog
+          caseId={caseId}
+          caseProtocols={caseProtocols}
+          initialDrugName={schedule.drug_name}
+          trigger={
+            <button
+              type="button"
+              title="부작용 기록"
+              className="text-slate-300 hover:text-rose-500 transition-colors shrink-0"
+            >
+              <TriangleAlert size={14} />
+            </button>
+          }
+        />
       </div>
 
       {/* Detail form for completed/reduced */}
       {showForm && (
-        <div className="px-3 pb-3 pt-1 bg-slate-50 border-t space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="px-3 pb-3 pt-2 bg-slate-50 border-t space-y-3">
+          {/* Body weight + Strength/Concentration */}
+          <div className={cn('grid gap-3', oral ? 'grid-cols-3' : 'grid-cols-2')}>
             <div>
               <Label className="text-xs text-slate-600 mb-1">방문 시 체중 (kg)</Label>
               <Input
-                type="number"
-                step="0.1"
+                type="number" step="0.1"
                 value={bodyWeight}
                 onChange={(e) => setBodyWeight(e.target.value)}
-                className="h-7 text-xs"
-                placeholder="0.0"
+                className="h-7 text-xs" placeholder="0.0" autoFocus
               />
             </div>
             <div>
-              <Label className="text-xs text-slate-600 mb-1">실제 투여량 ({schedule.dose_unit})</Label>
+              <Label className="text-xs text-slate-600 mb-1">
+                {oral ? '정제 용량 (mg/T or mg/C)' : '약물 농도 (mg/mL)'}
+              </Label>
               <Input
-                type="number"
-                step="0.01"
-                value={doseActual}
-                onChange={(e) => setDoseActual(e.target.value)}
+                type="number" step="0.1"
+                value={strengthInput}
+                onChange={(e) => setStrengthInput(e.target.value)}
                 className="h-7 text-xs"
-                placeholder={schedule.dose_calculated?.toString() ?? '0.0'}
+                placeholder={oral ? '예: 25 (mg/정)' : '예: 1.0'}
               />
             </div>
+            {oral && (
+              <div>
+                <Label className="text-xs text-slate-600 mb-1">일투수 (회/일)</Label>
+                <Input
+                  type="number" min={1} max={4}
+                  value={dosesPerDay}
+                  onChange={(e) => setDosesPerDay(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="h-7 text-xs"
+                />
+              </div>
+            )}
           </div>
+
+          {/* Oral: dispensing days */}
+          {oral && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-slate-600 mb-1">투여 일수 (일)</Label>
+                <Input
+                  type="number" min={1}
+                  value={dispDays}
+                  onChange={(e) => setDispDays(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="h-7 text-xs"
+                />
+              </div>
+              <div className="flex items-end">
+                <p className="text-[11px] text-slate-400 pb-1.5">
+                  계산 = dose × 체중 × {dosesPerDay}회/일 × {dispDays}일 ÷ mg/정
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Auto-calculated dose display */}
+          <DoseCalcDisplay
+            weightKg={weightKgNum}
+            schedule={schedule}
+            strength={strengthNum}
+            species={species}
+            oral={oral}
+            dosesPerDay={dosesPerDay}
+            dispDays={dispDays}
+          />
+
+          {/* Actual dose override */}
+          <div>
+            <Label className="text-xs text-slate-600 mb-1">
+              {`실제 투여량 (${(schedule.dose_unit || 'mg').split('/')[0]})`}
+              <span className="ml-1 text-slate-400 font-normal">— 계산값과 다를 경우 수정</span>
+            </Label>
+            <Input
+              type="number" step="0.01"
+              value={doseActual}
+              onChange={(e) => setDoseActual(e.target.value)}
+              className="h-7 text-xs" placeholder="0.0"
+            />
+          </div>
+
           {activeStatus === 'delayed' && (
             <div>
               <Label className="text-xs text-slate-600 mb-1">연기 사유</Label>
@@ -179,14 +498,17 @@ function ScheduleRow({
 }
 
 interface Tab3DosingProps {
+  caseId: string
   caseProtocols: OncologyCaseProtocolRow[]
+  species: string
 }
 
-export default function Tab3Dosing({ caseProtocols }: Tab3DosingProps) {
+export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3DosingProps) {
   const router = useRouter()
   const [expandedProtocols, setExpandedProtocols] = useState<Set<string>>(
     new Set(caseProtocols.map((cp) => cp.id))
   )
+  const [infoTab, setInfoTab] = useState<Record<string, InfoTab | null>>({})
 
   const allSchedules = caseProtocols.flatMap((cp) => cp.schedules)
   const completed = allSchedules.filter((s) => s.status === 'completed').length
@@ -235,30 +557,75 @@ export default function Tab3Dosing({ caseProtocols }: Tab3DosingProps) {
 
       {/* Per-protocol sections */}
       {caseProtocols.map((cp) => {
+        const drugs = (cp.protocol.drugs as DrugItem[]) ?? []
+
         const grouped = cp.schedules.reduce<Record<number, OncologyScheduleRow[]>>((acc, s) => {
           acc[s.cycle_number] = acc[s.cycle_number] ?? []
           acc[s.cycle_number].push(s)
           return acc
         }, {})
 
+        const currentInfoTab = infoTab[cp.id] ?? null
+
+        const toggleInfoTab = (e: React.MouseEvent, tab: InfoTab) => {
+          e.stopPropagation()
+          setInfoTab((prev) => ({ ...prev, [cp.id]: prev[cp.id] === tab ? null : tab }))
+        }
+
         return (
           <div key={cp.id} className="border rounded-lg overflow-hidden">
-            <button
-              type="button"
-              onClick={() => toggleProtocol(cp.id)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-rose-50 hover:bg-rose-100 transition-colors text-left"
-            >
-              <span className="font-semibold text-rose-800">{cp.protocol.protocol_name}</span>
-              <div className="flex items-center gap-3">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-rose-50">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => toggleProtocol(cp.id)}
+                  className="font-semibold text-rose-800 text-left truncate hover:underline"
+                >
+                  {cp.protocol.protocol_name}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => toggleInfoTab(e, 'adverse')}
+                  className={cn(
+                    'shrink-0 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
+                    currentInfoTab === 'adverse'
+                      ? 'bg-amber-400 border-amber-400 text-white'
+                      : 'bg-white border-amber-300 text-amber-700 hover:bg-amber-50',
+                  )}
+                >
+                  부작용
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => toggleInfoTab(e, 'caution')}
+                  className={cn(
+                    'shrink-0 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
+                    currentInfoTab === 'caution'
+                      ? 'bg-red-500 border-red-500 text-white'
+                      : 'bg-white border-red-300 text-red-600 hover:bg-red-50',
+                  )}
+                >
+                  금기/주의
+                </button>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
                 <span className="text-xs text-slate-500">
                   {cp.completed_doses}/{cp.total_doses} 완료
                 </span>
-                {expandedProtocols.has(cp.id)
-                  ? <ChevronUp size={16} className="text-rose-600" />
-                  : <ChevronDown size={16} className="text-rose-600" />
-                }
+                <button type="button" onClick={() => toggleProtocol(cp.id)}>
+                  {expandedProtocols.has(cp.id)
+                    ? <ChevronUp size={16} className="text-rose-600" />
+                    : <ChevronDown size={16} className="text-rose-600" />
+                  }
+                </button>
               </div>
-            </button>
+            </div>
+
+            {/* Info panel */}
+            {currentInfoTab && (
+              <ProtocolInfoPanel protocol={cp.protocol} activeTab={currentInfoTab} />
+            )}
 
             {expandedProtocols.has(cp.id) && (
               <div className="p-3 space-y-4">
@@ -266,13 +633,20 @@ export default function Tab3Dosing({ caseProtocols }: Tab3DosingProps) {
                   <div key={cycle}>
                     <div className="text-xs font-semibold text-slate-500 mb-2">사이클 {cycle}</div>
                     <div className="space-y-2">
-                      {rows.map((sched) => (
-                        <ScheduleRow
-                          key={sched.id}
-                          schedule={sched}
-                          onUpdate={() => router.refresh()}
-                        />
-                      ))}
+                      {rows.map((sched) => {
+                        const drug = drugs.find((d) => d.drug_name === sched.drug_name)
+                        return (
+                          <ScheduleRow
+                            key={sched.id}
+                            schedule={sched}
+                            concentration={drug?.concentration ?? null}
+                            species={species}
+                            caseId={caseId}
+                            caseProtocols={caseProtocols}
+                            onUpdate={() => router.refresh()}
+                          />
+                        )
+                      })}
                     </div>
                   </div>
                 ))}

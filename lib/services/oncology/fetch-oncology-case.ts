@@ -99,10 +99,18 @@ export type OncologyAdverseEventRow = {
   vcog_grade: number
   description: string | null
   action_taken: string | null
+  reported_by: string
   resolved: boolean
   resolved_date: string | null
   created_at: string
   created_by: string | null
+}
+
+export type ResponseTargetLesion = {
+  id: string
+  location: string
+  baseline_mm: number | null
+  current_mm: number | null
 }
 
 export type OncologyResponseEvalRow = {
@@ -110,14 +118,34 @@ export type OncologyResponseEvalRow = {
   case_id: string
   case_protocol_id: string | null
   eval_date: string
-  modality: string
-  response_type: string
-  measurement_before: number | null
-  measurement_after: number | null
-  image_urls: unknown
+  criteria_system: string
+  modalities: string[]
+  target_lesions: ResponseTargetLesion[]
+  sum_baseline_mm: number | null
+  sum_current_mm: number | null
+  percent_change: number | null
+  non_target_status: string
+  new_lesions: boolean
+  new_lesions_desc: string | null
+  overall_response: string
+  clinical_impression: string | null
+  marker_name: string | null
+  marker_baseline: number | null
+  marker_current: number | null
+  marker_unit: string | null
   notes: string | null
   created_at: string
   created_by: string | null
+}
+
+export type QolBehaviorChecklist = {
+  plays_normally?: boolean
+  social_interaction?: boolean
+  normal_sleep?: boolean
+  toilet_normal?: boolean
+  grooming_normal?: boolean
+  shows_interest?: boolean
+  pain_vocalization?: boolean
 }
 
 export type OncologyQolRecordRow = {
@@ -125,9 +153,17 @@ export type OncologyQolRecordRow = {
   case_id: string
   visit_date: string
   body_weight: number | null
-  vitality_score: number | null
-  appetite_score: number | null
-  owner_score: number | null
+  pain_score: number | null
+  hunger_score: number | null
+  hydration_score: number | null
+  hygiene_score: number | null
+  happiness_score: number | null
+  mobility_score: number | null
+  good_days_score: number | null
+  nausea_vomiting_days: number | null
+  lethargy_days: number | null
+  behavior_checklist: QolBehaviorChecklist | null
+  reported_by: string
   notes: string | null
   created_at: string
   created_by: string | null
@@ -274,7 +310,7 @@ export async function fetchOncologyCaseDetail(caseId: string): Promise<OncologyC
     diagnosisInputs: diagnosisRes.data ?? [],
     caseProtocols,
     adverseEvents: adverseRes.data ?? [],
-    responseEvals: responseRes.data ?? [],
-    qolRecords: qolRes.data ?? [],
+    responseEvals: (responseRes.data ?? []) as OncologyResponseEvalRow[],
+    qolRecords: (qolRes.data ?? []) as OncologyQolRecordRow[],
   }
 }

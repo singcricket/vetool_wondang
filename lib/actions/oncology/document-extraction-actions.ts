@@ -45,6 +45,7 @@ export type ExtractedDiagnosisFields = {
   clinical_signs: string
   clinical_course: string
   raw_text: string
+  owner_note: string
   uploadedFiles: UploadedFileInfo[]
 }
 
@@ -62,7 +63,8 @@ Return ONLY valid JSON with this exact structure:
 {
   "clinical_signs": "관찰된 임상 증상들 (한국어로 정리)",
   "clinical_course": "질환의 경과 및 진행 과정 (한국어로 정리)",
-  "raw_text": "검사 결과, 수치, 소견 등 추가 중요 정보 (한국어로 정리)"
+  "raw_text": "검사 결과, 수치, 소견 등 추가 중요 정보 (한국어로 정리)",
+  "owner_note": "보호자에게 전달하는 안내문 (한국어, 전문용어 없이 쉽게). 다음 내용을 포함: 1) 어떤 검사를 통해 진단되었는지, 2) 진단명과 이 질환이 무엇인지 쉬운 설명, 3) 현재 반려동물의 상태와 앞으로 치료 방향에 대한 간략한 소개. 2~4문단 분량으로 작성하며, 보호자가 이해하기 쉬운 따뜻하고 명확한 표현을 사용할 것."
 }
 
 Rules:
@@ -70,6 +72,7 @@ Rules:
 - If a section has no relevant content, return an empty string ""
 - Summarize and organize the content clearly in Korean
 - Include specific values (measurements, lab results, dates, pathology findings) in the appropriate field
+- The owner_note must be written in plain Korean without medical jargon, suitable for pet owners
 - Do not include any text outside the JSON object`
 
 function buildContentBlock(file: FileInput) {
@@ -162,7 +165,7 @@ export async function uploadAndExtractDiagnosis(
 
   const text = response.content[0].type === 'text' ? response.content[0].text : ''
 
-  let parsed: { clinical_signs: string; clinical_course: string; raw_text: string }
+  let parsed: { clinical_signs: string; clinical_course: string; raw_text: string; owner_note: string }
   try {
     parsed = extractJson(text)
   } catch {
@@ -187,10 +190,23 @@ export async function uploadAndExtractDiagnosis(
     { onConflict: 'case_id,input_type' },
   )
 
+  // 4. Upsert owner_note into the 'text' row's additional_notes
+  if (parsed.owner_note) {
+    await supabase.from('onco_diagnosis_inputs').upsert(
+      {
+        case_id: caseId,
+        input_type: 'text',
+        additional_notes: parsed.owner_note,
+      },
+      { onConflict: 'case_id,input_type', ignoreDuplicates: false },
+    )
+  }
+
   return {
     clinical_signs: parsed.clinical_signs ?? '',
     clinical_course: parsed.clinical_course ?? '',
     raw_text: parsed.raw_text ?? '',
+    owner_note: parsed.owner_note ?? '',
     uploadedFiles,
   }
 }
