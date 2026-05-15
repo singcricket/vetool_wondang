@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import SharedCollectionLayout from './shared-collection-layout'
 import SharedNoteView from './shared-note-view'
 import SharedMonitoringView from './SharedMonitoringView'
+import SharedOncologyOwnerView from './shared-oncology-owner-view'
 
 interface Props {
   resourceId: string // collection_id
@@ -47,27 +48,37 @@ export default async function SharedCollectionView({ resourceId, restrictedData 
     // 3. Fetch item titles for better display
     const noteIds = items?.filter((i: any) => i.resource_type === 'note').map((i: any) => i.resource_id) || []
     const sessionIds = items?.filter((i: any) => i.resource_type === 'monitoring').map((i: any) => i.resource_id) || []
+    const oncologyIds = items?.filter((i: any) => i.resource_type === 'oncology_owner').map((i: any) => i.resource_id) || []
 
-    const [notesRes, sessionsRes] = await Promise.all([
-      noteIds.length > 0 
+    const [notesRes, sessionsRes, oncologyRes] = await Promise.all([
+      noteIds.length > 0
         ? (supabase as any).from('notes').select('notes_id, title').in('notes_id', noteIds)
         : Promise.resolve({ data: [] }),
       sessionIds.length > 0
         ? (supabase as any).from('monitoring_sessions').select('session_id, patient:patients(name)').in('session_id', sessionIds)
-        : Promise.resolve({ data: [] })
+        : Promise.resolve({ data: [] }),
+      oncologyIds.length > 0
+        ? (supabase as any).from('onco_cases').select('id, diagnosis_name, patients!inner(name)').in('id', oncologyIds)
+        : Promise.resolve({ data: [] }),
     ])
 
     const notesData = notesRes?.data || []
     const sessionsData = sessionsRes?.data || []
+    const oncologyData = oncologyRes?.data || []
 
     const titlesMap: Record<string, string> = {
       ...Object.fromEntries(notesData.map((n: any) => [n.notes_id, n.title])),
-      ...Object.fromEntries(sessionsData.map((s: any) => [s.session_id, `모니터링: ${s.patient?.name || '알 수 없음'}`]))
+      ...Object.fromEntries(sessionsData.map((s: any) => [s.session_id, `모니터링: ${s.patient?.name || '알 수 없음'}`])),
+      ...Object.fromEntries(oncologyData.map((o: any) => [o.id, `${(o.patients as any)?.name || '환자'} — ${o.diagnosis_name}`])),
     }
 
     const itemsWithTitles = items?.map((item: any) => ({
       ...item,
-      displayTitle: titlesMap[item.resource_id] || (item.resource_type === 'note' ? '제목 없는 진료 기록' : '제목 없는 모니터링 세션')
+      displayTitle: titlesMap[item.resource_id] || (
+        item.resource_type === 'note' ? '제목 없는 진료 기록' :
+        item.resource_type === 'oncology_owner' ? '항암 보호자 뷰' :
+        '제목 없는 모니터링 세션'
+      ),
     }))
 
     return (
@@ -87,6 +98,9 @@ export default async function SharedCollectionView({ resourceId, restrictedData 
               <div className="p-12 text-center text-slate-500 min-h-[500px] flex flex-col items-center justify-center bg-white border rounded-xl shadow-sm">
                 <span className="font-bold text-slate-400">ICU 뷰어는 준비 중입니다.</span>
               </div>
+            )}
+            {item.resource_type === 'oncology_owner' && (
+              <SharedOncologyOwnerView resourceId={item.resource_id} />
             )}
           </div>
         ))}

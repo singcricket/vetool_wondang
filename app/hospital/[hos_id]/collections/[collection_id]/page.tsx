@@ -48,19 +48,24 @@ export default async function CollectionDetailPage(props: { params: Promise<{ ho
   // 3. Fetch item titles for better display
   const noteIds = items?.filter((i: any) => i.resource_type === 'note').map((i: any) => i.resource_id) || []
   const sessionIds = items?.filter((i: any) => i.resource_type === 'monitoring').map((i: any) => i.resource_id) || []
+  const oncologyIds = items?.filter((i: any) => i.resource_type === 'oncology_owner').map((i: any) => i.resource_id) || []
 
   // Fetch full details for each resource and layout data for monitoring report context
-  const [notesRes, sessionsData, layoutRes] = await Promise.all([
-    noteIds.length > 0 
+  const [notesRes, sessionsData, layoutRes, oncologyRes] = await Promise.all([
+    noteIds.length > 0
       ? (supabase as any).from('notes').select('*, author:users(name, position)').in('notes_id', noteIds)
       : Promise.resolve({ data: [] }),
     sessionIds.length > 0
       ? Promise.all(sessionIds.map((id: string) => fetchMsWithPatientWithWeight(id)))
       : Promise.resolve([]),
-    fetchLayout(hos_id, format(new Date(), 'yyyy-MM-dd'))
+    fetchLayout(hos_id, format(new Date(), 'yyyy-MM-dd')),
+    oncologyIds.length > 0
+      ? (supabase as any).from('onco_cases').select('id, diagnosis_name, patients!inner(name)').in('id', oncologyIds)
+      : Promise.resolve({ data: [] }),
   ])
 
   const notesData = notesRes?.data || []
+  const oncologyData = oncologyRes?.data || []
 
   // Map layout data to context structure
   const msContextData = {
@@ -72,7 +77,8 @@ export default async function CollectionDetailPage(props: { params: Promise<{ ho
 
   const resourceMap: Record<string, any> = {
     ...Object.fromEntries(notesData.map((n: any) => [n.notes_id, n])),
-    ...Object.fromEntries(sessionsData.map((s: any) => [s.session_id, s]))
+    ...Object.fromEntries(sessionsData.map((s: any) => [s.session_id, s])),
+    ...Object.fromEntries(oncologyData.map((o: any) => [o.id, { patient_name: (o.patients as any)?.name || '환자', diagnosis_name: o.diagnosis_name }])),
   }
 
   return (

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { QolBehaviorChecklist, OncologyQolRecordRow } from '@/lib/services/oncology/fetch-oncology-case'
 
@@ -92,4 +93,64 @@ export async function deleteQolRecord(id: string) {
   if (error) throw new Error(`QoL 기록 삭제 실패: ${error.message}`)
 
   revalidatePath('/', 'layout')
+}
+
+export async function saveQolRecordPublic(data: QolRecordData): Promise<OncologyQolRecordRow> {
+  const supabase = createAdminClient()
+
+  const { data: row, error } = await (supabase as any)
+    .from('onco_qol_records')
+    .insert({
+      case_id: data.case_id,
+      visit_date: data.visit_date,
+      body_weight: data.body_weight ?? null,
+      pain_score: data.pain_score ?? null,
+      hunger_score: data.hunger_score ?? null,
+      hydration_score: data.hydration_score ?? null,
+      hygiene_score: data.hygiene_score ?? null,
+      happiness_score: data.happiness_score ?? null,
+      mobility_score: data.mobility_score ?? null,
+      good_days_score: data.good_days_score ?? null,
+      nausea_vomiting_days: data.nausea_vomiting_days ?? null,
+      lethargy_days: data.lethargy_days ?? null,
+      behavior_checklist: data.behavior_checklist ?? null,
+      reported_by: data.reported_by ?? 'owner',
+      notes: data.notes ?? null,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error(`컨디션 기록 저장 실패: ${error.message}`)
+
+  return row as OncologyQolRecordRow
+}
+
+export async function updateQolRecordPublic(id: string, data: Partial<QolRecordData>): Promise<OncologyQolRecordRow> {
+  const supabase = createAdminClient()
+
+  const { data: row, error } = await (supabase as any)
+    .from('onco_qol_records')
+    .update({
+      visit_date: data.visit_date,
+      body_weight: data.body_weight ?? null,
+      pain_score: data.pain_score ?? null,
+      hunger_score: data.hunger_score ?? null,
+      hydration_score: data.hydration_score ?? null,
+      hygiene_score: data.hygiene_score ?? null,
+      happiness_score: data.happiness_score ?? null,
+      mobility_score: data.mobility_score ?? null,
+      good_days_score: data.good_days_score ?? null,
+      nausea_vomiting_days: data.nausea_vomiting_days ?? null,
+      lethargy_days: data.lethargy_days ?? null,
+      behavior_checklist: data.behavior_checklist ?? null,
+      reported_by: data.reported_by,
+      notes: data.notes ?? null,
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw new Error(`컨디션 기록 수정 실패: ${error.message}`)
+
+  return row as OncologyQolRecordRow
 }

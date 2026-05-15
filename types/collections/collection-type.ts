@@ -1,4 +1,4 @@
-export type CollectionResourceType = 'note' | 'monitoring' | 'icu'
+export type CollectionResourceType = 'note' | 'monitoring' | 'icu' | 'oncology_owner'
 
 export interface CollectionItem {
   collection_id: string

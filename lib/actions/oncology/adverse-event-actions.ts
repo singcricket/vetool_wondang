@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export interface AdverseEventData {
@@ -78,4 +79,30 @@ export async function deleteAdverseEvent(id: string) {
   if (error) throw new Error(`부작용 기록 삭제 실패: ${error.message}`)
 
   revalidatePath('/', 'layout')
+}
+
+export async function saveAdverseEventPublic(data: AdverseEventData) {
+  const supabase = createAdminClient()
+
+  const { data: row, error } = await (supabase as any)
+    .from('onco_adverse_events')
+    .insert({
+      case_id: data.case_id,
+      case_protocol_id: data.case_protocol_id ?? null,
+      event_date: data.event_date,
+      event_type: data.event_type,
+      drug_name: data.drug_name ?? null,
+      vcog_grade: data.vcog_grade,
+      description: data.description ?? null,
+      action_taken: data.action_taken ?? null,
+      reported_by: data.reported_by ?? 'owner',
+      resolved: data.resolved ?? false,
+      resolved_date: data.resolved_date ?? null,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error(`증상 기록 저장 실패: ${error.message}`)
+
+  return row
 }

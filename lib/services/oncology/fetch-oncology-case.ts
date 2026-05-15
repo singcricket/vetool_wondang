@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { OncologyCaseDetail } from '@/types/hospital/oncology-type'
 
 export type OncologyScheduleRow = {
@@ -311,6 +312,69 @@ export async function fetchOncologyCaseDetail(caseId: string): Promise<OncologyC
     caseProtocols,
     adverseEvents: adverseRes.data ?? [],
     responseEvals: (responseRes.data ?? []) as OncologyResponseEvalRow[],
+    qolRecords: (qolRes.data ?? []) as OncologyQolRecordRow[],
+  }
+}
+
+// Admin client version — bypasses RLS for shared/public views
+export async function fetchOncologyCaseDetailAdmin(caseId: string): Promise<OncologyCaseFullDetail> {
+  const supabase = createAdminClient()
+
+  const { data: caseData, error: caseError } = await (supabase as any)
+    .from('onco_cases')
+    .select(`
+      id, hos_id, patient_id, case_date, diagnosis_name, diagnosis_category,
+      diagnosis_method, stage, body_weight, age_at_diagnosis_days, sex, status,
+      notes, vet_id, created_by, created_at, updated_at,
+      patients!inner(name, species, breed, hos_patient_id, birth, gender, owner_name, hos_owner_id, microchip_no, memo)
+    `)
+    .eq('id', caseId)
+    .single()
+
+  if (caseError || !caseData) throw new Error(`fetchOncologyCaseDetailAdmin case: ${caseError?.message}`)
+
+  const p = (caseData as any).patients
+  const caseDetail: OncologyCaseDetail = {
+    id: caseData.id, hos_id: caseData.hos_id, patient_id: caseData.patient_id,
+    case_date: caseData.case_date, diagnosis_name: caseData.diagnosis_name,
+    diagnosis_category: caseData.diagnosis_category, diagnosis_method: caseData.diagnosis_method,
+    stage: caseData.stage, body_weight: caseData.body_weight,
+    age_at_diagnosis_days: caseData.age_at_diagnosis_days, sex: caseData.sex,
+    status: caseData.status, notes: caseData.notes, vet_id: caseData.vet_id,
+    created_by: caseData.created_by, created_at: caseData.created_at, updated_at: caseData.updated_at,
+    patient: {
+      name: p?.name ?? '', species: p?.species ?? '', breed: p?.breed ?? '',
+      hos_patient_id: p?.hos_patient_id ?? '', birth: p?.birth ?? null,
+      gender: p?.gender ?? null, owner_name: p?.owner_name ?? null,
+      hos_owner_id: p?.hos_owner_id ?? null, microchip_no: p?.microchip_no ?? null, memo: p?.memo ?? null,
+    },
+  }
+
+  const [diagnosisRes, protocolsRes, adverseRes, qolRes] = await Promise.all([
+    (supabase as any).from('onco_diagnosis_inputs').select('*').eq('case_id', caseId).order('created_at', { ascending: true }),
+    (supabase as any).from('onco_case_protocols').select('*, protocol:onco_protocols(*), schedules:onco_schedules(*)').eq('case_id', caseId).order('created_at', { ascending: true }),
+    (supabase as any).from('onco_adverse_events').select('*').eq('case_id', caseId).order('event_date', { ascending: false }),
+    (supabase as any).from('onco_qol_records').select('*').eq('case_id', caseId).order('visit_date', { ascending: false }),
+  ])
+
+  const caseProtocols: OncologyCaseProtocolRow[] = (protocolsRes.data ?? []).map((cp: any) => ({
+    id: cp.id, case_id: cp.case_id, protocol_id: cp.protocol_id,
+    initial_body_weight: cp.initial_body_weight, start_date: cp.start_date, end_date: cp.end_date,
+    status: cp.status, total_doses: cp.total_doses, completed_doses: cp.completed_doses,
+    delayed_doses: cp.delayed_doses, reduced_doses: cp.reduced_doses,
+    discontinue_reason: cp.discontinue_reason, notes: cp.notes,
+    created_at: cp.created_at, updated_at: cp.updated_at, protocol: cp.protocol,
+    schedules: (cp.schedules ?? []).sort((a: any, b: any) =>
+      a.scheduled_date.localeCompare(b.scheduled_date) || a.cycle_number - b.cycle_number
+    ),
+  }))
+
+  return {
+    case: caseDetail,
+    diagnosisInputs: diagnosisRes.data ?? [],
+    caseProtocols,
+    adverseEvents: adverseRes.data ?? [],
+    responseEvals: [],
     qolRecords: (qolRes.data ?? []) as OncologyQolRecordRow[],
   }
 }

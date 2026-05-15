@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/utils'
 import type { OncologyCaseFullDetail } from '@/lib/services/oncology/fetch-oncology-case'
 import Tab1Diagnosis from './tab1-diagnosis'
@@ -11,7 +13,8 @@ import Tab4Adverse from './tab4-adverse'
 import Tab5Response from './tab5-response'
 import Tab6Qol from './tab6-qol'
 import OncologyCaseHeaderButtons from './oncology-case-header-buttons'
-import { CalendarDays, Cat, Dog, PawPrint, User } from 'lucide-react'
+import OwnerCaseDialog from '../oncology_owner/owner-case-dialog'
+import { CalendarDays, Cat, Dog, PawPrint, User, Users } from 'lucide-react'
 
 const STATUS_LABEL: Record<string, string> = {
   active: '진행 중',
@@ -58,11 +61,13 @@ interface OncologyCaseClientProps {
 export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClientProps) {
   const { case: c, diagnosisInputs, caseProtocols, adverseEvents, responseEvals, qolRecords } = detail
   const p = c.patient
+  const [ownerOpen, setOwnerOpen] = useState(false)
 
   const diagnosisInput = diagnosisInputs.find((d) => d.input_type === 'text') ?? null
   const documentInput = diagnosisInputs.find((d) => d.input_type === 'document') ?? null
 
   return (
+    <>
     <div className="flex flex-col h-full w-full">
       {/* Case header */}
       <div className="shrink-0 border-b bg-white px-4 py-3">
@@ -151,6 +156,15 @@ export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClient
                 </span>
               )}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOwnerOpen(true)}
+              className="h-7 text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50 gap-1"
+            >
+              <Users size={13} />
+              보호자 뷰
+            </Button>
             <OncologyCaseHeaderButtons
               caseId={c.id}
               hosId={hosId}
@@ -229,5 +243,12 @@ export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClient
         </Tabs>
       </div>
     </div>
+
+    <OwnerCaseDialog
+      open={ownerOpen}
+      onOpenChange={setOwnerOpen}
+      detail={detail}
+    />
+    </>
   )
 }

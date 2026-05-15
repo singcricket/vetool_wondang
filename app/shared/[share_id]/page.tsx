@@ -6,6 +6,7 @@ import SharedNoteView from './_components/shared-note-view'
 import SharedMonitoringView from './_components/SharedMonitoringView'
 import SharedCollectionView from './_components/shared-collection-view'
 import SharedDentalView from './_components/shared-dental-view'
+import SharedOncologyOwnerView from './_components/shared-oncology-owner-view'
 import { Suspense } from 'react'
 
 export default async function SharedResourcePage(props: { params: Promise<{ share_id: string }> }) {
@@ -60,6 +61,9 @@ export default async function SharedResourcePage(props: { params: Promise<{ shar
               <div className="p-12 text-center text-slate-500 bg-white rounded-xl shadow-sm border">
                 ICU 뷰어는 준비 중입니다.
               </div>
+            )}
+            {share.resource_type === 'oncology_owner' && (
+              <SharedOncologyOwnerView resourceId={share.resource_id} />
             )}
           </Suspense>
 
