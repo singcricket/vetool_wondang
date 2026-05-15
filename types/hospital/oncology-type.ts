@@ -44,6 +44,8 @@ export type OncologyCaseDetail = {
   sex: string | null
   status: string
   notes: string | null
+  user_tags: string | null
+  tags: string | null
   vet_id: string | null
   created_by: string | null
   created_at: string

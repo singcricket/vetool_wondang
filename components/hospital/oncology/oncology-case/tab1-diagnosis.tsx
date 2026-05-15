@@ -31,6 +31,7 @@ import { useOncologyContext } from '@/providers/oncology-context-provider'
 import type { OncologyCaseDetail } from '@/types/hospital/oncology-type'
 import type { OncologyDiagnosisInputRow } from '@/lib/services/oncology/fetch-oncology-case'
 import { AlertTriangle, BookOpen, Brain, ChevronDown, ChevronUp, Clock, FileText, Loader2, RefreshCw, Save, Sparkles, StethoscopeIcon, UploadCloud, Users, X } from 'lucide-react'
+import Autocomplete from '@/components/common/auto-complete/auto-complete'
 
 const DIAGNOSIS_METHODS = [
   { value: 'biopsy', label: '생검(Biopsy)' },
@@ -235,6 +236,7 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
   const [status, setStatus] = useState(caseDetail.status ?? 'active')
   const [notes, setNotes] = useState(caseDetail.notes ?? '')
   const [diagMethods, setDiagMethods] = useState<string[]>(caseDetail.diagnosis_method ?? [])
+  const [userTags, setUserTags] = useState(caseDetail.user_tags ?? '')
 
   const [clinicalSigns, setClinicalSigns] = useState(diagnosisInput?.clinical_signs ?? '')
   const [clinicalCourse, setClinicalCourse] = useState(diagnosisInput?.clinical_course ?? '')
@@ -351,6 +353,7 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
         sex: sex === 'none' ? null : sex || null,
         status,
         notes: notes || null,
+        user_tags: userTags || null,
         vet_id: vetId === 'none' ? null : vetId,
         diagnosis_method: diagMethods,
       })
@@ -524,6 +527,18 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
             placeholder="케이스 메모를 입력하세요"
             className="text-sm resize-none h-20"
           />
+        </div>
+
+        {/* Tags */}
+        <div>
+          <Label className="text-xs text-slate-600 mb-1">태그 (검색 키워드)</Label>
+          <Autocomplete
+            defaultValue={userTags}
+            handleUpdate={setUserTags}
+            onInputChange={setUserTags}
+            placeholder="예: 림프종, CHOP, 골든리트리버"
+          />
+          <p className="text-xs text-slate-400 mt-1">쉼표로 구분. 케이스 검색에 활용됩니다.</p>
         </div>
       </div>
 

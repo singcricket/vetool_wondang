@@ -60,3 +60,42 @@ export async function updateScheduleStatus(
 
   revalidatePath('/', 'layout')
 }
+
+export async function updateScheduleDate(scheduleId: string, newDate: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('onco_schedules')
+    .update({ scheduled_date: newDate })
+    .eq('id', scheduleId)
+
+  if (error) throw new Error(`날짜 수정 실패: ${error.message}`)
+
+  revalidatePath('/', 'layout')
+}
+
+export async function bulkShiftScheduleDates(ids: string[], offsetDays: number) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('onco_schedules')
+    .select('id, scheduled_date')
+    .in('id', ids)
+
+  if (error || !data) throw new Error(`스케줄 조회 실패: ${error?.message}`)
+
+  await Promise.all(
+    data.map(async (s) => {
+      const d = new Date(s.scheduled_date)
+      d.setDate(d.getDate() + offsetDays)
+      const newDate = d.toISOString().split('T')[0]
+      const { error: upErr } = await supabase
+        .from('onco_schedules')
+        .update({ scheduled_date: newDate })
+        .eq('id', s.id)
+      if (upErr) throw new Error(`날짜 수정 실패: ${upErr.message}`)
+    }),
+  )
+
+  revalidatePath('/', 'layout')
+}

@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils/utils'
-import { updateScheduleStatus } from '@/lib/actions/oncology/schedule-actions'
+import { updateScheduleStatus, updateScheduleDate, bulkShiftScheduleDates } from '@/lib/actions/oncology/schedule-actions'
 import type { OncologyCaseProtocolRow, OncologyScheduleRow } from '@/lib/services/oncology/fetch-oncology-case'
 import type { DrugItem, AdverseEffectItem } from '@/lib/actions/oncology/ai-oncology-guide'
-import { CheckCircle, ChevronDown, ChevronUp, ClipboardList, FlaskConical, AlertTriangle, ShieldAlert, TriangleAlert } from 'lucide-react'
+import { CalendarDays, CheckCircle, ChevronDown, ChevronUp, ClipboardList, FlaskConical, AlertTriangle, Loader2, Pencil, ShieldAlert, TriangleAlert, X } from 'lucide-react'
 import AdverseEventDialog from './adverse-event-dialog'
 
 // ── Route helpers ─────────────────────────────────────────────────────────────
@@ -245,6 +246,10 @@ function ScheduleRow({
   caseId,
   caseProtocols,
   onUpdate,
+  isSelected,
+  onToggleSelect,
+  displayDate,
+  onDateChanged,
 }: {
   schedule: OncologyScheduleRow
   concentration: number | null
@@ -252,6 +257,10 @@ function ScheduleRow({
   caseId: string
   caseProtocols: OncologyCaseProtocolRow[]
   onUpdate: () => void
+  isSelected: boolean
+  onToggleSelect: () => void
+  displayDate: string
+  onDateChanged: (newDate: string) => void
 }) {
   const oral = isOralRoute(schedule.drug_route ?? '')
 
@@ -266,6 +275,9 @@ function ScheduleRow({
   const [delayReason, setDelayReason] = useState(schedule.delay_reason ?? '')
   const [reductionReason, setReductionReason] = useState(schedule.reduction_reason ?? '')
   const [saving, setSaving] = useState(false)
+  const [editingDate, setEditingDate] = useState(false)
+  const [dateInput, setDateInput] = useState(displayDate)
+  const [dateSaving, setDateSaving] = useState(false)
 
   const weightKgNum = bodyWeight ? parseFloat(bodyWeight) : null
   const strengthNum = strengthInput ? parseFloat(strengthInput) : null
@@ -284,6 +296,26 @@ function ScheduleRow({
       setShowForm(true)
     } else {
       handleSave(status)
+    }
+  }
+
+  useEffect(() => {
+    setDateInput(displayDate)
+  }, [displayDate])
+
+  const handleDateSave = async () => {
+    if (!dateInput || dateInput === displayDate) { setEditingDate(false); return }
+    setDateSaving(true)
+    try {
+      await updateScheduleDate(schedule.id, dateInput)
+      onDateChanged(dateInput)
+      setEditingDate(false)
+      onUpdate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '날짜 수정 실패')
+      setDateInput(displayDate)
+    } finally {
+      setDateSaving(false)
     }
   }
 
@@ -309,9 +341,60 @@ function ScheduleRow({
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className={cn('border rounded-lg overflow-hidden', isSelected && 'ring-2 ring-rose-300')}>
       <div className="px-3 py-2 flex items-center gap-3 flex-wrap">
-        <span className="text-xs text-slate-500 w-22 shrink-0">{schedule.scheduled_date}</span>
+        {/* Checkbox */}
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={onToggleSelect}
+          className="shrink-0"
+        />
+
+        {/* Date — inline editable */}
+        <div className="flex items-center gap-1 shrink-0 group/date">
+          {editingDate ? (
+            <div className="flex items-center gap-1">
+              <Input
+                type="date"
+                value={dateInput}
+                onChange={(e) => setDateInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleDateSave()
+                  if (e.key === 'Escape') { setDateInput(displayDate); setEditingDate(false) }
+                }}
+                className="h-6 text-xs w-32 px-1.5"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={handleDateSave}
+                disabled={dateSaving}
+                className="text-emerald-600 hover:text-emerald-700"
+              >
+                {dateSaving ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDateInput(displayDate); setEditingDate(false) }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <span className="text-xs text-slate-500">{displayDate}</span>
+              <button
+                type="button"
+                onClick={() => setEditingDate(true)}
+                className="opacity-0 group-hover/date:opacity-100 text-slate-300 hover:text-slate-600 transition-opacity ml-0.5"
+              >
+                <Pencil size={11} />
+              </button>
+            </>
+          )}
+        </div>
+
         <span className="text-sm font-medium text-slate-800 flex-1 min-w-[100px]">{schedule.drug_name}</span>
         <span className="text-xs text-slate-400 uppercase">{schedule.drug_route}</span>
         <span className="text-xs text-slate-600">
@@ -510,7 +593,64 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
   )
   const [infoTab, setInfoTab] = useState<Record<string, InfoTab | null>>({})
 
+  // ── Selection & bulk date shift ───────────────────────────────────────────
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [localDates, setLocalDates] = useState<Record<string, string>>({})
+  const [customOffset, setCustomOffset] = useState('')
+  const [bulkSaving, setBulkSaving] = useState(false)
+
   const allSchedules = caseProtocols.flatMap((cp) => cp.schedules)
+  const allIds = allSchedules.map((s) => s.id)
+  const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id))
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    setSelected(allSelected ? new Set() : new Set(allIds))
+  }
+
+  const handleBulkShift = async (offsetDays: number) => {
+    if (selected.size === 0 || offsetDays === 0) return
+    setBulkSaving(true)
+    // Optimistic update
+    const ids = Array.from(selected)
+    setLocalDates((prev) => {
+      const next = { ...prev }
+      for (const id of ids) {
+        const base = next[id] ?? allSchedules.find((s) => s.id === id)?.scheduled_date ?? ''
+        if (!base) continue
+        const d = new Date(base)
+        d.setDate(d.getDate() + offsetDays)
+        next[id] = d.toISOString().split('T')[0]
+      }
+      return next
+    })
+    try {
+      await bulkShiftScheduleDates(ids, offsetDays)
+      toast.success(`${ids.length}개 일정을 ${offsetDays > 0 ? '+' : ''}${offsetDays}일 조정했습니다.`)
+      setSelected(new Set())
+      setCustomOffset('')
+      router.refresh()
+    } catch (err) {
+      // Rollback optimistic update
+      setLocalDates((prev) => {
+        const next = { ...prev }
+        for (const id of ids) delete next[id]
+        return next
+      })
+      toast.error(err instanceof Error ? err.message : '날짜 조정 실패')
+    } finally {
+      setBulkSaving(false)
+    }
+  }
+
   const completed = allSchedules.filter((s) => s.status === 'completed').length
   const total = allSchedules.length
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
@@ -538,6 +678,7 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
     <div className="space-y-4">
       {/* Completion rate banner */}
       <div className="flex items-center gap-4 bg-slate-50 rounded-lg p-3 border">
+
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs text-slate-600">전체 투약 완료율</span>
@@ -550,10 +691,69 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
             />
           </div>
         </div>
-        <div className="text-xs text-slate-500 text-right shrink-0">
-          <div>{completed} / {total} 회</div>
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Select all checkbox */}
+          <div className="flex items-center gap-1.5">
+            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} id="select-all" />
+            <label htmlFor="select-all" className="text-xs text-slate-500 cursor-pointer">전체 선택</label>
+          </div>
+          <div className="text-xs text-slate-500 text-right">
+            <div>{completed} / {total} 회</div>
+          </div>
         </div>
       </div>
+
+      {/* Bulk date shift toolbar */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-2 flex-wrap bg-rose-50 border border-rose-200 rounded-lg px-4 py-2.5">
+          <CalendarDays size={14} className="text-rose-500 shrink-0" />
+          <span className="text-xs font-semibold text-rose-700 shrink-0">{selected.size}개 선택됨 — 날짜 일괄 조정</span>
+          <div className="flex items-center gap-1.5 flex-wrap ml-1">
+            {[-14, -7, -2, +2, +7, +14].map((d) => (
+              <Button
+                key={d}
+                size="sm"
+                variant="outline"
+                disabled={bulkSaving}
+                onClick={() => handleBulkShift(d)}
+                className={cn(
+                  'h-6 text-xs px-2 border',
+                  d < 0
+                    ? 'border-blue-300 text-blue-700 hover:bg-blue-50'
+                    : 'border-rose-300 text-rose-700 hover:bg-rose-50',
+                )}
+              >
+                {d > 0 ? `+${d}일` : `${d}일`}
+              </Button>
+            ))}
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                value={customOffset}
+                onChange={(e) => setCustomOffset(e.target.value)}
+                placeholder="직접 입력"
+                className="h-6 text-xs w-20 px-1.5"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkSaving || !customOffset}
+                onClick={() => handleBulkShift(parseInt(customOffset))}
+                className="h-6 text-xs px-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+              >
+                {bulkSaving ? <Loader2 size={10} className="animate-spin" /> : '적용'}
+              </Button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="ml-auto text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+          >
+            <X size={12} /> 선택 해제
+          </button>
+        </div>
+      )}
 
       {/* Per-protocol sections */}
       {caseProtocols.map((cp) => {
@@ -644,6 +844,12 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
                             caseId={caseId}
                             caseProtocols={caseProtocols}
                             onUpdate={() => router.refresh()}
+                            isSelected={selected.has(sched.id)}
+                            onToggleSelect={() => toggleSelect(sched.id)}
+                            displayDate={localDates[sched.id] ?? sched.scheduled_date}
+                            onDateChanged={(newDate) =>
+                              setLocalDates((prev) => ({ ...prev, [sched.id]: newDate }))
+                            }
                           />
                         )
                       })}

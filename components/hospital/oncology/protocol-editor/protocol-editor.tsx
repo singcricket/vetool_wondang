@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import Autocomplete from '@/components/common/auto-complete/auto-complete'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -463,11 +464,11 @@ export default function ProtocolEditor({
           </div>
           <div>
             <FieldLabel>태그 (검색용)</FieldLabel>
-            <Input
-              value={form.user_tags}
-              onChange={(e) => setField('user_tags', e.target.value)}
+            <Autocomplete
+              defaultValue={form.user_tags}
+              handleUpdate={(v) => setField('user_tags', v)}
+              onInputChange={(v) => setField('user_tags', v)}
               placeholder="예: 림프종(lymphoma), CHOP, 개"
-              className="h-9 text-sm"
             />
             <p className="text-xs text-slate-400 mt-1">쉼표로 구분. keywords 테이블을 통해 관련 태그가 자동 확장됩니다.</p>
           </div>

@@ -18,6 +18,8 @@ export interface CaseInfoData {
   sex?: string | null
   status?: string
   notes?: string | null
+  user_tags?: string | null
+  tags?: string | null
   vet_id?: string | null
   diagnosis_method?: string[]
 }
@@ -70,6 +72,8 @@ export async function updateCaseInfo(caseId: string, data: CaseInfoData) {
   if (data.sex !== undefined) updatePayload.sex = data.sex
   if (data.status !== undefined) updatePayload.status = data.status
   if (data.notes !== undefined) updatePayload.notes = data.notes
+  if (data.user_tags !== undefined) updatePayload.user_tags = data.user_tags
+  if (data.tags !== undefined) updatePayload.tags = data.tags
   if (data.vet_id !== undefined) updatePayload.vet_id = data.vet_id
   if (data.diagnosis_method !== undefined) updatePayload.diagnosis_method = data.diagnosis_method
 
