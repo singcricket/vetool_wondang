@@ -1487,6 +1487,7 @@ export type Database = {
           evaluator_id: string | null
           hos_id: string
           id: string
+          is_pinned: boolean
           localisations: Json | null
           patient_id: string
           results: Json | null
@@ -1499,6 +1500,7 @@ export type Database = {
           evaluator_id?: string | null
           hos_id: string
           id?: string
+          is_pinned?: boolean
           localisations?: Json | null
           patient_id: string
           results?: Json | null
@@ -1511,6 +1513,7 @@ export type Database = {
           evaluator_id?: string | null
           hos_id?: string
           id?: string
+          is_pinned?: boolean
           localisations?: Json | null
           patient_id?: string
           results?: Json | null
@@ -1643,6 +1646,730 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      onco_adverse_events: {
+        Row: {
+          action_taken: string | null
+          case_id: string
+          case_protocol_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          drug_name: string | null
+          event_date: string
+          event_type: string
+          id: string
+          resolved: boolean
+          resolved_date: string | null
+          vcog_grade: number
+        }
+        Insert: {
+          action_taken?: string | null
+          case_id: string
+          case_protocol_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          drug_name?: string | null
+          event_date: string
+          event_type: string
+          id?: string
+          resolved?: boolean
+          resolved_date?: string | null
+          vcog_grade: number
+        }
+        Update: {
+          action_taken?: string | null
+          case_id?: string
+          case_protocol_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          drug_name?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          resolved?: boolean
+          resolved_date?: string | null
+          vcog_grade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_adverse_events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "onco_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onco_adverse_events_case_protocol_id_fkey"
+            columns: ["case_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "onco_case_protocols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onco_adverse_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      onco_ai_cache: {
+        Row: {
+          created_at: string
+          diagnosis_key: string
+          expires_at: string | null
+          hos_id: string | null
+          id: string
+          is_active: boolean
+          model_version: string | null
+          protocol_name: string | null
+          query_type: string
+          response_json: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          diagnosis_key: string
+          expires_at?: string | null
+          hos_id?: string | null
+          id?: string
+          is_active?: boolean
+          model_version?: string | null
+          protocol_name?: string | null
+          query_type: string
+          response_json: Json
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          diagnosis_key?: string
+          expires_at?: string | null
+          hos_id?: string | null
+          id?: string
+          is_active?: boolean
+          model_version?: string | null
+          protocol_name?: string | null
+          query_type?: string
+          response_json?: Json
+          version?: number
+        }
+        Relationships: []
+      }
+      onco_case_protocols: {
+        Row: {
+          case_id: string
+          completed_doses: number
+          created_at: string
+          created_by: string | null
+          delayed_doses: number
+          discontinue_reason: string | null
+          end_date: string | null
+          id: string
+          initial_body_weight: number
+          notes: string | null
+          protocol_id: string
+          reduced_doses: number
+          start_date: string
+          status: string
+          total_doses: number
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          completed_doses?: number
+          created_at?: string
+          created_by?: string | null
+          delayed_doses?: number
+          discontinue_reason?: string | null
+          end_date?: string | null
+          id?: string
+          initial_body_weight: number
+          notes?: string | null
+          protocol_id: string
+          reduced_doses?: number
+          start_date: string
+          status?: string
+          total_doses?: number
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          completed_doses?: number
+          created_at?: string
+          created_by?: string | null
+          delayed_doses?: number
+          discontinue_reason?: string | null
+          end_date?: string | null
+          id?: string
+          initial_body_weight?: number
+          notes?: string | null
+          protocol_id?: string
+          reduced_doses?: number
+          start_date?: string
+          status?: string
+          total_doses?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_case_protocols_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "onco_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onco_case_protocols_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "onco_case_protocols_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "onco_protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onco_cases: {
+        Row: {
+          age_at_diagnosis_days: number | null
+          ai_cache_key: string | null
+          body_weight: number | null
+          case_date: string
+          created_at: string
+          created_by: string | null
+          diagnosis_category: string[]
+          diagnosis_key: string | null
+          diagnosis_method: string[]
+          diagnosis_name: string
+          hos_id: string
+          id: string
+          notes: string | null
+          patient_id: string
+          sex: string | null
+          stage: string | null
+          status: string
+          tags: string | null
+          updated_at: string
+          user_tags: string | null
+          vet_id: string | null
+        }
+        Insert: {
+          age_at_diagnosis_days?: number | null
+          ai_cache_key?: string | null
+          body_weight?: number | null
+          case_date?: string
+          created_at?: string
+          created_by?: string | null
+          diagnosis_category?: string[]
+          diagnosis_key?: string | null
+          diagnosis_method?: string[]
+          diagnosis_name: string
+          hos_id: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          sex?: string | null
+          stage?: string | null
+          status?: string
+          tags?: string | null
+          updated_at?: string
+          user_tags?: string | null
+          vet_id?: string | null
+        }
+        Update: {
+          age_at_diagnosis_days?: number | null
+          ai_cache_key?: string | null
+          body_weight?: number | null
+          case_date?: string
+          created_at?: string
+          created_by?: string | null
+          diagnosis_category?: string[]
+          diagnosis_key?: string | null
+          diagnosis_method?: string[]
+          diagnosis_name?: string
+          hos_id?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          sex?: string | null
+          stage?: string | null
+          status?: string
+          tags?: string | null
+          updated_at?: string
+          user_tags?: string | null
+          vet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_cases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "onco_cases_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "onco_cases_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+          {
+            foreignKeyName: "onco_cases_vet_id_fkey"
+            columns: ["vet_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      onco_diagnosis_inputs: {
+        Row: {
+          additional_notes: string | null
+          ai_extracted_text: string | null
+          case_id: string
+          clinical_course: string | null
+          clinical_signs: string | null
+          created_at: string
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          input_type: string
+          raw_text: string | null
+        }
+        Insert: {
+          additional_notes?: string | null
+          ai_extracted_text?: string | null
+          case_id: string
+          clinical_course?: string | null
+          clinical_signs?: string | null
+          created_at?: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          input_type: string
+          raw_text?: string | null
+        }
+        Update: {
+          additional_notes?: string | null
+          ai_extracted_text?: string | null
+          case_id?: string
+          clinical_course?: string | null
+          clinical_signs?: string | null
+          created_at?: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          input_type?: string
+          raw_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_diagnosis_inputs_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "onco_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onco_protocols: {
+        Row: {
+          adverse_effects: Json
+          ai_model_version: string | null
+          contraindications: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          drug_interactions: Json
+          drugs: Json
+          hos_id: string | null
+          id: string
+          is_ai_generated: boolean
+          is_verified: boolean
+          mst_days: number | null
+          origin_diagnosis: string | null
+          owner_instructions: string | null
+          owner_warning_signs: Json
+          phase: string
+          precautions: string | null
+          protocol_name: string
+          protocol_type: string
+          radiation_details: Json | null
+          ref_sources: Json
+          response_rate: number | null
+          surgery_details: Json | null
+          tags: string | null
+          total_cycles: number | null
+          total_weeks: number | null
+          updated_at: string
+          user_tags: string | null
+          version: number
+        }
+        Insert: {
+          adverse_effects?: Json
+          ai_model_version?: string | null
+          contraindications?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          drug_interactions?: Json
+          drugs?: Json
+          hos_id?: string | null
+          id?: string
+          is_ai_generated?: boolean
+          is_verified?: boolean
+          mst_days?: number | null
+          origin_diagnosis?: string | null
+          owner_instructions?: string | null
+          owner_warning_signs?: Json
+          phase?: string
+          precautions?: string | null
+          protocol_name: string
+          protocol_type: string
+          radiation_details?: Json | null
+          ref_sources?: Json
+          response_rate?: number | null
+          surgery_details?: Json | null
+          tags?: string | null
+          total_cycles?: number | null
+          total_weeks?: number | null
+          updated_at?: string
+          user_tags?: string | null
+          version?: number
+        }
+        Update: {
+          adverse_effects?: Json
+          ai_model_version?: string | null
+          contraindications?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          drug_interactions?: Json
+          drugs?: Json
+          hos_id?: string | null
+          id?: string
+          is_ai_generated?: boolean
+          is_verified?: boolean
+          mst_days?: number | null
+          origin_diagnosis?: string | null
+          owner_instructions?: string | null
+          owner_warning_signs?: Json
+          phase?: string
+          precautions?: string | null
+          protocol_name?: string
+          protocol_type?: string
+          radiation_details?: Json | null
+          ref_sources?: Json
+          response_rate?: number | null
+          surgery_details?: Json | null
+          tags?: string | null
+          total_cycles?: number | null
+          total_weeks?: number | null
+          updated_at?: string
+          user_tags?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_protocols_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "onco_protocols_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
+      onco_qol_records: {
+        Row: {
+          appetite_score: number | null
+          body_weight: number | null
+          case_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          owner_score: number | null
+          visit_date: string
+          vitality_score: number | null
+        }
+        Insert: {
+          appetite_score?: number | null
+          body_weight?: number | null
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          owner_score?: number | null
+          visit_date: string
+          vitality_score?: number | null
+        }
+        Update: {
+          appetite_score?: number | null
+          body_weight?: number | null
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          owner_score?: number | null
+          visit_date?: string
+          vitality_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_qol_records_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "onco_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onco_qol_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      onco_report_tokens: {
+        Row: {
+          case_id: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          show_adverse: boolean
+          show_qol: boolean
+          show_response: boolean
+          show_schedule: boolean
+          token: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          show_adverse?: boolean
+          show_qol?: boolean
+          show_response?: boolean
+          show_schedule?: boolean
+          token?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          show_adverse?: boolean
+          show_qol?: boolean
+          show_response?: boolean
+          show_schedule?: boolean
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_report_tokens_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "onco_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onco_report_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      onco_response_evals: {
+        Row: {
+          case_id: string
+          case_protocol_id: string | null
+          created_at: string
+          created_by: string | null
+          eval_date: string
+          id: string
+          image_urls: Json
+          measurement_after: number | null
+          measurement_before: number | null
+          modality: string
+          notes: string | null
+          response_type: string
+        }
+        Insert: {
+          case_id: string
+          case_protocol_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          eval_date: string
+          id?: string
+          image_urls?: Json
+          measurement_after?: number | null
+          measurement_before?: number | null
+          modality: string
+          notes?: string | null
+          response_type: string
+        }
+        Update: {
+          case_id?: string
+          case_protocol_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          eval_date?: string
+          id?: string
+          image_urls?: Json
+          measurement_after?: number | null
+          measurement_before?: number | null
+          modality?: string
+          notes?: string | null
+          response_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_response_evals_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "onco_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onco_response_evals_case_protocol_id_fkey"
+            columns: ["case_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "onco_case_protocols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onco_response_evals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      onco_schedules: {
+        Row: {
+          administered_at: string | null
+          administered_by: string | null
+          body_weight_at_visit: number | null
+          case_protocol_id: string
+          created_at: string
+          cycle_number: number
+          day_number: number
+          delay_reason: string | null
+          dose_actual: number | null
+          dose_calculated: number | null
+          dose_per_kg: number | null
+          dose_per_m2: number | null
+          dose_unit: string
+          drug_name: string
+          drug_route: string
+          id: string
+          notes: string | null
+          reduction_reason: string | null
+          scheduled_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          administered_at?: string | null
+          administered_by?: string | null
+          body_weight_at_visit?: number | null
+          case_protocol_id: string
+          created_at?: string
+          cycle_number: number
+          day_number: number
+          delay_reason?: string | null
+          dose_actual?: number | null
+          dose_calculated?: number | null
+          dose_per_kg?: number | null
+          dose_per_m2?: number | null
+          dose_unit?: string
+          drug_name: string
+          drug_route: string
+          id?: string
+          notes?: string | null
+          reduction_reason?: string | null
+          scheduled_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          administered_at?: string | null
+          administered_by?: string | null
+          body_weight_at_visit?: number | null
+          case_protocol_id?: string
+          created_at?: string
+          cycle_number?: number
+          day_number?: number
+          delay_reason?: string | null
+          dose_actual?: number | null
+          dose_calculated?: number | null
+          dose_per_kg?: number | null
+          dose_per_m2?: number | null
+          dose_unit?: string
+          drug_name?: string
+          drug_route?: string
+          id?: string
+          notes?: string | null
+          reduction_reason?: string | null
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onco_schedules_administered_by_fkey"
+            columns: ["administered_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "onco_schedules_case_protocol_id_fkey"
+            columns: ["case_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "onco_case_protocols"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2607,6 +3334,7 @@ export type Database = {
         Args: { hos_id_input: string; target_date_input: string }
         Returns: Json
       }
+      get_my_hos_id: { Args: never; Returns: string }
       get_not_out_due_patients: {
         Args: { hos_id_input: string; target_date_input: string }
         Returns: Json
@@ -2711,6 +3439,8 @@ export type Database = {
         }
         Returns: Json
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       toggle_io_patient_out: {
         Args: {
           age_in_days_input: number

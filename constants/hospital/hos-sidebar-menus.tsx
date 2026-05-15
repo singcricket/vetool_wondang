@@ -8,6 +8,7 @@ import {
   Microscope,
   NotebookPen,
   PawPrint,
+  Pill,
   Syringe,
   Folder,
   Waves,
@@ -104,6 +105,13 @@ export const HOS_SIDEBAR_MENUS = [
     isReady: true,
     isVetOnly: true,
     icon: <Microscope />,
+  },
+  {
+    name: '항암',
+    path: 'oncology',
+    isReady: true,
+    isVetOnly: true,
+    icon: <Pill />,
   },
   {
     name: '진료노트',
