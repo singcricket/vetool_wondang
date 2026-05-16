@@ -89,3 +89,14 @@ export async function fetchPatientOphthalmicHistory(patientId: string) {
 
   return data ?? []
 }
+
+export async function getOphthalmicCharts(hosId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('ophthalmic_charts')
+    .select('*, patient:patients(*)')
+    .eq('hos_id', hosId)
+    .order('chart_date', { ascending: false })
+  if (error) throw error
+  return data
+}

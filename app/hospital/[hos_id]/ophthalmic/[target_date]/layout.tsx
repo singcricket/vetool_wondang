@@ -1,6 +1,7 @@
 import { fetchOphthalmicLayoutData } from '@/lib/services/ophthalmic/fetch-ophthalmic'
 import { OphthalmicContextProvider } from '@/providers/ophthalmic-context-provider'
 import OphthalmicSidebar from '@/components/hospital/ophthalmic/ophthalmic-sidebar/ophthalmic-sidebar'
+import OphthalmicFooter from '@/components/hospital/ophthalmic/ophthalmic-footer/ophthalmic-footer'
 
 export default async function OphthalmicLayout(props: {
   children: React.ReactNode
@@ -26,9 +27,11 @@ export default async function OphthalmicLayout(props: {
         />
 
         {/* 메인 콘텐츠 */}
-        <div className="ml-0 w-screen flex-1 overflow-y-auto h-desktop 2xl:ml-[200px] 2xl:w-auto">
+        <div className="ml-0 w-screen flex-1 overflow-y-auto h-desktop 2xl:ml-[200px] 2xl:w-auto pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
           {props.children}
         </div>
+
+        <OphthalmicFooter hosId={hos_id} targetDate={target_date} />
       </div>
     </OphthalmicContextProvider>
   )

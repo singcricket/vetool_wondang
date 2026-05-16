@@ -61,6 +61,23 @@ export async function updateScheduleStatus(
   revalidatePath('/', 'layout')
 }
 
+export async function updateScheduleDoseRate(
+  scheduleId: string,
+  dosePerKg: number | null,
+  dosePerM2: number | null,
+) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('onco_schedules')
+    .update({ dose_per_kg: dosePerKg, dose_per_m2: dosePerM2 })
+    .eq('id', scheduleId)
+
+  if (error) throw new Error(`용량 수정 실패: ${error.message}`)
+
+  revalidatePath('/', 'layout')
+}
+
 export async function updateScheduleDate(scheduleId: string, newDate: string) {
   const supabase = await createClient()
 
@@ -70,6 +87,22 @@ export async function updateScheduleDate(scheduleId: string, newDate: string) {
     .eq('id', scheduleId)
 
   if (error) throw new Error(`날짜 수정 실패: ${error.message}`)
+
+  revalidatePath('/', 'layout')
+}
+
+export async function saveBulkScheduleDates(updates: { id: string; newDate: string }[]) {
+  const supabase = await createClient()
+
+  await Promise.all(
+    updates.map(async ({ id, newDate }) => {
+      const { error } = await supabase
+        .from('onco_schedules')
+        .update({ scheduled_date: newDate })
+        .eq('id', id)
+      if (error) throw new Error(`날짜 저장 실패 (${id}): ${error.message}`)
+    }),
+  )
 
   revalidatePath('/', 'layout')
 }

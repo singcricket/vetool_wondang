@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils/utils'
-import { updateScheduleStatus, updateScheduleDate, bulkShiftScheduleDates } from '@/lib/actions/oncology/schedule-actions'
+import { updateScheduleStatus, updateScheduleDate, saveBulkScheduleDates, updateScheduleDoseRate } from '@/lib/actions/oncology/schedule-actions'
 import type { OncologyCaseProtocolRow, OncologyScheduleRow } from '@/lib/services/oncology/fetch-oncology-case'
 import type { DrugItem, AdverseEffectItem } from '@/lib/actions/oncology/ai-oncology-guide'
 import { CalendarDays, CheckCircle, ChevronDown, ChevronUp, ClipboardList, FlaskConical, AlertTriangle, Loader2, Pencil, ShieldAlert, TriangleAlert, X } from 'lucide-react'
@@ -135,7 +135,9 @@ const STATUS_OPTIONS = [
 
 function DoseCalcDisplay({
   weightKg,
-  schedule,
+  dosePerKg,
+  dosePerM2,
+  doseCalculated,
   strength,
   species,
   oral,
@@ -143,7 +145,9 @@ function DoseCalcDisplay({
   dispDays,
 }: {
   weightKg: number | null
-  schedule: OncologyScheduleRow
+  dosePerKg: number | null
+  dosePerM2: number | null
+  doseCalculated: number | null
   strength: number | null       // mg/mL (주사) or mg/정(캡) (경구)
   species: string
   oral: boolean
@@ -152,16 +156,16 @@ function DoseCalcDisplay({
 }) {
   if (weightKg == null || weightKg <= 0) return null
 
-  const calcMg = calcDoseMg(weightKg, schedule.dose_per_kg, schedule.dose_per_m2, schedule.dose_calculated, species)
+  const calcMg = calcDoseMg(weightKg, dosePerKg, dosePerM2, doseCalculated, species)
   if (calcMg == null) return null
 
-  const baseLabel = schedule.dose_per_kg != null
-    ? `${schedule.dose_per_kg} mg/kg`
-    : schedule.dose_per_m2 != null
-      ? `${schedule.dose_per_m2} mg/m²`
+  const baseLabel = dosePerKg != null
+    ? `${dosePerKg} mg/kg`
+    : dosePerM2 != null
+      ? `${dosePerM2} mg/m²`
       : `고정 용량`
 
-  const weightLabel = schedule.dose_per_m2 != null
+  const weightLabel = dosePerM2 != null
     ? `BSA ${calcBsa(weightKg, species).toFixed(3)} m²`
     : `${weightKg} kg`
 
@@ -279,16 +283,24 @@ function ScheduleRow({
   const [dateInput, setDateInput] = useState(displayDate)
   const [dateSaving, setDateSaving] = useState(false)
 
+  // Local dose rate state (editable)
+  const [localDosePerKg, setLocalDosePerKg] = useState<number | null>(schedule.dose_per_kg)
+  const [localDosePerM2, setLocalDosePerM2] = useState<number | null>(schedule.dose_per_m2)
+  const [editingDose, setEditingDose] = useState(false)
+  const [doseKgInput, setDoseKgInput] = useState(schedule.dose_per_kg?.toString() ?? '')
+  const [doseM2Input, setDoseM2Input] = useState(schedule.dose_per_m2?.toString() ?? '')
+  const [doseSaving, setDoseSaving] = useState(false)
+
   const weightKgNum = bodyWeight ? parseFloat(bodyWeight) : null
   const strengthNum = strengthInput ? parseFloat(strengthInput) : null
 
-  // Auto-fill doseActual when body weight changes
+  // Auto-fill doseActual when body weight or local dose rate changes
   useEffect(() => {
     if (weightKgNum && weightKgNum > 0) {
-      const mg = calcDoseMg(weightKgNum, schedule.dose_per_kg, schedule.dose_per_m2, schedule.dose_calculated, species)
+      const mg = calcDoseMg(weightKgNum, localDosePerKg, localDosePerM2, schedule.dose_calculated, species)
       if (mg != null) setDoseActual(String(mg))
     }
-  }, [bodyWeight])
+  }, [bodyWeight, localDosePerKg, localDosePerM2])
 
   const handleStatusClick = (status: string) => {
     if (status === 'completed' || status === 'reduced') {
@@ -316,6 +328,24 @@ function ScheduleRow({
       setDateInput(displayDate)
     } finally {
       setDateSaving(false)
+    }
+  }
+
+  const handleDoseSave = async () => {
+    const newKg = doseKgInput !== '' ? parseFloat(doseKgInput) : null
+    const newM2 = doseM2Input !== '' ? parseFloat(doseM2Input) : null
+    if (newKg === localDosePerKg && newM2 === localDosePerM2) { setEditingDose(false); return }
+    setDoseSaving(true)
+    try {
+      await updateScheduleDoseRate(schedule.id, newKg, newM2)
+      setLocalDosePerKg(newKg)
+      setLocalDosePerM2(newM2)
+      setEditingDose(false)
+      onUpdate()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '용량 수정 실패')
+    } finally {
+      setDoseSaving(false)
     }
   }
 
@@ -397,15 +427,72 @@ function ScheduleRow({
 
         <span className="text-sm font-medium text-slate-800 flex-1 min-w-[100px]">{schedule.drug_name}</span>
         <span className="text-xs text-slate-400 uppercase">{schedule.drug_route}</span>
-        <span className="text-xs text-slate-600">
-          {schedule.dose_per_kg != null
-            ? `${schedule.dose_per_kg} mg/kg`
-            : schedule.dose_per_m2 != null
-              ? `${schedule.dose_per_m2} mg/m²`
-              : schedule.dose_calculated != null
-                ? `${schedule.dose_calculated} mg`
-                : '—'}
-        </span>
+        {/* Dose rate — inline editable */}
+        <div className="flex items-center gap-1 shrink-0 group/dose">
+          {editingDose ? (
+            <div className="flex items-center gap-1 flex-wrap">
+              <div className="flex items-center gap-0.5">
+                <Input
+                  type="number" step="0.01"
+                  value={doseKgInput}
+                  onChange={(e) => setDoseKgInput(e.target.value)}
+                  placeholder="mg/kg"
+                  className="h-6 text-xs w-20 px-1.5"
+                  autoFocus
+                />
+                <span className="text-[10px] text-slate-400">mg/kg</span>
+              </div>
+              <div className="flex items-center gap-0.5">
+                <Input
+                  type="number" step="0.01"
+                  value={doseM2Input}
+                  onChange={(e) => setDoseM2Input(e.target.value)}
+                  placeholder="mg/m²"
+                  className="h-6 text-xs w-20 px-1.5"
+                />
+                <span className="text-[10px] text-slate-400">mg/m²</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleDoseSave}
+                disabled={doseSaving}
+                className="text-emerald-600 hover:text-emerald-700"
+              >
+                {doseSaving ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDoseKgInput(localDosePerKg?.toString() ?? '')
+                  setDoseM2Input(localDosePerM2?.toString() ?? '')
+                  setEditingDose(false)
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <span className="text-xs text-slate-600">
+                {localDosePerKg != null
+                  ? `${localDosePerKg} mg/kg`
+                  : localDosePerM2 != null
+                    ? `${localDosePerM2} mg/m²`
+                    : schedule.dose_calculated != null
+                      ? `${schedule.dose_calculated} mg`
+                      : '—'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setEditingDose(true)}
+                className="opacity-0 group-hover/dose:opacity-100 text-slate-300 hover:text-slate-600 transition-opacity ml-0.5"
+              >
+                <Pencil size={11} />
+              </button>
+            </>
+          )}
+        </div>
 
         {/* Status buttons */}
         <div className="flex items-center gap-1 flex-wrap">
@@ -505,7 +592,9 @@ function ScheduleRow({
           {/* Auto-calculated dose display */}
           <DoseCalcDisplay
             weightKg={weightKgNum}
-            schedule={schedule}
+            dosePerKg={localDosePerKg}
+            dosePerM2={localDosePerM2}
+            doseCalculated={schedule.dose_calculated}
             strength={strengthNum}
             species={species}
             oral={oral}
@@ -597,7 +686,7 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [localDates, setLocalDates] = useState<Record<string, string>>({})
   const [customOffset, setCustomOffset] = useState('')
-  const [bulkSaving, setBulkSaving] = useState(false)
+  const [pendingSaving, setPendingSaving] = useState(false)
 
   const allSchedules = caseProtocols.flatMap((cp) => cp.schedules)
   const allIds = allSchedules.map((s) => s.id)
@@ -616,10 +705,8 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
     setSelected(allSelected ? new Set() : new Set(allIds))
   }
 
-  const handleBulkShift = async (offsetDays: number) => {
+  const handleBulkShift = (offsetDays: number) => {
     if (selected.size === 0 || offsetDays === 0) return
-    setBulkSaving(true)
-    // Optimistic update
     const ids = Array.from(selected)
     setLocalDates((prev) => {
       const next = { ...prev }
@@ -632,23 +719,32 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
       }
       return next
     })
+  }
+
+  const pendingCount = Object.keys(localDates).length
+
+  const handleSavePendingDates = async () => {
+    if (pendingCount === 0) return
+    setPendingSaving(true)
+    const updates = Object.entries(localDates).map(([id, newDate]) => ({ id, newDate }))
     try {
-      await bulkShiftScheduleDates(ids, offsetDays)
-      toast.success(`${ids.length}개 일정을 ${offsetDays > 0 ? '+' : ''}${offsetDays}일 조정했습니다.`)
+      await saveBulkScheduleDates(updates)
+      toast.success(`${updates.length}개 날짜를 저장했습니다.`)
+      setLocalDates({})
       setSelected(new Set())
       setCustomOffset('')
       router.refresh()
     } catch (err) {
-      // Rollback optimistic update
-      setLocalDates((prev) => {
-        const next = { ...prev }
-        for (const id of ids) delete next[id]
-        return next
-      })
-      toast.error(err instanceof Error ? err.message : '날짜 조정 실패')
+      toast.error(err instanceof Error ? err.message : '날짜 저장 실패')
     } finally {
-      setBulkSaving(false)
+      setPendingSaving(false)
     }
+  }
+
+  const handleCancelPendingDates = () => {
+    setLocalDates({})
+    setSelected(new Set())
+    setCustomOffset('')
   }
 
   const completed = allSchedules.filter((s) => s.status === 'completed').length
@@ -703,18 +799,51 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
         </div>
       </div>
 
+      {/* 미저장 변경사항 배너 */}
+      {pendingCount > 0 && (
+        <div className="flex items-center gap-3 flex-wrap bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5">
+          <CalendarDays size={14} className="text-amber-600 shrink-0" />
+          <span className="text-xs font-semibold text-amber-800">
+            {pendingCount}개 날짜 변경됨 — 아직 저장되지 않았습니다
+          </span>
+          <div className="flex items-center gap-2 ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancelPendingDates}
+              disabled={pendingSaving}
+              className="h-7 text-xs border-slate-300 text-slate-600 hover:bg-slate-50"
+            >
+              <X size={12} className="mr-1" />
+              변경 취소
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSavePendingDates}
+              disabled={pendingSaving}
+              className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {pendingSaving
+                ? <Loader2 size={12} className="mr-1 animate-spin" />
+                : <CheckCircle size={12} className="mr-1" />
+              }
+              저장
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Bulk date shift toolbar */}
       {selected.size > 0 && (
         <div className="flex items-center gap-2 flex-wrap bg-rose-50 border border-rose-200 rounded-lg px-4 py-2.5">
           <CalendarDays size={14} className="text-rose-500 shrink-0" />
-          <span className="text-xs font-semibold text-rose-700 shrink-0">{selected.size}개 선택됨 — 날짜 일괄 조정</span>
+          <span className="text-xs font-semibold text-rose-700 shrink-0">{selected.size}개 선택됨 — 날짜 미리보기 조정</span>
           <div className="flex items-center gap-1.5 flex-wrap ml-1">
             {[-14, -7, -2, +2, +7, +14].map((d) => (
               <Button
                 key={d}
                 size="sm"
                 variant="outline"
-                disabled={bulkSaving}
                 onClick={() => handleBulkShift(d)}
                 className={cn(
                   'h-6 text-xs px-2 border',
@@ -737,11 +866,11 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
               <Button
                 size="sm"
                 variant="outline"
-                disabled={bulkSaving || !customOffset}
-                onClick={() => handleBulkShift(parseInt(customOffset))}
+                disabled={!customOffset}
+                onClick={() => { handleBulkShift(parseInt(customOffset)); setCustomOffset('') }}
                 className="h-6 text-xs px-2 border-slate-300 text-slate-700 hover:bg-slate-50"
               >
-                {bulkSaving ? <Loader2 size={10} className="animate-spin" /> : '적용'}
+                적용
               </Button>
             </div>
           </div>

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/sheet'
 import { BrainCircuit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 
 interface Props {
   hosId: string
@@ -212,6 +213,11 @@ export default function NeuroChartClient({ hosId, chartId, chartDate, chartDetai
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[90%] sm:w-[450px] p-0">
+              <VisuallyHidden>
+                <SheetHeader>
+                  <SheetTitle>병변 국소화 결과</SheetTitle>
+                </SheetHeader>
+              </VisuallyHidden>
               <div className="h-full overflow-y-auto">
                 <NeuroLocalisationPanel 
                   localisations={localisations} 

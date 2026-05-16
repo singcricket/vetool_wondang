@@ -1,6 +1,7 @@
 import { fetchNeuroLayoutData } from '@/lib/services/neuro/fetch-neuro'
 import { NeuroContextProvider } from '@/providers/neuro-context-provider'
 import NeuroSidebar from '@/components/hospital/neuro/neuro-sidebar/neuro-sidebar'
+import NeuroFooter from '@/components/hospital/neuro/neuro-footer/neuro-footer'
 
 export default async function NeuroLayout(props: {
   children: React.ReactNode
@@ -26,9 +27,11 @@ export default async function NeuroLayout(props: {
         />
 
         {/* 메인 콘텐츠 */}
-        <div className="ml-0 w-screen flex-1 overflow-y-auto h-desktop 2xl:ml-[200px] 2xl:w-auto">
+        <div className="ml-0 w-screen flex-1 overflow-y-auto h-desktop 2xl:ml-[200px] 2xl:w-auto pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
           {props.children}
         </div>
+
+        <NeuroFooter hosId={hos_id} targetDate={target_date} />
       </div>
     </NeuroContextProvider>
   )
