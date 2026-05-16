@@ -198,6 +198,8 @@ export async function fetchOncologyCaseDetail(caseId: string): Promise<OncologyC
       sex,
       status,
       notes,
+      user_tags,
+      tags,
       vet_id,
       created_by,
       created_at,
@@ -224,6 +226,8 @@ export async function fetchOncologyCaseDetail(caseId: string): Promise<OncologyC
     sex: caseData.sex,
     status: caseData.status,
     notes: caseData.notes,
+    user_tags: (caseData as any).user_tags ?? null,
+    tags: (caseData as any).tags ?? null,
     vet_id: caseData.vet_id,
     created_by: caseData.created_by,
     created_at: caseData.created_at,
@@ -325,7 +329,7 @@ export async function fetchOncologyCaseDetailAdmin(caseId: string): Promise<Onco
     .select(`
       id, hos_id, patient_id, case_date, diagnosis_name, diagnosis_category,
       diagnosis_method, stage, body_weight, age_at_diagnosis_days, sex, status,
-      notes, vet_id, created_by, created_at, updated_at,
+      notes, user_tags, tags, vet_id, created_by, created_at, updated_at,
       patients!inner(name, species, breed, hos_patient_id, birth, gender, owner_name, hos_owner_id, microchip_no, memo)
     `)
     .eq('id', caseId)
@@ -340,7 +344,9 @@ export async function fetchOncologyCaseDetailAdmin(caseId: string): Promise<Onco
     diagnosis_category: caseData.diagnosis_category, diagnosis_method: caseData.diagnosis_method,
     stage: caseData.stage, body_weight: caseData.body_weight,
     age_at_diagnosis_days: caseData.age_at_diagnosis_days, sex: caseData.sex,
-    status: caseData.status, notes: caseData.notes, vet_id: caseData.vet_id,
+    status: caseData.status, notes: caseData.notes,
+    user_tags: caseData.user_tags ?? null, tags: caseData.tags ?? null,
+    vet_id: caseData.vet_id,
     created_by: caseData.created_by, created_at: caseData.created_at, updated_at: caseData.updated_at,
     patient: {
       name: p?.name ?? '', species: p?.species ?? '', breed: p?.breed ?? '',

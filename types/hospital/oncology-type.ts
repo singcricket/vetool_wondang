@@ -12,6 +12,8 @@ export type OncologySidebarItem = {
   diagnosis_name: string
   status: string
   vet_name: string | null
+  matchType: 'case_date' | 'schedule_date' | 'both'
+  scheduledDrugs: string[]
 }
 
 // ──────────────────────────────────────────────

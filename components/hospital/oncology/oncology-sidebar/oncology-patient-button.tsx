@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import type { Species } from '@/constants/hospital/register/signalments'
 import { cn, convertPascalCased } from '@/lib/utils/utils'
 import type { OncologySidebarItem, OncologyCaseStatus } from '@/types/hospital/oncology-type'
-import { UserIcon } from 'lucide-react'
+import { CalendarDays, Syringe, UserIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const STATUS_STYLE: Record<OncologyCaseStatus, string> = {
@@ -64,10 +64,29 @@ export default function OncologyPatientButton({
         </span>
       </div>
 
-      {/* 진단명 */}
-      <div className="mt-0.5 w-full truncate text-left text-xs text-muted-foreground">
-        {item.diagnosis_name}
+      {/* 진단명 + 방문 유형 뱃지 */}
+      <div className="mt-0.5 w-full flex items-center gap-1.5 min-w-0">
+        <span className="truncate text-left text-xs text-muted-foreground flex-1 min-w-0">
+          {item.diagnosis_name}
+        </span>
+        {item.matchType === 'schedule_date' && (
+          <span className="shrink-0 flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold bg-rose-100 text-rose-700">
+            <Syringe size={9} /> 투약일
+          </span>
+        )}
+        {item.matchType === 'both' && (
+          <span className="shrink-0 flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold bg-indigo-100 text-indigo-700">
+            <CalendarDays size={9} /> 차트+투약
+          </span>
+        )}
       </div>
+
+      {/* 투약 약물 (schedule_date 또는 both인 경우) */}
+      {item.scheduledDrugs.length > 0 && (
+        <div className="mt-0.5 w-full truncate text-left text-[10px] text-rose-600 font-medium">
+          💉 {item.scheduledDrugs.join(', ')}
+        </div>
+      )}
 
       {/* 담당의 */}
       <div className="mt-1 flex w-full items-center justify-between gap-2">
