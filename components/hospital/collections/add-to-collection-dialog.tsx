@@ -57,7 +57,6 @@ export default function AddToCollectionDialog({
         .from('resource_collections')
         .select('*')
         .eq('hos_id', hosId)
-        .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
