@@ -59,6 +59,46 @@ export async function fetchCytologySidebarData(
   }))
 }
 
+export async function getAllCytologyCharts(hosId: string): Promise<CytologySidebarItem[]> {
+  const supabase = await createClient()
+
+  const { data: chartData, error } = await (supabase as any)
+    .from('cytology_charts')
+    .select(`
+      id,
+      patient_id,
+      chart_date,
+      evaluator_id,
+      sample_type,
+      mode,
+      patients!inner(name, species, breed, hos_patient_id)
+    `)
+    .eq('hos_id', hosId)
+    .order('chart_date', { ascending: false })
+
+  if (error) throw new Error(`getAllCytologyCharts: ${error.message}`)
+
+  const { data: vetData } = await supabase
+    .from('users')
+    .select('user_id, name')
+    .eq('hos_id', hosId)
+
+  const userMap = new Map((vetData ?? []).map(v => [v.user_id, v.name]))
+
+  return (chartData ?? []).map((row: any) => ({
+    id: row.id,
+    patient_id: row.patient_id,
+    chart_date: row.chart_date,
+    patient_name: row.patients?.name ?? '',
+    species: row.patients?.species ?? '',
+    breed: row.patients?.breed ?? '',
+    hos_patient_id: row.patients?.hos_patient_id ?? '',
+    evaluator_name: row.evaluator_id ? (userMap.get(row.evaluator_id) ?? null) : null,
+    sample_type: row.sample_type ?? '',
+    mode: row.mode ?? 'specialist',
+  }))
+}
+
 export async function fetchCytologyLayoutData(hosId: string) {
   const supabase = await createClient()
 

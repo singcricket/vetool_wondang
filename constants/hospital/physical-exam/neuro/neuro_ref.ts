@@ -3562,12 +3562,13 @@ export const localisationRules: LocalisationRule[] = [
       'proprioception_deficit_pelvic_left', 'proprioception_deficit_pelvic_right',
       'babinski_present', 'crossed_extensor_present',
       'urinary_retention_UMN', 'paraparesis', 'paraplegia',
-      // New: level-pinpointing signs
       'cutaneous_trunci_absent_bilateral', 'cutaneous_trunci_absent_left', 'cutaneous_trunci_absent_right',
       'cutaneous_trunci_level_thoracic', 'cutaneous_trunci_level_lumbar',
       'hyperesthesia_band_thoracic', 'hyperesthesia_band_thoracolumbar',
       'deficit_worse_left_pelvic', 'deficit_worse_right_pelvic',
       'hemisection_left', 'hemisection_right',
+      'hopping_deficit_left', 'hopping_deficit_right',
+      'patellar_increased', 'withdrawal_increased',
     ],
     minSupportCount: 1,
     excludingSigns: ['LMN_thoracic', 'LMN_pelvic', 'altered_mentation', 'seizure'],
@@ -3591,11 +3592,12 @@ export const localisationRules: LocalisationRule[] = [
       'patellar_absent', 'patellar_decreased', 'withdrawal_absent',
       'lumbosacral_pain', 'urinary_incontinence_LMN', 'faecal_incontinence',
       'perineal_absent', 'proprioception_deficit_pelvic_left', 'proprioception_deficit_pelvic_right',
-      // New: atrophy patterns + tail + hyperesthesia
       'atrophy_quadriceps', 'atrophy_caudal_thigh', 'atrophy_gastrocnemius',
       'tail_tone_absent', 'tail_tone_reduced', 'tail_paralysis',
       'hyperesthesia_band_lumbar',
       'deficit_worse_left_pelvic', 'deficit_worse_right_pelvic',
+      'paraparesis', 'paraplegia',
+      'hopping_deficit_left', 'hopping_deficit_right',
     ],
     minSupportCount: 1,
     excludingSigns: ['UMN_pelvic', 'UMN_thoracic', 'seizure', 'altered_mentation', 'babinski_present'],
@@ -3641,6 +3643,75 @@ export const localisationRules: LocalisationRule[] = [
       '요역동학 검사 (방광/요도 긴장도)', '회음 EMG',
     ],
     onsetPattern: ['peracute', 'acute', 'chronic_progressive'],
+  },
+
+  // ── T3–L3 SUBTLE (gait normal but proprioceptive/reflex deficit) ────
+  // Fires when UMN_pelvic is absent but UMN-pattern reflex/proprioception signs exist.
+  // Deduplication keeps highest-scoring T3_L3 entry, so this never overrides
+  // loc_T3_L3 when that rule is already satisfied.
+  {
+    ruleID: 'loc_T3_L3_subtle',
+    description: 'T3–L3 (Suspected — subclinical / reflex/proprioceptive signs only)',
+    descriptionKo: 'T3-L3 (의심 — 보행 정상이나 자세반응·반사 이상)',
+    requiredSigns: [],
+    supportingSigns: [
+      'proprioception_deficit_pelvic_left', 'proprioception_deficit_pelvic_right',
+      'thoracolumbar_pain',
+      'patellar_increased', 'withdrawal_increased',
+      'babinski_present', 'crossed_extensor_present',
+      'hopping_deficit_left', 'hopping_deficit_right',
+      'schiff_sherrington', 'urinary_retention_UMN',
+      'cutaneous_trunci_absent_bilateral', 'cutaneous_trunci_absent_left', 'cutaneous_trunci_absent_right',
+      'hyperesthesia_band_thoracic', 'hyperesthesia_band_thoracolumbar',
+      'paraparesis', 'paraplegia',
+    ],
+    minSupportCount: 1,
+    excludingSigns: ['LMN_pelvic', 'LMN_thoracic', 'altered_mentation', 'seizure', 'UMN_pelvic'],
+    // UMN_pelvic excluded here so that when UMN_pelvic IS present,
+    // loc_T3_L3 (the full rule) fires at higher score and deduplication keeps it.
+    locations: [{ location: 'T3_L3', confidence: 'medium', laterality: 'variable',
+      note: 'Subclinical or early lesion suspected; UMN character not yet apparent on gait assessment' }],
+    differentials: {
+      dog: ['IVDD Hansen Type I (chondrodystrophic)', 'IVDD Hansen Type II (large breed)', 'FCE', 'Neoplasia', 'Discospondylitis', 'Degenerative myelopathy (early)'],
+      cat: ['IVDD', 'FCE', 'Neoplasia (lymphoma)', 'Aortic thromboembolism', 'FIP myelitis'],
+    },
+    diagnostics: ['MRI T-L spine', 'CT myelography', 'CSF analysis'],
+    diagnosticsKo: ['흉요추 MRI', 'CT 척수조영술', 'CSF 검사'],
+    onsetPattern: ['peracute', 'acute', 'subacute', 'chronic_progressive'],
+  },
+
+  // ── L4–S3 SUBTLE (gait normal but pelvic LMN-pattern signs exist) ──
+  // Fires when LMN_pelvic is absent but pelvic LMN-reflex/proprioceptive deficit signs exist.
+  {
+    ruleID: 'loc_L4_S3_subtle',
+    description: 'L4–S3 (Suspected — subclinical / reflex/proprioceptive signs only)',
+    descriptionKo: 'L4-S3 (의심 — 보행 정상이나 자세반응·반사 이상)',
+    requiredSigns: [],
+    supportingSigns: [
+      'proprioception_deficit_pelvic_left', 'proprioception_deficit_pelvic_right',
+      'patellar_absent', 'patellar_decreased',
+      'withdrawal_absent', 'withdrawal_decreased',
+      'lumbosacral_pain',
+      'hopping_deficit_left', 'hopping_deficit_right',
+      'tail_tone_absent', 'tail_tone_reduced', 'tail_paralysis',
+      'perineal_absent', 'faecal_incontinence', 'urinary_incontinence_LMN',
+      'atrophy_quadriceps', 'atrophy_caudal_thigh', 'atrophy_gastrocnemius',
+      'hyperesthesia_band_lumbar',
+      'paraparesis', 'paraplegia',
+    ],
+    minSupportCount: 1,
+    excludingSigns: ['UMN_pelvic', 'UMN_thoracic', 'babinski_present', 'seizure', 'altered_mentation', 'LMN_pelvic'],
+    // LMN_pelvic excluded so that when LMN_pelvic IS present,
+    // loc_L4_S3 (the full rule) fires at higher score and deduplication keeps it.
+    locations: [{ location: 'L4_S3', confidence: 'medium', laterality: 'variable',
+      note: 'Subclinical or early lesion suspected; LMN character not yet apparent on gait assessment' }],
+    differentials: {
+      dog: ['Lumbosacral stenosis / CDRM', 'IVDD at L7–S1', 'Discospondylitis', 'Cauda equina neoplasia', 'Degenerative myelopathy (advanced)', 'Polyneuropathy'],
+      cat: ['IVDD', 'Sacral fracture', 'Aortic thromboembolism', 'Lymphoma', 'FIP myelitis'],
+    },
+    diagnostics: ['MRI lumbosacral spine', 'CT lumbosacral', 'EMG / nerve conduction'],
+    diagnosticsKo: ['요천추 MRI', 'CT 요천추', 'EMG/신경전도 검사'],
+    onsetPattern: ['acute', 'subacute', 'chronic_progressive'],
   },
 
   // ── PERIPHERAL NERVE / NMJ / MUSCLE ──────────────────────
