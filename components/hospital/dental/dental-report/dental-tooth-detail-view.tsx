@@ -60,7 +60,7 @@ export default function DentalToothDetailView({ tooth, images, isShared, species
     if (field === 'periodontal_stage' && maxProbing > 0) return
 
     const val = (tooth as any)[field]
-    if (val && val !== 'none' && val !== 'normal' && val !== 'present' && val !== 'PD0') {
+    if (val !== null && val !== undefined && val !== '') {
       // status 필드는 DENTAL_TOOTH_TESTS의 tooth_status 키를 사용함
       const testKey = field === 'status' ? 'tooth_status' : field
       const testDef = DENTAL_TOOTH_TESTS[testKey]

@@ -143,6 +143,25 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
     chartDetail.procedure_other     || null,
   ].filter(Boolean) as string[]
 
+  const renderToothDetail = (tid: number) => {
+    const tooth = teeth.find(t => Number(t.tooth_id) === tid) || {
+      tooth_id: tid,
+      chart_id: chartDetail.id,
+      hos_id: chartDetail.hos_id,
+    } as DentalTooth
+    
+    return (
+      <div key={tid} className="border-l-4 border-teal-500 pl-4 py-2">
+        <DentalToothDetailView 
+          tooth={tooth} 
+          images={images} 
+          isShared={isShared} 
+          species={species}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-12">
       {/* ── 헤더 ── */}
@@ -181,7 +200,7 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
                 { field: 'lymph_node_eval', label: '림프절 평가' },
               ].map(({ field, label }) => {
                 const value = (chartDetail as any)[field]
-                if (!value || value === 'none' || value === 'normal' || value === 'PD0') return null
+                if (value === null || value === undefined || value === '') return null
 
                 // DENTAL_CHART_TESTS에서 상세 설명 찾기
                 const chartTest = DENTAL_CHART_TESTS[field]
@@ -303,43 +322,56 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
         )}
       </section>
 
-      {/* ── 치아별 상세 소견 ── */}
-      <div className="space-y-10">
-        {(() => {
-          // 1. teeth 배열의 ID 수집
-          const toothIds = new Set(teeth.filter(t => t.tooth_id).map(t => Number(t.tooth_id)))
-          
-          // 2. images 배열에서 상/하악 치아 번호(101~411) 수집
-          images.forEach(img => {
-            img.tooth_ids?.forEach(tid => {
-              if (/^(10[1-9]|110|20[1-9]|210|30[1-9]|31[0-1]|40[1-9]|41[0-1])$/.test(tid)) {
-                toothIds.add(Number(tid))
-              }
-            })
+      {/* ── 주요 치료 소견 및 치아별 상세 소견 ── */}
+      {(() => {
+        const toothIds = new Set(teeth.filter(t => t.tooth_id).map(t => Number(t.tooth_id)))
+        
+        images.forEach(img => {
+          img.tooth_ids?.forEach(tid => {
+            if (/^(10[1-9]|110|20[1-9]|210|30[1-9]|31[0-1]|40[1-9]|41[0-1])$/.test(tid)) {
+              toothIds.add(Number(tid))
+            }
           })
-          
-          return Array.from(toothIds)
-            .sort((a,b) => a - b)
-            .map(tid => {
-              const tooth = teeth.find(t => Number(t.tooth_id) === tid) || {
-                tooth_id: tid,
-                chart_id: chartDetail.id,
-                hos_id: chartDetail.hos_id,
-              } as DentalTooth
-              
-              return (
-                <div key={tid} className="border-l-4 border-teal-500 pl-4 py-2">
-                  <DentalToothDetailView 
-                    tooth={tooth} 
-                    images={images} 
-                    isShared={isShared} 
-                    species={species}
-                  />
+        })
+
+        const sortedTids = Array.from(toothIds).sort((a,b) => a - b)
+
+        const majorTids = sortedTids.filter(tid => {
+          const tooth = teeth.find(t => Number(t.tooth_id) === tid)
+          return tooth && tooth.treatment_priority !== null && tooth.treatment_priority !== undefined
+        })
+
+        const normalTids = sortedTids.filter(tid => {
+          const tooth = teeth.find(t => Number(t.tooth_id) === tid)
+          return !tooth || tooth.treatment_priority === null || tooth.treatment_priority === undefined
+        })
+
+        return (
+          <div className="space-y-12">
+            {majorTids.length > 0 && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-bold text-teal-700 border-b border-teal-200 pb-2">
+                  주요 치료 소견
+                </h2>
+                <div className="space-y-10">
+                  {majorTids.map(tid => renderToothDetail(tid))}
                 </div>
-              )
-            })
-        })()}
-      </div>
+              </div>
+            )}
+
+            {normalTids.length > 0 && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-bold text-slate-800 border-b border-slate-200 pb-2">
+                  치아별 상세 소견
+                </h2>
+                <div className="space-y-10">
+                  {normalTids.map(tid => renderToothDetail(tid))}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }

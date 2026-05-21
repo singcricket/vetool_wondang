@@ -387,6 +387,380 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
   const SkullLeftSvg = species === 'feline' ? CatSkullLeftSvg : DogSkullLeftSvg
   const SkullRightSvg = species === 'feline' ? CatSkullRightSvg : DogSkullRightSvg
 
+  const hasToothContent = (tid: number) => {
+    const tooth = teeth.find(t => Number(t.tooth_id) === tid)
+    if (!tooth) return false
+
+    const toothImages = images.filter(img =>
+      img.tooth_ids?.includes(String(tooth.tooth_id)) &&
+      !img.tooth_ids.includes('general') &&
+      !img.tooth_ids.includes('assessment') &&
+      !img.tooth_ids.includes('treatment') &&
+      !img.tooth_ids.includes('tooth-assessment') &&
+      !img.tooth_ids.includes('tooth-treatment')
+    )
+    const toothAssessment = images.filter(img =>
+      img.tooth_ids?.includes(String(tooth.tooth_id)) && 
+      (img.tooth_ids?.includes('assessment') || img.tooth_ids?.includes('tooth-assessment') || img.tooth_ids?.includes('tooth-assesment'))
+    )
+    const toothTreatment = images.filter(img =>
+      img.tooth_ids?.includes(String(tooth.tooth_id)) && 
+      (img.tooth_ids?.includes('treatment') || img.tooth_ids?.includes('tooth-treatment'))
+    )
+    const allToothImages = [...toothImages, ...toothAssessment, ...toothTreatment]
+
+    if (allToothImages.length > 0) return true
+
+    const probingValues = [tooth.probing_ml, tooth.probing_l, tooth.probing_dl, tooth.probing_mb, tooth.probing_b, tooth.probing_db]
+      .filter((v): v is number => v !== null && v !== undefined)
+    const maxProbing = probingValues.length > 0 ? Math.max(...probingValues) : 0
+    if (maxProbing > 0) return true
+
+    const grRank: Record<string, number> = { 'none': 0, 'GR1': 1, 'GR2': 2, 'GR3': 3 }
+    const recessionRanks = [
+      tooth.recession_ml, tooth.recession_l, tooth.recession_dl, 
+      tooth.recession_mb, tooth.recession_b, tooth.recession_db
+    ].map(v => grRank[v || 'none'] || 0)
+    const maxGrRank = Math.max(...recessionRanks)
+    if (maxGrRank > 0) return true
+
+    if (tooth.treatment_plan && Array.isArray(tooth.treatment_plan) && tooth.treatment_plan.length > 0) return true
+    if (tooth.treatment_done && Array.isArray(tooth.treatment_done) && tooth.treatment_done.length > 0) return true
+    if (tooth.xray_finding || tooth.tooth_note) return true
+
+    const toothFields = [
+      'status', 'periodontal_stage', 'gingivitis', 'calculus', 'mobility', 'furcation',
+      'fracture', 'pulp_exposure', 'caries', 'resorption_stage', 'resorption_type', 'staining', 'attrition', 'abrasion', 'periapical'
+    ]
+
+    for (const field of toothFields) {
+      if (field === 'periodontal_stage' && maxProbing > 0) continue
+      const val = (tooth as any)[field]
+      if (val !== null && val !== undefined && val !== '') {
+        const testKey = field === 'status' ? 'tooth_status' : field === 'fracture' ? 'tooth_fracture' : field
+        const testDef = DENTAL_TOOTH_TESTS[testKey]
+        if (testDef) {
+          const comment = (testDef.generalComment as any)?.[val]
+          if (comment) return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  const renderToothDetail = (tid: number) => {
+    const tooth = teeth.find(t => Number(t.tooth_id) === tid) || {
+      tooth_id: tid,
+      chart_id: chartDetail.id,
+      hos_id: chartDetail.hos_id,
+    } as DentalTooth
+
+    const toothImages = images.filter(img =>
+      img.tooth_ids?.includes(String(tooth.tooth_id)) &&
+      !img.tooth_ids.includes('general') &&
+      !img.tooth_ids.includes('assessment') &&
+      !img.tooth_ids.includes('treatment') &&
+      !img.tooth_ids.includes('tooth-assessment') &&
+      !img.tooth_ids.includes('tooth-treatment')
+    )
+    const toothAssessment = images.filter(img =>
+      img.tooth_ids?.includes(String(tooth.tooth_id)) && 
+      (img.tooth_ids?.includes('assessment') || img.tooth_ids?.includes('tooth-assessment') || img.tooth_ids?.includes('tooth-assesment'))
+    )
+    const toothTreatment = images.filter(img =>
+      img.tooth_ids?.includes(String(tooth.tooth_id)) && 
+      (img.tooth_ids?.includes('treatment') || img.tooth_ids?.includes('tooth-treatment'))
+    )
+    const allToothImages = [...toothImages, ...toothAssessment, ...toothTreatment]
+
+    const findings: { label: string, detail: string }[] = []
+
+    const probingValues = [tooth.probing_ml, tooth.probing_l, tooth.probing_dl, tooth.probing_mb, tooth.probing_b, tooth.probing_db]
+      .filter((v): v is number => v !== null && v !== undefined)
+    const maxProbing = probingValues.length > 0 ? Math.max(...probingValues) : 0
+
+    const grRank: Record<string, number> = { 'none': 0, 'GR1': 1, 'GR2': 2, 'GR3': 3 }
+    const recessionRanks = [
+      tooth.recession_ml, tooth.recession_l, tooth.recession_dl, 
+      tooth.recession_mb, tooth.recession_b, tooth.recession_db
+    ].map(v => grRank[v || 'none'] || 0)
+    const maxGrRank = Math.max(...recessionRanks)
+
+    const toothFields = [
+      'status', 'periodontal_stage', 'gingivitis', 'calculus', 'mobility', 'furcation',
+      'fracture', 'pulp_exposure', 'caries', 'resorption_stage', 'resorption_type', 'staining', 'attrition', 'abrasion', 'periapical'
+    ]
+
+    toothFields.forEach(field => {
+      if (field === 'periodontal_stage' && maxProbing > 0) return
+
+      const val = (tooth as any)[field]
+      if (val !== null && val !== undefined && val !== '') {
+        const testKey = field === 'status' ? 'tooth_status' : field === 'fracture' ? 'tooth_fracture' : field
+        const testDef = DENTAL_TOOTH_TESTS[testKey]
+        if (testDef) {
+          const comment = (testDef.generalComment as any)?.[val]
+          if (comment) {
+            findings.push({
+              label: testDef.testNameKo || field,
+              detail: comment
+            })
+          }
+        }
+      }
+    })
+
+    if (tooth.treatment_plan && Array.isArray(tooth.treatment_plan)) {
+      tooth.treatment_plan.forEach(code => {
+        const abbrev = getByAbbr(code)
+        const namePart = abbrev?.definition_kr || abbrev?.definition || code
+        const detailText = abbrev?.generalComment
+          ? `${namePart} — ${abbrev.generalComment}`
+          : namePart
+        findings.push({
+          label: '계획 내역',
+          detail: detailText
+        })
+      })
+    }
+    if (tooth.treatment_done && Array.isArray(tooth.treatment_done)) {
+      tooth.treatment_done.forEach(code => {
+        const abbrev = getByAbbr(code)
+        const namePart = abbrev?.definition_kr || abbrev?.definition || code
+        const detailText = abbrev?.generalComment
+          ? `${namePart} — ${abbrev.generalComment}`
+          : namePart
+        findings.push({
+          label: '치료 내역',
+          detail: detailText
+        })
+      })
+    }
+
+    let probingAutoInfo: { points: any[], comment: string } | null = null
+    if (maxProbing > 0) {
+      const testDef = DENTAL_TOOTH_TESTS.probing_depth
+      if (testDef && testDef.rangeComments) {
+        const thresholds = species === 'feline' ? testDef.thresholds_feline : testDef.thresholds_canine
+        let rangeKey = 'normal'
+        if (maxProbing > (thresholds?.[2] || 0)) rangeKey = 'PD4'
+        else if (maxProbing > (thresholds?.[1] || 0)) rangeKey = 'PD3'
+        else if (maxProbing > (thresholds?.[0] || 0)) rangeKey = 'PD2'
+        
+        probingAutoInfo = {
+          comment: testDef.rangeComments[rangeKey]?.generalComment || '',
+          points: [
+            { label: 'ML', val: tooth.probing_ml },
+            { label: 'L', val: tooth.probing_l },
+            { label: 'DL', val: tooth.probing_dl },
+            { label: 'MB', val: tooth.probing_mb },
+            { label: 'B', val: tooth.probing_b },
+            { label: 'DB', val: tooth.probing_db },
+          ].filter(p => p.val !== null && p.val !== undefined && p.val !== 0)
+        }
+      }
+    }
+
+    let recessionAutoInfo: { points: any[], comment: string } | null = null
+    if (maxGrRank > 0) {
+      const testDef = DENTAL_TOOTH_TESTS.gingival_recession
+      if (testDef && testDef.generalComment) {
+        const rangeKey = maxGrRank === 3 ? 'GR3' : maxGrRank === 2 ? 'GR2' : 'GR1'
+        recessionAutoInfo = {
+          comment: (testDef.generalComment as any)?.[rangeKey] || '',
+          points: [
+            { label: 'ML', val: tooth.recession_ml },
+            { label: 'L', val: tooth.recession_l },
+            { label: 'DL', val: tooth.recession_dl },
+            { label: 'MB', val: tooth.recession_mb },
+            { label: 'B', val: tooth.recession_b },
+            { label: 'DB', val: tooth.recession_db },
+          ].filter(p => p.val !== null && p.val !== undefined && p.val !== '' && p.val !== '0' && p.val !== 'none')
+        }
+      }
+    }
+
+    if (findings.length === 0 && allToothImages.length === 0 && !probingAutoInfo && !recessionAutoInfo) return null
+
+    return (
+      <div key={tooth.tooth_id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+        <div className="bg-amber-50/70 border-b border-amber-100 px-4 py-3">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="bg-amber-500 text-white px-2 py-0.5 rounded-full text-base shrink-0">
+                {tooth.tooth_id}
+              </span>
+              <span className="text-slate-700 font-medium">
+                {toothNames_kr[String(tooth.tooth_id)]}
+              </span>
+            </div>
+
+            <div className="w-32 h-32 bg-white rounded-lg border border-amber-200 flex items-center justify-center overflow-hidden p-2 shadow-sm ml-2">
+              <img 
+                src={`/dental/each/${species === 'feline' ? 'cat' : 'dog'}-${tid}.png`}
+                alt={`Tooth ${tid}`}
+                className="max-w-full max-h-full object-contain"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
+            </div>
+
+            {tooth.treatment_priority && (
+              <span 
+                className="text-[10px] px-2 py-0.5 rounded-full text-white font-bold"
+                style={{ 
+                  backgroundColor: 
+                    DENTAL_CHART_COLORS[tooth.treatment_priority.toLowerCase() as keyof typeof DENTAL_CHART_COLORS] || DENTAL_CHART_COLORS.preExtracted
+                }}
+              >
+                {PRIORITY_LABELS[tooth.treatment_priority.toLowerCase()] || tooth.treatment_priority}
+              </span>
+            )}
+          </h3>
+        </div>
+
+        <div className="flex flex-col md:flex-row p-4 gap-6">
+          <div className="flex-1 space-y-5">
+            {(() => {
+              const clinicalFindings = findings.filter(f => f.label !== '치료 내역' && f.label !== '계획 내역')
+              const treatmentFindings = findings.filter(f => f.label === '치료 내역')
+              const planFindings = findings.filter(f => f.label === '계획 내역')
+              return (
+                <>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-bold text-amber-600">수의사 소견</h4>
+                    {clinicalFindings.length > 0 || probingAutoInfo || recessionAutoInfo ? (
+                      <div className="space-y-2">
+                        {clinicalFindings.map((f, i) => (
+                          <div key={i} className="bg-slate-50 p-3 rounded text-sm text-slate-700 leading-relaxed border border-slate-100 border-l-2 border-l-amber-300">
+                            {f.detail}
+                          </div>
+                        ))}
+
+                        {probingAutoInfo && (
+                          <div className="bg-amber-50/50 p-3 rounded border border-amber-100 border-l-2 border-l-amber-400">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs font-bold text-amber-800">[치주낭 깊이]</span>
+                              <div className="flex gap-2">
+                                {probingAutoInfo.points.map(p => (
+                                  <span key={p.label} className="text-[10px] text-slate-500">
+                                    {p.label}:<span className="font-bold text-slate-700">{p.val}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-sm text-slate-700 leading-relaxed italic">
+                              💡 {probingAutoInfo.comment}
+                            </p>
+                          </div>
+                        )}
+
+                        {recessionAutoInfo && (
+                          <div className="bg-amber-50/50 p-3 rounded border border-amber-100 border-l-2 border-l-amber-400">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs font-bold text-amber-800">[치은 퇴축]</span>
+                              <div className="flex gap-2">
+                                {recessionAutoInfo.points.map(p => (
+                                  <span key={p.label} className="text-[10px] text-slate-500">
+                                    {p.label}:<span className="font-bold text-slate-700">{p.val}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-sm text-slate-700 leading-relaxed italic">
+                              💡 {recessionAutoInfo.comment}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-400">특이 사항이 발견되지 않았습니다.</p>
+                    )}
+                  </div>
+
+                  {tooth.xray_finding && (
+                    <div className="space-y-2 border-t pt-4">
+                      <h4 className="text-sm font-bold text-slate-600">방사선 검사 결과</h4>
+                      <div className="bg-slate-50 p-3 rounded text-sm text-slate-700 leading-relaxed border border-slate-100">
+                        {tooth.xray_finding}
+                      </div>
+                    </div>
+                  )}
+
+                  {tooth.tooth_note && (
+                    <div className="space-y-2 border-t pt-4">
+                      <h4 className="text-sm font-bold text-amber-700">수의사 특별 메모</h4>
+                      <div className="bg-amber-50 p-3 rounded text-sm text-amber-900 leading-relaxed border border-amber-100 italic whitespace-pre-wrap">
+                        {tooth.tooth_note}
+                      </div>
+                    </div>
+                  )}
+
+                  {planFindings.length > 0 && (
+                    <div className="space-y-2 border-t pt-4">
+                      <h4 className="text-sm font-bold text-indigo-700">예정된 치료</h4>
+                      <div className="space-y-2">
+                        {planFindings.map((f, i) => (
+                          <div key={i} className="bg-indigo-50 p-3 rounded text-sm text-indigo-900 leading-relaxed border border-indigo-100 border-l-2 border-l-indigo-400">
+                            {f.detail}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {treatmentFindings.length > 0 && (
+                    <div className="space-y-2 border-t pt-4">
+                      <h4 className="text-sm font-bold text-teal-700">진행된 치료</h4>
+                      <div className="space-y-2">
+                        {treatmentFindings.map((f, i) => (
+                          <li key={i} className="list-none bg-teal-50 p-3 rounded text-sm text-teal-900 leading-relaxed border border-teal-100 border-l-2 border-l-teal-400">
+                            {f.detail}
+                          </li>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </div>
+
+          {allToothImages.length > 0 && (
+            <div className="flex-1 border-l pl-4 border-slate-100">
+              <div className="flex flex-col gap-4">
+                {(toothAssessment.length > 0 || toothTreatment.length > 0) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-2">
+                      <div className="text-xs font-bold text-center bg-slate-200 py-1 rounded text-slate-700">치료 전</div>
+                      {toothAssessment.map(img => (
+                        <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="text-xs font-bold text-center bg-teal-100 py-1 rounded text-teal-800">치료 후</div>
+                      {toothTreatment.map(img => (
+                        <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {toothImages.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t">
+                    {toothImages.map(img => (
+                      <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-12">
 
@@ -428,7 +802,7 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
                 { field: 'lymph_node_eval', label: '림프절' },
               ].map(({ field, label }) => {
                 const value = (chartDetail as any)[field]
-                if (!value || value === 'none' || value === 'normal' || value === 'PD0') return null
+                if (value === null || value === undefined || value === '') return null
 
                 // DENTAL_CHART_TESTS에서 보호자용 설명 찾기
                 const chartTest = DENTAL_CHART_TESTS[field]
@@ -659,356 +1033,56 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
         </div>
       </section>
 
-      {/* ── 치아별 소견 ── */}
-      <div className="space-y-10">
-        {(() => {
-          // 1. teeth 배열의 ID 수집
-          const toothIds = new Set(teeth.filter(t => t.tooth_id).map(t => Number(t.tooth_id)))
-          
-          // 2. images 배열에서 상/하악 치아 번호(101~411) 수집
-          images.forEach(img => {
-            img.tooth_ids?.forEach(tid => {
-              if (/^(10[1-9]|110|20[1-9]|210|30[1-9]|31[0-1]|40[1-9]|41[0-1])$/.test(tid)) {
-                toothIds.add(Number(tid))
-              }
-            })
+      {/* ── 주요 치료 소견 및 치아별 소견 ── */}
+      {(() => {
+        const toothIds = new Set(teeth.filter(t => t.tooth_id).map(t => Number(t.tooth_id)))
+        
+        images.forEach(img => {
+          img.tooth_ids?.forEach(tid => {
+            if (/^(10[1-9]|110|20[1-9]|210|30[1-9]|31[0-1]|40[1-9]|41[0-1])$/.test(tid)) {
+              toothIds.add(Number(tid))
+            }
           })
+        })
 
-          return Array.from(toothIds)
-            .sort((a,b) => a - b)
-            .map(tid => {
-              const tooth = teeth.find(t => Number(t.tooth_id) === tid) || {
-                tooth_id: tid,
-                chart_id: chartDetail.id,
-                hos_id: chartDetail.hos_id,
-              } as DentalTooth
+        const visibleTids = Array.from(toothIds).sort((a,b) => a - b).filter(hasToothContent)
 
-            // 이 치아에 번호로만 태그된 이미지 (글로벌 태그 및 비교 태그 제외)
-            const toothImages = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) &&
-              !img.tooth_ids.includes('general') &&
-              !img.tooth_ids.includes('assessment') &&
-              !img.tooth_ids.includes('treatment') &&
-              !img.tooth_ids.includes('tooth-assessment') &&
-              !img.tooth_ids.includes('tooth-treatment')
-            )
-            // 이 치아 번호 + assessment / treatment 함께 달린 이미지
-            const toothAssessment = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) && 
-              (img.tooth_ids?.includes('assessment') || img.tooth_ids?.includes('tooth-assessment') || img.tooth_ids?.includes('tooth-assesment'))
-            )
-            const toothTreatment = images.filter(img =>
-              img.tooth_ids?.includes(String(tooth.tooth_id)) && 
-              (img.tooth_ids?.includes('treatment') || img.tooth_ids?.includes('tooth-treatment'))
-            )
-            const allToothImages = [...toothImages, ...toothAssessment, ...toothTreatment]
+        const majorTids = visibleTids.filter(tid => {
+          const tooth = teeth.find(t => Number(t.tooth_id) === tid)
+          return tooth && tooth.treatment_priority !== null && tooth.treatment_priority !== undefined
+        })
 
-            // 병소 소견 추출 (보호자용: generalComment 위주)
-            const findings: { label: string, detail: string }[] = []
+        const normalTids = visibleTids.filter(tid => {
+          const tooth = teeth.find(t => Number(t.tooth_id) === tid)
+          return !tooth || tooth.treatment_priority === null || tooth.treatment_priority === undefined
+        })
 
-            // 6포인트 측정 데이터 계산 및 요약 (소견 루프 이전에 먼저 수행)
-            const probingValues = [tooth.probing_ml, tooth.probing_l, tooth.probing_dl, tooth.probing_mb, tooth.probing_b, tooth.probing_db]
-              .filter((v): v is number => v !== null && v !== undefined)
-            const maxProbing = probingValues.length > 0 ? Math.max(...probingValues) : 0
-
-            const grRank: Record<string, number> = { 'none': 0, 'GR1': 1, 'GR2': 2, 'GR3': 3 }
-            const recessionRanks = [
-              tooth.recession_ml, tooth.recession_l, tooth.recession_dl, 
-              tooth.recession_mb, tooth.recession_b, tooth.recession_db
-            ].map(v => grRank[v || 'none'] || 0)
-            const maxGrRank = Math.max(...recessionRanks)
-
-            const toothFields = [
-              'status', 'periodontal_stage', 'gingivitis', 'calculus', 'mobility', 'furcation',
-              'fracture', 'pulp_exposure', 'caries', 'resorption_stage', 'resorption_type', 'staining', 'attrition', 'abrasion', 'periapical'
-            ]
-
-            toothFields.forEach(field => {
-              // 치주낭 측정값(probing_depth)이 있으면 periodontal_stage는 중복이므로 제외
-              if (field === 'periodontal_stage' && maxProbing > 0) return
-
-              const val = (tooth as any)[field]
-              if (val && val !== 'none' && val !== 'normal' && val !== 'present' && val !== 'PD0') {
-                const testKey = field === 'status' ? 'tooth_status' : field === 'fracture' ? 'tooth_fracture' : field
-                const testDef = DENTAL_TOOTH_TESTS[testKey]
-                if (testDef) {
-                  const comment = (testDef.generalComment as any)?.[val]
-                  if (comment) {
-                    findings.push({
-                      label: testDef.testNameKo || field,
-                      detail: comment
-                    })
-                  }
-                }
-              }
-            })
-
-            // 치료 계획 (treatment_plan)
-            if (tooth.treatment_plan && Array.isArray(tooth.treatment_plan)) {
-              tooth.treatment_plan.forEach(code => {
-                const abbrev = getByAbbr(code)
-                const namePart = abbrev?.definition_kr || abbrev?.definition || code
-                const detailText = abbrev?.generalComment
-                  ? `${namePart} — ${abbrev.generalComment}`
-                  : namePart
-                findings.push({
-                  label: '계획 내역',
-                  detail: detailText
-                })
-              })
-            }
-            // 치료 개입 (treatment_done)
-            if (tooth.treatment_done && Array.isArray(tooth.treatment_done)) {
-              tooth.treatment_done.forEach(code => {
-                const abbrev = getByAbbr(code)
-                const namePart = abbrev?.definition_kr || abbrev?.definition || code
-                const detailText = abbrev?.generalComment
-                  ? `${namePart} — ${abbrev.generalComment}`
-                  : namePart
-                findings.push({
-                  label: '치료 내역',
-                  detail: detailText
-                })
-              })
-            }
-
-          
-
-
-            let probingAutoInfo: { points: any[], comment: string } | null = null
-            if (maxProbing > 0) {
-              const testDef = DENTAL_TOOTH_TESTS.probing_depth
-              if (testDef && testDef.rangeComments) {
-                const thresholds = species === 'feline' ? testDef.thresholds_feline : testDef.thresholds_canine
-                let rangeKey = 'normal'
-                if (maxProbing > (thresholds?.[2] || 0)) rangeKey = 'PD4'
-                else if (maxProbing > (thresholds?.[1] || 0)) rangeKey = 'PD3'
-                else if (maxProbing > (thresholds?.[0] || 0)) rangeKey = 'PD2'
-                
-                probingAutoInfo = {
-                  comment: testDef.rangeComments[rangeKey]?.generalComment || '',
-                  points: [
-                    { label: 'ML', val: tooth.probing_ml },
-                    { label: 'L', val: tooth.probing_l },
-                    { label: 'DL', val: tooth.probing_dl },
-                    { label: 'MB', val: tooth.probing_mb },
-                    { label: 'B', val: tooth.probing_b },
-                    { label: 'DB', val: tooth.probing_db },
-                  ].filter(p => p.val !== null && p.val !== undefined && p.val !== 0)
-                }
-              }
-            }
-
-            let recessionAutoInfo: { points: any[], comment: string } | null = null
-            if (maxGrRank > 0) {
-              const testDef = DENTAL_TOOTH_TESTS.gingival_recession
-              if (testDef && testDef.generalComment) {
-                const rangeKey = maxGrRank === 3 ? 'GR3' : maxGrRank === 2 ? 'GR2' : 'GR1'
-                recessionAutoInfo = {
-                  comment: (testDef.generalComment as any)?.[rangeKey] || '',
-                  points: [
-                    { label: 'ML', val: tooth.recession_ml },
-                    { label: 'L', val: tooth.recession_l },
-                    { label: 'DL', val: tooth.recession_dl },
-                    { label: 'MB', val: tooth.recession_mb },
-                    { label: 'B', val: tooth.recession_b },
-                    { label: 'DB', val: tooth.recession_db },
-                  ].filter(p => p.val !== null && p.val !== undefined && p.val !== '' && p.val !== '0' && p.val !== 'none')
-                }
-              }
-            }
-
-            // 패스 조건: 사진도 없고 소견도 없으며 6포인트 데이터도 없으면 렌더링 안 함
-            if (findings.length === 0 && allToothImages.length === 0 && !probingAutoInfo && !recessionAutoInfo) return null
-
-            return (
-              <div key={tooth.tooth_id} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                <div className="bg-amber-50/70 border-b border-amber-100 px-4 py-3">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-amber-500 text-white px-2 py-0.5 rounded-full text-base shrink-0">
-                        {tooth.tooth_id}
-                      </span>
-                      <span className="text-slate-700 font-medium">
-                        {toothNames_kr[String(tooth.tooth_id)]}
-                      </span>
-                    </div>
-
-                    {/* 모식도 */}
-                    <div className="w-32 h-32 bg-white rounded-lg border border-amber-200 flex items-center justify-center overflow-hidden p-2 shadow-sm ml-2">
-                      <img 
-                        src={`/dental/each/${species === 'feline' ? 'cat' : 'dog'}-${tid}.png`}
-                        alt={`Tooth ${tid}`}
-                        className="max-w-full max-h-full object-contain"
-                        onError={(e) => (e.currentTarget.style.display = 'none')}
-                      />
-                    </div>
-
-                    {tooth.treatment_priority && (
-                      <span 
-                        className="text-[10px] px-2 py-0.5 rounded-full text-white font-bold"
-                        style={{ 
-                          backgroundColor: 
-                            DENTAL_CHART_COLORS[tooth.treatment_priority.toLowerCase() as keyof typeof DENTAL_CHART_COLORS] || DENTAL_CHART_COLORS.preExtracted
-                        }}
-                      >
-                        {PRIORITY_LABELS[tooth.treatment_priority.toLowerCase()] || tooth.treatment_priority}
-                      </span>
-                    )}
-                  </h3>
-                </div>
-
-                <div className="flex flex-col md:flex-row p-4 gap-6">
-                  {/* 왼쪽: 설명 */}
-                  <div className="flex-1 space-y-5">
-                    {(() => {
-                      const clinicalFindings = findings.filter(f => f.label !== '치료 내역' && f.label !== '계획 내역')
-                      const treatmentFindings = findings.filter(f => f.label === '치료 내역')
-                      const planFindings = findings.filter(f => f.label === '계획 내역')
-                      return (
-                        <>
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-bold text-amber-600">수의사 소견</h4>
-                            {clinicalFindings.length > 0 || probingAutoInfo || recessionAutoInfo ? (
-                              <div className="space-y-2">
-                                {clinicalFindings.map((f, i) => (
-                                  <div key={i} className="bg-slate-50 p-3 rounded text-sm text-slate-700 leading-relaxed border border-slate-100 border-l-2 border-l-amber-300">
-                                    {f.detail}
-                                  </div>
-                                ))}
-
-                                {/* 6포인트 자동 소견 (보호자용) */}
-                                {probingAutoInfo && (
-                                  <div className="bg-amber-50/50 p-3 rounded border border-amber-100 border-l-2 border-l-amber-400">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                      <span className="text-xs font-bold text-amber-800">[치주낭 깊이]</span>
-                                      <div className="flex gap-2">
-                                        {probingAutoInfo.points.map(p => (
-                                          <span key={p.label} className="text-[10px] text-slate-500">
-                                            {p.label}:<span className="font-bold text-slate-700">{p.val}</span>
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <p className="text-sm text-slate-700 leading-relaxed italic">
-                                      💡 {probingAutoInfo.comment}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {recessionAutoInfo && (
-                                  <div className="bg-amber-50/50 p-3 rounded border border-amber-100 border-l-2 border-l-amber-400">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                      <span className="text-xs font-bold text-amber-800">[치은 퇴축]</span>
-                                      <div className="flex gap-2">
-                                        {recessionAutoInfo.points.map(p => (
-                                          <span key={p.label} className="text-[10px] text-slate-500">
-                                            {p.label}:<span className="font-bold text-slate-700">{p.val}</span>
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <p className="text-sm text-slate-700 leading-relaxed italic">
-                                      💡 {recessionAutoInfo.comment}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-slate-400">특이 사항이 발견되지 않았습니다.</p>
-                            )}
-                          </div>
-
-                          {/* 방사선 소견 */}
-                          {tooth.xray_finding && (
-                            <div className="space-y-2 border-t pt-4">
-                              <h4 className="text-sm font-bold text-slate-600">방사선 검사 결과</h4>
-                              <div className="bg-slate-50 p-3 rounded text-sm text-slate-700 leading-relaxed border border-slate-100">
-                                {tooth.xray_finding}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 수의사 메모 */}
-                          {tooth.tooth_note && (
-                            <div className="space-y-2 border-t pt-4">
-                              <h4 className="text-sm font-bold text-amber-700">수의사 특별 메모</h4>
-                              <div className="bg-amber-50 p-3 rounded text-sm text-amber-900 leading-relaxed border border-amber-100 italic whitespace-pre-wrap">
-                                {tooth.tooth_note}
-                              </div>
-                            </div>
-                          )}
-
-                          {planFindings.length > 0 && (
-                            <div className="space-y-2 border-t pt-4">
-                              <h4 className="text-sm font-bold text-indigo-700">예정된 치료</h4>
-                              <div className="space-y-2">
-                                {planFindings.map((f, i) => (
-                                  <div key={i} className="bg-indigo-50 p-3 rounded text-sm text-indigo-900 leading-relaxed border border-indigo-100 border-l-2 border-l-indigo-400">
-                                    {f.detail}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {treatmentFindings.length > 0 && (
-                            <div className="space-y-2 border-t pt-4">
-                              <h4 className="text-sm font-bold text-teal-700">진행된 치료</h4>
-                              <div className="space-y-2">
-                                {treatmentFindings.map((f, i) => (
-                                  <li key={i} className="list-none bg-teal-50 p-3 rounded text-sm text-teal-900 leading-relaxed border border-teal-100 border-l-2 border-l-teal-400">
-                                    {f.detail}
-                                  </li>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )
-                    })()}
-                  </div>
-
-                  {/* 오른쪽: 이미지 */}
-                  {allToothImages.length > 0 && (
-                    <div className="flex-1 border-l pl-4 border-slate-100">
-                      <div className="flex flex-col gap-4">
-                        {/* 치아별 전후 비교 */}
-                        {(toothAssessment.length > 0 || toothTreatment.length > 0) && (
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="flex flex-col gap-2">
-                              <div className="text-xs font-bold text-center bg-slate-200 py-1 rounded text-slate-700">치료 전</div>
-                              {toothAssessment.map(img => (
-                                <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
-                              ))}
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              <div className="text-xs font-bold text-center bg-teal-100 py-1 rounded text-teal-800">치료 후</div>
-                              {toothTreatment.map(img => (
-                                <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* 기타 이미지 (치아 번호만 태그) */}
-                        {toothImages.length > 0 && (
-                          <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t">
-                            {toothImages.map(img => (
-                              <ImageCard key={img.dental_image_id} img={img} isShared={isShared} />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
+        return (
+          <div className="space-y-12">
+            {majorTids.length > 0 && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-bold text-amber-800 border-b border-amber-200 pb-2">
+                  주요 치료 소견
+                </h2>
+                <div className="space-y-10">
+                  {majorTids.map(tid => renderToothDetail(tid))}
                 </div>
               </div>
-            )
-          })
-        })()}
-      </div>
+            )}
+
+            {normalTids.length > 0 && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-bold text-slate-800 border-b border-slate-200 pb-2">
+                  치아별 소견
+                </h2>
+                <div className="space-y-10">
+                  {normalTids.map(tid => renderToothDetail(tid))}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }

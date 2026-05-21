@@ -1,7 +1,7 @@
 # 수의 항암치료 AI 가이드 플랫폼 — 기획 및 설계 문서
 
-> 최초 작성: 2026-05-14 / 최종 업데이트: 2026-05-15
-> 상태: **DB 구축 완료 ✅ / MVP 구현 완료 ✅ / 보호자 뷰 + 공유 시스템 구현 완료 ✅**
+> 최초 작성: 2026-05-14 / 최종 업데이트: 2026-05-20
+> 상태: **DB 구축 완료 ✅ / MVP 구현 완료 ✅ / 보호자 뷰 + 공유 시스템 구현 완료 ✅ / Tab3 투약량 수정 + Tab2 라이브러리 우선 AI 흐름 완료 ✅**
 
 ---
 
@@ -228,6 +228,9 @@ onco_ai_cache    (AI 응답 캐시 — 병원 공용)
 | ai_model_version | text | |
 | is_verified | boolean | 수의사 검수 완료 |
 | version | integer | |
+| user_tags | text | 콤마 구분 검색 키워드 (병원 입력) |
+| tags | text | `#태그` 형식 자동 확장값 (keywords 테이블 기반) |
+| origin_diagnosis | text | 이 프로토콜이 만들어진 케이스의 diagnosis_key |
 
 #### drugs JSONB 스키마 (배열)
 ```jsonc
@@ -405,22 +408,29 @@ onco_ai_cache    (AI 응답 캐시 — 병원 공용)
 케이스 상세 페이지 (oncology-case-client.tsx)
 ├── [보호자 뷰] 버튼 (indigo, Users 아이콘) → owner-case-dialog 전체화면 다이얼로그
 │
-├── Tab 1: 진단 & AI 가이드
+├── Tab 1: 진단 입력
 │     - 진단 문서 업로드 (PDF/JPG/PNG, 5MB 이하) → AI 임상정보 + 보호자 안내문 자동 추출
 │     - 직접 텍스트 입력 (임상증상 / 임상경과 / 직접입력)
 │     - 보호자 안내문 편집 영역 (additional_notes, indigo 스타일)
-│     - 케이스 기본 정보 편집 (체중/병기/성별/상태/진단방법)
-│     - AI 프로토콜 추천 (onco_ai_cache 90일 캐시)
-│     - 캐시 만료 시 기존 가이드 유지 or 새 추천 선택 UX
+│     - 케이스 기본 정보 편집 (체중/병기/성별/상태/진단방법/태그)
+│     ※ AI 프로토콜 추천 섹션 제거 (2026-05-20) → Tab 2로 이전
 │
 ├── Tab 2: 프로토콜 & 스케줄
-│     - 프로토콜 선택 (AI 제안 or 수동 작성)
-│     - 체중 기반 투약량 자동 계산 (initial_body_weight)
-│     - 전체 기간 투약 스케줄 테이블 자동 생성 (onco_schedules)
+│     - 프로토콜 추가 3가지 모드:
+│       1. [AI 추천] — 라이브러리 우선 흐름:
+│           ① 진입 즉시 diagnosis_name + user_tags로 라이브러리 자동 검색
+│           ② 결과 목록 + 항목별 인라인 미리보기 (약물표/부작용/주의사항)
+│           ③ 직접 검색 토글 (키워드 수동 입력)
+│           ④ 마지막 수단: "AI로 프로토콜 생성" (1차/Rescue 토글)
+│       2. [라이브러리 검색] — 키워드 검색 → 결과 선택
+│       3. [직접 입력] — ProtocolEditor Sheet로 수동 작성
+│     - 케이스에 추가 시 체중 + 시작일 입력 → onco_schedules 자동 생성
+│     - 등록된 프로토콜: 진행률 표시, 라이브러리 저장(BookmarkPlus), 삭제(환자명 확인)
 │
 ├── Tab 3: 투약 기록
 │     - 회차별 완료 체크 + 실측 체중 입력
 │     - 연기/감량 기록 및 사유, 전체 수행률(%) 표시
+│     - dose_per_kg / dose_per_m2 인라인 수정 (연필 아이콘 → 수정 후 DB 저장 + 계산량 즉시 반영)
 │
 ├── Tab 4: 부작용 모니터링
 │     - VCOG-CTCAE Grade 1~5 기록 (reported_by: vet/owner 구분 표시)
@@ -650,6 +660,31 @@ components/hospital/collections/collection-detail/collection-item-row.tsx
 
 ---
 
+### 2.5단계 — UX 개선 ✅ 완료 (2026-05-20)
+
+**Tab 1 정리:**
+- [x] AI 프로토콜 추천 섹션 제거 (Tab 1 → Tab 2로 통합)
+  - ProtocolCard 컴포넌트, handleAiGuide/handleRefreshAiGuide 함수, onco_ai_cache 캐시 UX 제거
+  - Tab 1은 진단 입력 + 문서 + 보호자 안내문에 집중
+
+**Tab 2 AI 흐름 라이브러리 우선 재설계:**
+- [x] "AI 추천" 버튼 클릭 시 즉시 `searchRelatedProtocols()` 자동 호출
+- [x] 결과 목록에서 항목별 **인라인 미리보기** (약물표 / 부작용 / 주의사항 / AI 경고)
+- [x] 직접 검색 토글 (접힘/펼침, 검색 결과도 미리보기 지원)
+- [x] 마지막 수단으로 "AI로 프로토콜 생성" (1차/Rescue 토글, getAiOncologyGuide/getAiRescueGuide 호출, 결과를 라이브러리 목록에 병합)
+- [x] `<button>` 중첩 hydration 오류 수정 (항목 외부 `<button>` → `<div cursor-pointer>`)
+
+**Tab 3 투약량 인라인 수정:**
+- [x] 각 스케줄 행에서 dose_per_kg / dose_per_m2 인라인 편집 (연필 아이콘 → 숫자 입력 → DB 저장)
+- [x] `updateScheduleDoseRate(scheduleId, dosePerKg, dosePerM2)` 서버 액션 추가
+- [x] 수정 즉시 DoseCalcDisplay 재계산 (localDosePerKg / localDosePerM2 local state)
+
+**라이브러리 검색 확장:**
+- [x] `searchProtocolTemplates()` — user_tags 필드 OR 필터에 추가
+- [x] `searchRelatedProtocols(hosId, diagnosisName, userTags)` 신규 함수 추가
+
+---
+
 ### 3단계 — 임상 분석
 - [ ] 혈액검사(CBC/Chemistry) 기반 투약 가능 여부 자동 판단
 - [ ] 병원 내 케이스 분석 대시보드
@@ -671,6 +706,8 @@ components/hospital/collections/collection-detail/collection-item-row.tsx
 | 경구/주사 분기 | `drugs[].is_oral` + `route` → 스케줄 생성 로직 분기 |
 | 수의사 검수 | `is_verified` 플래그 + 미검수 시 UI 경고 배너 |
 | VCOG-CTCAE | 상수 파일(`constants/hospital/oncology/vcog-ctcae.ts`)로 내장 예정 |
+| 프로토콜 라이브러리 검색 | `searchProtocolTemplates(hosId, query)` — protocol_name + tags + user_tags OR 검색 |
+| 진단 기반 자동 검색 | `searchRelatedProtocols(hosId, diagnosisName, userTags)` — Tab2 AI 추천 진입 시 자동 호출 |
 | 보호자 공유 | `resource_shares` 통합 시스템 사용 (별도 토큰 테이블 없음) |
 | 공유 URL 쓰기 | `createAdminClient()` 기반 Public 서버 액션으로 RLS 우회 |
 | QoL 스케일 | HHHHHMM (Hurt/Hunger/Hydration/Hygiene/Happiness/Mobility/More Good Days), 7항목 × 10점 |

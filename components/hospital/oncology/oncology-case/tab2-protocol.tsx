@@ -37,7 +37,7 @@ import {
 } from '@/lib/actions/oncology/ai-oncology-guide'
 import {
   searchProtocolTemplates,
-  createManualProtocol,
+  searchRelatedProtocols,
   saveProtocolAsTemplate,
 } from '@/lib/actions/oncology/protocol-template-actions'
 import type {
@@ -68,6 +68,8 @@ import {
   Trash2,
   BookmarkPlus,
   Check,
+  BookOpen,
+  Library,
 } from 'lucide-react'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -103,7 +105,6 @@ const CP_STATUS_COLORS: Record<string, string> = {
 const PROTOCOL_TYPES = ['chemo', 'radiation', 'surgery', 'targeted', 'palliative', 'combination']
 const PHASES = ['induction', 'maintenance', 'rescue', 'adjuvant', 'palliative']
 
-type AddMode = 'ai' | 'template' | 'manual' | null
 
 function ScheduleTable({ schedules }: { schedules: OncologyScheduleRow[] }) {
   const grouped = schedules.reduce<Record<number, OncologyScheduleRow[]>>((acc, s) => {
@@ -362,6 +363,151 @@ function CaseProtocolCard({ cp, patientName, onDelete }: { cp: OncologyCaseProto
   )
 }
 
+// ─── Protocol inline preview ─────────────────────────────────────────────────
+
+function ProtocolPreview({ protocol }: { protocol: AiProtocolOption }) {
+  return (
+    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3 text-xs">
+      {protocol.description && (
+        <p className="text-slate-600 leading-relaxed">{protocol.description}</p>
+      )}
+
+      {protocol.drugs && protocol.drugs.length > 0 && (
+        <div>
+          <p className="font-semibold text-slate-700 mb-1">투약 약물</p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-white">
+                  <th className="border px-2 py-1 text-left font-medium text-slate-600">약물명</th>
+                  <th className="border px-2 py-1 text-left font-medium text-slate-600">경로</th>
+                  <th className="border px-2 py-1 text-left font-medium text-slate-600">용량</th>
+                  <th className="border px-2 py-1 text-left font-medium text-slate-600">단위</th>
+                  <th className="border px-2 py-1 text-left font-medium text-slate-600">빈도</th>
+                </tr>
+              </thead>
+              <tbody>
+                {protocol.drugs.map((drug, i) => (
+                  <tr key={i} className="hover:bg-white">
+                    <td className="border px-2 py-1 font-medium">{drug.drug_name}</td>
+                    <td className="border px-2 py-1 uppercase">{drug.route}</td>
+                    <td className="border px-2 py-1">{drug.dose_value}</td>
+                    <td className="border px-2 py-1">{drug.dose_unit}</td>
+                    <td className="border px-2 py-1">{drug.frequency}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {protocol.adverse_effects && protocol.adverse_effects.length > 0 && (
+        <div>
+          <p className="font-semibold text-slate-700 mb-1">주요 부작용</p>
+          <div className="flex flex-wrap gap-1.5">
+            {protocol.adverse_effects.map((ae, i) => (
+              <span
+                key={i}
+                className={cn(
+                  'inline-flex items-center gap-1 px-2 py-0.5 rounded',
+                  ae.vcog_grade >= 4 ? 'bg-red-100 text-red-800' :
+                  ae.vcog_grade >= 3 ? 'bg-orange-100 text-orange-800' :
+                  'bg-yellow-100 text-yellow-800'
+                )}
+              >
+                {ae.name} <span className="font-bold">G{ae.vcog_grade}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {protocol.precautions && (
+        <div>
+          <p className="font-semibold text-slate-700 mb-0.5">주의사항</p>
+          <p className="text-slate-600 leading-relaxed">{protocol.precautions}</p>
+        </div>
+      )}
+
+      {protocol.is_ai_generated && !protocol.is_verified && (
+        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded p-2 text-amber-800">
+          <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+          <span>AI 생성 프로토콜 — 임상 적용 전 전문가 검토 필요</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Protocol select item (library + search results 공통) ────────────────────
+
+function ProtocolSelectItem({
+  protocol: p,
+  selected,
+  previewOpen,
+  onSelect,
+  onTogglePreview,
+}: {
+  protocol: AiProtocolOption
+  selected: boolean
+  previewOpen: boolean
+  onSelect: () => void
+  onTogglePreview: () => void
+}) {
+  return (
+    <div className="mb-2">
+      <div
+        onClick={onSelect}
+        className={cn(
+          'w-full cursor-pointer px-3 py-2.5 rounded-lg border transition-colors',
+          selected
+            ? 'border-rose-400 bg-rose-50'
+            : 'border-slate-200 hover:border-rose-200 hover:bg-rose-50',
+        )}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm text-slate-800">{p.protocol_name}</span>
+            {p.is_ai_generated && !p.is_verified && (
+              <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">AI</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">{p.phase}</span>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onTogglePreview() }}
+              className={cn(
+                'text-xs px-2 py-0.5 rounded border transition-colors',
+                previewOpen
+                  ? 'border-rose-300 bg-rose-50 text-rose-600'
+                  : 'border-slate-200 text-slate-500 hover:border-rose-200 hover:text-rose-500',
+              )}
+            >
+              <BookOpen size={11} className="inline mr-0.5" />
+              미리보기
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-0.5">
+          <span className="text-xs text-slate-500">{p.protocol_type}</span>
+          {p.response_rate && (
+            <span className="text-xs text-emerald-600">반응률 {Math.round(p.response_rate * 100)}%</span>
+          )}
+          {p.mst_days && (
+            <span className="text-xs text-slate-400">MST {p.mst_days}일</span>
+          )}
+          {p.description && (
+            <span className="text-xs text-slate-400 truncate">{p.description}</span>
+          )}
+        </div>
+      </div>
+      {previewOpen && <ProtocolPreview protocol={p} />}
+    </div>
+  )
+}
+
 // ─── Protocol add form (shared across modes) ─────────────────────────────────
 
 interface AddFormProps {
@@ -403,81 +549,6 @@ function AddForm({ protocol, bodyWeight, startDate, adding, onWeightChange, onDa
   )
 }
 
-// ─── Template search dialog ───────────────────────────────────────────────────
-
-interface TemplateSearchDialogProps {
-  hosId: string
-  open: boolean
-  onSelect: (p: AiProtocolOption) => void
-  onClose: () => void
-}
-
-function TemplateSearchDialog({ hosId, open, onSelect, onClose }: TemplateSearchDialogProps) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<AiProtocolOption[]>([])
-  const [searching, setSearching] = useState(false)
-
-  const handleSearch = async (value: string) => {
-    setQuery(value)
-    if (!value.trim()) { setResults([]); return }
-    setSearching(true)
-    try {
-      const found = await searchProtocolTemplates(hosId, value)
-      setResults(found)
-    } catch {
-      toast.error('라이브러리 검색 실패')
-    } finally {
-      setSearching(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>프로토콜 라이브러리 검색</DialogTitle>
-        </DialogHeader>
-        <Autocomplete
-          label="진단명 또는 약물 키워드"
-          defaultValue={query}
-          handleUpdate={handleSearch}
-          onInputChange={handleSearch}
-          placeholder="예: 림프종, CHOP, doxorubicin"
-        />
-        <div className="mt-2 space-y-2 max-h-72 overflow-y-auto">
-          {searching && (
-            <div className="flex justify-center py-4">
-              <Loader2 size={18} className="animate-spin text-slate-400" />
-            </div>
-          )}
-          {!searching && results.length === 0 && query.trim() && (
-            <p className="text-xs text-slate-400 text-center py-4">검색 결과가 없습니다.</p>
-          )}
-          {results.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => { onSelect(p); onClose() }}
-              className="w-full text-left px-3 py-2.5 rounded-lg border hover:bg-rose-50 hover:border-rose-200 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sm text-slate-800">{p.protocol_name}</span>
-                <span className="text-xs text-slate-400">{p.phase}</span>
-              </div>
-              <div className="flex gap-2 mt-1">
-                <span className="text-xs text-slate-500">{p.protocol_type}</span>
-                {p.description && (
-                  <span className="text-xs text-slate-400 truncate">{p.description}</span>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface Tab2ProtocolProps {
@@ -489,47 +560,93 @@ export default function Tab2Protocol({ caseDetail, caseProtocols: initialProtoco
   const router = useRouter()
 
   const [protocols, setProtocols] = useState(initialProtocols)
-  const [addMode, setAddMode] = useState<AddMode>(null)
+  const [addPanelOpen, setAddPanelOpen] = useState(false)
+
+  // 라이브러리 (자동 검색)
+  const [librarySuggestions, setLibrarySuggestions] = useState<AiProtocolOption[]>([])
+  const [librarySuggestionsLoading, setLibrarySuggestionsLoading] = useState(false)
+  const [previewProtocolId, setPreviewProtocolId] = useState<string | null>(null)
+
+  // 수동 검색
+  const [manualSearchQuery, setManualSearchQuery] = useState('')
+  const [manualSearchResults, setManualSearchResults] = useState<AiProtocolOption[]>([])
+  const [manualSearching, setManualSearching] = useState(false)
+
+  // AI 생성
   const [isRescue, setIsRescue] = useState(false)
+  const [aiGenerating, setAiGenerating] = useState(false)
 
-  // AI mode
-  const [availableProtocols, setAvailableProtocols] = useState<AiProtocolOption[]>([])
-  const [loadingProtocols, setLoadingProtocols] = useState(false)
   const [selectedProtocol, setSelectedProtocol] = useState<AiProtocolOption | null>(null)
-
-  // Template mode
-  const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
-
-  // Manual mode
   const [editorOpen, setEditorOpen] = useState(false)
 
-  // Shared add form
+  // 공통 AddForm
   const [bodyWeight, setBodyWeight] = useState(caseDetail.body_weight?.toString() ?? '')
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [adding, setAdding] = useState(false)
 
+  const openAddPanel = async () => {
+    setAddPanelOpen(true)
+    setLibrarySuggestionsLoading(true)
+    setLibrarySuggestions([])
+    setSelectedProtocol(null)
+    try {
+      const results = await searchRelatedProtocols(
+        caseDetail.hos_id,
+        caseDetail.diagnosis_name,
+        caseDetail.user_tags ?? '',
+      )
+      setLibrarySuggestions(results)
+    } catch {
+      toast.error('라이브러리 검색 실패')
+    } finally {
+      setLibrarySuggestionsLoading(false)
+    }
+  }
+
   const resetAll = () => {
-    setAddMode(null)
+    setAddPanelOpen(false)
+    setLibrarySuggestions([])
+    setPreviewProtocolId(null)
+    setManualSearchQuery('')
+    setManualSearchResults([])
     setIsRescue(false)
-    setAvailableProtocols([])
     setSelectedProtocol(null)
     setEditorOpen(false)
   }
 
-  const loadAiProtocols = async () => {
-    setLoadingProtocols(true)
-    setAvailableProtocols([])
-    setSelectedProtocol(null)
+  const handleManualSearch = async (value: string) => {
+    setManualSearchQuery(value)
+    if (!value.trim()) { setManualSearchResults([]); return }
+    setManualSearching(true)
+    try {
+      const found = await searchProtocolTemplates(caseDetail.hos_id, value)
+      setManualSearchResults(found)
+    } catch {
+      toast.error('검색 실패')
+    } finally {
+      setManualSearching(false)
+    }
+  }
+
+  const handleGenerateAi = async () => {
+    setAiGenerating(true)
     try {
       const result = isRescue
         ? await getAiRescueGuide(caseDetail.id)
         : await getAiOncologyGuide(caseDetail.id)
-      setAvailableProtocols(result.protocols)
-      if (result.protocols.length === 0) toast.info('추천 프로토콜이 없습니다.')
+      if (result.protocols.length === 0) {
+        toast.info('추천 프로토콜이 없습니다.')
+      } else {
+        setLibrarySuggestions((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id))
+          return [...prev, ...result.protocols.filter((p) => p.id && !existingIds.has(p.id))]
+        })
+        toast.success(`${result.protocols.length}개의 AI 프로토콜이 추가되었습니다.`)
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '프로토콜 조회 실패')
+      toast.error(err instanceof Error ? err.message : '프로토콜 생성 실패')
     } finally {
-      setLoadingProtocols(false)
+      setAiGenerating(false)
     }
   }
 
@@ -590,167 +707,140 @@ export default function Tab2Protocol({ caseDetail, caseProtocols: initialProtoco
             <PlusCircle size={16} className="text-rose-600" />
             프로토콜 추가
           </h3>
-          {addMode && (
+          {addPanelOpen && (
             <button type="button" onClick={resetAll} className="text-xs text-slate-400 hover:text-slate-600 underline">
               취소
             </button>
           )}
         </div>
 
-        {/* Mode selector */}
-        {!addMode && (
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setAddMode('ai')}
-              className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-4 hover:border-rose-300 hover:bg-rose-50 transition-colors"
-            >
-              <Sparkles size={18} className="text-rose-500" />
-              <span className="text-xs font-medium text-slate-700">AI 추천</span>
-              <span className="text-xs text-slate-400">진단 기반 자동 생성</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setAddMode('template')}
-              className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-4 hover:border-rose-300 hover:bg-rose-50 transition-colors"
-            >
-              <Search size={18} className="text-rose-500" />
-              <span className="text-xs font-medium text-slate-700">라이브러리 검색</span>
-              <span className="text-xs text-slate-400">저장된 프로토콜에서 선택</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setAddMode('manual')}
-              className="flex flex-col items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-4 hover:border-rose-300 hover:bg-rose-50 transition-colors"
-            >
-              <PenLine size={18} className="text-rose-500" />
-              <span className="text-xs font-medium text-slate-700">직접 입력</span>
-              <span className="text-xs text-slate-400">수동으로 프로토콜 생성</span>
-            </button>
-          </div>
+        {/* 추가 버튼 */}
+        {!addPanelOpen && (
+          <Button
+            onClick={openAddPanel}
+            variant="outline"
+            className="w-full border-rose-300 text-rose-700 hover:bg-rose-50"
+          >
+            <PlusCircle size={15} className="mr-2" />
+            프로토콜 추가
+          </Button>
         )}
 
-        {/* ── AI mode ── */}
-        {addMode === 'ai' && (
-          <div className="space-y-3">
-            {/* Rescue toggle */}
-            <label className="flex items-center gap-2 cursor-pointer w-fit">
-              <div
-                onClick={() => { setIsRescue((v) => !v); setAvailableProtocols([]); setSelectedProtocol(null) }}
-                className={cn(
-                  'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer',
-                  isRescue ? 'bg-amber-500' : 'bg-slate-200',
-                )}
-              >
-                <span className={cn('pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg transition-transform', isRescue ? 'translate-x-4' : 'translate-x-0')} />
-              </div>
-              <span className="text-xs font-medium text-slate-700 flex items-center gap-1">
-                {isRescue && <AlertTriangle size={12} className="text-amber-500" />}
-                {isRescue ? 'Rescue 프로토콜' : '1차 프로토콜'}
-              </span>
-            </label>
+        {/* ── 통합 추가 패널 ── */}
+        {addPanelOpen && (
+          <div className="space-y-4">
 
-            {availableProtocols.length === 0 ? (
-              <Button
-                onClick={loadAiProtocols}
-                disabled={loadingProtocols}
-                variant="outline"
-                size="sm"
-                className="border-rose-300 text-rose-700 hover:bg-rose-50"
-              >
-                {loadingProtocols
-                  ? <><Loader2 size={14} className="mr-1 animate-spin" />불러오는 중</>
-                  : <><Sparkles size={14} className="mr-1" />{isRescue ? 'Rescue 프로토콜 불러오기' : '추천 프로토콜 불러오기'}</>
-                }
-              </Button>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-500">추천 프로토콜 목록에서 선택하세요</p>
-                {availableProtocols.filter((p) => !!p.id).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setSelectedProtocol(p)}
+            {/* ① 라이브러리 자동 검색 결과 */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Library size={13} className="text-rose-500" />
+                <span className="text-xs font-semibold text-slate-700">라이브러리</span>
+                {librarySuggestionsLoading && <Loader2 size={12} className="animate-spin text-slate-400" />}
+                {!librarySuggestionsLoading && (
+                  <span className="text-xs text-slate-400">
+                    — {caseDetail.diagnosis_name} 관련 {librarySuggestions.length}건
+                  </span>
+                )}
+              </div>
+
+              {librarySuggestionsLoading && (
+                <p className="text-xs text-slate-400 py-3 text-center">검색 중...</p>
+              )}
+
+              {!librarySuggestionsLoading && librarySuggestions.length === 0 && (
+                <p className="text-xs text-slate-400 py-3 text-center border border-dashed rounded-lg">
+                  저장된 관련 프로토콜이 없습니다.
+                </p>
+              )}
+
+              {librarySuggestions.filter((p) => !!p.id).map((p) => (
+                <ProtocolSelectItem
+                  key={p.id}
+                  protocol={p}
+                  selected={selectedProtocol?.id === p.id}
+                  previewOpen={previewProtocolId === p.id}
+                  onSelect={() => setSelectedProtocol(selectedProtocol?.id === p.id ? null : p)}
+                  onTogglePreview={() => setPreviewProtocolId(previewProtocolId === p.id ? null : p.id!)}
+                />
+              ))}
+            </div>
+
+            {/* ② 수동 검색 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Search size={13} className="text-slate-400" />
+                <span className="text-xs font-semibold text-slate-700">직접 검색</span>
+              </div>
+              <Autocomplete
+                label=""
+                defaultValue={manualSearchQuery}
+                handleUpdate={handleManualSearch}
+                onInputChange={handleManualSearch}
+                placeholder="진단명 또는 약물 키워드"
+              />
+              {manualSearching && (
+                <div className="flex justify-center py-2">
+                  <Loader2 size={16} className="animate-spin text-slate-400" />
+                </div>
+              )}
+              {!manualSearching && manualSearchResults.length === 0 && manualSearchQuery.trim() && (
+                <p className="text-xs text-slate-400 text-center py-2">검색 결과가 없습니다.</p>
+              )}
+              {manualSearchResults.filter((p) => !!p.id).map((p) => (
+                <ProtocolSelectItem
+                  key={p.id}
+                  protocol={p}
+                  selected={selectedProtocol?.id === p.id}
+                  previewOpen={previewProtocolId === p.id}
+                  onSelect={() => setSelectedProtocol(selectedProtocol?.id === p.id ? null : p)}
+                  onTogglePreview={() => setPreviewProtocolId(previewProtocolId === p.id ? null : p.id!)}
+                />
+              ))}
+            </div>
+
+            {/* ③ 두 버튼: AI 추천 / 직접 작성 */}
+            <div className="flex items-center gap-3 border-t pt-3">
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <div
+                    onClick={() => setIsRescue((v) => !v)}
                     className={cn(
-                      'w-full text-left px-3 py-2.5 rounded-lg border transition-colors',
-                      selectedProtocol?.id === p.id
-                        ? 'border-rose-400 bg-rose-50'
-                        : 'border-slate-200 hover:border-rose-200 hover:bg-rose-50',
+                      'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer',
+                      isRescue ? 'bg-amber-500' : 'bg-slate-200',
                     )}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm text-slate-800">{p.protocol_name}</span>
-                      <span className="text-xs text-slate-400">{p.phase}</span>
-                    </div>
-                    {p.description && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{p.description}</p>}
-                  </button>
-                ))}
-                {availableProtocols.some((p) => !p.id) && (
-                  <p className="text-xs text-slate-400">일부 프로토콜은 ID가 없어 표시되지 않습니다. 페이지를 새로고침 해주세요.</p>
-                )}
+                    <span className={cn('pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg transition-transform', isRescue ? 'translate-x-4' : 'translate-x-0')} />
+                  </div>
+                  <span className="text-xs text-slate-600 flex items-center gap-1">
+                    {isRescue && <AlertTriangle size={11} className="text-amber-500" />}
+                    {isRescue ? 'Rescue' : '1차'}
+                  </span>
+                </label>
+                <Button
+                  onClick={handleGenerateAi}
+                  disabled={aiGenerating}
+                  variant="outline"
+                  size="sm"
+                  className="border-rose-300 text-rose-700 hover:bg-rose-50"
+                >
+                  {aiGenerating
+                    ? <><Loader2 size={13} className="mr-1 animate-spin" />생성 중...</>
+                    : <><Sparkles size={13} className="mr-1" />AI 프로토콜 추천</>
+                  }
+                </Button>
               </div>
-            )}
+              <Button
+                onClick={() => setEditorOpen(true)}
+                variant="outline"
+                size="sm"
+                className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              >
+                <PenLine size={13} className="mr-1" />
+                직접 작성
+              </Button>
+            </div>
 
-            {selectedProtocol && (
-              <AddForm
-                protocol={selectedProtocol}
-                bodyWeight={bodyWeight}
-                startDate={startDate}
-                adding={adding}
-                onWeightChange={setBodyWeight}
-                onDateChange={setStartDate}
-                onAdd={() => handleAdd(selectedProtocol.id!)}
-                onCancel={resetAll}
-              />
-            )}
-          </div>
-        )}
-
-        {/* ── Template mode ── */}
-        {addMode === 'template' && (
-          <div className="space-y-3">
-            <Button
-              onClick={() => setTemplateDialogOpen(true)}
-              variant="outline"
-              size="sm"
-              className="border-rose-300 text-rose-700 hover:bg-rose-50"
-            >
-              <Search size={14} className="mr-1" />
-              라이브러리 검색하기
-            </Button>
-            {selectedProtocol && (
-              <AddForm
-                protocol={selectedProtocol}
-                bodyWeight={bodyWeight}
-                startDate={startDate}
-                adding={adding}
-                onWeightChange={setBodyWeight}
-                onDateChange={setStartDate}
-                onAdd={() => handleAdd(selectedProtocol.id!)}
-                onCancel={resetAll}
-              />
-            )}
-            <TemplateSearchDialog
-              hosId={caseDetail.hos_id}
-              open={templateDialogOpen}
-              onSelect={(p) => { setSelectedProtocol(p); setTemplateDialogOpen(false) }}
-              onClose={() => setTemplateDialogOpen(false)}
-            />
-          </div>
-        )}
-
-        {/* ── Manual mode ── */}
-        {addMode === 'manual' && (
-          <div className="space-y-3">
-            <Button
-              onClick={() => setEditorOpen(true)}
-              variant="outline"
-              size="sm"
-              className="border-rose-300 text-rose-700 hover:bg-rose-50"
-            >
-              <PenLine size={14} className="mr-1" />
-              프로토콜 에디터 열기
-            </Button>
+            {/* ④ 선택된 프로토콜 → 케이스 추가 */}
             {selectedProtocol && (
               <AddForm
                 protocol={selectedProtocol}

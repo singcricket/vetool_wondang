@@ -6,7 +6,6 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
@@ -25,12 +24,11 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils/utils'
 import { saveDiagnosisInput, updateCaseInfo } from '@/lib/actions/oncology/diagnosis-input-actions'
-import { getAiOncologyGuide, refreshAiOncologyGuide, type AiProtocolOption } from '@/lib/actions/oncology/ai-oncology-guide'
 import { uploadAndExtractDiagnosis } from '@/lib/actions/oncology/document-extraction-actions'
 import { useOncologyContext } from '@/providers/oncology-context-provider'
 import type { OncologyCaseDetail } from '@/types/hospital/oncology-type'
 import type { OncologyDiagnosisInputRow } from '@/lib/services/oncology/fetch-oncology-case'
-import { AlertTriangle, BookOpen, Brain, ChevronDown, ChevronUp, Clock, FileText, Loader2, RefreshCw, Save, Sparkles, StethoscopeIcon, UploadCloud, Users, X } from 'lucide-react'
+import { FileText, Loader2, Save, Sparkles, StethoscopeIcon, UploadCloud, Users, X } from 'lucide-react'
 import Autocomplete from '@/components/common/auto-complete/auto-complete'
 
 const DIAGNOSIS_METHODS = [
@@ -55,148 +53,6 @@ const SEX_OPTIONS = [
   { value: 'female_neutered', label: '중성화 암컷' },
 ]
 
-function ProtocolCard({ protocol, index }: { protocol: AiProtocolOption; index: number }) {
-  const [expanded, setExpanded] = useState(index === 0)
-
-  return (
-    <div className="border rounded-lg overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-rose-50 hover:bg-rose-100 transition-colors text-left"
-      >
-        <div className="flex items-center gap-3">
-          <span className="font-semibold text-rose-800">{protocol.protocol_name}</span>
-          <Badge variant="outline" className="text-xs border-rose-300 text-rose-700">
-            {protocol.protocol_type}
-          </Badge>
-          <Badge variant="outline" className="text-xs border-slate-300 text-slate-600">
-            {protocol.phase}
-          </Badge>
-          {protocol.response_rate && (
-            <span className="text-xs text-emerald-700 font-medium">
-              반응률 {Math.round(protocol.response_rate * 100)}%
-            </span>
-          )}
-          {protocol.mst_days && (
-            <span className="text-xs text-slate-500">
-              MST {protocol.mst_days}일
-            </span>
-          )}
-        </div>
-        {expanded ? <ChevronUp size={16} className="text-rose-600" /> : <ChevronDown size={16} className="text-rose-600" />}
-      </button>
-
-      {expanded && (
-        <div className="p-4 space-y-4 text-sm">
-          {protocol.description && (
-            <p className="text-slate-600">{protocol.description}</p>
-          )}
-
-          {/* Drugs table */}
-          {protocol.drugs && protocol.drugs.length > 0 && (
-            <div>
-              <h4 className="font-medium text-slate-800 mb-2">투약 약물</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50">
-                      <th className="border px-2 py-1 text-left">약물명</th>
-                      <th className="border px-2 py-1 text-left">투여경로</th>
-                      <th className="border px-2 py-1 text-left">용량</th>
-                      <th className="border px-2 py-1 text-left">단위</th>
-                      <th className="border px-2 py-1 text-left">빈도</th>
-                      <th className="border px-2 py-1 text-left">경구</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {protocol.drugs.map((drug, i) => (
-                      <tr key={i} className="hover:bg-slate-50">
-                        <td className="border px-2 py-1 font-medium">{drug.drug_name}</td>
-                        <td className="border px-2 py-1 uppercase">{drug.route}</td>
-                        <td className="border px-2 py-1">{drug.dose_value}</td>
-                        <td className="border px-2 py-1">{drug.dose_unit}</td>
-                        <td className="border px-2 py-1">{drug.frequency}</td>
-                        <td className="border px-2 py-1">{drug.is_oral ? '예' : '아니오'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Adverse effects */}
-          {protocol.adverse_effects && protocol.adverse_effects.length > 0 && (
-            <div>
-              <h4 className="font-medium text-slate-800 mb-2">주요 부작용</h4>
-              <div className="flex flex-wrap gap-2">
-                {protocol.adverse_effects.map((ae, i) => (
-                  <span
-                    key={i}
-                    className={cn(
-                      'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs',
-                      ae.vcog_grade >= 4 ? 'bg-red-100 text-red-800' :
-                      ae.vcog_grade >= 3 ? 'bg-orange-100 text-orange-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    )}
-                  >
-                    {ae.name}
-                    <span className="font-semibold">G{ae.vcog_grade}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Precautions */}
-          {protocol.precautions && (
-            <div>
-              <h4 className="font-medium text-slate-800 mb-1">주의사항</h4>
-              <p className="text-slate-600 text-xs leading-relaxed">{protocol.precautions}</p>
-            </div>
-          )}
-
-          {/* Owner warning signs */}
-          {protocol.owner_warning_signs && protocol.owner_warning_signs.length > 0 && (
-            <div>
-              <h4 className="font-medium text-slate-800 mb-1">보호자 응급증상</h4>
-              <ul className="list-disc list-inside space-y-0.5">
-                {protocol.owner_warning_signs.map((sign, i) => (
-                  <li key={i} className="text-xs text-red-700">{sign}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* References */}
-          {protocol.ref_sources && protocol.ref_sources.length > 0 && (
-            <div>
-              <h4 className="font-medium text-slate-800 mb-1 flex items-center gap-1">
-                <BookOpen size={12} /> 참고문헌
-              </h4>
-              <ul className="space-y-0.5">
-                {protocol.ref_sources.map((ref, i) => (
-                  <li key={i} className="text-xs text-slate-500">
-                    {ref.title} — {ref.journal} ({ref.year})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* AI warning */}
-          {protocol.is_ai_generated && !protocol.is_verified && (
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded p-2 text-xs text-amber-800">
-              <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-              <span>이 프로토콜은 AI가 생성한 권장사항입니다. 임상 적용 전 반드시 전문가 검토가 필요합니다.</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
 
 type SavedFileInfo = { name: string; url: string | null; mediaType: string }
 
@@ -244,12 +100,6 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
   const [ownerNote, setOwnerNote] = useState(diagnosisInput?.additional_notes ?? '')
 
   const [saving, setSaving] = useState(false)
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiRefreshing, setAiRefreshing] = useState(false)
-  const [protocols, setProtocols] = useState<AiProtocolOption[]>([])
-  const [isExpired, setIsExpired] = useState(false)
-  const [cachedAt, setCachedAt] = useState<string | null>(null)
-  const [showRefreshConfirm, setShowRefreshConfirm] = useState(false)
 
   const [savedFiles, setSavedFiles] = useState<SavedFileInfo[]>(() => parseSavedFiles(documentInput))
   const [docFiles, setDocFiles] = useState<File[]>([])
@@ -364,49 +214,6 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleAiGuide = async () => {
-    setAiLoading(true)
-    try {
-      const result = await getAiOncologyGuide(caseDetail.id)
-      setProtocols(result.protocols)
-      setIsExpired(result.isExpired)
-      setCachedAt(result.cachedAt)
-      if (result.isExpired) {
-        setShowRefreshConfirm(true)
-      } else {
-        toast.success(`${result.protocols.length}개의 프로토콜 추천을 받았습니다.`)
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'AI 가이드 오류')
-    } finally {
-      setAiLoading(false)
-    }
-  }
-
-  const handleRefreshAiGuide = async () => {
-    setShowRefreshConfirm(false)
-    setAiRefreshing(true)
-    try {
-      const result = await refreshAiOncologyGuide(caseDetail.id)
-      setProtocols(result.protocols)
-      setIsExpired(false)
-      setCachedAt(result.cachedAt)
-      toast.success(`${result.protocols.length}개의 최신 프로토콜 추천을 받았습니다.`)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'AI 가이드 갱신 오류')
-    } finally {
-      setAiRefreshing(false)
-    }
-  }
-
-  function formatCachedAge(cachedAtIso: string | null): string {
-    if (!cachedAtIso) return ''
-    const diffMs = Date.now() - new Date(cachedAtIso).getTime()
-    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    if (days >= 30) return `${Math.floor(days / 30)}개월 전`
-    return `${days}일 전`
   }
 
   return (
@@ -769,121 +576,6 @@ export default function Tab1Diagnosis({ caseDetail, diagnosisInput, documentInpu
         저장
       </Button>
 
-      {/* AI Guide section */}
-      <div className="rounded-lg border border-rose-200 p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Brain size={18} className="text-rose-600" />
-            <h3 className="font-semibold text-slate-800">AI 프로토콜 추천</h3>
-          </div>
-          <Button
-            onClick={handleAiGuide}
-            disabled={aiLoading || aiRefreshing}
-            variant="outline"
-            className="border-rose-300 text-rose-700 hover:bg-rose-50"
-          >
-            {aiLoading
-              ? <><Loader2 size={14} className="mr-2 animate-spin" />분석 중...</>
-              : <><Sparkles size={14} className="mr-2" />AI 프로토콜 추천 받기</>
-            }
-          </Button>
-        </div>
-
-        {/* Expired cache notice */}
-        {isExpired && protocols.length > 0 && !showRefreshConfirm && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <Clock size={16} className="text-amber-600 shrink-0 mt-0.5" />
-            <div className="flex-1 text-sm">
-              <p className="text-amber-800 font-medium">
-                {formatCachedAge(cachedAt)} 생성된 추천입니다.
-              </p>
-              <p className="text-amber-700 text-xs mt-0.5">
-                최신 가이드라인으로 업데이트된 추천을 받으시겠습니까?
-              </p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                size="sm"
-                onClick={handleRefreshAiGuide}
-                disabled={aiRefreshing}
-                className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white"
-              >
-                {aiRefreshing
-                  ? <Loader2 size={12} className="mr-1 animate-spin" />
-                  : <RefreshCw size={12} className="mr-1" />
-                }
-                새 추천 받기
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowRefreshConfirm(false)}
-                className="h-7 text-xs"
-              >
-                유지
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Refresh confirm (shown immediately after loading expired cache) */}
-        {showRefreshConfirm && protocols.length > 0 && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <Clock size={16} className="text-amber-600 shrink-0 mt-0.5" />
-            <div className="flex-1 text-sm">
-              <p className="text-amber-800 font-medium">
-                {formatCachedAge(cachedAt)} 생성된 추천입니다.
-              </p>
-              <p className="text-amber-700 text-xs mt-0.5">
-                아래는 기존 가이드라인입니다. 최신 추천으로 업데이트하시겠습니까?
-              </p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                size="sm"
-                onClick={handleRefreshAiGuide}
-                disabled={aiRefreshing}
-                className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white"
-              >
-                {aiRefreshing
-                  ? <Loader2 size={12} className="mr-1 animate-spin" />
-                  : <RefreshCw size={12} className="mr-1" />
-                }
-                새 추천 받기
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowRefreshConfirm(false)}
-                className="h-7 text-xs"
-              >
-                기존 유지
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {aiRefreshing && (
-          <div className="flex items-center justify-center py-8 text-slate-400">
-            <Loader2 size={20} className="animate-spin mr-2" />
-            <span className="text-sm">최신 가이드라인으로 업데이트 중...</span>
-          </div>
-        )}
-
-        {protocols.length === 0 && !aiLoading && !aiRefreshing && (
-          <p className="text-sm text-slate-400 text-center py-6">
-            위 버튼을 클릭하여 {caseDetail.diagnosis_name}에 대한 AI 치료 프로토콜 추천을 받으세요.
-          </p>
-        )}
-
-        {protocols.length > 0 && !aiRefreshing && (
-          <div className="space-y-3">
-            {protocols.map((p, i) => (
-              <ProtocolCard key={p.id ?? i} protocol={p} index={i} />
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   )
 }

@@ -37,10 +37,10 @@ export async function searchProtocolTemplates(
     })
     .filter(Boolean)
 
-  // Build OR filter: search in protocol_name, tags, user_tags
   const orParts = terms.flatMap((term) => [
     `protocol_name.ilike.%${term}%`,
     `tags.ilike.%${term}%`,
+    `user_tags.ilike.%${term}%`,
   ])
 
   const { data, error } = await supabase
@@ -50,6 +50,60 @@ export async function searchProtocolTemplates(
     .or(orParts.join(','))
     .order('created_at', { ascending: false })
     .limit(20)
+
+  if (error || !data) return []
+
+  return data.map((p) => ({
+    id: p.id,
+    protocol_name: p.protocol_name,
+    protocol_type: p.protocol_type,
+    phase: p.phase,
+    total_cycles: p.total_cycles,
+    total_weeks: p.total_weeks,
+    description: p.description,
+    mst_days: p.mst_days,
+    response_rate: p.response_rate,
+    drugs: (p.drugs as DrugItem[]) ?? [],
+    precautions: p.precautions,
+    adverse_effects: (p.adverse_effects as AdverseEffectItem[]) ?? [],
+    contraindications: p.contraindications,
+    owner_instructions: p.owner_instructions,
+    owner_warning_signs: (p.owner_warning_signs as string[]) ?? [],
+    ref_sources: (p.ref_sources as RefSource[]) ?? [],
+    is_ai_generated: p.is_ai_generated,
+    is_verified: p.is_verified,
+    origin_diagnosis: p.origin_diagnosis,
+    user_tags: p.user_tags,
+  }))
+}
+
+export async function searchRelatedProtocols(
+  hosId: string,
+  diagnosisName: string,
+  userTags: string,
+): Promise<AiProtocolOption[]> {
+  const supabase = await createClient()
+
+  const termSources = [
+    diagnosisName.trim(),
+    ...userTags.split(',').map((t) => t.trim()),
+  ].filter(Boolean)
+
+  if (termSources.length === 0) return []
+
+  const orParts = termSources.flatMap((term) => [
+    `protocol_name.ilike.%${term}%`,
+    `tags.ilike.%${term}%`,
+    `user_tags.ilike.%${term}%`,
+  ])
+
+  const { data, error } = await supabase
+    .from('onco_protocols')
+    .select('*')
+    .eq('hos_id', hosId)
+    .or(orParts.join(','))
+    .order('created_at', { ascending: false })
+    .limit(10)
 
   if (error || !data) return []
 
