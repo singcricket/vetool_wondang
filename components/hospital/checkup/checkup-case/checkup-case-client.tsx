@@ -6,15 +6,16 @@ import { cn } from '@/lib/utils/utils'
 import type { CheckupDetail, CheckupStatus } from '@/types/hospital/checkup-type'
 import Tab1Inquiry from './tab1-inquiry'
 import Tab2Physical from './tab2-physical'
-import Tab3Exam from './tab2-exam'
-import Tab4Assessment from './tab3-assessment'
-import Tab5Summary from './tab4-summary'
+import Tab3Lab from './tab3-lab'
+import Tab4Imaging from './tab4-imaging'
+import Tab5Plan from './tab5-plan'
 import { CalendarDays, Cat, Dog, PawPrint, User } from 'lucide-react'
 import { updateCheckupStatus } from '@/lib/actions/checkup/checkup-actions'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import PdfExtractDialog from './pdf-extract-dialog'
 import type { PdfExtractionResult } from '@/lib/actions/checkup/pdf-extraction'
+import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
 
 const STATUS_LABEL: Record<CheckupStatus, string> = {
   draft: '작성중',
@@ -61,6 +62,13 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
   const router = useRouter()
   const [status, setStatus] = useState<CheckupStatus>(record.status)
   const [pdfExtracted, setPdfExtracted] = useState<PdfExtractionResult | null>(null)
+  const [subCharts, setSubCharts] = useState<Record<string, string | null>>(
+    (record.sub_charts as Record<string, string | null>) ?? {},
+  )
+
+  const handleSubChartChange = (chartType: string, chartId: string | null) => {
+    setSubCharts((prev) => ({ ...prev, [chartType]: chartId }))
+  }
 
   const getSection = (type: string) => sections.find((s) => s.section_type === type)
 
@@ -117,6 +125,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
           </div>
 
           <div className="flex items-center gap-3 sm:ml-auto">
+            <CheckupImageUploadDialog checkupId={record.id} hosId={hosId} />
             <PdfExtractDialog
               checkupId={record.id}
               hosId={hosId}
@@ -149,9 +158,9 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
         <TabsList className="shrink-0 rounded-none border-b bg-white px-4 justify-start h-10">
           <TabsTrigger value="inquiry" className="text-xs">문진</TabsTrigger>
           <TabsTrigger value="physical" className="text-xs">신체검사</TabsTrigger>
-          <TabsTrigger value="exam" className="text-xs">검사결과</TabsTrigger>
-          <TabsTrigger value="assessment" className="text-xs">평가·계획</TabsTrigger>
-          <TabsTrigger value="summary" className="text-xs">종합소견</TabsTrigger>
+          <TabsTrigger value="lab" className="text-xs">임상병리</TabsTrigger>
+          <TabsTrigger value="imaging" className="text-xs">영상검사</TabsTrigger>
+          <TabsTrigger value="plan" className="text-xs">평가/계획</TabsTrigger>
         </TabsList>
 
         <div className="flex-1 overflow-y-auto">
@@ -166,36 +175,50 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
           <TabsContent value="physical" className="m-0 h-full">
             <Tab2Physical
               checkupId={record.id}
+              patientId={record.patient_id}
+              hosId={hosId}
+              patient={p}
+              checkupDate={record.checkup_date}
               physicalSection={getSection('physical')}
+              dentalSection={getSection('dental_basic')}
+              ophthalmicSection={getSection('ophthalmic_basic')}
+              neuroSection={getSection('neuro_basic')}
               extractedPhysical={pdfExtracted?.physical ?? null}
+              subCharts={subCharts}
+              onSubChartChange={handleSubChartChange}
             />
           </TabsContent>
 
-          <TabsContent value="exam" className="m-0 h-full">
-            <Tab3Exam
+          <TabsContent value="lab" className="m-0 h-full">
+            <Tab3Lab
+              checkupId={record.id}
+              patient={p}
+              labSection={getSection('lab')}
+              extractedLabItems={pdfExtracted?.lab_items ?? null}
+            />
+          </TabsContent>
+
+          <TabsContent value="imaging" className="m-0 h-full">
+            <Tab4Imaging
               checkupId={record.id}
               hosId={hosId}
               patientId={record.patient_id}
               patient={p}
               checkupDate={record.checkup_date}
-              subCharts={record.sub_charts}
-              labSection={getSection('lab')}
-              imagingSection={getSection('imaging')}
-              extractedLabItems={pdfExtracted?.lab_items ?? null}
+              xraySection={getSection('xray')}
+              ultrasoundSection={getSection('ultrasound_basic')}
+              ctMriSection={getSection('ct_mri')}
+              extractedImaging={pdfExtracted?.imaging ?? null}
+              subCharts={subCharts}
+              onSubChartChange={handleSubChartChange}
             />
           </TabsContent>
 
-          <TabsContent value="assessment" className="m-0 h-full">
-            <Tab4Assessment
+          <TabsContent value="plan" className="m-0 h-full">
+            <Tab5Plan
               checkupId={record.id}
               assessmentSection={getSection('assessment')}
               planSection={getSection('plan')}
-            />
-          </TabsContent>
-
-          <TabsContent value="summary" className="m-0 h-full">
-            <Tab5Summary
-              checkupId={record.id}
               aiResult={aiResult}
               status={status}
               onStatusChange={handleStatusChange}

@@ -25,7 +25,19 @@ export type CheckupPatient = {
 export type CheckupSection = {
   id: string
   checkup_id: string
-  section_type: 'inquiry' | 'physical' | 'lab' | 'imaging' | 'assessment' | 'plan'
+  section_type:
+    | 'inquiry'
+    | 'physical'
+    | 'dental_basic'
+    | 'ophthalmic_basic'
+    | 'neuro_basic'
+    | 'lab'
+    | 'xray'
+    | 'ultrasound_basic'
+    | 'ct_mri'
+    | 'imaging'    // legacy
+    | 'assessment'
+    | 'plan'
   data: Record<string, unknown>
   updated_at: string
 }

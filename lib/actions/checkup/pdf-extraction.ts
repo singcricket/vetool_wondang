@@ -70,11 +70,20 @@ export type ExtractedLabRaw = {
   is_abnormal: boolean | null
 }
 
+export type ExtractedImaging = {
+  thorax_notes: string
+  abdomen_notes: string
+  extremity_notes: string
+  skull_notes: string
+  spine_notes: string
+}
+
 export type PdfExtractionResult = {
   inquiry: ExtractedInquiry
   physical: ExtractedPhysical
   lab_items: LabResultItem[]     // ref 매핑 완료된 항목
   unmatched_lab: ExtractedLabRaw[] // ref 매핑 실패 항목
+  imaging: ExtractedImaging
 }
 
 // ────────────────────────────────────────────────────────────
@@ -107,7 +116,14 @@ Extract all available information from the provided document(s) and return ONLY 
       "ref_range": "참고범위 원문 그대로 (예: 10-88 또는 10.0-88.0)",
       "is_abnormal": true 또는 false 또는 null
     }
-  ]
+  ],
+  "imaging": {
+    "thorax_notes": "흉부 방사선 소견 텍스트 (한국어, 없으면 빈 문자열)",
+    "abdomen_notes": "복부 방사선 소견 텍스트 (한국어, 없으면 빈 문자열)",
+    "extremity_notes": "사지 방사선 소견 텍스트 (한국어, 없으면 빈 문자열)",
+    "skull_notes": "두개골 방사선 소견 텍스트 (한국어, 없으면 빈 문자열)",
+    "spine_notes": "척추 방사선 소견 텍스트 (한국어, 없으면 빈 문자열)"
+  }
 }
 
 Rules:
@@ -116,6 +132,7 @@ Rules:
 - If a field has no information in the document, use empty string "" for text fields, empty array [] for lab_items
 - For physical values, extract numbers only without units
 - nameEn should be standard abbreviations (ALT not Alanine Aminotransferase)
+- For imaging: extract any radiology/X-ray findings text per body region; use empty string if not present
 - Do not include any text outside the JSON object`
 
 // ────────────────────────────────────────────────────────────
@@ -198,6 +215,7 @@ export async function extractCheckupFromPdf(
     inquiry: ExtractedInquiry
     physical: ExtractedPhysical
     lab_items: ExtractedLabRaw[]
+    imaging?: ExtractedImaging
   }
   try {
     parsed = extractJson(text)
@@ -248,5 +266,12 @@ export async function extractCheckupFromPdf(
     },
     lab_items: matched,
     unmatched_lab: unmatched,
+    imaging: {
+      thorax_notes: parsed.imaging?.thorax_notes ?? '',
+      abdomen_notes: parsed.imaging?.abdomen_notes ?? '',
+      extremity_notes: parsed.imaging?.extremity_notes ?? '',
+      skull_notes: parsed.imaging?.skull_notes ?? '',
+      spine_notes: parsed.imaging?.spine_notes ?? '',
+    },
   }
 }

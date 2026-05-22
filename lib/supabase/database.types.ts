@@ -111,58 +111,31 @@ export type Database = {
       }
       checkup_images: {
         Row: {
-          ai_analyzed_at: string | null
-          ai_confidence: number | null
-          ai_description: string | null
-          ai_section: string | null
-          ai_tags: string[]
-          caption: string | null
           checkup_id: string
-          created_at: string
-          created_by: string | null
-          file_size: number | null
+          created_at: string | null
+          hos_id: string
           id: string
-          original_filename: string | null
-          section: string | null
-          sort_order: number
-          tags: string[]
-          url: string
+          img_url: string
+          is_cover: boolean | null
+          tags: string[] | null
         }
         Insert: {
-          ai_analyzed_at?: string | null
-          ai_confidence?: number | null
-          ai_description?: string | null
-          ai_section?: string | null
-          ai_tags?: string[]
-          caption?: string | null
           checkup_id: string
-          created_at?: string
-          created_by?: string | null
-          file_size?: number | null
+          created_at?: string | null
+          hos_id: string
           id?: string
-          original_filename?: string | null
-          section?: string | null
-          sort_order?: number
-          tags?: string[]
-          url: string
+          img_url: string
+          is_cover?: boolean | null
+          tags?: string[] | null
         }
         Update: {
-          ai_analyzed_at?: string | null
-          ai_confidence?: number | null
-          ai_description?: string | null
-          ai_section?: string | null
-          ai_tags?: string[]
-          caption?: string | null
           checkup_id?: string
-          created_at?: string
-          created_by?: string | null
-          file_size?: number | null
+          created_at?: string | null
+          hos_id?: string
           id?: string
-          original_filename?: string | null
-          section?: string | null
-          sort_order?: number
-          tags?: string[]
-          url?: string
+          img_url?: string
+          is_cover?: boolean | null
+          tags?: string[] | null
         }
         Relationships: [
           {
@@ -171,13 +144,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "checkup_records"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "checkup_images_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
           },
         ]
       }
