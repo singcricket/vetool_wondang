@@ -1,0 +1,167 @@
+import type { LabRefItem } from './lab-types'
+
+export const labRefSpecial: LabRefItem[] = [
+  {
+    id: 'bile_acid',
+    nameKo: '담즙산',
+    nameEn: 'Bile Acid',
+    unit: 'μmol/L',
+    section: ['special', 'liver'],
+    testType: 'range',
+    foldProfile: 'enzyme',
+    defaultRefRange: { dog: '공복 <10 | 식후 <25', cat: '공복 <5 | 식후 <10' },
+    ranges: {
+      dog: [
+        { min: null, max: 10.0,  resultText: 'Normal (fasting)',            resultTextKo: '정상 (공복)',              isAbnormal: false                        },
+        { min: 10.0, max: 25.0,  resultText: 'Borderline — recheck postprandial', resultTextKo: '경계 — 식후 재검 권장', isAbnormal: true, severity: 'mild' },
+        { min: 25.0, max: 50.0,  resultText: 'Elevated — hepatic dysfunction', resultTextKo: '상승 — 간기능 이상',    isAbnormal: true,  severity: 'moderate' },
+        { min: 50.0, max: null,  resultText: 'Markedly elevated — PSS / liver failure', resultTextKo: '현저한 상승 — PSS / 간부전', isAbnormal: true, severity: 'high' },
+      ],
+      cat: [
+        { min: null, max: 5.0,   resultText: 'Normal (fasting)',            resultTextKo: '정상 (공복)',              isAbnormal: false                        },
+        { min: 5.0,  max: 10.0,  resultText: 'Borderline',                  resultTextKo: '경계',                     isAbnormal: true,  severity: 'mild'     },
+        { min: 10.0, max: 30.0,  resultText: 'Elevated — hepatic dysfunction', resultTextKo: '상승 — 간기능 이상',    isAbnormal: true,  severity: 'moderate' },
+        { min: 30.0, max: null,  resultText: 'Markedly elevated',           resultTextKo: '현저한 상승',              isAbnormal: true,  severity: 'high'     },
+      ],
+    },
+    comment: {
+      increase: '간기능 저하, 문맥체순환단락(PSS), 간미세혈관이형성증',
+      decrease: '임상적 의의 낮음',
+      normal: '공복과 식후(2시간) 쌍 측정. 간의 순환 기능을 직접 반영',
+    },
+    aiExtractKeywords: ['Bile Acid', '담즙산', 'Pre/Post Prandial'],
+  },
+  {
+    id: 'pli_dog',
+    nameKo: '개 췌장 리파아제 면역반응성',
+    nameEn: 'cPLI / Spec cPL',
+    unit: 'μg/L',
+    section: ['special', 'pancreas'],
+    testType: 'range',
+    foldProfile: 'enzyme',
+    defaultRefRange: { dog: '<200 (60–200: 경계)' },
+    ranges: {
+      dog: [
+        { min: null, max: 60.0,  resultText: 'Normal',                       resultTextKo: '정상',                    isAbnormal: false                        },
+        { min: 60.0, max: 200.0, resultText: 'Equivocal — pancreatitis possible', resultTextKo: '경계 — 췌장염 가능성', isAbnormal: true, severity: 'mild' },
+        { min: 200.0, max: null, resultText: 'Pancreatitis likely',          resultTextKo: '췌장염 가능성 높음',       isAbnormal: true,  severity: 'high'     },
+      ],
+    },
+    comment: {
+      increase: '췌장염. 200 μg/L 이상: 췌장염 가능성 높음. 60~200: 경계',
+      decrease: '임상적 의의 낮음',
+      normal: 'IDEXX Spec cPL. 일반 리파아제보다 췌장 특이도 높음',
+    },
+    aiExtractKeywords: ['cPLI', 'Spec cPL', 'PLI', 'Canine Pancreatic Lipase'],
+  },
+  {
+    id: 'pli_cat',
+    nameKo: '고양이 췌장 리파아제 면역반응성',
+    nameEn: 'fPLI / Spec fPL',
+    unit: 'μg/L',
+    section: ['special', 'pancreas'],
+    testType: 'range',
+    foldProfile: 'enzyme',
+    defaultRefRange: { cat: '<3.5 (3.5–5.3: 경계)' },
+    ranges: {
+      cat: [
+        { min: null, max: 3.5,  resultText: 'Normal',                        resultTextKo: '정상',                    isAbnormal: false                        },
+        { min: 3.5,  max: 5.4,  resultText: 'Equivocal — pancreatitis possible', resultTextKo: '경계 — 췌장염 가능성', isAbnormal: true, severity: 'mild' },
+        { min: 5.4,  max: null, resultText: 'Pancreatitis likely',           resultTextKo: '췌장염 가능성 높음',      isAbnormal: true,  severity: 'high'     },
+      ],
+    },
+    comment: {
+      increase: '췌장염. 5.4 μg/L 이상: 췌장염 가능성 높음',
+      decrease: '임상적 의의 낮음',
+      normal: '고양이 췌장염은 임상 징후가 비특이적 — fPLI + 초음파 병용 권장',
+    },
+    aiExtractKeywords: ['fPLI', 'Spec fPL', 'Feline Pancreatic Lipase'],
+  },
+  {
+    id: 'b12_cobalamin',
+    nameKo: '코발라민 (비타민 B12)',
+    nameEn: 'Cobalamin (B12)',
+    unit: 'ng/L',
+    section: ['special'],
+    testType: 'range',
+    foldProfile: 'renal',
+    defaultRefRange: { dog: '200–900', cat: '200–1500' },
+    ranges: {
+      dog: [
+        { min: null, max: 200.0,  resultText: 'Deficiency',            resultTextKo: '결핍',              isAbnormal: true,  severity: 'high'     },
+        { min: 200.0, max: 350.0, resultText: 'Low-normal',            resultTextKo: '낮은 정상',         isAbnormal: true,  severity: 'mild'     },
+        { min: 350.0, max: 900.0, resultText: 'Normal',                resultTextKo: '정상',              isAbnormal: false                        },
+        { min: 900.0, max: null,  resultText: 'Elevated',              resultTextKo: '상승',              isAbnormal: false                        },
+      ],
+      cat: [
+        { min: null, max: 200.0,   resultText: 'Deficiency',           resultTextKo: '결핍',              isAbnormal: true,  severity: 'high'     },
+        { min: 200.0, max: 350.0,  resultText: 'Low-normal',           resultTextKo: '낮은 정상',         isAbnormal: true,  severity: 'mild'     },
+        { min: 350.0, max: 1500.0, resultText: 'Normal',               resultTextKo: '정상',              isAbnormal: false                        },
+        { min: 1500.0, max: null,  resultText: 'Elevated',             resultTextKo: '상승',              isAbnormal: false                        },
+      ],
+    },
+    comment: {
+      increase: '임상적 의의 낮음',
+      decrease: '소장 흡수장애(EPI, IBD, 림프종), 신기능 저하. 신경학적 증상 유발 가능',
+    },
+    aiExtractKeywords: ['B12', 'Cobalamin', 'Vitamin B12', '코발라민'],
+  },
+  {
+    id: 'folate',
+    nameKo: '엽산',
+    nameEn: 'Folate',
+    unit: 'μg/L',
+    section: ['special'],
+    testType: 'range',
+    foldProfile: 'renal',
+    defaultRefRange: { dog: '7.7–24.4', cat: '9.0–28.4' },
+    ranges: {
+      dog: [
+        { min: null, max: 7.7,  resultText: 'Low — proximal SI malabsorption', resultTextKo: '낮음 — 근위 소장 흡수장애', isAbnormal: true, severity: 'moderate' },
+        { min: 7.7,  max: 24.4, resultText: 'Normal',                           resultTextKo: '정상',                       isAbnormal: false                       },
+        { min: 24.4, max: null, resultText: 'Elevated — SIBO possible',         resultTextKo: '상승 — 세균 과증식 가능성',  isAbnormal: true, severity: 'mild'    },
+      ],
+      cat: [
+        { min: null, max: 9.0,  resultText: 'Low — proximal SI malabsorption', resultTextKo: '낮음 — 근위 소장 흡수장애', isAbnormal: true, severity: 'moderate' },
+        { min: 9.0,  max: 28.4, resultText: 'Normal',                           resultTextKo: '정상',                       isAbnormal: false                       },
+        { min: 28.4, max: null, resultText: 'Elevated — SIBO possible',         resultTextKo: '상승 — 세균 과증식 가능성',  isAbnormal: true, severity: 'mild'    },
+      ],
+    },
+    comment: {
+      increase: '세균과증식(SIBO) — 세균이 엽산 생성',
+      decrease: '근위 소장 흡수장애(EPI, IBD 등)',
+      normal: '코발라민과 함께 측정 시 소장 기능 평가에 유용',
+    },
+    aiExtractKeywords: ['Folate', '엽산'],
+  },
+  {
+    id: 'tli',
+    nameKo: '트립신 유사 면역반응성',
+    nameEn: 'TLI',
+    unit: 'μg/L',
+    section: ['special', 'pancreas'],
+    testType: 'range',
+    foldProfile: 'enzyme',
+    defaultRefRange: { dog: '5.7–45.2', cat: '17–49' },
+    ranges: {
+      dog: [
+        { min: null, max: 2.5,  resultText: 'EPI confirmed',           resultTextKo: '외분비췌장기능부전(EPI) 확진', isAbnormal: true,  severity: 'high'     },
+        { min: 2.5,  max: 5.7,  resultText: 'Borderline — EPI suspected', resultTextKo: '경계 — EPI 의심',          isAbnormal: true,  severity: 'moderate' },
+        { min: 5.7,  max: 45.2, resultText: 'Normal',                   resultTextKo: '정상',                       isAbnormal: false                        },
+        { min: 45.2, max: null, resultText: 'Elevated — pancreatitis',  resultTextKo: '상승 — 췌장염',              isAbnormal: true,  severity: 'moderate' },
+      ],
+      cat: [
+        { min: null, max: 8.0,  resultText: 'EPI suspected',           resultTextKo: 'EPI 의심',                   isAbnormal: true,  severity: 'high'     },
+        { min: 8.0,  max: 17.0, resultText: 'Borderline low',          resultTextKo: '경계 저하',                  isAbnormal: true,  severity: 'mild'     },
+        { min: 17.0, max: 49.0, resultText: 'Normal',                  resultTextKo: '정상',                       isAbnormal: false                        },
+        { min: 49.0, max: null, resultText: 'Elevated — pancreatitis', resultTextKo: '상승 — 췌장염',              isAbnormal: true,  severity: 'moderate' },
+      ],
+    },
+    comment: {
+      increase: '췌장염',
+      decrease: '외분비췌장기능부전(EPI) 확진 — 개: 2.5 μg/L 미만',
+      normal: 'EPI 진단의 gold standard. 음식 제공 72시간 전 금식 권장',
+    },
+    aiExtractKeywords: ['TLI', 'Trypsin-like Immunoreactivity', 'TLI'],
+  },
+]

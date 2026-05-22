@@ -1,6 +1,8 @@
 import UpgragePlanPromptModal from '@/components/hospital/common/upgrade-plan-prompt-modal'
 import { hasPermissions } from '@/constants/company/plans'
 import { getPlan } from '@/lib/services/auth/plan'
+import { redirect } from 'next/navigation'
+import { format } from 'date-fns'
 
 export default async function CheckupPage(props: {
   params: Promise<{ hos_id: string }>
@@ -14,5 +16,5 @@ export default async function CheckupPage(props: {
     return <UpgragePlanPromptModal />
   }
 
-  return <div>건강검진차트</div>
+  redirect(`/hospital/${params.hos_id}/checkup/${format(new Date(), 'yyyy-MM-dd')}`)
 }

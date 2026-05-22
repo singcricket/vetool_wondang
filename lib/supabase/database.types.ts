@@ -52,6 +52,238 @@ export type Database = {
           },
         ]
       }
+      checkup_ai_results: {
+        Row: {
+          abnormal_findings: Json
+          approved_at: string | null
+          approved_by: string | null
+          checkup_id: string
+          created_at: string
+          id: string
+          monitoring_items: Json
+          raw_ai_output: string | null
+          summary: string | null
+          updated_at: string
+          weight_advice: string | null
+        }
+        Insert: {
+          abnormal_findings?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          checkup_id: string
+          created_at?: string
+          id?: string
+          monitoring_items?: Json
+          raw_ai_output?: string | null
+          summary?: string | null
+          updated_at?: string
+          weight_advice?: string | null
+        }
+        Update: {
+          abnormal_findings?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          checkup_id?: string
+          created_at?: string
+          id?: string
+          monitoring_items?: Json
+          raw_ai_output?: string | null
+          summary?: string | null
+          updated_at?: string
+          weight_advice?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkup_ai_results_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "checkup_ai_results_checkup_id_fkey"
+            columns: ["checkup_id"]
+            isOneToOne: true
+            referencedRelation: "checkup_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkup_images: {
+        Row: {
+          ai_analyzed_at: string | null
+          ai_confidence: number | null
+          ai_description: string | null
+          ai_section: string | null
+          ai_tags: string[]
+          caption: string | null
+          checkup_id: string
+          created_at: string
+          created_by: string | null
+          file_size: number | null
+          id: string
+          original_filename: string | null
+          section: string | null
+          sort_order: number
+          tags: string[]
+          url: string
+        }
+        Insert: {
+          ai_analyzed_at?: string | null
+          ai_confidence?: number | null
+          ai_description?: string | null
+          ai_section?: string | null
+          ai_tags?: string[]
+          caption?: string | null
+          checkup_id: string
+          created_at?: string
+          created_by?: string | null
+          file_size?: number | null
+          id?: string
+          original_filename?: string | null
+          section?: string | null
+          sort_order?: number
+          tags?: string[]
+          url: string
+        }
+        Update: {
+          ai_analyzed_at?: string | null
+          ai_confidence?: number | null
+          ai_description?: string | null
+          ai_section?: string | null
+          ai_tags?: string[]
+          caption?: string | null
+          checkup_id?: string
+          created_at?: string
+          created_by?: string | null
+          file_size?: number | null
+          id?: string
+          original_filename?: string | null
+          section?: string | null
+          sort_order?: number
+          tags?: string[]
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkup_images_checkup_id_fkey"
+            columns: ["checkup_id"]
+            isOneToOne: false
+            referencedRelation: "checkup_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkup_images_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      checkup_records: {
+        Row: {
+          checkup_date: string
+          created_at: string
+          created_by: string | null
+          hos_id: string
+          id: string
+          notes: string | null
+          patient_id: string
+          status: string
+          sub_charts: Json
+          updated_at: string
+          vet_id: string | null
+        }
+        Insert: {
+          checkup_date?: string
+          created_at?: string
+          created_by?: string | null
+          hos_id: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          status?: string
+          sub_charts?: Json
+          updated_at?: string
+          vet_id?: string | null
+        }
+        Update: {
+          checkup_date?: string
+          created_at?: string
+          created_by?: string | null
+          hos_id?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          status?: string
+          sub_charts?: Json
+          updated_at?: string
+          vet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkup_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "checkup_records_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "checkup_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+          {
+            foreignKeyName: "checkup_records_vet_id_fkey"
+            columns: ["vet_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      checkup_sections: {
+        Row: {
+          checkup_id: string
+          data: Json
+          id: string
+          section_type: string
+          updated_at: string
+        }
+        Insert: {
+          checkup_id: string
+          data?: Json
+          id?: string
+          section_type: string
+          updated_at?: string
+        }
+        Update: {
+          checkup_id?: string
+          data?: Json
+          id?: string
+          section_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkup_sections_checkup_id_fkey"
+            columns: ["checkup_id"]
+            isOneToOne: false
+            referencedRelation: "checkup_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cytology_charts: {
         Row: {
           ai_findings: Json | null
