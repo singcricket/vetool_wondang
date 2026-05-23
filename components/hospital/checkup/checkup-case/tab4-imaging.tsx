@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { upsertCheckupSection } from '@/lib/actions/checkup/checkup-actions'
@@ -18,8 +19,17 @@ import type { CheckupSection, CheckupPatient } from '@/types/hospital/checkup-ty
 import type { ExtractedImaging } from '@/lib/actions/checkup/pdf-extraction'
 import {
   xrayCategories,
+  thoraxMeasurements,
+  interpretXrayMeasurement,
   type XrayCategoryId,
 } from '@/constants/hospital/checkup/xray-ref'
+import {
+  echoCategories,
+  echoMeasurements,
+  interpretEchoMeasurement,
+  SEVERITY_BG_ECHO,
+  type EchoCategoryId,
+} from '@/constants/hospital/checkup/echo-ref'
 import {
   buildChartSummary,
   organSections,
@@ -32,6 +42,7 @@ import LinkedChartPanel, { type ChartListItem } from './linked-chart-panel'
 type XrayData = {
   checked: Record<string, boolean>
   notes: Record<XrayCategoryId, string>
+  measurements: Record<string, string>   // vhs, vlas 등 수치 입력
 }
 
 type UltrasoundData = {
@@ -41,6 +52,12 @@ type UltrasoundData = {
 
 type CtMriData = {
   notes: string
+}
+
+type EchoData = {
+  checked: Record<string, boolean>
+  notes: Record<EchoCategoryId, string>
+  measurements: Record<string, string>
 }
 
 // ── Props ───────────────────────────────────────────────────
@@ -53,6 +70,7 @@ interface Props {
   checkupDate: string
   xraySection: CheckupSection | undefined
   ultrasoundSection: CheckupSection | undefined
+  echoSection: CheckupSection | undefined
   ctMriSection: CheckupSection | undefined
   extractedImaging: ExtractedImaging | null
   subCharts: Record<string, string | null>
@@ -77,6 +95,7 @@ function initXrayData(section: CheckupSection | undefined): XrayData {
   return {
     checked: (raw.checked ?? {}) as Record<string, boolean>,
     notes: { ...emptyNotes, ...(raw.notes ?? {}) },
+    measurements: (raw.measurements ?? {}) as Record<string, string>,
   }
 }
 
@@ -91,6 +110,18 @@ function initUltrasoundData(section: CheckupSection | undefined): UltrasoundData
 function initCtMriData(section: CheckupSection | undefined): CtMriData {
   const raw = (section?.data ?? {}) as Partial<CtMriData>
   return { notes: raw.notes ?? '' }
+}
+
+function initEchoData(section: CheckupSection | undefined): EchoData {
+  const raw = (section?.data ?? {}) as Partial<EchoData>
+  const emptyNotes = Object.fromEntries(
+    echoCategories.map((c) => [c.id, '']),
+  ) as Record<EchoCategoryId, string>
+  return {
+    checked: (raw.checked ?? {}) as Record<string, boolean>,
+    notes: { ...emptyNotes, ...(raw.notes ?? {}) },
+    measurements: (raw.measurements ?? {}) as Record<string, string>,
+  }
 }
 
 // ── 장기 소견 텍스트 생성 ────────────────────────────────────
@@ -129,6 +160,7 @@ export default function Tab4Imaging({
   checkupDate,
   xraySection,
   ultrasoundSection,
+  echoSection,
   ctMriSection,
   extractedImaging,
   subCharts,
@@ -138,6 +170,7 @@ export default function Tab4Imaging({
   const [ultrasound, setUltrasound] = useState<UltrasoundData>(() =>
     initUltrasoundData(ultrasoundSection),
   )
+  const [echo, setEcho] = useState<EchoData>(() => initEchoData(echoSection))
   const [ctMri, setCtMri] = useState<CtMriData>(() => initCtMriData(ctMriSection))
 
   const [usList, setUsList] = useState<UltrasoundChartListItem[]>([])
@@ -218,6 +251,34 @@ export default function Tab4Imaging({
     }))
   }
 
+  const setMeasurement = (id: string, value: string) => {
+    setXray((prev) => ({
+      ...prev,
+      measurements: { ...prev.measurements, [id]: value },
+    }))
+  }
+
+  const toggleEchoFinding = (findingId: string, checked: boolean) => {
+    setEcho((prev) => ({
+      ...prev,
+      checked: { ...prev.checked, [findingId]: checked },
+    }))
+  }
+
+  const setEchoNote = (categoryId: EchoCategoryId, value: string) => {
+    setEcho((prev) => ({
+      ...prev,
+      notes: { ...prev.notes, [categoryId]: value },
+    }))
+  }
+
+  const setEchoMeasurement = (id: string, value: string) => {
+    setEcho((prev) => ({
+      ...prev,
+      measurements: { ...prev.measurements, [id]: value },
+    }))
+  }
+
   const setOrganNote = (organName: string, value: string) => {
     setUltrasound((prev) => ({
       ...prev,
@@ -231,6 +292,7 @@ export default function Tab4Imaging({
       await Promise.all([
         upsertCheckupSection({ checkupId, sectionType: 'xray', data: xray }),
         upsertCheckupSection({ checkupId, sectionType: 'ultrasound_basic', data: ultrasound }),
+        upsertCheckupSection({ checkupId, sectionType: 'echo_basic', data: echo }),
         upsertCheckupSection({ checkupId, sectionType: 'ct_mri', data: ctMri }),
       ])
       toast.success('저장되었습니다.')
@@ -248,6 +310,15 @@ export default function Tab4Imaging({
   }))
 
   const linkedUsId = subCharts['ultrasound'] ?? null
+
+  // species 정규화 ('dog' | 'cat')
+  const speciesKey: 'dog' | 'cat' = /^(cat|feline)$/i.test(patient.species) ? 'cat' : 'dog'
+
+  const SEVERITY_BADGE: Record<string, string> = {
+    mild:     'bg-amber-50 text-amber-700 border-amber-200',
+    moderate: 'bg-orange-50 text-orange-700 border-orange-200',
+    severe:   'bg-red-50 text-red-700 border-red-200',
+  }
 
   return (
     <div className="flex flex-col gap-6 p-4">
@@ -291,6 +362,53 @@ export default function Tab4Imaging({
                     </label>
                   ))}
                 </div>
+
+                {/* VHS / VLAS — 흉부 전용 계측 입력 */}
+                {cat.id === 'thorax' && (
+                  <div className="mb-2 rounded-md border border-slate-100 bg-slate-50 p-2">
+                    <p className="mb-1.5 text-[11px] font-semibold text-slate-500">
+                      심장 계측 (정상: VHS {speciesKey === 'cat' ? '7.5–9.0' : '8.5–10.5'} v &nbsp;/&nbsp; VLAS {speciesKey === 'cat' ? '< 2.0' : '< 2.3'} v)
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {thoraxMeasurements.map((m) => {
+                        const raw = xray.measurements[m.id] ?? ''
+                        const num = parseFloat(raw)
+                        const interp = !isNaN(num)
+                          ? interpretXrayMeasurement(m, num, speciesKey)
+                          : null
+                        return (
+                          <div key={m.id}>
+                            <label className="mb-0.5 block text-[11px] font-medium text-slate-600">
+                              {m.nameEn} ({m.nameKo})
+                            </label>
+                            <div className="flex items-center gap-1.5">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={raw}
+                                onChange={(e) => setMeasurement(m.id, e.target.value)}
+                                placeholder="—"
+                                className="h-7 w-24 border-slate-200 text-xs"
+                              />
+                              <span className="text-[11px] text-slate-400">{m.unit}</span>
+                              {interp && (
+                                <span
+                                  className={`rounded border px-1.5 py-0.5 text-[11px] font-medium ${
+                                    interp.isAbnormal
+                                      ? (SEVERITY_BADGE[interp.severity ?? 'mild'])
+                                      : 'border-teal-200 bg-teal-50 text-teal-700'
+                                  }`}
+                                >
+                                  {interp.resultTextKo}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <Textarea
                   value={xray.notes[cat.id] ?? ''}
@@ -350,6 +468,106 @@ export default function Tab4Imaging({
               </div>
             )
           })}
+        </div>
+      </section>
+
+      {/* ── 심장초음파 ────────────────────────────────── */}
+      <section>
+        <h3 className="mb-3 border-b pb-1 text-sm font-semibold text-slate-700">
+          심장초음파 (Echocardiography)
+        </h3>
+
+        {/* 소견 체크박스 */}
+        <div className="flex flex-col gap-5">
+          {echoCategories.map((cat) => {
+            const checkedCount = cat.findings.filter((f) => echo.checked[f.id]).length
+            return (
+              <div key={cat.id}>
+                <p className="mb-1.5 rounded bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
+                  {cat.label}
+                  {checkedCount > 0 && (
+                    <span className="ml-2 rounded-full bg-teal-100 px-1.5 text-teal-700">
+                      {checkedCount}
+                    </span>
+                  )}
+                </p>
+
+                <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+                  {cat.findings.map((finding) => (
+                    <label
+                      key={finding.id}
+                      className={`flex cursor-pointer items-center gap-1.5 rounded px-1.5 py-0.5 text-xs ${
+                        echo.checked[finding.id]
+                          ? SEVERITY_BG_ECHO[finding.severity]
+                          : 'text-slate-600'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={!!echo.checked[finding.id]}
+                        onCheckedChange={(v) => toggleEchoFinding(finding.id, !!v)}
+                        className="h-3.5 w-3.5 shrink-0"
+                      />
+                      {finding.label}
+                    </label>
+                  ))}
+                </div>
+
+                <Textarea
+                  value={echo.notes[cat.id] ?? ''}
+                  onChange={(e) => setEchoNote(cat.id, e.target.value)}
+                  placeholder={`${cat.label} 소견 메모`}
+                  className="min-h-[48px] resize-none text-xs"
+                />
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 계측 수치 입력 */}
+        <div className="mt-4 rounded-md border border-slate-100 bg-slate-50 p-3">
+          <p className="mb-2 text-[11px] font-semibold text-slate-500">심장초음파 계측 수치</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {echoMeasurements.map((m) => {
+              const raw = echo.measurements[m.id] ?? ''
+              const num = parseFloat(raw)
+              const interp = !isNaN(num) ? interpretEchoMeasurement(m, num, speciesKey) : null
+              const refRange = m.defaultRefRange[speciesKey]
+              return (
+                <div key={m.id}>
+                  <label className="mb-0.5 block text-[11px] font-medium text-slate-600">
+                    {m.nameEn}
+                    <span className="ml-1 font-normal text-slate-400">({m.nameKo})</span>
+                    {m.speciesNote && (
+                      <span className="ml-1 text-[10px] text-teal-600">[{m.speciesNote}]</span>
+                    )}
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={raw}
+                      onChange={(e) => setEchoMeasurement(m.id, e.target.value)}
+                      placeholder="—"
+                      className="h-7 w-24 border-slate-200 text-xs"
+                    />
+                    {m.unit && <span className="text-[11px] text-slate-400">{m.unit}</span>}
+                    <span className="text-[10px] text-slate-400">정상: {refRange}</span>
+                    {interp && (
+                      <span
+                        className={`rounded border px-1.5 py-0.5 text-[11px] font-medium ${
+                          interp.isAbnormal
+                            ? (SEVERITY_BADGE[interp.severity ?? 'mild'])
+                            : 'border-teal-200 bg-teal-50 text-teal-700'
+                        }`}
+                      >
+                        {interp.resultTextKo}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </section>
 

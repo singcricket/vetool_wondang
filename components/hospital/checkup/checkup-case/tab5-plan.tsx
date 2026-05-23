@@ -1,70 +1,131 @@
 'use client'
 
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Sparkles, CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { upsertCheckupSection } from '@/lib/actions/checkup/checkup-actions'
-import type { CheckupSection, CheckupAiResult, CheckupStatus } from '@/types/hospital/checkup-type'
+import { generatePlanSections } from '@/lib/actions/checkup/plan-analysis'
+import type { CheckupSection, CheckupPatient, CheckupStatus } from '@/types/hospital/checkup-type'
+
+// ── 타입 ─────────────────────────────────────────────────────
+
+type PlanData = {
+  // 1. 기관별 진단
+  dx_musculoskeletal: string
+  dx_cardio_resp: string
+  dx_hepatobiliary: string
+  dx_endocrine: string
+  dx_urogenital: string
+  dx_oral: string
+  dx_ophthalmic: string
+  dx_neuro: string
+  // 2. 치료 및 관리계획
+  tx_surgery: string
+  tx_medication: string
+  tx_diet_plan: string
+  tx_further_workup: string
+  tx_monitoring: string
+  tx_priority_summary: string
+  // 3. 생활 관리 가이드
+  guide_diet: string
+  guide_weight: string
+  guide_exercise: string
+  guide_environment: string
+  // 4. 추적 관찰 계획
+  followup_plan: string
+  // 5. 다음 건강검진일
+  next_checkup_date: string
+}
+
+const EMPTY: PlanData = {
+  dx_musculoskeletal: '', dx_cardio_resp: '', dx_hepatobiliary: '',
+  dx_endocrine: '', dx_urogenital: '', dx_oral: '', dx_ophthalmic: '', dx_neuro: '',
+  tx_surgery: '', tx_medication: '', tx_diet_plan: '', tx_further_workup: '',
+  tx_monitoring: '', tx_priority_summary: '',
+  guide_diet: '', guide_weight: '', guide_exercise: '', guide_environment: '',
+  followup_plan: '', next_checkup_date: '',
+}
+
+// ── Props ─────────────────────────────────────────────────────
 
 interface Props {
   checkupId: string
-  assessmentSection: CheckupSection | undefined
+  patient: CheckupPatient
   planSection: CheckupSection | undefined
-  aiResult: CheckupAiResult | null
   status: CheckupStatus
   onStatusChange: (status: 'reviewing' | 'approved') => void
 }
 
-type AssessmentData = {
-  problem_list: string
-  diagnosis: string
-  differential_diagnosis: string
+// ── 서브 컴포넌트 ─────────────────────────────────────────────
+
+function SectionHeader({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <div className="mb-3 border-b pb-1">
+      <h4 className="text-sm font-semibold text-slate-700">{title}</h4>
+      {sub && <p className="mt-0.5 text-[11px] text-slate-400">{sub}</p>}
+    </div>
+  )
 }
 
-type PlanData = {
-  treatment_plan: string
-  prescription: string
-  recheck_schedule: string
-  owner_instructions: string
+function FieldBlock({
+  label, sub, value, onChange, minH = 80,
+}: {
+  label: string
+  sub?: string
+  value: string
+  onChange: (v: string) => void
+  minH?: number
+}) {
+  return (
+    <div>
+      <p className="mb-1 text-xs font-medium text-slate-600">
+        {label}
+        {sub && <span className="ml-1 font-normal text-slate-400">{sub}</span>}
+      </p>
+      <Textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="resize-none text-xs"
+        style={{ minHeight: minH }}
+        placeholder="AI 분석 버튼을 눌러 자동으로 채우거나 직접 입력하세요."
+      />
+    </div>
+  )
 }
+
+// ── 메인 컴포넌트 ─────────────────────────────────────────────
 
 export default function Tab5Plan({
-  checkupId,
-  assessmentSection,
-  planSection,
-  aiResult,
-  status,
-  onStatusChange,
+  checkupId, patient, planSection, status, onStatusChange,
 }: Props) {
-  const savedA = (assessmentSection?.data ?? {}) as Partial<AssessmentData>
-  const savedP = (planSection?.data ?? {}) as Partial<PlanData>
-
-  const [assessment, setAssessment] = useState<AssessmentData>({
-    problem_list: savedA.problem_list ?? '',
-    diagnosis: savedA.diagnosis ?? '',
-    differential_diagnosis: savedA.differential_diagnosis ?? '',
-  })
-
-  const [plan, setPlan] = useState<PlanData>({
-    treatment_plan: savedP.treatment_plan ?? '',
-    prescription: savedP.prescription ?? '',
-    recheck_schedule: savedP.recheck_schedule ?? '',
-    owner_instructions: savedP.owner_instructions ?? '',
-  })
-
+  const saved = (planSection?.data ?? {}) as Partial<PlanData>
+  const [form, setForm] = useState<PlanData>({ ...EMPTY, ...saved })
   const [saving, setSaving] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+
+  const set = <K extends keyof PlanData>(key: K, value: PlanData[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }))
+
+  const handleAnalyze = async () => {
+    try {
+      setAnalyzing(true)
+      const result = await generatePlanSections({ checkupId, patient })
+      setForm((prev) => ({ ...prev, ...result }))
+      toast.success('AI 분석 완료. 내용을 확인 후 저장하세요.')
+    } catch {
+      toast.error('AI 분석에 실패했습니다.')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
 
   const handleSave = async () => {
     try {
       setSaving(true)
-      await Promise.all([
-        upsertCheckupSection({ checkupId, sectionType: 'assessment', data: assessment }),
-        upsertCheckupSection({ checkupId, sectionType: 'plan', data: plan }),
-      ])
+      await upsertCheckupSection({ checkupId, sectionType: 'plan', data: form })
       toast.success('저장되었습니다.')
     } catch {
       toast.error('저장에 실패했습니다.')
@@ -76,137 +137,151 @@ export default function Tab5Plan({
   return (
     <div className="flex flex-col gap-6 p-4">
 
-      {/* AI 종합소견 */}
-      {!aiResult ? (
-        <div className="rounded-lg border border-dashed border-teal-300 bg-teal-50 p-6 text-center">
-          <Sparkles className="mx-auto mb-2 h-8 w-8 text-teal-500" />
-          <p className="mb-1 text-sm font-medium text-teal-800">AI 종합소견 생성</p>
-          <p className="mb-4 text-xs text-teal-600">
-            탭1~4 검사 데이터 입력 완료 후 AI 종합소견을 생성하세요.
+      {/* AI 분석 버튼 영역 */}
+      <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 px-4 py-3">
+        <div>
+          <p className="text-sm font-medium text-teal-800">AI 종합 분석</p>
+          <p className="mt-0.5 text-[11px] text-teal-600">
+            탭 1~4 데이터를 종합하여 아래 모든 항목을 자동으로 채웁니다. 생성 후 직접 수정 가능합니다.
           </p>
-          <Button size="sm" variant="outline" className="border-teal-500 text-teal-700 hover:bg-teal-100" disabled>
-            <Sparkles className="mr-1 h-4 w-4" />
-            AI 종합소견 생성 (준비 중)
-          </Button>
         </div>
-      ) : (
-        <section>
-          <div className="mb-3 flex items-center justify-between border-b pb-1">
-            <h3 className="text-sm font-semibold text-slate-700">AI 종합소견</h3>
-            <Button size="sm" variant="ghost" className="text-xs text-teal-600" disabled>
-              <Sparkles className="mr-1 h-3 w-3" />
-              재생성
-            </Button>
-          </div>
+        <Button
+          type="button"
+          onClick={handleAnalyze}
+          disabled={analyzing}
+          className="ml-4 shrink-0 gap-1.5 bg-teal-600 hover:bg-teal-700"
+        >
+          {analyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+          {analyzing ? 'AI 분석 중...' : 'AI 종합 분석'}
+        </Button>
+      </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs">종합소견</Label>
-              <Textarea
-                defaultValue={aiResult.summary ?? ''}
-                className="min-h-[100px] resize-none text-sm"
-                placeholder="AI가 생성한 종합소견"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs">체중·영양 관리 권고</Label>
-              <Textarea
-                defaultValue={aiResult.weight_advice ?? ''}
-                className="min-h-[70px] resize-none text-sm"
-              />
-            </div>
-
-            {aiResult.abnormal_findings.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <Label className="text-xs">주요 이상소견</Label>
-                <div className="rounded-md border divide-y text-sm">
-                  {aiResult.abnormal_findings.map((f, i) => (
-                    <div key={i} className="flex items-start gap-3 px-3 py-2">
-                      <span className="font-medium text-slate-800 w-16 shrink-0">{f.item}</span>
-                      <span className="text-slate-500 w-20 shrink-0">{f.value} {f.unit}</span>
-                      <span className="text-xs text-slate-500 w-24 shrink-0">(기준: {f.ref_range})</span>
-                      <span className="text-xs text-slate-600 flex-1">{f.interpretation}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {aiResult.monitoring_items.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <Label className="text-xs">모니터링·재검 권고</Label>
-                <div className="flex flex-wrap gap-2">
-                  {aiResult.monitoring_items.map((m, i) => (
-                    <Badge
-                      key={i}
-                      variant="outline"
-                      className={
-                        m.priority === 'high'
-                          ? 'border-red-300 text-red-700'
-                          : m.priority === 'medium'
-                            ? 'border-amber-300 text-amber-700'
-                            : 'border-slate-300 text-slate-600'
-                      }
-                    >
-                      {m.item} ({m.interval})
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* 평가 */}
+      {/* ── 1. 기관별 진단 및 평가 ──────────────────── */}
       <section>
-        <h3 className="mb-3 border-b pb-1 text-sm font-semibold text-slate-700">평가 (Assessment)</h3>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {([
-            ['problem_list', '문제 목록 (Problem List)'],
-            ['diagnosis', '진단 (Diagnosis)'],
-            ['differential_diagnosis', '감별진단 (Differential Diagnosis)'],
-          ] as [keyof AssessmentData, string][]).map(([key, label]) => (
-            <div key={key} className="flex flex-col gap-1">
-              <Label className="text-xs">{label}</Label>
-              <Textarea
-                value={assessment[key]}
-                onChange={(e) => setAssessment((p) => ({ ...p, [key]: e.target.value }))}
-                className="min-h-[80px] resize-none text-sm"
-              />
-            </div>
-          ))}
+        <SectionHeader title="기관별 진단 및 평가" sub="계통별 요약 평가 소견" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FieldBlock label="근골격계" value={form.dx_musculoskeletal} onChange={(v) => set('dx_musculoskeletal', v)} />
+          <FieldBlock label="심혈관 / 호흡기" value={form.dx_cardio_resp} onChange={(v) => set('dx_cardio_resp', v)} />
+          <FieldBlock label="간담도계" value={form.dx_hepatobiliary} onChange={(v) => set('dx_hepatobiliary', v)} />
+          <FieldBlock label="내분비계" value={form.dx_endocrine} onChange={(v) => set('dx_endocrine', v)} />
+          <FieldBlock label="비뇨 / 생식기" value={form.dx_urogenital} onChange={(v) => set('dx_urogenital', v)} />
+          <FieldBlock label="구강" value={form.dx_oral} onChange={(v) => set('dx_oral', v)} />
+          <FieldBlock label="안과" value={form.dx_ophthalmic} onChange={(v) => set('dx_ophthalmic', v)} />
+          <FieldBlock label="신경계" value={form.dx_neuro} onChange={(v) => set('dx_neuro', v)} />
         </div>
       </section>
 
-      {/* 계획 */}
+      {/* ── 2. 치료 및 관리계획 ────────────────────── */}
       <section>
-        <h3 className="mb-3 border-b pb-1 text-sm font-semibold text-slate-700">계획 (Plan)</h3>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {([
-            ['treatment_plan', '치료 계획'],
-            ['prescription', '처방 (Rx)'],
-            ['recheck_schedule', '재검 일정'],
-            ['owner_instructions', '보호자 교육 사항'],
-          ] as [keyof PlanData, string][]).map(([key, label]) => (
-            <div key={key} className="flex flex-col gap-1">
-              <Label className="text-xs">{label}</Label>
-              <Textarea
-                value={plan[key]}
-                onChange={(e) => setPlan((p) => ({ ...p, [key]: e.target.value }))}
-                className="min-h-[80px] resize-none text-sm"
-              />
-            </div>
-          ))}
+        <SectionHeader title="치료 및 관리계획" sub="즉각 치료 / 관리 / 모니터링 / 추가검사 항목 정리" />
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FieldBlock
+              label="외과 수술 / 시술 계획"
+              value={form.tx_surgery}
+              onChange={(v) => set('tx_surgery', v)}
+            />
+            <FieldBlock
+              label="내과 약물 / 주사 치료"
+              value={form.tx_medication}
+              onChange={(v) => set('tx_medication', v)}
+            />
+            <FieldBlock
+              label="식이관리 계획"
+              value={form.tx_diet_plan}
+              onChange={(v) => set('tx_diet_plan', v)}
+            />
+            <FieldBlock
+              label="추가 정밀검사"
+              sub="(추가로 진행해야 할 검사)"
+              value={form.tx_further_workup}
+              onChange={(v) => set('tx_further_workup', v)}
+            />
+            <FieldBlock
+              label="주기적 모니터링 항목"
+              value={form.tx_monitoring}
+              onChange={(v) => set('tx_monitoring', v)}
+            />
+          </div>
+          <FieldBlock
+            label="치료·관리 우선순위 요약"
+            sub="(1순위: 즉각치료 → 2순위: 적극관리 → 3순위: 모니터링)"
+            value={form.tx_priority_summary}
+            onChange={(v) => set('tx_priority_summary', v)}
+            minH={100}
+          />
         </div>
       </section>
 
-      {/* 하단 버튼 */}
+      {/* ── 3. 생활 관리 가이드 ────────────────────── */}
+      <section>
+        <SectionHeader title="생활 관리 가이드" sub="체중·BCS·질환 맞춤형 생활 권고사항" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FieldBlock
+            label="식이관리"
+            sub="(체중·BCS·현재 질환 맞춤형)"
+            value={form.guide_diet}
+            onChange={(v) => set('guide_diet', v)}
+          />
+          <FieldBlock
+            label="체중관리"
+            sub="(목표체중, 칼로리 제안)"
+            value={form.guide_weight}
+            onChange={(v) => set('guide_weight', v)}
+          />
+          <FieldBlock
+            label="운동 및 활동 관리"
+            sub="(권장 운동량, 종류)"
+            value={form.guide_exercise}
+            onChange={(v) => set('guide_exercise', v)}
+          />
+          <FieldBlock
+            label="환경 및 기본관리"
+            sub="(실내환경, 구강관리, 청결 등)"
+            value={form.guide_environment}
+            onChange={(v) => set('guide_environment', v)}
+          />
+        </div>
+      </section>
+
+      {/* ── 4. 추적 관찰 계획 ──────────────────────── */}
+      <section>
+        <SectionHeader title="추적 관찰 계획" sub="N개월 후: 검사 항목 형식으로 작성" />
+        <FieldBlock
+          label="추적 관찰 일정"
+          value={form.followup_plan}
+          onChange={(v) => set('followup_plan', v)}
+          minH={100}
+        />
+      </section>
+
+      {/* ── 5. 다음 건강검진일 ──────────────────────── */}
+      <section>
+        <SectionHeader title="다음 건강검진 예정일" />
+        <div className="flex items-center gap-3">
+          <Input
+            type="date"
+            value={form.next_checkup_date}
+            onChange={(e) => set('next_checkup_date', e.target.value)}
+            className="w-44 text-sm"
+          />
+          {form.next_checkup_date && (
+            <span className="text-xs text-slate-500">
+              {new Date(form.next_checkup_date).toLocaleDateString('ko-KR', {
+                year: 'numeric', month: 'long', day: 'numeric',
+              })}
+            </span>
+          )}
+        </div>
+      </section>
+
+      {/* ── 저장 / 상태 ─────────────────────────────── */}
       <div className="flex items-center justify-between border-t pt-4">
         <div className="flex items-center gap-2 text-xs text-slate-500">
           {status === 'draft' && <span>작성 중</span>}
-          {status === 'reviewing' && <span className="font-medium text-amber-600">검토 중</span>}
+          {status === 'reviewing' && (
+            <span className="font-medium text-amber-600">검토 중</span>
+          )}
           {status === 'approved' && (
             <span className="flex items-center gap-1 font-medium text-emerald-600">
               <CheckCircle2 size={14} /> 승인 완료

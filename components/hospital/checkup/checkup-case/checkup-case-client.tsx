@@ -167,6 +167,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
           <TabsContent value="inquiry" className="m-0 h-full">
             <Tab1Inquiry
               checkupId={record.id}
+              patient={p}
               section={getSection('inquiry')}
               extractedInquiry={pdfExtracted?.inquiry ?? null}
             />
@@ -207,6 +208,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               checkupDate={record.checkup_date}
               xraySection={getSection('xray')}
               ultrasoundSection={getSection('ultrasound_basic')}
+              echoSection={getSection('echo_basic')}
               ctMriSection={getSection('ct_mri')}
               extractedImaging={pdfExtracted?.imaging ?? null}
               subCharts={subCharts}
@@ -217,9 +219,8 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
           <TabsContent value="plan" className="m-0 h-full">
             <Tab5Plan
               checkupId={record.id}
-              assessmentSection={getSection('assessment')}
+              patient={p}
               planSection={getSection('plan')}
-              aiResult={aiResult}
               status={status}
               onStatusChange={handleStatusChange}
             />

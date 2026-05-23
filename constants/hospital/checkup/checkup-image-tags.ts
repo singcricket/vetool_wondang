@@ -90,6 +90,22 @@ export const CHECKUP_IMAGE_TAG_GROUPS: CheckupImageTagGroup[] = [
     ],
   },
   {
+    group: 'echo',
+    label: '심장초음파 (Echo)',
+    color: 'rose',
+    tags: [
+      { id: 'echo_overview', label: 'Echo 전체' },
+      { id: 'echo_lv', label: 'Echo 좌심실' },
+      { id: 'echo_la', label: 'Echo 좌심방' },
+      { id: 'echo_mv', label: 'Echo 이첨판(승모판)' },
+      { id: 'echo_av', label: 'Echo 대동맥판' },
+      { id: 'echo_rv_ra', label: 'Echo 우심/삼첨판' },
+      { id: 'echo_pericardium', label: 'Echo 심낭' },
+      { id: 'echo_doppler', label: 'Echo 도플러' },
+      { id: 'echo_mmode', label: 'Echo M-mode' },
+    ],
+  },
+  {
     group: 'ct_mri',
     label: 'CT / MRI / 내시경',
     color: 'red',
@@ -128,5 +144,6 @@ export const TAG_COLOR_CLASS: Record<string, string> = {
   indigo: 'bg-indigo-100 text-indigo-800',
   yellow: 'bg-yellow-100 text-yellow-800',
   teal:   'bg-teal-100 text-teal-800',
+  rose:   'bg-rose-100 text-rose-800',
   red:    'bg-red-100 text-red-800',
 }

@@ -1,49 +1,174 @@
 'use client'
 
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Sparkles, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { upsertCheckupSection } from '@/lib/actions/checkup/checkup-actions'
-import type { CheckupSection } from '@/types/hospital/checkup-type'
+import { analyzePatientRisk } from '@/lib/actions/checkup/inquiry-risk-analysis'
+import type { CheckupSection, CheckupPatient } from '@/types/hospital/checkup-type'
 import type { ExtractedInquiry } from '@/lib/actions/checkup/pdf-extraction'
+
+// ── 타입 ─────────────────────────────────────────────────────
+
+type LivingType = 'indoor' | 'outdoor' | 'mixed' | ''
+type CondLevel = 'good' | 'fair' | 'poor' | ''
+type CondAppetite = 'normal' | 'increased' | 'decreased' | ''
+type CondWater = 'normal' | 'increased' | 'decreased' | ''
+
+type InquiryData = {
+  // 섹션 1: 생활환경
+  living_type: LivingType
+  toilet_env: string
+  diet_main: string
+  diet_treats: string
+  diet_allergies: string
+  living_other: string
+
+  // 섹션 2: 최근 컨디션
+  condition_vitality: CondLevel
+  condition_appetite: CondAppetite
+  condition_water: CondWater
+  condition_urination: string
+  condition_defecation: string
+  condition_notes: string
+
+  // 섹션 3: 주호소 / 병력
+  chief_complaint: string
+  past_history: string
+  current_diseases: string
+  vaccination: string
+  heartworm: string
+  internal_parasite: string
+  external_parasite: string
+  prev_checkup: string
+
+  // 섹션 4: AI 리스크 분석
+  ai_breed_risk: string
+  ai_age_risk: string
+  ai_management: string
+}
+
+// ── 초기값 ────────────────────────────────────────────────────
+
+function initData(
+  section: CheckupSection | undefined,
+  extracted: ExtractedInquiry | null,
+): InquiryData {
+  const raw = (section?.data ?? {}) as Partial<InquiryData> & Record<string, unknown>
+
+  // PDF 추출 결과 (기존 flat 필드 -> 새 구조로 매핑)
+  const ex = extracted
+
+  return {
+    living_type: (raw.living_type as LivingType) ?? '',
+    toilet_env: (raw.toilet_env as string) ?? '',
+    diet_main: (raw.diet_main as string) ?? ex?.diet ?? '',
+    diet_treats: (raw.diet_treats as string) ?? '',
+    diet_allergies: (raw.diet_allergies as string) ?? '',
+    living_other: (raw.living_other as string) ?? ex?.living_env ?? '',
+
+    condition_vitality: (raw.condition_vitality as CondLevel) ?? '',
+    condition_appetite: (raw.condition_appetite as CondAppetite) ?? '',
+    condition_water: (raw.condition_water as CondWater) ?? '',
+    condition_urination: (raw.condition_urination as string) ?? '',
+    condition_defecation: (raw.condition_defecation as string) ?? '',
+    condition_notes: (raw.condition_notes as string) ?? '',
+
+    chief_complaint: (raw.chief_complaint as string) ?? ex?.chief_complaint ?? '',
+    past_history: (raw.past_history as string) ?? ex?.history ?? '',
+    current_diseases: (raw.current_diseases as string) ?? '',
+    vaccination: (raw.vaccination as string) ?? '',
+    heartworm: (raw.heartworm as string) ?? '',
+    internal_parasite: (raw.internal_parasite as string) ?? '',
+    external_parasite: (raw.external_parasite as string) ?? '',
+    prev_checkup: (raw.prev_checkup as string) ?? '',
+
+    ai_breed_risk: (raw.ai_breed_risk as string) ?? '',
+    ai_age_risk: (raw.ai_age_risk as string) ?? '',
+    ai_management: (raw.ai_management as string) ?? '',
+  }
+}
+
+// ── 서브 컴포넌트 ─────────────────────────────────────────────
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 className="mb-3 border-b pb-1 text-sm font-semibold text-slate-700">{children}</h4>
+  )
+}
+
+function FieldLabel({ children, sub }: { children: React.ReactNode; sub?: string }) {
+  return (
+    <p className="mb-1 text-xs font-medium text-slate-600">
+      {children}
+      {sub && <span className="ml-1 font-normal text-slate-400">{sub}</span>}
+    </p>
+  )
+}
+
+function ToggleGroup<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T
+  options: { value: T; label: string; color?: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <div className="flex gap-1">
+      {options.map((opt) => {
+        const active = value === opt.value
+        const color = opt.color ?? 'teal'
+        const activeClass =
+          color === 'red'
+            ? 'bg-red-100 text-red-700 border-red-300'
+            : color === 'amber'
+              ? 'bg-amber-100 text-amber-700 border-amber-300'
+              : color === 'blue'
+                ? 'bg-blue-100 text-blue-700 border-blue-300'
+                : 'bg-teal-100 text-teal-700 border-teal-300'
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(active ? ('' as T) : opt.value)}
+            className={`rounded-full border px-3 py-0.5 text-xs font-medium transition-all ${
+              active ? activeClass : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+            }`}
+          >
+            {opt.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── 메인 컴포넌트 ─────────────────────────────────────────────
 
 interface Props {
   checkupId: string
+  patient: CheckupPatient
   section: CheckupSection | undefined
   extractedInquiry: ExtractedInquiry | null
 }
 
-type InquiryData = {
-  chief_complaint: string
-  history: string
-  living_env: string
-  diet: string
-  current_medications: string
-}
-
-export default function Tab1Inquiry({ checkupId, section, extractedInquiry }: Props) {
-  const saved = (section?.data ?? {}) as Partial<InquiryData>
-  const [form, setForm] = useState<InquiryData>({
-    chief_complaint: saved.chief_complaint ?? '',
-    history: saved.history ?? '',
-    living_env: saved.living_env ?? '',
-    diet: saved.diet ?? '',
-    current_medications: saved.current_medications ?? '',
-  })
+export default function Tab1Inquiry({ checkupId, patient, section, extractedInquiry }: Props) {
+  const [form, setForm] = useState<InquiryData>(() => initData(section, extractedInquiry))
   const [saving, setSaving] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
 
   useEffect(() => {
     if (!extractedInquiry) return
-    setForm((prev) => ({
-      chief_complaint: prev.chief_complaint || extractedInquiry.chief_complaint,
-      history: prev.history || extractedInquiry.history,
-      living_env: prev.living_env || extractedInquiry.living_env,
-      diet: prev.diet || extractedInquiry.diet,
-      current_medications: prev.current_medications || extractedInquiry.current_medications,
-    }))
+    setForm((prev) => initData(section, extractedInquiry))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [extractedInquiry])
+
+  const set = <K extends keyof InquiryData>(key: K, value: InquiryData[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }))
 
   const handleSave = async () => {
     try {
@@ -57,29 +182,355 @@ export default function Tab1Inquiry({ checkupId, section, extractedInquiry }: Pr
     }
   }
 
-  const field = (key: keyof InquiryData, label: string, placeholder?: string) => (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-sm font-medium">{label}</Label>
-      <Textarea
-        value={form[key]}
-        onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
-        placeholder={placeholder}
-        className="min-h-[80px] resize-none"
-      />
-    </div>
-  )
+  const handleAnalyze = async () => {
+    try {
+      setAnalyzing(true)
+      const result = await analyzePatientRisk({
+        species: patient.species,
+        breed: patient.breed,
+        birth: patient.birth,
+        gender: patient.gender,
+      })
+      setForm((prev) => ({
+        ...prev,
+        ai_breed_risk: result.breed_risk,
+        ai_age_risk: result.age_risk,
+        ai_management: result.management,
+      }))
+      toast.success('AI 분석 완료. 내용을 확인 후 저장하세요.')
+    } catch {
+      toast.error('AI 분석에 실패했습니다.')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  const isCat = /^(cat|feline)$/i.test(patient.species)
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {field('chief_complaint', '주증상 (Chief Complaint)', '주요 증상을 입력하세요')}
-        {field('history', '병력 (History)', '과거 병력, 수술 이력, 예방접종 등')}
-        {field('living_env', '생활환경', '실내/실외, 운동량, 동거 동물 등')}
-        {field('diet', '식이 (Diet)', '현재 급여 사료 종류 및 브랜드, 급여량, 급여 횟수, 간식 종류 및 양')}
-        {field('current_medications', '현재 약물 및 보조제', '약물명, 용량, 투여 기간')}
-      </div>
+    <div className="flex flex-col gap-6 p-4">
 
-      <div className="flex justify-end">
+      {/* ── 섹션 1: 생활환경 ──────────────────────── */}
+      <section>
+        <SectionHeader>생활환경</SectionHeader>
+
+        <div className="flex flex-col gap-4">
+          {/* 생활 공간 */}
+          <div>
+            <FieldLabel>생활 공간</FieldLabel>
+            <ToggleGroup<LivingType>
+              value={form.living_type}
+              onChange={(v) => set('living_type', v)}
+              options={[
+                { value: 'indoor', label: '실내', color: 'teal' },
+                { value: 'outdoor', label: '실외', color: 'amber' },
+                { value: 'mixed', label: '복합', color: 'blue' },
+              ]}
+            />
+          </div>
+
+          {/* 화장실 환경 */}
+          <div>
+            <FieldLabel sub={isCat ? '(모래 종류, 화장실 수 등)' : '(패드, 야외, 사람 화장실 등)'}>
+              화장실 환경
+            </FieldLabel>
+            <Textarea
+              value={form.toilet_env}
+              onChange={(e) => set('toilet_env', e.target.value)}
+              placeholder={
+                isCat
+                  ? '예) 두부 모래 / 화장실 2개 / 하루 2회 청소'
+                  : '예) 배변 패드 사용 / 야외 배뇨 2회/일 / 사람 화장실 이용'
+              }
+              className="min-h-[56px] resize-none text-xs"
+            />
+          </div>
+
+          {/* 사료 */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <FieldLabel>주사료</FieldLabel>
+              <Textarea
+                value={form.diet_main}
+                onChange={(e) => set('diet_main', e.target.value)}
+                placeholder="예) 로얄캐닌 어덜트 드라이 150g/일"
+                className="min-h-[72px] resize-none text-xs"
+              />
+            </div>
+            <div>
+              <FieldLabel sub="(습식·간식·토핑 등)">부식 / 간식</FieldLabel>
+              <Textarea
+                value={form.diet_treats}
+                onChange={(e) => set('diet_treats', e.target.value)}
+                placeholder="예) 습식캔 1/2개/일, 동결건조 간식 소량"
+                className="min-h-[72px] resize-none text-xs"
+              />
+            </div>
+            <div>
+              <FieldLabel sub="(알러지 유발 병력, 제한 음식)">알러지 / 금기 음식</FieldLabel>
+              <Textarea
+                value={form.diet_allergies}
+                onChange={(e) => set('diet_allergies', e.target.value)}
+                placeholder="예) 닭고기 급여 후 피부 소양감 병력"
+                className="min-h-[72px] resize-none text-xs"
+              />
+            </div>
+          </div>
+
+          {/* 기타 생활환경 */}
+          <div>
+            <FieldLabel sub="(동거 동물, 운동량, 스트레스 요인 등)">기타 생활환경</FieldLabel>
+            <Textarea
+              value={form.living_other}
+              onChange={(e) => set('living_other', e.target.value)}
+              placeholder="예) 동거묘 2마리, 산책 30분/일, 최근 이사 후 스트레스"
+              className="min-h-[56px] resize-none text-xs"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── 섹션 2: 최근 컨디션 ───────────────────── */}
+      <section>
+        <SectionHeader>최근 컨디션</SectionHeader>
+
+        <div className="flex flex-col gap-4">
+          {/* 활력·식욕·음수 — 버튼 그룹 */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <FieldLabel>활력</FieldLabel>
+              <ToggleGroup<CondLevel>
+                value={form.condition_vitality}
+                onChange={(v) => set('condition_vitality', v)}
+                options={[
+                  { value: 'good', label: '양호', color: 'teal' },
+                  { value: 'fair', label: '보통', color: 'amber' },
+                  { value: 'poor', label: '저하', color: 'red' },
+                ]}
+              />
+            </div>
+            <div>
+              <FieldLabel>식욕</FieldLabel>
+              <ToggleGroup<CondAppetite>
+                value={form.condition_appetite}
+                onChange={(v) => set('condition_appetite', v)}
+                options={[
+                  { value: 'normal', label: '정상', color: 'teal' },
+                  { value: 'increased', label: '증가', color: 'blue' },
+                  { value: 'decreased', label: '감소', color: 'red' },
+                ]}
+              />
+            </div>
+            <div>
+              <FieldLabel>음수량</FieldLabel>
+              <ToggleGroup<CondWater>
+                value={form.condition_water}
+                onChange={(v) => set('condition_water', v)}
+                options={[
+                  { value: 'normal', label: '정상', color: 'teal' },
+                  { value: 'increased', label: '증가', color: 'blue' },
+                  { value: 'decreased', label: '감소', color: 'red' },
+                ]}
+              />
+            </div>
+          </div>
+
+          {/* 배뇨·배변 */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <FieldLabel sub="(횟수, 색, 이상 소견 등)">배뇨 상태</FieldLabel>
+              <Textarea
+                value={form.condition_urination}
+                onChange={(e) => set('condition_urination', e.target.value)}
+                placeholder="예) 하루 3~4회, 색 정상, 배뇨통 없음"
+                className="min-h-[64px] resize-none text-xs"
+              />
+            </div>
+            <div>
+              <FieldLabel sub="(횟수, 성상, 이상 소견 등)">배변 상태</FieldLabel>
+              <Textarea
+                value={form.condition_defecation}
+                onChange={(e) => set('condition_defecation', e.target.value)}
+                placeholder="예) 하루 1회, 성상 정상, 최근 무른변 경향"
+                className="min-h-[64px] resize-none text-xs"
+              />
+            </div>
+          </div>
+
+          {/* 기타 컨디션 메모 */}
+          <div>
+            <FieldLabel sub="(기침, 구토, 피부 변화 등 기타 관찰 사항)">기타 증상 / 메모</FieldLabel>
+            <Textarea
+              value={form.condition_notes}
+              onChange={(e) => set('condition_notes', e.target.value)}
+              placeholder="예) 2주 전부터 간헐적 기침, 수면 중 코골이"
+              className="min-h-[56px] resize-none text-xs"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── 섹션 3: 주호소 / 병력 ─────────────────── */}
+      <section>
+        <SectionHeader>주호소 및 병력</SectionHeader>
+
+        <div className="flex flex-col gap-4">
+          {/* 현재 주호소 */}
+          <div>
+            <FieldLabel>현재 증상 및 주요 호소</FieldLabel>
+            <Textarea
+              value={form.chief_complaint}
+              onChange={(e) => set('chief_complaint', e.target.value)}
+              placeholder="예) 최근 1개월간 체중 감소, 물을 많이 마심, 잦은 배뇨"
+              className="min-h-[72px] resize-none text-xs"
+            />
+          </div>
+
+          {/* 과거 병력 */}
+          <div>
+            <FieldLabel sub="(수술 / 진단 / 기타)">과거 병력</FieldLabel>
+            <Textarea
+              value={form.past_history}
+              onChange={(e) => set('past_history', e.target.value)}
+              placeholder="예) 2022년 슬개골 탈구 수술 / 2023년 알러지 피부염 진단 및 치료"
+              className="min-h-[72px] resize-none text-xs"
+            />
+          </div>
+
+          {/* 현재 관리중인 질환 */}
+          <div>
+            <FieldLabel sub="(약물, 특이식이 포함)">현재 관리 중인 질환</FieldLabel>
+            <Textarea
+              value={form.current_diseases}
+              onChange={(e) => set('current_diseases', e.target.value)}
+              placeholder="예) 갑상선 기능저하증 — 신지로이드 0.3mg 1회/일 투여 중"
+              className="min-h-[64px] resize-none text-xs"
+            />
+          </div>
+
+          {/* 예방의학 이력 */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-600">예방의학 이력</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div>
+                <FieldLabel>예방 접종</FieldLabel>
+                <Textarea
+                  value={form.vaccination}
+                  onChange={(e) => set('vaccination', e.target.value)}
+                  placeholder="예) 종합백신 2024.03 / 광견병 2024.03"
+                  className="min-h-[72px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>사상충 예방</FieldLabel>
+                <Textarea
+                  value={form.heartworm}
+                  onChange={(e) => set('heartworm', e.target.value)}
+                  placeholder="예) 매월 하트가드 투약 중"
+                  className="min-h-[72px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>내부 구충</FieldLabel>
+                <Textarea
+                  value={form.internal_parasite}
+                  onChange={(e) => set('internal_parasite', e.target.value)}
+                  placeholder="예) 3개월마다 드론탈 투약"
+                  className="min-h-[72px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>외부 구충</FieldLabel>
+                <Textarea
+                  value={form.external_parasite}
+                  onChange={(e) => set('external_parasite', e.target.value)}
+                  placeholder="예) 매월 브라벡토 투약 중"
+                  className="min-h-[72px] resize-none text-xs"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 과거 검진/스켈링 이력 */}
+          <div>
+            <FieldLabel sub="(건강검진, 스켈링, 영상검사 이력 등)">과거 건강검진 / 스켈링 이력</FieldLabel>
+            <Textarea
+              value={form.prev_checkup}
+              onChange={(e) => set('prev_checkup', e.target.value)}
+              placeholder="예) 2023년 종합 건강검진 (이상 없음) / 2024.01 스켈링"
+              className="min-h-[56px] resize-none text-xs"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── 섹션 4: 품종/나이/성별 건강 리스크 분석 ── */}
+      <section>
+        <div className="mb-3 flex items-center justify-between border-b pb-1">
+          <div>
+            <h4 className="text-sm font-semibold text-slate-700">품종 · 나이 · 성별 건강 리스크 분석</h4>
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              AI가 생성한 내용을 직접 수정할 수 있습니다.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            className="h-7 gap-1.5 border-teal-300 px-3 text-xs text-teal-700 hover:bg-teal-50"
+          >
+            {analyzing ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Sparkles size={12} />
+            )}
+            {analyzing ? 'AI 분석 중...' : 'AI 분석'}
+          </Button>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div>
+            <FieldLabel sub="(품종별 호발 질환, 해부학적 특이점, 유전성 질환 등)">
+              품종별 특이점
+            </FieldLabel>
+            <Textarea
+              value={form.ai_breed_risk}
+              onChange={(e) => set('ai_breed_risk', e.target.value)}
+              placeholder="AI 분석 버튼을 눌러 자동으로 채우거나 직접 입력하세요."
+              className="min-h-[80px] resize-none text-xs"
+            />
+          </div>
+
+          <div>
+            <FieldLabel sub="(현재 연령에서 흔한 문제, 노령/성장기 특이사항 등)">
+              연령별 건강 리스크
+            </FieldLabel>
+            <Textarea
+              value={form.ai_age_risk}
+              onChange={(e) => set('ai_age_risk', e.target.value)}
+              placeholder="AI 분석 버튼을 눌러 자동으로 채우거나 직접 입력하세요."
+              className="min-h-[80px] resize-none text-xs"
+            />
+          </div>
+
+          <div>
+            <FieldLabel sub="(식이관리 · 구강관리 · 정기검진 · 환경관리 · 주요 이상 증상 관찰)">
+              권장 관리 포인트
+            </FieldLabel>
+            <Textarea
+              value={form.ai_management}
+              onChange={(e) => set('ai_management', e.target.value)}
+              placeholder="AI 분석 버튼을 눌러 자동으로 채우거나 직접 입력하세요."
+              className="min-h-[80px] resize-none text-xs"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── 저장 ─────────────────────────────────── */}
+      <div className="flex justify-end border-t pt-4">
         <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
           {saving ? '저장 중...' : '저장'}
         </Button>

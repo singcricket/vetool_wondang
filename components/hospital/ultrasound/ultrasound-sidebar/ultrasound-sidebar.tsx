@@ -1,6 +1,6 @@
 import { fetchUltrasoundSidebarData } from '@/lib/services/ultrasound/fetch-ultrasound'
 import UltrasoundDesktopSidebar from './ultrasound-desktop-sidebar'
-// import { MobileUltrasoundSidebarSheet } from './mobile/mobile-ultrasound-sidebar-sheet'
+import { MobileUltrasoundSidebarSheet } from './mobile/mobile-ultrasound-sidebar-sheet'
 
 interface UltrasoundSidebarProps {
   hosId: string
@@ -21,12 +21,11 @@ export default async function UltrasoundSidebar({
         items={initialItems}
       />
 
-      {/* 모바일 버전은 추후 필요시 활성화 */}
-      {/* <MobileUltrasoundSidebarSheet
+      <MobileUltrasoundSidebarSheet
         hosId={hosId}
         targetDate={targetDate}
         items={initialItems}
-      /> */}
+      />
     </>
   )
 }

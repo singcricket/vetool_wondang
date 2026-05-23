@@ -382,3 +382,132 @@ export const xrayCategories: XrayCategory[] = [
 export const xrayFindingMap: Record<string, XrayFinding> = Object.fromEntries(
   xrayCategories.flatMap((c) => c.findings.map((f) => [f.id, f])),
 )
+
+// ============================================================
+// 방사선 계측 항목 (VHS, VLAS)
+// lab-ref-chemistry 와 동일 패턴
+// ============================================================
+
+export type XrayMeasurementRange = {
+  min: number | null
+  max: number | null
+  resultText: string
+  resultTextKo: string
+  isAbnormal: boolean
+  severity?: 'mild' | 'moderate' | 'severe'
+}
+
+export type XrayMeasurement = {
+  id: string
+  nameKo: string
+  nameEn: string
+  unit: string
+  defaultRefRange: { dog: string; cat: string }
+  ranges: {
+    dog: XrayMeasurementRange[]
+    cat: XrayMeasurementRange[]
+  }
+  comment: {
+    increase: string
+    decrease?: string
+    normal?: string
+  }
+  ownerMessage: {
+    increase: string
+    decrease: string
+    normal: string
+  }
+  categoryId: XrayCategoryId   // 어느 방사선 카테고리에 속하는지
+}
+
+// ── VHS (Vertebral Heart Score) ───────────────────────────────
+const vhsRef: XrayMeasurement = {
+  id: 'vhs',
+  nameKo: '척추심장지수',
+  nameEn: 'VHS',
+  unit: 'v',
+  categoryId: 'thorax',
+  defaultRefRange: { dog: '8.5–10.5', cat: '7.5–9.0' },
+  ranges: {
+    dog: [
+      { min: null,  max: 8.5,  resultText: 'Microcardia',               resultTextKo: '심장 위축 의심',       isAbnormal: true,  severity: 'mild'     },
+      { min: 8.5,   max: 10.5, resultText: 'Normal',                    resultTextKo: '정상',                  isAbnormal: false                        },
+      { min: 10.5,  max: 11.5, resultText: 'Borderline cardiomegaly',   resultTextKo: '경계성 심장비대',       isAbnormal: true,  severity: 'mild'     },
+      { min: 11.5,  max: 12.5, resultText: 'Mild cardiomegaly',         resultTextKo: '경도 심장비대',         isAbnormal: true,  severity: 'mild'     },
+      { min: 12.5,  max: null, resultText: 'Moderate–severe cardiomegaly', resultTextKo: '중등-심한 심장비대', isAbnormal: true,  severity: 'severe'   },
+    ],
+    cat: [
+      { min: null,  max: 7.5,  resultText: 'Microcardia',               resultTextKo: '심장 위축 의심',       isAbnormal: true,  severity: 'mild'     },
+      { min: 7.5,   max: 9.0,  resultText: 'Normal',                    resultTextKo: '정상',                  isAbnormal: false                        },
+      { min: 9.0,   max: 10.0, resultText: 'Borderline cardiomegaly',   resultTextKo: '경계성 심장비대',       isAbnormal: true,  severity: 'mild'     },
+      { min: 10.0,  max: null, resultText: 'Cardiomegaly',              resultTextKo: '심장비대',              isAbnormal: true,  severity: 'moderate' },
+    ],
+  },
+  comment: {
+    increase: '심장비대(심근병증, 판막질환, 심낭삼출 등) 가능성. 심장 초음파 검사를 통한 정밀 평가 권장',
+    decrease: '심낭 허탈, 탈수, 쇼크, 부신기능저하증(개) 등에서 나타날 수 있음',
+    normal: '방사선상 심장 크기 정상. 단, VHS만으로 심장 기능 이상을 배제할 수 없음',
+  },
+  ownerMessage: {
+    increase: '방사선 사진에서 심장이 정상보다 크게 측정되었습니다. 심장 질환의 가능성이 있어 심장 초음파 검사를 통한 정밀 평가를 권장드립니다.',
+    decrease: '방사선 사진에서 심장이 다소 작게 측정되었습니다. 탈수나 순환 이상의 가능성이 있어 추가 평가가 필요할 수 있습니다.',
+    normal: '방사선 사진상 심장 크기는 정상 범위입니다.',
+  },
+}
+
+// ── VLAS (Vertebral Left Atrial Size) ────────────────────────
+const vlasRef: XrayMeasurement = {
+  id: 'vlas',
+  nameKo: '척추좌심방지수',
+  nameEn: 'VLAS',
+  unit: 'v',
+  categoryId: 'thorax',
+  defaultRefRange: { dog: '< 2.3', cat: '< 2.0' },
+  ranges: {
+    dog: [
+      { min: null, max: 2.3,  resultText: 'Normal',                         resultTextKo: '정상',                  isAbnormal: false                        },
+      { min: 2.3,  max: 2.5,  resultText: 'Borderline LA enlargement',      resultTextKo: '경계성 좌심방 비대',    isAbnormal: true,  severity: 'mild'     },
+      { min: 2.5,  max: 3.0,  resultText: 'Mild LA enlargement',            resultTextKo: '경도 좌심방 비대',      isAbnormal: true,  severity: 'mild'     },
+      { min: 3.0,  max: null, resultText: 'Moderate–severe LA enlargement', resultTextKo: '중등-심한 좌심방 비대', isAbnormal: true,  severity: 'severe'   },
+    ],
+    cat: [
+      { min: null, max: 2.0,  resultText: 'Normal',                         resultTextKo: '정상',                  isAbnormal: false                        },
+      { min: 2.0,  max: 2.3,  resultText: 'Borderline LA enlargement',      resultTextKo: '경계성 좌심방 비대',    isAbnormal: true,  severity: 'mild'     },
+      { min: 2.3,  max: null, resultText: 'LA enlargement',                 resultTextKo: '좌심방 비대',           isAbnormal: true,  severity: 'moderate' },
+    ],
+  },
+  comment: {
+    increase: '좌심방 비대 — 좌심부전, 승모판 폐쇄 부전, 비대성 심근병증(고양이) 등. 폐부종 위험 평가에 필수. VHS와 함께 판단',
+    normal: '방사선상 좌심방 크기 정상. MMVD 스테이징(개)에 중요한 기준 항목',
+  },
+  ownerMessage: {
+    increase: '방사선 사진에서 좌심방(심장 내 공간)이 정상보다 크게 측정되었습니다. 승모판 질환이나 심근병증과 관련될 수 있어 심장 초음파 검사를 권장드립니다.',
+    decrease: '좌심방이 작게 측정된 경우 임상적으로 큰 의미가 없습니다.',
+    normal: '방사선 사진상 좌심방 크기는 정상 범위입니다.',
+  },
+}
+
+/** 흉부 방사선 계측 항목 목록 */
+export const thoraxMeasurements: XrayMeasurement[] = [vhsRef, vlasRef]
+
+/** 계측 항목 ID → 객체 맵 */
+export const xrayMeasurementMap: Record<string, XrayMeasurement> = {
+  vhs: vhsRef,
+  vlas: vlasRef,
+}
+
+/** 수치 입력 시 해당 range entry 반환 */
+export function interpretXrayMeasurement(
+  measurement: XrayMeasurement,
+  value: number,
+  species: 'dog' | 'cat',
+): XrayMeasurementRange | null {
+  const ranges = measurement.ranges[species] ?? []
+  return (
+    ranges.find(
+      (r) =>
+        (r.min === null || value >= r.min) &&
+        (r.max === null || value < r.max),
+    ) ?? null
+  )
+}

@@ -35,6 +35,7 @@ export type CheckupSection = {
     | 'xray'
     | 'ultrasound_basic'
     | 'ct_mri'
+    | 'echo_basic'
     | 'imaging'    // legacy
     | 'assessment'
     | 'plan'
