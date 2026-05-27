@@ -390,6 +390,190 @@ export type Database = {
           },
         ]
       }
+      deliveries: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          delivery_date: string
+          hos_id: string
+          id: string
+          memo: string | null
+          order_id: string | null
+          received_by: string | null
+          source_file_url: string | null
+          source_type: string | null
+          status: string
+          updated_at: string
+          vendor_deliverer: string | null
+          vendor_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          delivery_date?: string
+          hos_id: string
+          id?: string
+          memo?: string | null
+          order_id?: string | null
+          received_by?: string | null
+          source_file_url?: string | null
+          source_type?: string | null
+          status?: string
+          updated_at?: string
+          vendor_deliverer?: string | null
+          vendor_id: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          delivery_date?: string
+          hos_id?: string
+          id?: string
+          memo?: string | null
+          order_id?: string | null
+          received_by?: string | null
+          source_file_url?: string | null
+          source_type?: string | null
+          status?: string
+          updated_at?: string
+          vendor_deliverer?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliveries_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "deliveries_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "deliveries_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_items: {
+        Row: {
+          ai_suggestion: Json | null
+          base_quantity: number | null
+          created_at: string
+          delivery_id: string
+          expiry_date: string | null
+          id: string
+          item_master_id: string | null
+          item_product_id: string | null
+          lot_number: string | null
+          mapping_confidence: number | null
+          mapping_status: string
+          memo: string | null
+          quantity_received: number
+          raw_manufacturer: string | null
+          raw_name: string
+          raw_quantity: string | null
+          raw_spec: string | null
+          unit: string
+          unit_price: number | null
+          units_per_package: number
+          updated_at: string
+        }
+        Insert: {
+          ai_suggestion?: Json | null
+          base_quantity?: number | null
+          created_at?: string
+          delivery_id: string
+          expiry_date?: string | null
+          id?: string
+          item_master_id?: string | null
+          item_product_id?: string | null
+          lot_number?: string | null
+          mapping_confidence?: number | null
+          mapping_status?: string
+          memo?: string | null
+          quantity_received?: number
+          raw_manufacturer?: string | null
+          raw_name: string
+          raw_quantity?: string | null
+          raw_spec?: string | null
+          unit?: string
+          unit_price?: number | null
+          units_per_package?: number
+          updated_at?: string
+        }
+        Update: {
+          ai_suggestion?: Json | null
+          base_quantity?: number | null
+          created_at?: string
+          delivery_id?: string
+          expiry_date?: string | null
+          id?: string
+          item_master_id?: string | null
+          item_product_id?: string | null
+          lot_number?: string | null
+          mapping_confidence?: number | null
+          mapping_status?: string
+          memo?: string | null
+          quantity_received?: number
+          raw_manufacturer?: string | null
+          raw_name?: string
+          raw_quantity?: string | null
+          raw_spec?: string | null
+          unit?: string
+          unit_price?: number | null
+          units_per_package?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_items_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "deliveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_items_item_master_id_fkey"
+            columns: ["item_master_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_items_item_product_id_fkey"
+            columns: ["item_product_id"]
+            isOneToOne: false
+            referencedRelation: "item_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dental_chart_teeth: {
         Row: {
           abrasion: string | null
@@ -1488,6 +1672,244 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "icu_orders"
             referencedColumns: ["icu_chart_order_id"]
+          },
+        ]
+      }
+      inventory_logs: {
+        Row: {
+          base_unit: string
+          created_at: string
+          created_by: string | null
+          hos_id: string
+          id: string
+          item_master_id: string
+          memo: string | null
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+        }
+        Insert: {
+          base_unit: string
+          created_at?: string
+          created_by?: string | null
+          hos_id: string
+          id?: string
+          item_master_id: string
+          memo?: string | null
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+        }
+        Update: {
+          base_unit?: string
+          created_at?: string
+          created_by?: string | null
+          hos_id?: string
+          id?: string
+          item_master_id?: string
+          memo?: string | null
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "inventory_logs_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "inventory_logs_item_master_id_fkey"
+            columns: ["item_master_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_master: {
+        Row: {
+          alert_min_stock: number
+          aliases: string[]
+          base_unit: string
+          category: string
+          created_at: string
+          description: string | null
+          generic_name: string
+          hos_id: string
+          id: string
+          ingredient: string[]
+          is_active: boolean
+          reorder_qty: number
+          updated_at: string
+        }
+        Insert: {
+          alert_min_stock?: number
+          aliases?: string[]
+          base_unit?: string
+          category: string
+          created_at?: string
+          description?: string | null
+          generic_name: string
+          hos_id: string
+          id?: string
+          ingredient?: string[]
+          is_active?: boolean
+          reorder_qty?: number
+          updated_at?: string
+        }
+        Update: {
+          alert_min_stock?: number
+          aliases?: string[]
+          base_unit?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          generic_name?: string
+          hos_id?: string
+          id?: string
+          ingredient?: string[]
+          is_active?: boolean
+          reorder_qty?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_master_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
+      item_products: {
+        Row: {
+          brand_name: string
+          created_at: string
+          hos_id: string
+          id: string
+          ingredient: string | null
+          is_active: boolean
+          item_master_id: string | null
+          manufacturer: string | null
+          memo: string | null
+          package_type: string
+          reference_price: number | null
+          specification: string | null
+          units_per_package: number
+          updated_at: string
+        }
+        Insert: {
+          brand_name: string
+          created_at?: string
+          hos_id: string
+          id?: string
+          ingredient?: string | null
+          is_active?: boolean
+          item_master_id?: string | null
+          manufacturer?: string | null
+          memo?: string | null
+          package_type?: string
+          reference_price?: number | null
+          specification?: string | null
+          units_per_package?: number
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string
+          created_at?: string
+          hos_id?: string
+          id?: string
+          ingredient?: string | null
+          is_active?: boolean
+          item_master_id?: string | null
+          manufacturer?: string | null
+          memo?: string | null
+          package_type?: string
+          reference_price?: number | null
+          specification?: string | null
+          units_per_package?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_products_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "item_products_item_master_id_fkey"
+            columns: ["item_master_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_vendor_mappings: {
+        Row: {
+          created_at: string
+          hos_id: string
+          id: string
+          item_product_id: string
+          vendor_id: string
+          vendor_item_name: string
+          vendor_item_spec: string | null
+        }
+        Insert: {
+          created_at?: string
+          hos_id: string
+          id?: string
+          item_product_id: string
+          vendor_id: string
+          vendor_item_name: string
+          vendor_item_spec?: string | null
+        }
+        Update: {
+          created_at?: string
+          hos_id?: string
+          id?: string
+          item_product_id?: string
+          vendor_id?: string
+          vendor_item_name?: string
+          vendor_item_spec?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_vendor_mappings_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "item_vendor_mappings_item_product_id_fkey"
+            columns: ["item_product_id"]
+            isOneToOne: false
+            referencedRelation: "item_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_vendor_mappings_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2742,6 +3164,131 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_master_id: string
+          item_status: string
+          memo: string | null
+          order_id: string
+          quantity: number
+          unit: string
+          unit_price: number | null
+          units_per_order_unit: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_master_id: string
+          item_status?: string
+          memo?: string | null
+          order_id: string
+          quantity: number
+          unit: string
+          unit_price?: number | null
+          units_per_order_unit?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_master_id?: string
+          item_status?: string
+          memo?: string | null
+          order_id?: string
+          quantity?: number
+          unit?: string
+          unit_price?: number | null
+          units_per_order_unit?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_item_master_id_fkey"
+            columns: ["item_master_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          hos_id: string
+          id: string
+          memo: string | null
+          order_date: string
+          order_handler_id: string | null
+          status: string
+          updated_at: string
+          vendor_contact: string | null
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          hos_id: string
+          id?: string
+          memo?: string | null
+          order_date?: string
+          order_handler_id?: string | null
+          status?: string
+          updated_at?: string
+          vendor_contact?: string | null
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          hos_id?: string
+          id?: string
+          memo?: string | null
+          order_date?: string
+          order_handler_id?: string | null
+          status?: string
+          updated_at?: string
+          vendor_contact?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "orders_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "orders_order_handler_id_fkey"
+            columns: ["order_handler_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owners: {
         Row: {
           created_at: string
@@ -3336,6 +3883,59 @@ export type Database = {
           },
         ]
       }
+      vendors: {
+        Row: {
+          address: string | null
+          categories: string[]
+          contacts: Json
+          created_at: string
+          hos_id: string
+          id: string
+          is_active: boolean
+          memo: string | null
+          name: string
+          representative: string | null
+          representative_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          categories?: string[]
+          contacts?: Json
+          created_at?: string
+          hos_id: string
+          id?: string
+          is_active?: boolean
+          memo?: string | null
+          name: string
+          representative?: string | null
+          representative_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          categories?: string[]
+          contacts?: Json
+          created_at?: string
+          hos_id?: string
+          id?: string
+          is_active?: boolean
+          memo?: string | null
+          name?: string
+          representative?: string | null
+          representative_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendors_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
       vetool_feedbacks: {
         Row: {
           created_at: string
@@ -3414,7 +4014,37 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      current_inventory: {
+        Row: {
+          alert_min_stock: number | null
+          base_unit: string | null
+          category: string | null
+          current_stock: number | null
+          generic_name: string | null
+          hos_id: string | null
+          is_active: boolean | null
+          is_low_stock: boolean | null
+          item_master_id: string | null
+          last_transaction_at: string | null
+          reorder_qty: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_logs_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "inventory_logs_item_master_id_fkey"
+            columns: ["item_master_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       copy_prev_chart: {

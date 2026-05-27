@@ -15,6 +15,7 @@ import {
   BrainCircuit,
   Eye,
   Cone,
+  PackageOpen,
 } from 'lucide-react'
 
 const ToothIcon = ({ size = 24, color = 'currentColor', strokeWidth = 2, ...props }: { size?: number; color?: string; strokeWidth?: number; [key: string]: any }) => (
@@ -112,6 +113,13 @@ export const HOS_SIDEBAR_MENUS = [
     isReady: true,
     isVetOnly: true,
     icon: <Pill />,
+  },
+  {
+    name: '발주관리',
+    path: 'supply-order',
+    isReady: true,
+    isVetOnly: false,
+    icon: <PackageOpen />,
   },
   {
     name: '진료노트',
