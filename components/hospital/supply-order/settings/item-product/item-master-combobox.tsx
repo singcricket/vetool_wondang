@@ -47,14 +47,14 @@ export default function ItemMasterCombobox({
         const q = search.toLowerCase()
         return (
           m.generic_name.toLowerCase().includes(q) ||
-          m.category.toLowerCase().includes(q) ||
+          m.category.some((c) => c.toLowerCase().includes(q)) ||
           m.ingredient.some((v) => v.toLowerCase().includes(q)) ||
           m.aliases.some((a) => a.toLowerCase().includes(q))
         )
       })
     : itemMasters
 
-  const categories = Array.from(new Set(filteredMasters.map((m) => m.category)))
+  const categories = Array.from(new Set(filteredMasters.flatMap((m) => m.category)))
 
   return (
     <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch('') }}>
@@ -68,7 +68,7 @@ export default function ItemMasterCombobox({
           {selected ? (
             <span className="flex items-center gap-1.5 truncate">
               <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-                {selected.category}
+                {selected.category.join(', ')}
               </span>
               <span className="truncate text-sm">{selected.generic_name}</span>
             </span>
@@ -139,7 +139,7 @@ export default function ItemMasterCombobox({
             {categories.map((category) => (
               <CommandGroup key={category} heading={category}>
                 {filteredMasters
-                  .filter((m) => m.category === category)
+                  .filter((m) => m.category.includes(category))
                   .map((m) => (
                     <CommandItem
                       key={m.id}

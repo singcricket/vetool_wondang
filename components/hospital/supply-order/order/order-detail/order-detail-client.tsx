@@ -207,8 +207,8 @@ export default function OrderDetailClient({ hosId, order, deliveries }: Props) {
                     {/* 품목명 */}
                     <td className="border-b px-3 py-2">
                       <div className="font-medium text-slate-800">{item.item_master?.generic_name}</div>
-                      {item.item_master?.category && (
-                        <div className="text-[10px] text-slate-400">{item.item_master.category}</div>
+                      {(item.item_master?.category?.length ?? 0) > 0 && (
+                        <div className="text-[10px] text-slate-400">{item.item_master?.category?.join(', ')}</div>
                       )}
                     </td>
 

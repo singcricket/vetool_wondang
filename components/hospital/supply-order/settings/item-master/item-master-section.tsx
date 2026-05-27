@@ -43,12 +43,12 @@ export default function ItemMasterSection({ hosId, items }: Props) {
       const q = search.toLowerCase()
       return (
         i.generic_name.toLowerCase().includes(q) ||
-        i.category.toLowerCase().includes(q) ||
+        i.category.some((c) => c.toLowerCase().includes(q)) ||
         i.ingredient.some((v) => v.toLowerCase().includes(q)) ||
         i.aliases.some((a) => a.toLowerCase().includes(q))
       )
     })
-    .sort((a, b) => a.category.localeCompare(b.category, 'ko') || a.generic_name.localeCompare(b.generic_name, 'ko'))
+    .sort((a, b) => (a.category[0] ?? '').localeCompare(b.category[0] ?? '', 'ko') || a.generic_name.localeCompare(b.generic_name, 'ko'))
 
   const activeCount = items.filter((i) => i.is_active).length
 
@@ -100,6 +100,7 @@ export default function ItemMasterSection({ hosId, items }: Props) {
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">품목명</th>
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">성분</th>
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">카테고리</th>
+                <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">보관장소</th>
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">기준단위</th>
                 <th className="border-b px-3 py-2 text-center font-semibold text-slate-500 whitespace-nowrap">최소재고</th>
                 <th className="border-b px-3 py-2 text-center font-semibold text-slate-500 whitespace-nowrap">상태</th>
@@ -139,8 +140,27 @@ export default function ItemMasterSection({ hosId, items }: Props) {
                   </td>
 
                   {/* 카테고리 */}
-                  <td className="border-b px-3 py-2 whitespace-nowrap text-slate-500">
-                    {item.category}
+                  <td className="border-b px-3 py-2">
+                    <div className="flex flex-wrap gap-1">
+                      {item.category.map((c) => (
+                        <span key={c} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">{c}</span>
+                      ))}
+                    </div>
+                  </td>
+
+                  {/* 보관장소 */}
+                  <td className="border-b px-3 py-2">
+                    {item.loc && item.loc.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {item.loc.map((l) => (
+                          <span key={l} className="rounded bg-teal-50 px-1.5 py-0.5 text-[10px] text-teal-700">
+                            {l}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
                   </td>
 
                   {/* 기준단위 */}

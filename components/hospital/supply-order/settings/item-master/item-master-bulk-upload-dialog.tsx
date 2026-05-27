@@ -22,8 +22,8 @@ const COLUMNS = [
     key: 'category',
     label: '카테고리',
     required: true,
-    description: '주사제 / 수액제 / 경구제 / 안약·연고 / 의료소모품 / 검사소모품 / 진단키트 / 장비소모품 / 기타',
-    example: '수액제',
+    description: '복수 지정 시 세미콜론(;)으로 구분. 주사제 / 수액제 / 경구제 / 안약·연고 / 의료소모품 / 검사소모품 / 진단키트 / 장비소모품 / 기타',
+    example: '수액제 또는 수액제;주사제',
   },
   {
     key: 'generic_name',
@@ -54,6 +54,13 @@ const COLUMNS = [
     example: 'NS500;생리식염수500;0.9% NaCl 500',
   },
   {
+    key: 'loc',
+    label: '보관장소',
+    required: false,
+    description: '세미콜론(;)으로 구분하여 여러 개 입력 가능',
+    example: '냉장고 A;약품장 2번 칸',
+  },
+  {
     key: 'description',
     label: '설명',
     required: false,
@@ -81,11 +88,11 @@ const COLUMNS = [
 function downloadSampleFile() {
   const headers = COLUMNS.map((c) => c.key)
   const sample = [
-    ['수액제', 'N/S 500mL', 'NaCl 0.9%', '팩', 'NS500;생리식염수500', '수술·처치 시 수액 기본', '10', '50'],
-    ['수액제', 'D5W 500mL', 'Dextrose 5%', '팩', 'D5W;5% 포도당', '', '5', '20'],
-    ['경구제', '아목시실린 250mg 캡슐', 'Amoxicillin', '정', 'AMX250;아목시', '', '20', '100'],
-    ['주사제', '세파졸린 1g 바이알', 'Cefazolin', '바이알', '', '', '10', '50'],
-    ['의료소모품', '주사기 5mL', '', '개', '5cc시린지', '', '50', '200'],
+    ['수액제', 'N/S 500mL', 'NaCl 0.9%', '팩', 'NS500;생리식염수500', '냉장고 A', '수술·처치 시 수액 기본', '10', '50'],
+    ['수액제', 'D5W 500mL', 'Dextrose 5%', '팩', 'D5W;5% 포도당', '냉장고 A', '', '5', '20'],
+    ['경구제', '아목시실린 250mg 캡슐', 'Amoxicillin', '정', 'AMX250;아목시', '약품장 2번 칸', '', '20', '100'],
+    ['주사제', '세파졸린 1g 바이알', 'Cefazolin', '바이알', '', '냉장고 B;냉장고 C', '', '10', '50'],
+    ['의료소모품', '주사기 5mL', '', '개', '5cc시린지', '소모품 창고', '', '50', '200'],
   ]
 
   const ws = XLSX.utils.aoa_to_sheet([headers, ...sample])

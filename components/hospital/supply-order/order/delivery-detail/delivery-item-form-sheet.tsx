@@ -366,8 +366,8 @@ export default function DeliveryItemFormSheet({
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 size={12} className="shrink-0" />
                     <span className="font-medium">{masterInfo.generic_name}</span>
-                    {masterInfo.category && (
-                      <span className="text-emerald-500">· {masterInfo.category}</span>
+                    {masterInfo.category?.length > 0 && (
+                      <span className="text-emerald-500">· {masterInfo.category.join(', ')}</span>
                     )}
                     {pendingMasterLink && (
                       <span className="rounded bg-emerald-100 px-1 text-[10px] text-emerald-600">
@@ -402,8 +402,8 @@ export default function DeliveryItemFormSheet({
                           )}
                         >
                           {oi.item_master?.generic_name ?? '(알 수 없음)'}
-                          {oi.item_master?.category && (
-                            <span className="ml-1 text-slate-400">{oi.item_master.category}</span>
+                          {(oi.item_master?.category?.length ?? 0) > 0 && (
+                            <span className="ml-1 text-slate-400">{oi.item_master?.category?.join(', ')}</span>
                           )}
                         </button>
                       ))}

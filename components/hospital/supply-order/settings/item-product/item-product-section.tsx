@@ -47,7 +47,7 @@ export default function ItemProductSection({ hosId, products, itemMasters }: Pro
         (p.manufacturer ?? '').toLowerCase().includes(q) ||
         (p.specification ?? '').toLowerCase().includes(q) ||
         (p.item_master?.generic_name ?? '').toLowerCase().includes(q) ||
-        (p.item_master?.category ?? '').toLowerCase().includes(q)
+        (p.item_master?.category ?? []).some((c) => c.toLowerCase().includes(q))
       )
     })
     .sort((a, b) => {
@@ -158,7 +158,7 @@ export default function ItemProductSection({ hosId, products, itemMasters }: Pro
                       {product.item_master ? (
                         <div>
                           <span className="font-medium text-slate-700">{product.item_master.generic_name}</span>
-                          <span className="ml-1 text-[10px] text-slate-400">{product.item_master.category}</span>
+                          <span className="ml-1 text-[10px] text-slate-400">{product.item_master.category.join(', ')}</span>
                         </div>
                       ) : (
                         <span className="text-slate-300">—</span>

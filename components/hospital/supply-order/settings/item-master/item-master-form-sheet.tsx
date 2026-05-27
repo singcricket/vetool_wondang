@@ -7,13 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Plus, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createItemMaster, updateItemMaster } from '@/lib/actions/supply-order/item-master-actions'
@@ -24,12 +17,13 @@ import {
 } from '@/types/hospital/supply-order-type'
 
 const EMPTY_FORM: ItemMasterFormInput = {
-  category: '',
+  category: [],
   generic_name: '',
   ingredient: [],
   description: '',
   base_unit: '개',
   aliases: [],
+  loc: [],
   alert_min_stock: 0,
   reorder_qty: 0,
   is_active: true,
@@ -45,6 +39,7 @@ function toForm(item: ItemMaster): ItemMasterFormInput {
     description: item.description ?? '',
     base_unit: item.base_unit,
     aliases: item.aliases,
+    loc: item.loc ?? [],
     alert_min_stock: item.alert_min_stock,
     reorder_qty: item.reorder_qty,
     is_active: item.is_active,
@@ -131,7 +126,7 @@ export default function ItemMasterFormSheet({ hosId, item, open, onOpenChange }:
     setForm((prev) => ({ ...prev, [key]: value }))
 
   const handleSubmit = async () => {
-    if (!form.category) { toast.error('카테고리를 선택하세요.'); return }
+    if (!form.category.length) { toast.error('카테고리를 하나 이상 선택하세요.'); return }
     if (!form.generic_name.trim()) { toast.error('품목명을 입력하세요.'); return }
     if (!form.base_unit.trim()) { toast.error('기준 단위를 입력하세요.'); return }
     try {
@@ -164,19 +159,36 @@ export default function ItemMasterFormSheet({ hosId, item, open, onOpenChange }:
 
         <div className="flex flex-1 flex-col gap-5 overflow-y-auto py-4">
 
-          {/* 카테고리 */}
+          {/* 카테고리 (복수 선택) */}
           <div className="space-y-1.5">
-            <Label className="text-xs">카테고리 *</Label>
-            <Select value={form.category} onValueChange={(v) => set('category', v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="카테고리 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {ITEM_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs">
+              카테고리 *
+              <span className="ml-1 font-normal text-slate-400">(복수 선택 가능)</span>
+            </Label>
+            <div className="flex flex-wrap gap-1.5">
+              {ITEM_CATEGORIES.map((cat) => {
+                const checked = form.category.includes(cat)
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() =>
+                      set('category', checked
+                        ? form.category.filter((c) => c !== cat)
+                        : [...form.category, cat],
+                      )
+                    }
+                    className={`rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
+                      checked
+                        ? 'border-teal-400 bg-teal-50 font-medium text-teal-700'
+                        : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* 품목명 */}
@@ -236,6 +248,17 @@ export default function ItemMasterFormSheet({ hosId, item, open, onOpenChange }:
             onAdd={(v) => set('aliases', [...form.aliases, v])}
             onRemove={(v) => set('aliases', form.aliases.filter((a) => a !== v))}
             placeholder="NS500, 생리식염수 500... 입력 후 Enter"
+          />
+
+          {/* 보관장소 */}
+          <TagInput
+            label="보관장소"
+            sub="(복수 설정 가능)"
+            tags={form.loc}
+            onAdd={(v) => set('loc', [...form.loc, v])}
+            onRemove={(v) => set('loc', form.loc.filter((l) => l !== v))}
+            placeholder="냉장고 A, 약품장 2번 칸... 입력 후 Enter"
+            tagClassName="bg-teal-50 text-teal-700"
           />
 
           {/* 설명 */}

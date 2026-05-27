@@ -39,7 +39,7 @@ export default function ItemProductCombobox({
           (p.manufacturer ?? '').toLowerCase().includes(q) ||
           (p.specification ?? '').toLowerCase().includes(q) ||
           (p.item_master?.generic_name ?? '').toLowerCase().includes(q) ||
-          (p.item_master?.category ?? '').toLowerCase().includes(q) ||
+          (p.item_master?.category ?? []).some((c) => c.toLowerCase().includes(q)) ||
           (p.ingredient ?? '').toLowerCase().includes(q)
         )
       })
@@ -70,7 +70,7 @@ export default function ItemProductCombobox({
           ) : selected ? (
             <span className="flex items-center gap-1.5 truncate">
               <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-                {selected.item_master?.category ?? '미연결'}
+                {selected.item_master?.category?.join(', ') ?? '미연결'}
               </span>
               <span className="truncate text-sm">{selected.brand_name}</span>
               {selected.specification && (

@@ -161,8 +161,8 @@ export default function DeliveryDetailClient({
                         <p className="font-medium text-slate-800">
                           {oi.item_master?.generic_name ?? '(알 수 없음)'}
                         </p>
-                        {oi.item_master?.category && (
-                          <p className="text-[10px] text-slate-400">{oi.item_master.category}</p>
+                        {(oi.item_master?.category?.length ?? 0) > 0 && (
+                          <p className="text-[10px] text-slate-400">{oi.item_master?.category?.join(', ')}</p>
                         )}
                       </td>
                       <td className="px-3 py-2 text-right text-slate-600">
@@ -264,8 +264,8 @@ export default function DeliveryDetailClient({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium text-slate-800">{name}</p>
-                      {item.item_master?.category && (
-                        <p className="text-[10px] text-slate-400">{item.item_master.category}</p>
+                      {(item.item_master?.category?.length ?? 0) > 0 && (
+                        <p className="text-[10px] text-slate-400">{item.item_master?.category?.join(', ')}</p>
                       )}
                     </div>
                     {delivery.status !== 'confirmed' && (

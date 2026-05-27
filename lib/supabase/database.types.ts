@@ -1744,7 +1744,7 @@ export type Database = {
           alert_min_stock: number
           aliases: string[]
           base_unit: string
-          category: string
+          category: string[]
           created_at: string
           description: string | null
           generic_name: string
@@ -1752,6 +1752,7 @@ export type Database = {
           id: string
           ingredient: string[]
           is_active: boolean
+          loc: string[]
           reorder_qty: number
           updated_at: string
         }
@@ -1759,7 +1760,7 @@ export type Database = {
           alert_min_stock?: number
           aliases?: string[]
           base_unit?: string
-          category: string
+          category: string[]
           created_at?: string
           description?: string | null
           generic_name: string
@@ -1767,6 +1768,7 @@ export type Database = {
           id?: string
           ingredient?: string[]
           is_active?: boolean
+          loc?: string[]
           reorder_qty?: number
           updated_at?: string
         }
@@ -1774,7 +1776,7 @@ export type Database = {
           alert_min_stock?: number
           aliases?: string[]
           base_unit?: string
-          category?: string
+          category?: string[]
           created_at?: string
           description?: string | null
           generic_name?: string
@@ -1782,6 +1784,7 @@ export type Database = {
           id?: string
           ingredient?: string[]
           is_active?: boolean
+          loc?: string[]
           reorder_qty?: number
           updated_at?: string
         }

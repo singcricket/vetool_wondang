@@ -38,12 +38,17 @@ export const ITEM_CATEGORIES = [
   '주사제',
   '수액제',
   '경구제',
-  '안약·연고',
+  '안약',
+  '연고',
+  '보조제',
   '의료소모품',
   '검사소모품',
   '진단키트',
   '장비소모품',
+  '예방의학',
   '기타',
+  '사료',
+  '용품'
 ] as const
 
 export type ItemCategory = (typeof ITEM_CATEGORIES)[number]
@@ -51,12 +56,13 @@ export type ItemCategory = (typeof ITEM_CATEGORIES)[number]
 export type ItemMaster = {
   id: string
   hos_id: string
-  category: string
+  category: string[]     // 카테고리 배열 (복수 가능)
   generic_name: string
   ingredient: string[]   // 성분명 배열
   description: string | null
   base_unit: string
   aliases: string[]
+  loc: string[]          // 보관장소 배열
   alert_min_stock: number
   reorder_qty: number
   is_active: boolean
@@ -65,12 +71,13 @@ export type ItemMaster = {
 }
 
 export type ItemMasterFormInput = {
-  category: string
+  category: string[]     // 카테고리 배열 (복수 가능)
   generic_name: string
   ingredient: string[]   // 성분명 배열
   description: string
   base_unit: string
   aliases: string[]
+  loc: string[]          // 보관장소 배열
   alert_min_stock: number
   reorder_qty: number
   is_active: boolean
@@ -172,6 +179,7 @@ export type ItemMasterCsvRow = {
   description?: string
   base_unit: string
   aliases?: string       // 세미콜론(;) 구분 → 배열로 파싱
+  loc?: string           // 세미콜론(;) 구분 → 배열로 파싱
   alert_min_stock?: string
   reorder_qty?: string
 }

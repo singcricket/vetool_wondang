@@ -28,7 +28,7 @@ export async function createItemMasterQuick(
     .from('item_master')
     .insert({
       hos_id: hosId,
-      category: '기타',
+      category: ['기타'],
       generic_name: genericName.trim(),
       ingredient: [],
       base_unit: baseUnit.trim() || '개',
@@ -54,6 +54,7 @@ export async function createItemMaster(hosId: string, input: ItemMasterFormInput
     description: input.description.trim() || null,
     base_unit: input.base_unit.trim(),
     aliases: input.aliases.filter((a) => a.trim()),
+    loc: input.loc.filter((v) => v.trim()),
     alert_min_stock: input.alert_min_stock,
     reorder_qty: input.reorder_qty,
     is_active: input.is_active,
@@ -77,6 +78,7 @@ export async function updateItemMaster(
       description: input.description.trim() || null,
       base_unit: input.base_unit.trim(),
       aliases: input.aliases.filter((a) => a.trim()),
+      loc: input.loc.filter((v) => v.trim()),
       alert_min_stock: input.alert_min_stock,
       reorder_qty: input.reorder_qty,
       is_active: input.is_active,
@@ -104,6 +106,11 @@ export async function bulkCreateItemMasters(
       errors.push({ row: rowNum, message: 'category(카테고리) 누락' })
       continue
     }
+    const category = row.category.split(';').map((c) => c.trim()).filter(Boolean)
+    if (!category.length) {
+      errors.push({ row: rowNum, message: 'category(카테고리) 값이 없습니다' })
+      continue
+    }
     if (!row.generic_name?.trim()) {
       errors.push({ row: rowNum, message: 'generic_name(품목명) 누락' })
       continue
@@ -121,14 +128,19 @@ export async function bulkCreateItemMasters(
       ? row.ingredient.split(';').map((v) => v.trim()).filter(Boolean)
       : []
 
+    const loc = row.loc
+      ? row.loc.split(';').map((v) => v.trim()).filter(Boolean)
+      : []
+
     validRows.push({
       hos_id: hosId,
-      category: row.category.trim(),
+      category,
       generic_name: row.generic_name.trim(),
       ingredient,
       description: row.description?.trim() || null,
       base_unit: row.base_unit.trim(),
       aliases,
+      loc,
       alert_min_stock: Number(row.alert_min_stock ?? 0) || 0,
       reorder_qty: Number(row.reorder_qty ?? 0) || 0,
     })
