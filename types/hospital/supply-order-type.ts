@@ -316,6 +316,7 @@ export type InventoryItem = {
   current_stock: number
   is_low_stock: boolean
   last_transaction_at: string | null
+  earliest_expiry_date: string | null
 }
 
 // ── Delivery Upload / Review ──────────────────────────────────

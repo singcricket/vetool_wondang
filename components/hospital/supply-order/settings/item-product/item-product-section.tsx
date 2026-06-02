@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Pencil, Boxes, Search, Link2Off, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Boxes, Search, Link2Off, Loader2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { toggleItemProductActive } from '@/lib/actions/supply-order/item-product-actions'
 import { toast } from 'sonner'
 import ItemProductFormSheet from './item-product-form-sheet'
 import ItemProductBulkUploadDialog from './item-product-bulk-upload-dialog'
+import ItemProductAiMatchDialog from './item-product-ai-match-dialog'
 import type { ItemMaster, ItemProduct, Vendor } from '@/types/hospital/supply-order-type'
 
 interface Props {
@@ -23,6 +24,7 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
   const [editing, setEditing] = useState<ItemProduct | undefined>(undefined)
   const [toggling, setToggling] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [aiMatchOpen, setAiMatchOpen] = useState(false)
 
   const openAdd = () => { setEditing(undefined); setSheetOpen(true) }
   const openEdit = (product: ItemProduct) => { setEditing(product); setSheetOpen(true) }
@@ -75,6 +77,17 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
           )}
         </p>
         <div className="flex gap-2">
+          {unlinkedCount > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAiMatchOpen(true)}
+              className="gap-1 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+            >
+              <Sparkles size={14} />
+              AI 매칭
+            </Button>
+          )}
           <ItemProductBulkUploadDialog hosId={hosId} vendors={vendors} />
           <Button size="sm" onClick={openAdd} className="gap-1 bg-teal-600 hover:bg-teal-700">
             <Plus size={14} />
@@ -234,6 +247,13 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
         itemMasters={itemMasters}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+      />
+
+      <ItemProductAiMatchDialog
+        hosId={hosId}
+        itemMasters={itemMasters}
+        open={aiMatchOpen}
+        onOpenChange={setAiMatchOpen}
       />
     </div>
   )

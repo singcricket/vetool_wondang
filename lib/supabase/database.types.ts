@@ -1680,6 +1680,7 @@ export type Database = {
           base_unit: string
           created_at: string
           created_by: string | null
+          expiry_date: string | null
           hos_id: string
           id: string
           item_master_id: string
@@ -1694,6 +1695,7 @@ export type Database = {
           base_unit: string
           created_at?: string
           created_by?: string | null
+          expiry_date?: string | null
           hos_id: string
           id?: string
           item_master_id: string
@@ -1708,6 +1710,7 @@ export type Database = {
           base_unit?: string
           created_at?: string
           created_by?: string | null
+          expiry_date?: string | null
           hos_id?: string
           id?: string
           item_master_id?: string

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, MinusCircle, Package, AlertTriangle } from 'lucide-react'
+import { Loader2, MinusCircle, Package, AlertTriangle, PackageX } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -43,7 +43,9 @@ export default function InventoryUseSheet({ hosId, item, open, onOpenChange }: P
 
   if (!item) return null
 
-  const entries = batches.filter((b) => Number(quantities[b.item_product_id]) > 0)
+  const batchKey = (b: InventoryBatch) => b.item_product_id ?? '__unspecified__'
+
+  const entries = batches.filter((b) => Number(quantities[batchKey(b)]) > 0)
   const hasAnyQty = entries.length > 0
 
   const handleSubmit = async () => {
@@ -55,12 +57,12 @@ export default function InventoryUseSheet({ hosId, item, open, onOpenChange }: P
           hosId,
           item.item_master_id,
           batch.item_product_id,
-          Number(quantities[batch.item_product_id]),
+          Number(quantities[batchKey(batch)]),
           item.base_unit,
           memo,
         )
       }
-      const total = entries.reduce((sum, b) => sum + Number(quantities[b.item_product_id]), 0)
+      const total = entries.reduce((sum, b) => sum + Number(quantities[batchKey(b)]), 0)
       toast.success(`${item.generic_name} ${total}${item.base_unit} 사용 기록 완료`)
       onOpenChange(false)
       router.refresh()
@@ -101,27 +103,43 @@ export default function InventoryUseSheet({ hosId, item, open, onOpenChange }: P
 
             <div className="flex flex-col gap-2">
               {batches.map((batch) => {
-                const qty = quantities[batch.item_product_id] ?? ''
+                const key = batchKey(batch)
+                const isUnspecified = batch.item_product_id === null
+                const qty = quantities[key] ?? ''
                 const isOver = Number(qty) > 0 && Number(qty) > batch.current_stock
                 return (
                   <div
-                    key={batch.item_product_id}
+                    key={key}
                     className={cn(
                       'rounded-lg border px-4 py-3 transition-colors',
+                      isUnspecified && 'border-dashed',
                       Number(qty) > 0 ? 'border-teal-300 bg-teal-50/40' : 'bg-white',
                       isOver && 'border-amber-300 bg-amber-50/40',
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-800">
-                          {batch.brand_name}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-slate-400">
-                          {batch.manufacturer && <span className="mr-2">{batch.manufacturer}</span>}
-                          {batch.specification && <span className="mr-2 text-slate-300">|</span>}
-                          {batch.specification && <span>{batch.specification}</span>}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          {isUnspecified && <PackageX size={13} className="shrink-0 text-slate-400" />}
+                          <p className={cn(
+                            'truncate text-sm font-medium',
+                            isUnspecified ? 'text-slate-400' : 'text-slate-800',
+                          )}>
+                            {batch.brand_name}
+                          </p>
+                        </div>
+                        {!isUnspecified && (
+                          <p className="mt-0.5 text-[11px] text-slate-400">
+                            {batch.manufacturer && <span className="mr-2">{batch.manufacturer}</span>}
+                            {batch.specification && <span className="mr-2 text-slate-300">|</span>}
+                            {batch.specification && <span>{batch.specification}</span>}
+                          </p>
+                        )}
+                        {isUnspecified && (
+                          <p className="mt-0.5 text-[11px] text-slate-400">
+                            제품을 지정하지 않고 입고된 수량
+                          </p>
+                        )}
                         <p className="mt-1 text-[11px]">
                           <span className="text-slate-400">재고 </span>
                           <span className={cn(
@@ -145,10 +163,7 @@ export default function InventoryUseSheet({ hosId, item, open, onOpenChange }: P
                           step="1"
                           value={qty}
                           onChange={(e) =>
-                            setQuantities((prev) => ({
-                              ...prev,
-                              [batch.item_product_id]: e.target.value,
-                            }))
+                            setQuantities((prev) => ({ ...prev, [key]: e.target.value }))
                           }
                           placeholder="0"
                           className={cn(
