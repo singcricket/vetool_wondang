@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Plus, Pencil, Trash2, Loader2, PackageCheck, CheckCircle2, AlertCircle, Circle, FileSpreadsheet, Camera } from 'lucide-react'
+import { ChevronLeft, Plus, Pencil, Trash2, Loader2, PackageCheck, CheckCircle2, AlertCircle, Circle, FileSpreadsheet, Camera, X } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
 import { deleteDeliveryItem } from '@/lib/actions/supply-order/delivery-items-actions'
-import { updateDeliveryStatus } from '@/lib/actions/supply-order/delivery-actions'
+import { updateDeliveryStatus, deleteDelivery } from '@/lib/actions/supply-order/delivery-actions'
 import DeliveryItemFormSheet from './delivery-item-form-sheet'
 import UploadReviewSheet from './upload-review-sheet'
 import type {
@@ -42,6 +42,7 @@ export default function DeliveryDetailClient({
   const [editItem, setEditItem] = useState<DeliveryItem | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
+  const [deleteDeliveryLoading, setDeleteDeliveryLoading] = useState(false)
   const [uploadSheetOpen, setUploadSheetOpen] = useState(false)
 
   const vendor = order.vendor as any
@@ -73,6 +74,20 @@ export default function DeliveryDetailClient({
       toast.error('상태 변경에 실패했습니다.')
     } finally {
       setStatusLoading(false)
+    }
+  }
+
+  const handleDeleteDelivery = async () => {
+    if (!confirm('납품 확인서를 삭제하시겠습니까? 등록된 품목도 함께 삭제됩니다.')) return
+    try {
+      setDeleteDeliveryLoading(true)
+      await deleteDelivery(hosId, delivery.id)
+      toast.success('납품 확인서가 삭제되었습니다.')
+      router.push(backPath)
+    } catch {
+      toast.error('삭제에 실패했습니다.')
+    } finally {
+      setDeleteDeliveryLoading(false)
     }
   }
 
@@ -120,7 +135,22 @@ export default function DeliveryDetailClient({
             </div>
             <p className="mt-0.5 text-xs text-slate-400">{vendor?.name}</p>
           </div>
-          <PackageCheck size={20} className="text-slate-300" />
+          <div className="flex items-center gap-2">
+            {delivery.status !== 'confirmed' && (
+              <button
+                type="button"
+                onClick={handleDeleteDelivery}
+                disabled={deleteDeliveryLoading}
+                className="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-400 transition-colors"
+                title="납품 확인서 삭제"
+              >
+                {deleteDeliveryLoading
+                  ? <Loader2 size={16} className="animate-spin" />
+                  : <X size={16} />}
+              </button>
+            )}
+            <PackageCheck size={20} className="text-slate-300" />
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t pt-3 text-[11px] text-slate-500">

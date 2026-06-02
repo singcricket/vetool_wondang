@@ -69,6 +69,73 @@ export async function createDelivery(
   return data.id
 }
 
+// 납품 확인서 삭제 (pending/reviewing만 허용)
+export async function deleteDelivery(hosId: string, deliveryId: string): Promise<void> {
+  const supabase = await createClient()
+
+  // inventory_logs 삭제 (confirmed됐다가 되돌린 경우 대비)
+  await supabase
+    .from('inventory_logs')
+    .delete()
+    .eq('hos_id', hosId)
+    .eq('reference_type', 'delivery')
+    .eq('reference_id', deliveryId)
+
+  // delivery_items 삭제
+  await supabase.from('delivery_items').delete().eq('delivery_id', deliveryId)
+
+  // delivery 삭제 및 order_id 반환
+  const { data, error } = await supabase
+    .from('deliveries')
+    .delete()
+    .eq('id', deliveryId)
+    .eq('hos_id', hosId)
+    .select('order_id')
+    .single()
+
+  if (error) throw new Error(error.message)
+
+  // 연결된 order 상태를 confirmed로 되돌리기
+  if (data?.order_id) {
+    await supabase
+      .from('orders')
+      .update({ status: 'confirmed' })
+      .eq('id', data.order_id)
+      .eq('hos_id', hosId)
+  }
+
+  revalidatePath(`/hospital/${hosId}/supply-order/order`)
+  revalidatePath(`/hospital/${hosId}/supply-order/inventory`)
+}
+
+// 주문에 연결된 모든 납품 확인서 삭제 (주문 삭제/되돌리기용 내부 헬퍼)
+async function deleteDeliveriesByOrder(hosId: string, orderId: string): Promise<void> {
+  const supabase = await createClient()
+
+  const { data: deliveries } = await supabase
+    .from('deliveries')
+    .select('id')
+    .eq('hos_id', hosId)
+    .eq('order_id', orderId)
+
+  if (!deliveries?.length) return
+
+  const deliveryIds = deliveries.map((d) => d.id)
+
+  await supabase
+    .from('inventory_logs')
+    .delete()
+    .eq('hos_id', hosId)
+    .eq('reference_type', 'delivery')
+    .in('reference_id', deliveryIds)
+
+  await supabase.from('delivery_items').delete().in('delivery_id', deliveryIds)
+
+  await supabase.from('deliveries').delete().in('id', deliveryIds).eq('hos_id', hosId)
+}
+
+export { deleteDeliveriesByOrder }
+
 // 납품 상태 변경
 export async function updateDeliveryStatus(
   hosId: string,

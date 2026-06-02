@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Order, OrderFormInput, OrderStatus, OrderItemStatus } from '@/types/hospital/supply-order-type'
+import { deleteDeliveriesByOrder } from './delivery-actions'
 
 // 주문 단건 조회
 export async function getOrderById(hosId: string, orderId: string): Promise<Order | null> {
@@ -183,6 +184,11 @@ export async function updateOrderStatus(
   orderId: string,
   status: OrderStatus,
 ): Promise<void> {
+  // confirmed로 되돌리기 = 배송 전 단계 → 연결된 deliveries 모두 삭제
+  if (status === 'confirmed') {
+    await deleteDeliveriesByOrder(hosId, orderId)
+  }
+
   const supabase = await createClient()
   const { error } = await supabase
     .from('orders')
@@ -192,6 +198,7 @@ export async function updateOrderStatus(
 
   if (error) throw new Error(error.message)
   revalidatePath(`/hospital/${hosId}/supply-order/order`)
+  revalidatePath(`/hospital/${hosId}/supply-order/inventory`)
 }
 
 // 기간별 주문 목록 (주문내역 탭)
@@ -216,14 +223,21 @@ export async function getOrdersByDateRange(
 
 // 주문서 삭제 (draft 상태만)
 export async function deleteOrder(hosId: string, orderId: string): Promise<void> {
+  // 연결된 deliveries(및 delivery_items, inventory_logs) 먼저 삭제
+  await deleteDeliveriesByOrder(hosId, orderId)
+
   const supabase = await createClient()
+
+  // order_items 삭제
+  await supabase.from('order_items').delete().eq('order_id', orderId)
+
   const { error } = await supabase
     .from('orders')
     .delete()
     .eq('id', orderId)
     .eq('hos_id', hosId)
-    .eq('status', 'draft')
 
   if (error) throw new Error(error.message)
   revalidatePath(`/hospital/${hosId}/supply-order/order`)
+  revalidatePath(`/hospital/${hosId}/supply-order/inventory`)
 }
