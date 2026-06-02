@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,6 @@ import { Loader2, PackageCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { createDelivery } from '@/lib/actions/supply-order/delivery-actions'
-import { updateOrderStatus } from '@/lib/actions/supply-order/order-actions'
 import type { Order, DeliveryFormInput } from '@/types/hospital/supply-order-type'
 
 interface Props {
@@ -30,18 +29,17 @@ export default function DeliveryCreateSheet({ hosId, order, open, onOpenChange }
   })
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    if (open) setForm({ delivery_date: new Date().toISOString().split('T')[0], vendor_deliverer: '', memo: '' })
+  }, [open])
+
   const set = <K extends keyof DeliveryFormInput>(key: K, value: DeliveryFormInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
   const handleSubmit = async () => {
     try {
       setSaving(true)
-      // 납품 확인서 생성
       await createDelivery(hosId, order.vendor_id, order.id, form)
-      // 주문 상태를 배송중 → 납품완료로 변경 (납품 확인서 생성 시점)
-      if (order.status === 'delivering' || order.status === 'confirmed') {
-        await updateOrderStatus(hosId, order.id, 'delivered')
-      }
       toast.success('납품 확인서가 생성되었습니다.')
       onOpenChange(false)
       router.refresh()
@@ -53,7 +51,6 @@ export default function DeliveryCreateSheet({ hosId, order, open, onOpenChange }
   }
 
   const handleOpenChange = (v: boolean) => {
-    if (!v) setForm({ delivery_date: today, vendor_deliverer: '', memo: '' })
     onOpenChange(v)
   }
 

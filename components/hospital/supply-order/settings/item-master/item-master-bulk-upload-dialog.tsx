@@ -55,10 +55,10 @@ const COLUMNS = [
   },
   {
     key: 'loc',
-    label: '보관장소',
+    label: '태그',
     required: false,
-    description: '세미콜론(;)으로 구분하여 여러 개 입력 가능',
-    example: '냉장고 A;약품장 2번 칸',
+    description: '세미콜론(;)으로 구분하여 여러 개 입력 가능 (장소, 분류 등 자유롭게 사용)',
+    example: '약제실;냉장보관;버박',
   },
   {
     key: 'description',
@@ -161,7 +161,15 @@ export default function ItemMasterBulkUploadDialog({ hosId }: Props) {
   const handleUpload = async () => {
     try {
       setState('uploading')
-      const res = await bulkCreateItemMasters(hosId, rows)
+      // XLSX 파싱 객체는 plain object가 아닐 수 있어 직렬화 전에 명시적으로 변환
+      const plainRows: ItemMasterCsvRow[] = rows.map((row) => {
+        const r: Record<string, string> = {}
+        for (const col of COLUMNS) {
+          r[col.key] = String((row as any)[col.key] ?? '')
+        }
+        return r as unknown as ItemMasterCsvRow
+      })
+      const res = await bulkCreateItemMasters(hosId, plainRows)
       setResult(res)
       setState('done')
       if (res.success > 0) toast.success(`${res.success}개 품목이 등록되었습니다.`)

@@ -38,8 +38,12 @@ export const ITEM_CATEGORIES = [
   '주사제',
   '수액제',
   '경구제',
+  '항암제',
+  '흡입제',
+  '향정',
   '안약',
   '연고',
+  '시럽',
   '보조제',
   '의료소모품',
   '검사소모품',
@@ -62,7 +66,8 @@ export type ItemMaster = {
   description: string | null
   base_unit: string
   aliases: string[]
-  loc: string[]          // 보관장소 배열
+  loc: string[]          // 태그 배열 (장소·분류 등 자유 사용)
+  default_vendor: string | null  // 기본 주문업체 (vendors.id)
   alert_min_stock: number
   reorder_qty: number
   is_active: boolean
@@ -77,7 +82,8 @@ export type ItemMasterFormInput = {
   description: string
   base_unit: string
   aliases: string[]
-  loc: string[]          // 보관장소 배열
+  loc: string[]          // 태그 배열 (장소·분류 등 자유 사용)
+  default_vendor: string // 기본 주문업체 (vendors.id, 미선택 시 '')
   alert_min_stock: number
   reorder_qty: number
   is_active: boolean
@@ -295,6 +301,23 @@ export type OrderFormInput = {
   }[]
 }
 
+// ── Inventory ─────────────────────────────────────────────────
+
+export type InventoryItem = {
+  item_master_id: string
+  generic_name: string
+  category: string[]
+  loc: string[]
+  base_unit: string
+  default_vendor_id: string | null
+  alert_min_stock: number
+  reorder_qty: number
+  is_active: boolean
+  current_stock: number
+  is_low_stock: boolean
+  last_transaction_at: string | null
+}
+
 // ── Delivery Upload / Review ──────────────────────────────────
 
 export type ExtractedDeliveryItem = {
@@ -345,6 +368,7 @@ export type ItemProduct = {
   package_type: string
   units_per_package: number
   reference_price: number | null
+  vendor_ids: string[]             // 공급 도매상 ID 목록
   memo: string | null
   is_active: boolean
   created_at: string

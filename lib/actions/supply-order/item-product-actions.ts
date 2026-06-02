@@ -68,6 +68,7 @@ export async function updateItemProduct(
 export async function bulkCreateItemProducts(
   hosId: string,
   rows: ItemProductCsvRow[],
+  vendorId?: string,
 ): Promise<{ success: number; errors: { row: number; message: string }[] }> {
   const supabase = await createClient()
   const errors: { row: number; message: string }[] = []
@@ -93,6 +94,7 @@ export async function bulkCreateItemProducts(
       units_per_package: Number(row.units_per_package ?? 1) || 1,
       reference_price: row.reference_price ? Number(row.reference_price) || null : null,
       memo: row.memo?.trim() || null,
+      vendor_ids: vendorId ? [vendorId] : [],
     })
   }
 

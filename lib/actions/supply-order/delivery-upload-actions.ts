@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { getAnthropicClient } from '@/lib/ai/anthropic'
+import type Anthropic from '@anthropic-ai/sdk'
 import type {
   ExtractedDeliveryItem,
   ReviewDeliveryItem,
@@ -116,6 +117,7 @@ export async function parseDeliveryExcel(
 export async function matchItemsWithAI(
   items: ExtractedDeliveryItem[],
   itemProducts: ItemProduct[],
+  vendorId?: string,
 ): Promise<ReviewDeliveryItem[]> {
   if (!items.length) return []
 
@@ -134,7 +136,18 @@ export async function matchItemsWithAI(
   try {
     const client = getAnthropicClient()
 
-    const productList = itemProducts.slice(0, 300).map((p) => ({
+    // 해당 도매상과 연관된 제품을 앞으로 정렬 (1순위), 나머지 뒤 (2순위)
+    const sorted = vendorId
+      ? [...itemProducts].sort((a, b) => {
+          const aMatch = (a.vendor_ids ?? []).includes(vendorId)
+          const bMatch = (b.vendor_ids ?? []).includes(vendorId)
+          if (aMatch && !bMatch) return -1
+          if (!aMatch && bMatch) return 1
+          return 0
+        })
+      : itemProducts
+
+    const productList = sorted.slice(0, 1000).map((p) => ({
       id: p.id,
       brand_name: p.brand_name,
       manufacturer: p.manufacturer ?? null,
@@ -168,7 +181,7 @@ JSON만 반환하세요.`
 
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [{ role: 'user', content: prompt }],
     })
 
@@ -212,26 +225,117 @@ JSON만 반환하세요.`
 
 // ── 3단계: 사진 OCR ───────────────────────────────────────────
 
+async function extractTextWithGoogleVision(base64Image: string): Promise<string> {
+  const apiKey = process.env.GOOGLE_VISION_API_KEY
+  if (!apiKey) throw new Error('GOOGLE_VISION_API_KEY 환경변수가 설정되지 않았습니다.')
+
+  const res = await fetch(
+    `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [
+          {
+            image: { content: base64Image },
+            features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+          },
+        ],
+      }),
+    },
+  )
+
+  if (!res.ok) {
+    const err = await res.text()
+    console.error('[Google Vision] HTTP', res.status, err)
+    throw new Error(`Google Vision API 오류 (${res.status}): ${err}`)
+  }
+
+  const json = await res.json()
+  const text: string = json.responses?.[0]?.fullTextAnnotation?.text ?? ''
+  console.log('[Google Vision OCR] 추출 텍스트:\n', text)
+  return text
+}
+
+async function parseWithClaude(
+  client: ReturnType<typeof getAnthropicClient>,
+  content: Anthropic.MessageParam['content'],
+): Promise<ExtractedDeliveryItem[]> {
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2048,
+    messages: [{ role: 'user', content }],
+  })
+
+  const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
+  console.log('[extractFromInvoicePhoto] Claude 결과:\n', text)
+
+  const clean = text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
+  const start = clean.indexOf('[')
+  const end = clean.lastIndexOf(']')
+  if (start === -1 || end === -1) {
+    console.log('[extractFromInvoicePhoto] JSON 파싱 실패 — 배열 없음')
+    return []
+  }
+  const parsed = JSON.parse(clean.slice(start, end + 1)) as ExtractedDeliveryItem[]
+  console.log('[extractFromInvoicePhoto] 최종 추출 결과 (%d건):', parsed.length, parsed)
+  return parsed
+}
+
 export async function extractFromInvoicePhoto(
   base64Image: string,
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
 ): Promise<ExtractedDeliveryItem[]> {
   const client = getAnthropicClient()
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mimeType, data: base64Image },
-          },
-          {
-            type: 'text',
-            text: `이 이미지는 의약품/의료소모품 납품전표 또는 거래명세서입니다.
+  // 1단계: Google Vision으로 한글 텍스트 추출 (실패 시 Claude 직접 이미지 읽기로 폴백)
+  let rawText: string | null = null
+  try {
+    rawText = await extractTextWithGoogleVision(base64Image)
+  } catch (e) {
+    console.warn('[extractFromInvoicePhoto] Google Vision 실패, Claude 직접 읽기로 폴백:', e)
+  }
+
+  if (rawText && rawText.trim()) {
+    // 2단계-A: Google Vision 텍스트 → Claude 구조화
+    return parseWithClaude(client, `아래는 의약품/의료소모품 납품전표(거래명세서)에서 OCR로 추출한 텍스트입니다.
+이 텍스트에서 납품 품목 목록을 파싱하여 JSON 배열로만 반환하세요.
+
+<ocr_text>
+${rawText}
+</ocr_text>
+
+반환 형식:
+[
+  {
+    "raw_name": "제품명",
+    "raw_spec": "규격 또는 null",
+    "raw_manufacturer": "제조사 또는 null",
+    "quantity_received": 수량(숫자),
+    "unit": "단위(개/박스/병 등)",
+    "unit_price": 단가(숫자 또는 null),
+    "expiry_date": "YYYY-MM-DD 또는 null",
+    "lot_number": "LOT번호 또는 null"
+  }
+]
+
+주의:
+- 합계/소계/세액 행은 품목이 아니므로 제외
+- 수량 불명확 시 1
+- 단가는 개당 단가(합계 금액 아님)
+- 반드시 JSON 배열만 반환`)
+  }
+
+  // 2단계-B: Claude 직접 이미지 읽기 (폴백)
+  console.log('[extractFromInvoicePhoto] Claude 직접 이미지 읽기 사용')
+  return parseWithClaude(client, [
+    {
+      type: 'image',
+      source: { type: 'base64', media_type: mimeType, data: base64Image },
+    },
+    {
+      type: 'text',
+      text: `이 이미지는 의약품/의료소모품 납품전표 또는 거래명세서입니다.
 이미지에서 납품 품목 목록을 추출하여 JSON 배열로만 반환하세요.
 
 반환 형식:
@@ -248,19 +352,11 @@ export async function extractFromInvoicePhoto(
   }
 ]
 
+이미지가 회전되어 있을 수 있습니다. 방향을 자동으로 감지하여 읽으세요.
+테이블 구조의 각 행이 하나의 납품 품목입니다.
 주의: 수량 불명확 시 1, 단가는 개당 단가(합계 아님), 반드시 JSON만 반환`,
-          },
-        ],
-      },
-    ],
-  })
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
-  const clean = text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
-  const start = clean.indexOf('[')
-  const end = clean.lastIndexOf(']')
-  if (start === -1 || end === -1) return []
-  return JSON.parse(clean.slice(start, end + 1)) as ExtractedDeliveryItem[]
+    },
+  ])
 }
 
 // ── 최종 저장 ─────────────────────────────────────────────────
@@ -269,6 +365,7 @@ export async function bulkSaveReviewedItems(
   hosId: string,
   deliveryId: string,
   items: ReviewDeliveryItem[],
+  vendorId?: string,
 ): Promise<void> {
   const supabase = await createClient()
 
@@ -291,11 +388,26 @@ export async function bulkSaveReviewedItems(
           units_per_package: 1,
           is_active: true,
           item_master_id: null,
+          vendor_ids: vendorId ? [vendorId] : [],
         })
         .select('id')
         .single()
       if (error || !newProduct) throw new Error(error?.message ?? '제품 생성 실패')
       productId = newProduct.id
+    } else if (vendorId) {
+      // 기존 제품에 도매상 자동 연결 (중복 제외)
+      const { data: existing } = await supabase
+        .from('item_products')
+        .select('vendor_ids')
+        .eq('id', productId)
+        .single()
+      const currentIds: string[] = existing?.vendor_ids ?? []
+      if (!currentIds.includes(vendorId)) {
+        await supabase
+          .from('item_products')
+          .update({ vendor_ids: [...currentIds, vendorId] })
+          .eq('id', productId)
+      }
     }
 
     // 연결된 item_master 조회

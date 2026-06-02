@@ -30,6 +30,7 @@ type Stage = 'upload' | 'processing' | 'review' | 'saving'
 interface Props {
   hosId: string
   deliveryId: string
+  vendorId: string
   itemProducts: ItemProduct[]
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -42,7 +43,7 @@ const STATUS_STYLE: Record<ReviewItemMatchStatus, { dot: string; card: string; l
 }
 
 export default function UploadReviewSheet({
-  hosId, deliveryId, itemProducts, open, onOpenChange,
+  hosId, deliveryId, vendorId, itemProducts, open, onOpenChange,
 }: Props) {
   const router = useRouter()
   const excelInputRef = useRef<HTMLInputElement>(null)
@@ -82,7 +83,7 @@ export default function UploadReviewSheet({
       }
 
       setProcessingLabel(`AI 매칭 중... (${extracted.length}개 품목)`)
-      const reviewed = await matchItemsWithAI(extracted, itemProducts)
+      const reviewed = await matchItemsWithAI(extracted, itemProducts, vendorId)
       setItems(reviewed)
       setStage('review')
     } catch (e) {
@@ -93,36 +94,48 @@ export default function UploadReviewSheet({
 
   // ── 사진 처리 ─────────────────────────────────────────────
 
-  const handlePhotoFile = async (file: File) => {
-    const mimeType = file.type as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(mimeType)) {
+  const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const
+  type AllowedMime = (typeof ALLOWED_MIME)[number]
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve((reader.result as string).split(',')[1])
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
+  const handlePhotoFiles = async (files: File[]) => {
+    const validFiles = files.filter((f) => ALLOWED_MIME.includes(f.type as AllowedMime))
+    if (!validFiles.length) {
       toast.error('JPG, PNG, WEBP, GIF 파일만 지원합니다.')
       return
     }
+
     try {
-      setProcessingLabel('납품전표 OCR 중...')
       setStage('processing')
+      const allExtracted = []
 
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => {
-          const result = reader.result as string
-          resolve(result.split(',')[1])
-        }
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i]
+        setProcessingLabel(
+          validFiles.length > 1
+            ? `납품전표 OCR 중... (${i + 1}/${validFiles.length}장)`
+            : '납품전표 OCR 중...',
+        )
+        const base64 = await fileToBase64(file)
+        const extracted = await extractFromInvoicePhoto(base64, file.type as AllowedMime)
+        allExtracted.push(...extracted)
+      }
 
-      const extracted = await extractFromInvoicePhoto(base64, mimeType)
-
-      if (!extracted.length) {
+      if (!allExtracted.length) {
         toast.error('품목을 추출하지 못했습니다. 다른 사진을 시도해보세요.')
         setStage('upload')
         return
       }
 
-      setProcessingLabel(`AI 매칭 중... (${extracted.length}개 품목)`)
-      const reviewed = await matchItemsWithAI(extracted, itemProducts)
+      setProcessingLabel(`AI 매칭 중... (${allExtracted.length}개 품목)`)
+      const reviewed = await matchItemsWithAI(allExtracted, itemProducts, vendorId)
       setItems(reviewed)
       setStage('review')
     } catch {
@@ -168,7 +181,7 @@ export default function UploadReviewSheet({
     if (!saveCount) { toast.error('저장할 품목이 없습니다.'); return }
     try {
       setStage('saving')
-      await bulkSaveReviewedItems(hosId, deliveryId, items)
+      await bulkSaveReviewedItems(hosId, deliveryId, items, vendorId)
       toast.success(`${saveCount}개 품목이 추가되었습니다.`)
       handleOpenChange(false)
       router.refresh()
@@ -233,7 +246,7 @@ export default function UploadReviewSheet({
               <div>
                 <p className="text-sm font-semibold text-slate-700">납품전표 사진 업로드</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  JPG / PNG / WEBP · AI가 품목 목록을 자동 추출
+                  JPG / PNG / WEBP · 여러 장 동시 선택 가능 · AI가 품목 목록을 자동 추출
                 </p>
               </div>
             </button>
@@ -241,10 +254,11 @@ export default function UploadReviewSheet({
               ref={photoInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
               className="hidden"
               onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) handlePhotoFile(f)
+                const files = Array.from(e.target.files ?? [])
+                if (files.length) handlePhotoFiles(files)
                 e.target.value = ''
               }}
             />

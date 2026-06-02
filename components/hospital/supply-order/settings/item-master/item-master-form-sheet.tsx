@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import {
   ITEM_CATEGORIES,
   type ItemMaster,
   type ItemMasterFormInput,
+  type Vendor,
 } from '@/types/hospital/supply-order-type'
 
 const EMPTY_FORM: ItemMasterFormInput = {
@@ -24,6 +25,7 @@ const EMPTY_FORM: ItemMasterFormInput = {
   base_unit: '개',
   aliases: [],
   loc: [],
+  default_vendor: '',
   alert_min_stock: 0,
   reorder_qty: 0,
   is_active: true,
@@ -40,6 +42,7 @@ function toForm(item: ItemMaster): ItemMasterFormInput {
     base_unit: item.base_unit,
     aliases: item.aliases,
     loc: item.loc ?? [],
+    default_vendor: item.default_vendor ?? '',
     alert_min_stock: item.alert_min_stock,
     reorder_qty: item.reorder_qty,
     is_active: item.is_active,
@@ -113,14 +116,19 @@ function TagInput({
 interface Props {
   hosId: string
   item?: ItemMaster
+  vendors: Pick<Vendor, 'id' | 'name'>[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export default function ItemMasterFormSheet({ hosId, item, open, onOpenChange }: Props) {
+export default function ItemMasterFormSheet({ hosId, item, vendors, open, onOpenChange }: Props) {
   const isEdit = !!item
   const [form, setForm] = useState<ItemMasterFormInput>(item ? toForm(item) : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (open) setForm(item ? toForm(item) : EMPTY_FORM)
+  }, [open, item])
 
   const set = <K extends keyof ItemMasterFormInput>(key: K, value: ItemMasterFormInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -146,7 +154,6 @@ export default function ItemMasterFormSheet({ hosId, item, open, onOpenChange }:
   }
 
   const handleOpenChange = (v: boolean) => {
-    if (!v) setForm(item ? toForm(item) : EMPTY_FORM)
     onOpenChange(v)
   }
 
@@ -250,16 +257,34 @@ export default function ItemMasterFormSheet({ hosId, item, open, onOpenChange }:
             placeholder="NS500, 생리식염수 500... 입력 후 Enter"
           />
 
-          {/* 보관장소 */}
+          {/* 태그 */}
           <TagInput
-            label="보관장소"
+            label="태그"
             sub="(복수 설정 가능)"
             tags={form.loc}
             onAdd={(v) => set('loc', [...form.loc, v])}
             onRemove={(v) => set('loc', form.loc.filter((l) => l !== v))}
-            placeholder="냉장고 A, 약품장 2번 칸... 입력 후 Enter"
+            placeholder="약제실, 냉장보관, 버박... 입력 후 Enter"
             tagClassName="bg-teal-50 text-teal-700"
           />
+
+          {/* 기본 주문업체 */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">
+              기본 주문업체
+              <span className="ml-1 font-normal text-slate-400">(선택)</span>
+            </Label>
+            <select
+              value={form.default_vendor}
+              onChange={(e) => set('default_vendor', e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm outline-none focus:ring-1 focus:ring-teal-400"
+            >
+              <option value="">선택 안함</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          </div>
 
           {/* 설명 */}
           <div className="space-y-1.5">

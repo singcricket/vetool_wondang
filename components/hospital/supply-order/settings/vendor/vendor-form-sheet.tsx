@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,6 +52,13 @@ export default function VendorFormSheet({ hosId, vendor, open, onOpenChange }: P
   const [saving, setSaving] = useState(false)
   const [newContact, setNewContact] = useState<VendorContact>({ name: '', phone: '', memo: '' })
 
+  useEffect(() => {
+    if (open) {
+      setForm(vendor ? toForm(vendor) : EMPTY_FORM)
+      setNewContact({ name: '', phone: '', memo: '' })
+    }
+  }, [open, vendor])
+
   const set = <K extends keyof VendorFormInput>(key: K, value: VendorFormInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
@@ -96,7 +103,6 @@ export default function VendorFormSheet({ hosId, vendor, open, onOpenChange }: P
   }
 
   const handleOpenChange = (v: boolean) => {
-    if (!v) setForm(vendor ? toForm(vendor) : EMPTY_FORM)
     onOpenChange(v)
   }
 

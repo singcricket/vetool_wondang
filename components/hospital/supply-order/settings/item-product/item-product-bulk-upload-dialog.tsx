@@ -13,7 +13,7 @@ import { Upload, Download, CheckCircle2, AlertCircle, Loader2, FileSpreadsheet, 
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import { bulkCreateItemProducts } from '@/lib/actions/supply-order/item-product-actions'
-import type { ItemProductCsvRow } from '@/types/hospital/supply-order-type'
+import type { ItemProductCsvRow, Vendor } from '@/types/hospital/supply-order-type'
 
 const COLUMNS = [
   {
@@ -110,13 +110,17 @@ function parseFile(file: File): Promise<ItemProductCsvRow[]> {
   })
 }
 
-interface Props { hosId: string }
+interface Props {
+  hosId: string
+  vendors: Pick<Vendor, 'id' | 'name'>[]
+}
 type UploadState = 'idle' | 'preview' | 'uploading' | 'done'
 
-export default function ItemProductBulkUploadDialog({ hosId }: Props) {
+export default function ItemProductBulkUploadDialog({ hosId, vendors }: Props) {
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<UploadState>('idle')
   const [rows, setRows] = useState<ItemProductCsvRow[]>([])
+  const [selectedVendorId, setSelectedVendorId] = useState('')
   const [result, setResult] = useState<{ success: number; errors: { row: number; message: string }[] } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -137,7 +141,14 @@ export default function ItemProductBulkUploadDialog({ hosId }: Props) {
   const handleUpload = async () => {
     try {
       setState('uploading')
-      const res = await bulkCreateItemProducts(hosId, rows)
+      const plainRows = rows.map((row) => {
+        const r: Record<string, string> = {}
+        for (const col of COLUMNS) {
+          r[col.key] = String((row as any)[col.key] ?? '')
+        }
+        return r as unknown as typeof rows[number]
+      })
+      const res = await bulkCreateItemProducts(hosId, plainRows, selectedVendorId || undefined)
       setResult(res)
       setState('done')
       if (res.success > 0) toast.success(`${res.success}개 제품이 등록되었습니다.`)
@@ -148,7 +159,7 @@ export default function ItemProductBulkUploadDialog({ hosId }: Props) {
     }
   }
 
-  const reset = () => { setState('idle'); setRows([]); setResult(null) }
+  const reset = () => { setState('idle'); setRows([]); setResult(null); setSelectedVendorId('') }
   const handleOpenChange = (v: boolean) => { setOpen(v); if (!v) reset() }
 
   return (
@@ -169,6 +180,25 @@ export default function ItemProductBulkUploadDialog({ hosId }: Props) {
 
           {state === 'idle' && (
             <div className="flex flex-col gap-5 p-5">
+
+              {/* 도매상 선택 */}
+              {vendors.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-slate-600">
+                    공급 도매상 <span className="font-normal text-slate-400">(선택 시 AI 매칭 우선순위에 활용됩니다)</span>
+                  </p>
+                  <select
+                    value={selectedVendorId}
+                    onChange={(e) => setSelectedVendorId(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm outline-none focus:ring-1 focus:ring-teal-400"
+                  >
+                    <option value="">도매상 선택 (선택사항)</option>
+                    {vendors.map((v) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* 안내 */}
               <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">

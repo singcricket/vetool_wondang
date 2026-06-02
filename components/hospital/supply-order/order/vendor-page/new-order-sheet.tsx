@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,6 +51,15 @@ export default function NewOrderSheet({ hosId, vendor, itemMasters, open, onOpen
   const [memo, setMemo] = useState('')
   const [items, setItems] = useState<OrderItemInput[]>([emptyItem()])
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setOrderDate(new Date().toISOString().split('T')[0])
+      setVendorContact(vendor.contacts[0]?.name ?? '')
+      setMemo('')
+      setItems([emptyItem()])
+    }
+  }, [open, vendor])
 
   const updateItem = <K extends keyof OrderItemInput>(
     idx: number,
@@ -157,12 +166,6 @@ export default function NewOrderSheet({ hosId, vendor, itemMasters, open, onOpen
   }
 
   const handleOpenChange = (v: boolean) => {
-    if (!v) {
-      setItems([emptyItem()])
-      setMemo('')
-      setVendorContact(vendor.contacts[0]?.name ?? '')
-      setOrderDate(today)
-    }
     onOpenChange(v)
   }
 

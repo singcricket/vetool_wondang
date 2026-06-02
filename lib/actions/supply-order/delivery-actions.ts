@@ -82,14 +82,74 @@ export async function updateDeliveryStatus(
     const { data: { user } } = await supabase.auth.getUser()
     updateData.confirmed_by = user?.id ?? null
     updateData.confirmed_at = new Date().toISOString()
+
+    // delivery_items → inventory_logs IN 기록
+    const { data: items } = await supabase
+      .from('delivery_items')
+      .select('id, item_master_id, item_product_id, base_quantity, quantity_received, unit, item_master(base_unit)')
+      .eq('delivery_id', deliveryId)
+      .not('item_master_id', 'is', null)
+
+    if (items && items.length > 0) {
+      const logs = items
+        .filter((item: any) => (item.base_quantity ?? item.quantity_received) > 0)
+        .map((item: any) => ({
+          hos_id: hosId,
+          item_master_id: item.item_master_id,
+          item_product_id: item.item_product_id ?? null,
+          transaction_type: 'IN',
+          quantity: item.base_quantity ?? item.quantity_received,
+          base_unit: (item.item_master as any)?.base_unit ?? item.unit,
+          reference_type: 'delivery',
+          reference_id: deliveryId,
+          created_by: user?.id ?? null,
+        }))
+
+      if (logs.length > 0) {
+        await supabase.from('inventory_logs').insert(logs)
+      }
+    }
   }
 
-  const { error } = await supabase
+  // confirmed → reviewing 되돌리기 시 inventory_logs 취소
+  if (status === 'reviewing') {
+    await supabase
+      .from('inventory_logs')
+      .delete()
+      .eq('hos_id', hosId)
+      .eq('reference_type', 'delivery')
+      .eq('reference_id', deliveryId)
+      .eq('transaction_type', 'IN')
+  }
+
+  // delivery 상태 업데이트
+  const { data: updatedDelivery, error } = await supabase
     .from('deliveries')
     .update(updateData)
     .eq('id', deliveryId)
     .eq('hos_id', hosId)
+    .select('order_id')
+    .single()
 
   if (error) throw new Error(error.message)
+
+  // 연결된 order 상태 동기화
+  const orderId = updatedDelivery?.order_id
+  if (orderId) {
+    let orderStatus: string | null = null
+    if (status === 'confirmed') orderStatus = 'delivered'
+    else if (status === 'partial') orderStatus = 'partial'
+    else if (status === 'reviewing') orderStatus = 'delivering'  // 되돌리기
+
+    if (orderStatus) {
+      await supabase
+        .from('orders')
+        .update({ status: orderStatus })
+        .eq('id', orderId)
+        .eq('hos_id', hosId)
+    }
+  }
+
   revalidatePath(`/hospital/${hosId}/supply-order/order`)
+  revalidatePath(`/hospital/${hosId}/supply-order/inventory`)
 }

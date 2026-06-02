@@ -9,15 +9,16 @@ import { toggleItemProductActive } from '@/lib/actions/supply-order/item-product
 import { toast } from 'sonner'
 import ItemProductFormSheet from './item-product-form-sheet'
 import ItemProductBulkUploadDialog from './item-product-bulk-upload-dialog'
-import type { ItemMaster, ItemProduct } from '@/types/hospital/supply-order-type'
+import type { ItemMaster, ItemProduct, Vendor } from '@/types/hospital/supply-order-type'
 
 interface Props {
   hosId: string
   products: ItemProduct[]
   itemMasters: ItemMaster[]
+  vendors: Pick<Vendor, 'id' | 'name'>[]
 }
 
-export default function ItemProductSection({ hosId, products, itemMasters }: Props) {
+export default function ItemProductSection({ hosId, products, itemMasters, vendors }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<ItemProduct | undefined>(undefined)
   const [toggling, setToggling] = useState<string | null>(null)
@@ -74,7 +75,7 @@ export default function ItemProductSection({ hosId, products, itemMasters }: Pro
           )}
         </p>
         <div className="flex gap-2">
-          <ItemProductBulkUploadDialog hosId={hosId} />
+          <ItemProductBulkUploadDialog hosId={hosId} vendors={vendors} />
           <Button size="sm" onClick={openAdd} className="gap-1 bg-teal-600 hover:bg-teal-700">
             <Plus size={14} />
             제품 추가

@@ -55,6 +55,7 @@ export async function createItemMaster(hosId: string, input: ItemMasterFormInput
     base_unit: input.base_unit.trim(),
     aliases: input.aliases.filter((a) => a.trim()),
     loc: input.loc.filter((v) => v.trim()),
+    default_vendor: input.default_vendor || null,
     alert_min_stock: input.alert_min_stock,
     reorder_qty: input.reorder_qty,
     is_active: input.is_active,
@@ -79,6 +80,7 @@ export async function updateItemMaster(
       base_unit: input.base_unit.trim(),
       aliases: input.aliases.filter((a) => a.trim()),
       loc: input.loc.filter((v) => v.trim()),
+      default_vendor: input.default_vendor || null,
       alert_min_stock: input.alert_min_stock,
       reorder_qty: input.reorder_qty,
       is_active: input.is_active,
@@ -153,6 +155,92 @@ export async function bulkCreateItemMasters(
   }
 
   return { success: validRows.length, errors }
+}
+
+export type BulkUpdateItemMasterInput = {
+  categoryMode: 'add' | 'replace'
+  categories: string[]        // 비어있으면 변경 안함
+  locMode: 'add' | 'replace'
+  locs: string[]              // 비어있으면 변경 안함
+  base_unit: string           // 비어있으면 변경 안함
+  is_active: 'keep' | 'true' | 'false'
+  default_vendor: 'keep' | 'clear' | string  // 'keep'=변경안함, 'clear'=해제, vendorId=지정
+}
+
+export async function bulkUpdateItemMasters(
+  hosId: string,
+  ids: string[],
+  input: BulkUpdateItemMasterInput,
+): Promise<void> {
+  if (ids.length === 0) return
+  const supabase = await createClient()
+
+  // category / loc 를 replace 모드로 처리할 경우 단순 update
+  // add 모드는 기존 배열을 읽어서 병합 필요 → 개별 fetch 후 upsert
+  const needFetch = (input.categories.length > 0 && input.categoryMode === 'add')
+    || (input.locs.length > 0 && input.locMode === 'add')
+
+  if (needFetch) {
+    const { data: existing, error: fetchError } = await supabase
+      .from('item_master')
+      .select('id, category, loc')
+      .in('id', ids)
+      .eq('hos_id', hosId)
+    if (fetchError) throw new Error(fetchError.message)
+
+    for (const row of existing ?? []) {
+      const patch: Record<string, unknown> = {}
+
+      if (input.categories.length > 0) {
+        patch.category = input.categoryMode === 'add'
+          ? Array.from(new Set([...(row.category ?? []), ...input.categories]))
+          : input.categories
+      }
+      if (input.locs.length > 0) {
+        patch.loc = input.locMode === 'add'
+          ? Array.from(new Set([...(row.loc ?? []), ...input.locs]))
+          : input.locs
+      }
+      if (input.base_unit.trim()) patch.base_unit = input.base_unit.trim()
+      if (input.is_active !== 'keep') patch.is_active = input.is_active === 'true'
+      if (input.default_vendor === 'clear') patch.default_vendor = null
+      else if (input.default_vendor !== 'keep') patch.default_vendor = input.default_vendor
+
+      if (Object.keys(patch).length === 0) continue
+      const { error } = await supabase.from('item_master').update(patch).eq('id', row.id).eq('hos_id', hosId)
+      if (error) throw new Error(error.message)
+    }
+  } else {
+    const patch: Record<string, unknown> = {}
+    if (input.categories.length > 0) patch.category = input.categories
+    if (input.locs.length > 0) patch.loc = input.locs
+    if (input.base_unit.trim()) patch.base_unit = input.base_unit.trim()
+    if (input.is_active !== 'keep') patch.is_active = input.is_active === 'true'
+    if (input.default_vendor === 'clear') patch.default_vendor = null
+    else if (input.default_vendor !== 'keep') patch.default_vendor = input.default_vendor
+
+    if (Object.keys(patch).length === 0) return
+    const { error } = await supabase.from('item_master').update(patch).in('id', ids).eq('hos_id', hosId)
+    if (error) throw new Error(error.message)
+  }
+
+  revalidatePath(`/hospital/${hosId}/supply-order/settings`)
+}
+
+export async function bulkDeleteItemMasters(
+  hosId: string,
+  ids: string[],
+): Promise<void> {
+  if (ids.length === 0) return
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('item_master')
+    .delete()
+    .in('id', ids)
+    .eq('hos_id', hosId)
+
+  if (error) throw new Error(error.message)
+  revalidatePath(`/hospital/${hosId}/supply-order/settings`)
 }
 
 export async function toggleItemMasterActive(

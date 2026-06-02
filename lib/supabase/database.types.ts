@@ -1683,6 +1683,7 @@ export type Database = {
           hos_id: string
           id: string
           item_master_id: string
+          item_product_id: string | null
           memo: string | null
           quantity: number
           reference_id: string | null
@@ -1696,6 +1697,7 @@ export type Database = {
           hos_id: string
           id?: string
           item_master_id: string
+          item_product_id?: string | null
           memo?: string | null
           quantity: number
           reference_id?: string | null
@@ -1709,6 +1711,7 @@ export type Database = {
           hos_id?: string
           id?: string
           item_master_id?: string
+          item_product_id?: string | null
           memo?: string | null
           quantity?: number
           reference_id?: string | null
@@ -1737,6 +1740,13 @@ export type Database = {
             referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "inventory_logs_item_product_id_fkey"
+            columns: ["item_product_id"]
+            isOneToOne: false
+            referencedRelation: "item_products"
+            referencedColumns: ["id"]
+          },
         ]
       }
       item_master: {
@@ -1746,6 +1756,7 @@ export type Database = {
           base_unit: string
           category: string[]
           created_at: string
+          default_vendor: string | null
           description: string | null
           generic_name: string
           hos_id: string
@@ -1762,6 +1773,7 @@ export type Database = {
           base_unit?: string
           category: string[]
           created_at?: string
+          default_vendor?: string | null
           description?: string | null
           generic_name: string
           hos_id: string
@@ -1778,6 +1790,7 @@ export type Database = {
           base_unit?: string
           category?: string[]
           created_at?: string
+          default_vendor?: string | null
           description?: string | null
           generic_name?: string
           hos_id?: string
@@ -1789,6 +1802,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "item_master_default_vendor_fkey"
+            columns: ["default_vendor"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "item_master_hos_id_fkey"
             columns: ["hos_id"]
@@ -1814,6 +1834,7 @@ export type Database = {
           specification: string | null
           units_per_package: number
           updated_at: string
+          vendor_ids: string[] | null
         }
         Insert: {
           brand_name: string
@@ -1830,6 +1851,7 @@ export type Database = {
           specification?: string | null
           units_per_package?: number
           updated_at?: string
+          vendor_ids?: string[] | null
         }
         Update: {
           brand_name?: string
@@ -1846,6 +1868,7 @@ export type Database = {
           specification?: string | null
           units_per_package?: number
           updated_at?: string
+          vendor_ids?: string[] | null
         }
         Relationships: [
           {
@@ -4021,7 +4044,7 @@ export type Database = {
         Row: {
           alert_min_stock: number | null
           base_unit: string | null
-          category: string | null
+          category: string[] | null
           current_stock: number | null
           generic_name: string | null
           hos_id: string | null

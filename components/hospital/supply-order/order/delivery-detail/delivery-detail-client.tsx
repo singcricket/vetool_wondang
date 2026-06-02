@@ -375,6 +375,7 @@ export default function DeliveryDetailClient({
       <UploadReviewSheet
         hosId={hosId}
         deliveryId={delivery.id}
+        vendorId={delivery.vendor_id}
         itemProducts={itemProducts}
         open={uploadSheetOpen}
         onOpenChange={setUploadSheetOpen}

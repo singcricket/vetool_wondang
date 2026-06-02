@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -63,6 +63,10 @@ export default function ItemProductFormSheet({ hosId, product, itemMasters, open
   const [form, setForm] = useState<ItemProductFormInput>(product ? toForm(product) : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    if (open) setForm(product ? toForm(product) : EMPTY_FORM)
+  }, [open, product])
+
   const set = <K extends keyof ItemProductFormInput>(key: K, value: ItemProductFormInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
@@ -88,7 +92,6 @@ export default function ItemProductFormSheet({ hosId, product, itemMasters, open
   }
 
   const handleOpenChange = (v: boolean) => {
-    if (!v) setForm(product ? toForm(product) : EMPTY_FORM)
     onOpenChange(v)
   }
 
