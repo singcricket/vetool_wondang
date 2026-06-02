@@ -194,6 +194,26 @@ export async function updateOrderStatus(
   revalidatePath(`/hospital/${hosId}/supply-order/order`)
 }
 
+// 기간별 주문 목록 (주문내역 탭)
+export async function getOrdersByDateRange(
+  hosId: string,
+  startDate: string,
+  endDate: string,
+): Promise<Order[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, vendor:vendors(id, name), order_items(id)')
+    .eq('hos_id', hosId)
+    .gte('order_date', startDate)
+    .lte('order_date', endDate)
+    .order('order_date', { ascending: false })
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return (data ?? []) as Order[]
+}
+
 // 주문서 삭제 (draft 상태만)
 export async function deleteOrder(hosId: string, orderId: string): Promise<void> {
   const supabase = await createClient()

@@ -1,7 +1,20 @@
-export default function SupplyHistoryPage() {
+import { getOrdersByDateRange } from '@/lib/actions/supply-order/order-actions'
+import HistoryClient from '@/components/hospital/supply-order/history/history-client'
+
+export default async function SupplyHistoryPage(
+  props: PageProps<'/hospital/[hos_id]/supply-order/history'>,
+) {
+  const { hos_id } = await props.params
+
+  const today = new Date().toLocaleDateString('sv-SE')
+  const orders = await getOrdersByDateRange(hos_id, today, today)
+
   return (
-    <div className="flex h-full items-center justify-center text-sm text-slate-400">
-      주문내역 탭 (준비중)
-    </div>
+    <HistoryClient
+      hosId={hos_id}
+      initialOrders={orders}
+      initialStart={today}
+      initialEnd={today}
+    />
   )
 }
