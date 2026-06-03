@@ -95,11 +95,11 @@ export async function deleteDelivery(hosId: string, deliveryId: string): Promise
 
   if (error) throw new Error(error.message)
 
-  // 연결된 order 상태를 confirmed로 되돌리기
+  // 연결된 order 상태를 ordered로 되돌리기
   if (data?.order_id) {
     await supabase
       .from('orders')
-      .update({ status: 'confirmed' })
+      .update({ status: 'ordered' })
       .eq('id', data.order_id)
       .eq('hos_id', hosId)
   }
@@ -151,6 +151,12 @@ export async function updateDeliveryStatus(
     updateData.confirmed_at = new Date().toISOString()
 
     // delivery_items → inventory_logs IN 기록
+    const { data: delivery } = await supabase
+      .from('deliveries')
+      .select('vendor_id')
+      .eq('id', deliveryId)
+      .single()
+
     const { data: items } = await supabase
       .from('delivery_items')
       .select('id, item_master_id, item_product_id, base_quantity, quantity_received, unit, item_master(base_unit)')
@@ -167,6 +173,7 @@ export async function updateDeliveryStatus(
           transaction_type: 'IN',
           quantity: item.base_quantity ?? item.quantity_received,
           base_unit: (item.item_master as any)?.base_unit ?? item.unit,
+          vendor_id: delivery?.vendor_id ?? null,
           reference_type: 'delivery',
           reference_id: deliveryId,
           created_by: user?.id ?? null,
@@ -178,8 +185,8 @@ export async function updateDeliveryStatus(
     }
   }
 
-  // confirmed → reviewing 되돌리기 시 inventory_logs 취소
-  if (status === 'reviewing') {
+  // confirmed → pending 되돌리기 시 inventory_logs 취소
+  if (status === 'pending') {
     await supabase
       .from('inventory_logs')
       .delete()
@@ -206,7 +213,7 @@ export async function updateDeliveryStatus(
     let orderStatus: string | null = null
     if (status === 'confirmed') orderStatus = 'delivered'
     else if (status === 'partial') orderStatus = 'partial'
-    else if (status === 'reviewing') orderStatus = 'delivering'  // 되돌리기
+    else if (status === 'pending') orderStatus = 'ordered'
 
     if (orderStatus) {
       await supabase

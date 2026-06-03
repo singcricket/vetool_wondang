@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_logs: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          created_by: string | null
+          feature: string
+          hos_id: string
+          id: string
+          input_tokens: number
+          model: string
+          output_tokens: number
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          created_by?: string | null
+          feature: string
+          hos_id: string
+          id?: string
+          input_tokens?: number
+          model: string
+          output_tokens?: number
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          created_by?: string | null
+          feature?: string
+          hos_id?: string
+          id?: string
+          input_tokens?: number
+          model?: string
+          output_tokens?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ai_usage_logs_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           announcement_category: string
@@ -1690,6 +1741,7 @@ export type Database = {
           reference_id: string | null
           reference_type: string | null
           transaction_type: string
+          vendor_id: string | null
         }
         Insert: {
           base_unit: string
@@ -1705,6 +1757,7 @@ export type Database = {
           reference_id?: string | null
           reference_type?: string | null
           transaction_type: string
+          vendor_id?: string | null
         }
         Update: {
           base_unit?: string
@@ -1720,6 +1773,7 @@ export type Database = {
           reference_id?: string | null
           reference_type?: string | null
           transaction_type?: string
+          vendor_id?: string | null
         }
         Relationships: [
           {
@@ -1748,6 +1802,13 @@ export type Database = {
             columns: ["item_product_id"]
             isOneToOne: false
             referencedRelation: "item_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_logs_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
@@ -1824,6 +1885,7 @@ export type Database = {
       item_products: {
         Row: {
           brand_name: string
+          category: string[]
           created_at: string
           hos_id: string
           id: string
@@ -1835,12 +1897,14 @@ export type Database = {
           package_type: string
           reference_price: number | null
           specification: string | null
+          tag: string[]
           units_per_package: number
           updated_at: string
           vendor_ids: string[] | null
         }
         Insert: {
           brand_name: string
+          category?: string[]
           created_at?: string
           hos_id: string
           id?: string
@@ -1852,12 +1916,14 @@ export type Database = {
           package_type?: string
           reference_price?: number | null
           specification?: string | null
+          tag?: string[]
           units_per_package?: number
           updated_at?: string
           vendor_ids?: string[] | null
         }
         Update: {
           brand_name?: string
+          category?: string[]
           created_at?: string
           hos_id?: string
           id?: string
@@ -1869,6 +1935,7 @@ export type Database = {
           package_type?: string
           reference_price?: number | null
           specification?: string | null
+          tag?: string[]
           units_per_package?: number
           updated_at?: string
           vendor_ids?: string[] | null

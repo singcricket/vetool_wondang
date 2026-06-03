@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, Plus, Pencil, Trash2, Loader2, PackageCheck, CheckCircle2, AlertCircle, Circle, FileSpreadsheet, Camera, X } from 'lucide-react'
+import { ChevronLeft, Plus, Pencil, Trash2, Loader2, PackageCheck, CheckCircle2, AlertCircle, Circle, FileSpreadsheet, Camera } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
 import { deleteDeliveryItem } from '@/lib/actions/supply-order/delivery-items-actions'
@@ -26,13 +26,11 @@ interface Props {
 }
 
 const NEXT_STATUS: Partial<Record<DeliveryStatus, { label: string; next: DeliveryStatus; color: string }>> = {
-  pending:   { label: '검토 시작', next: 'reviewing', color: 'bg-amber-500 hover:bg-amber-600' },
-  reviewing: { label: '검수 완료', next: 'confirmed', color: 'bg-emerald-600 hover:bg-emerald-700' },
+  pending: { label: '납품 확인 완료', next: 'confirmed', color: 'bg-emerald-600 hover:bg-emerald-700' },
 }
 
 const PREV_STATUS: Partial<Record<DeliveryStatus, { label: string; prev: DeliveryStatus }>> = {
-  reviewing: { label: '확인대기로 되돌리기', prev: 'pending' },
-  confirmed: { label: '검토중으로 되돌리기',   prev: 'reviewing' },
+  confirmed: { label: '작성 단계로 되돌리기', prev: 'pending' },
 }
 
 export default function DeliveryDetailClient({
@@ -80,7 +78,10 @@ export default function DeliveryDetailClient({
   }
 
   const handleDeleteDelivery = async () => {
-    if (!confirm('납품 확인서를 삭제하시겠습니까? 등록된 품목도 함께 삭제됩니다.')) return
+    const msg = delivery.status === 'confirmed'
+      ? '확인 완료된 납품 확인서입니다.\n삭제하면 반영된 재고가 함께 롤백됩니다.\n정말 삭제하시겠습니까?'
+      : '납품 확인서를 삭제하시겠습니까?\n등록된 품목도 함께 삭제됩니다.'
+    if (!confirm(msg)) return
     try {
       setDeleteDeliveryLoading(true)
       await deleteDelivery(hosId, delivery.id)
@@ -137,22 +138,7 @@ export default function DeliveryDetailClient({
             </div>
             <p className="mt-0.5 text-xs text-slate-400">{vendor?.name}</p>
           </div>
-          <div className="flex items-center gap-2">
-            {delivery.status !== 'confirmed' && (
-              <button
-                type="button"
-                onClick={handleDeleteDelivery}
-                disabled={deleteDeliveryLoading}
-                className="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-400 transition-colors"
-                title="납품 확인서 삭제"
-              >
-                {deleteDeliveryLoading
-                  ? <Loader2 size={16} className="animate-spin" />
-                  : <X size={16} />}
-              </button>
-            )}
-            <PackageCheck size={20} className="text-slate-300" />
-          </div>
+          <PackageCheck size={20} className="text-slate-300" />
         </div>
 
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t pt-3 text-[11px] text-slate-500">
@@ -373,12 +359,10 @@ export default function DeliveryDetailClient({
         {nextStatus && (
           <Button
             onClick={() => handleStatusChange(nextStatus.next)}
-            disabled={statusLoading}
+            disabled={statusLoading || deleteDeliveryLoading}
             className={cn('w-full gap-1.5', nextStatus.color)}
           >
-            {statusLoading
-              ? <Loader2 size={14} className="animate-spin" />
-              : null}
+            {statusLoading ? <Loader2 size={14} className="animate-spin" /> : null}
             {nextStatus.label}
           </Button>
         )}
@@ -386,12 +370,28 @@ export default function DeliveryDetailClient({
           <button
             type="button"
             onClick={() => handleStatusChange(prevStatus.prev)}
-            disabled={statusLoading}
+            disabled={statusLoading || deleteDeliveryLoading}
             className="w-full py-1.5 text-xs text-slate-400 hover:text-slate-600 disabled:opacity-40"
           >
             ↩ {prevStatus.label}
           </button>
         )}
+
+        {/* 납품 확인서 삭제 */}
+        <Button
+          variant="outline"
+          onClick={handleDeleteDelivery}
+          disabled={deleteDeliveryLoading || statusLoading}
+          className="mt-1 w-full gap-1.5 border-rose-200 text-rose-500 hover:bg-rose-50 hover:text-rose-600"
+        >
+          {deleteDeliveryLoading
+            ? <Loader2 size={14} className="animate-spin" />
+            : <Trash2 size={14} />}
+          납품 확인서 삭제
+          {delivery.status === 'confirmed' && (
+            <span className="text-[10px] text-rose-400">(재고 롤백)</span>
+          )}
+        </Button>
       </div>
 
       <DeliveryDirectInputSheet

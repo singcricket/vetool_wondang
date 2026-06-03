@@ -4,15 +4,13 @@ import type { OrderStatus } from '@/types/hospital/supply-order-type'
 
 // 취소/반려/반품은 별도 처리 — 정상 흐름 스텝만 표시
 const STEPS: { status: OrderStatus; label: string }[] = [
-  { status: 'draft',      label: '작성중' },
-  { status: 'ordered',    label: '주문완료' },
-  { status: 'confirmed',  label: '도매상확인' },
-  { status: 'delivering', label: '배송중' },
-  { status: 'delivered',  label: '납품완료' },
+  { status: 'draft',     label: '작성중' },
+  { status: 'ordered',   label: '주문완료' },
+  { status: 'delivered', label: '납품완료' },
 ]
 
 const STEP_IDX: Partial<Record<OrderStatus, number>> = {
-  draft: 0, ordered: 1, confirmed: 2, delivering: 3, delivered: 4, partial: 4,
+  draft: 0, ordered: 1, delivered: 2, partial: 2,
 }
 
 interface Props {

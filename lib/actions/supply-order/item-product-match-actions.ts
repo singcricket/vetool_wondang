@@ -3,6 +3,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { logAiUsage } from '@/lib/ai/log-usage'
 
 export type ProductForMatch = {
   id: string
@@ -100,6 +101,14 @@ confidence 기준: 90+=명확일치, 70~89=높음, 50~69=보통(검토필요), 4
     model: 'claude-sonnet-4-6',
     max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
+  })
+
+  logAiUsage({
+    hosId,
+    feature: 'supply_order_item_match',
+    model: 'claude-sonnet-4-6',
+    inputTokens: response.usage.input_tokens,
+    outputTokens: response.usage.output_tokens,
   })
 
   const text = response.content[0].type === 'text' ? response.content[0].text.trim() : ''

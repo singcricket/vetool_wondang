@@ -1,13 +1,22 @@
 'use client'
 
 import AdminSidebarItem from '@/components/hospital/admin/admin-sidebar-item'
-import { CalendarCheck2, SyringeIcon, UserCheckIcon, UsersIcon } from 'lucide-react'
+import { BrainCircuit, CalendarCheck2, SyringeIcon, UserCheckIcon, UsersIcon } from 'lucide-react'
 
-export default function AdminSidebar() {
+interface Props {
+  isSuper?: boolean
+}
+
+export default function AdminSidebar({ isSuper }: Props) {
+  const items = [
+    ...ADMIN_SIDEBAR_ITEMS,
+    ...(isSuper ? SUPER_ONLY_ITEMS : []),
+  ]
+
   return (
     <aside className="h-screen w-48 border-r">
       <ul className="flex flex-col gap-1 p-2">
-        {ADMIN_SIDEBAR_ITEMS.map((item) => (
+        {items.map((item) => (
           <AdminSidebarItem
             key={item.name}
             icon={item.icon}
@@ -40,20 +49,13 @@ const ADMIN_SIDEBAR_ITEMS = [
     name: '근태관리',
     path: 'attendance',
     icon: CalendarCheck2,
-
   },
-  // {
-  //   name: '사료설정',
-  //   path: 'diet-settings',
-  //   icon: Utensils,
-  //   isReady: false,
-  //   isResponsive: false,
-  // },
-  // {
-  //   name: '검사설정',
-  //   path: 'test-settings',
-  //   icon: TestTubeDiagonal,
-  //   isReady: false,
-  //   isResponsive: false,
-  // },
-] as const
+]
+
+const SUPER_ONLY_ITEMS = [
+  {
+    name: 'AI사용량',
+    path: 'ai-usage',
+    icon: BrainCircuit,
+  },
+]

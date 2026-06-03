@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
-  ChevronLeft, SendHorizonal, Truck, PackageCheck,
-  CheckCircle2, XCircle, Loader2, Trash2, RotateCcw,
+  ChevronLeft, SendHorizonal, PackageCheck,
+  XCircle, Loader2, Trash2,
   Pencil, Check, X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
@@ -35,23 +35,13 @@ const NEXT_ACTIONS: Partial<Record<OrderStatus, ActionDef[]>> = {
     { label: '주문 취소', next: 'cancelled', icon: XCircle, color: 'bg-slate-100 hover:bg-slate-200 text-slate-600' },
   ],
   ordered: [
-    { label: '도매상 확인', next: 'confirmed', icon: CheckCircle2, color: 'bg-indigo-600 hover:bg-indigo-700' },
     { label: '주문 취소', next: 'cancelled', icon: XCircle, color: 'bg-slate-100 hover:bg-slate-200 text-slate-600' },
-  ],
-  confirmed: [
-    { label: '배송 시작', next: 'delivering', icon: Truck, color: 'bg-amber-500 hover:bg-amber-600' },
-  ],
-  delivering: [
-    { label: '반품 처리', next: 'returned', icon: RotateCcw, color: 'bg-rose-100 hover:bg-rose-200 text-rose-700' },
   ],
 }
 
 // 이전 단계 되돌리기
 const PREV_ACTIONS: Partial<Record<OrderStatus, ActionDef>> = {
-  ordered:   { label: '작성중으로 되돌리기', next: 'draft',     icon: ChevronLeft, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' },
-  confirmed: { label: '주문완료로 되돌리기', next: 'ordered',   icon: ChevronLeft, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' },
-  delivering:{ label: '도매상확인으로 되돌리기', next: 'confirmed', icon: ChevronLeft, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' },
-  delivered: { label: '배송중으로 되돌리기', next: 'delivering', icon: ChevronLeft, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' },
+  ordered: { label: '작성중으로 되돌리기', next: 'draft', icon: ChevronLeft, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' },
 }
 
 export default function OrderDetailClient({ hosId, order, deliveries }: Props) {
@@ -131,9 +121,8 @@ export default function OrderDetailClient({ hosId, order, deliveries }: Props) {
 
   const nextActions = NEXT_ACTIONS[order.status] ?? []
   const prevAction = PREV_ACTIONS[order.status] ?? null
-  const canCreateDelivery = ['confirmed', 'delivering', 'partial'].includes(order.status) && deliveries.length === 0
-  // ordered 이후 delivered 이전까지 품목별 상태 수정 가능
-  const canEditItemStatus = ['ordered', 'confirmed', 'delivering', 'partial', 'delivered'].includes(order.status)
+  const canCreateDelivery = order.status === 'ordered' && deliveries.length === 0
+  const canEditItemStatus = ['ordered', 'partial', 'delivered'].includes(order.status)
 
   return (
     <div className="flex flex-col gap-4 p-4">

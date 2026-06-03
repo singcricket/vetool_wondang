@@ -71,6 +71,7 @@ export async function saveInventoryUploadItems(
     expiry_date: string | null
     lot_number: string | null
     unit_price: number | null
+    vendor_id: string | null
     reference_type: string
     created_by: string | null
   }[] = []
@@ -149,6 +150,7 @@ export async function saveInventoryUploadItems(
       expiry_date: row.expiryDate || null,
       lot_number: row.lotNumber.trim() || null,
       unit_price: row.unitPrice ? Number(row.unitPrice) : null,
+      vendor_id: vendorId ?? null,
       reference_type: 'invoice_upload',
       created_by: user?.id ?? null,
     })

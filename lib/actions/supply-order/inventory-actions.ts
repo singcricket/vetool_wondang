@@ -351,6 +351,7 @@ export type StockInRow = {
   quantity: number
   base_unit: string
   expiry_date?: string | null
+  vendor_id?: string | null
 }
 
 export async function bulkStockIn(hosId: string, rows: StockInRow[]): Promise<void> {
@@ -367,6 +368,7 @@ export async function bulkStockIn(hosId: string, rows: StockInRow[]): Promise<vo
     quantity: Math.abs(row.quantity),
     base_unit: row.base_unit,
     expiry_date: row.expiry_date || null,
+    vendor_id: row.vendor_id ?? null,
     reference_type: 'manual_in',
     created_by: user?.id ?? null,
   }))

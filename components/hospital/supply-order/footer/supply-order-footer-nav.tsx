@@ -3,12 +3,13 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils/utils'
-import { ClipboardList, History, Package, Settings } from 'lucide-react'
+import { ClipboardList, History, Package, Settings, BookOpen } from 'lucide-react'
 
 const NAV_ITEMS = [
   { label: '주문', path: 'order', icon: ClipboardList },
   { label: '주문내역', path: 'history', icon: History },
   { label: '재고현황', path: 'inventory', icon: Package },
+  { label: '수불대장', path: 'ledger', icon: BookOpen },
   { label: '설정', path: 'settings', icon: Settings },
 ] as const
 

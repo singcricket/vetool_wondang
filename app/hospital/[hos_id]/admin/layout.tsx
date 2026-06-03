@@ -20,7 +20,7 @@ export default async function AdminLayout(props: Props) {
 
   return (
     <div className="flex flex-col md:flex-row">
-      <AdminSidebar />
+      <AdminSidebar isSuper={vetoolUser.is_super} />
 
       <div className="h-screen w-full overflow-auto p-2 pt-14 md:pt-2">
         {props.children}

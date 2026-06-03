@@ -9,6 +9,7 @@ import type {
   ReviewDeliveryItem,
   ItemProduct,
 } from '@/types/hospital/supply-order-type'
+import { logAiUsage } from '@/lib/ai/log-usage'
 
 // ── 열 이름 감지 ─────────────────────────────────────────────
 
@@ -118,6 +119,7 @@ export async function matchItemsWithAI(
   items: ExtractedDeliveryItem[],
   itemProducts: ItemProduct[],
   vendorId?: string,
+  hosId?: string,
 ): Promise<ReviewDeliveryItem[]> {
   if (!items.length) return []
 
@@ -184,6 +186,10 @@ JSON만 반환하세요.`
       max_tokens: 2048,
       messages: [{ role: 'user', content: prompt }],
     })
+
+    if (hosId) {
+      logAiUsage({ hosId, feature: 'supply_order_match', model: 'claude-haiku-4-5-20251001', inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens })
+    }
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
     const clean = text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
@@ -260,12 +266,17 @@ async function extractTextWithGoogleVision(base64Image: string): Promise<string>
 async function parseWithClaude(
   client: ReturnType<typeof getAnthropicClient>,
   content: Anthropic.MessageParam['content'],
+  hosId?: string,
 ): Promise<ExtractedDeliveryItem[]> {
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2048,
     messages: [{ role: 'user', content }],
   })
+
+  if (hosId) {
+    logAiUsage({ hosId, feature: 'supply_order_ocr', model: 'claude-sonnet-4-6', inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens })
+  }
 
   const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
   console.log('[extractFromInvoicePhoto] Claude 결과:\n', text)
@@ -285,6 +296,7 @@ async function parseWithClaude(
 export async function extractFromInvoicePhoto(
   base64Image: string,
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
+  hosId?: string,
 ): Promise<ExtractedDeliveryItem[]> {
   const client = getAnthropicClient()
 
@@ -323,7 +335,7 @@ ${rawText}
 - 합계/소계/세액 행은 품목이 아니므로 제외
 - 수량 불명확 시 1
 - 단가는 개당 단가(합계 금액 아님)
-- 반드시 JSON 배열만 반환`)
+- 반드시 JSON 배열만 반환`, hosId)
   }
 
   // 2단계-B: Claude 직접 이미지 읽기 (폴백)
@@ -356,7 +368,7 @@ ${rawText}
 테이블 구조의 각 행이 하나의 납품 품목입니다.
 주의: 수량 불명확 시 1, 단가는 개당 단가(합계 아님), 반드시 JSON만 반환`,
     },
-  ])
+  ], hosId)
 }
 
 // ── 최종 저장 ─────────────────────────────────────────────────
