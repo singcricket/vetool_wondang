@@ -18,19 +18,21 @@ export default async function SupplyInventoryPage(
       .order('name'),
     supabase
       .from('item_products')
-      .select('id, item_master_id, brand_name, specification, manufacturer')
+      .select('id, item_master_id, brand_name, specification, manufacturer, category, tag')
       .eq('hos_id', hos_id)
       .eq('is_active', true)
       .order('brand_name'),
   ])
 
   const vendors = (vendorRows ?? []) as { id: string; name: string }[]
-  const itemProducts = (productRows ?? []) as {
+  const itemProducts = (productRows ?? []) as unknown as {
     id: string
     item_master_id: string | null
     brand_name: string
     specification: string | null
     manufacturer: string | null
+    category: string[]
+    tag: string[]
   }[]
 
   return (

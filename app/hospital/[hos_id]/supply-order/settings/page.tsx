@@ -61,6 +61,7 @@ export default async function SupplySettingsPage(
               hosId={hos_id}
               items={itemMasters}
               vendors={vendors.filter((v) => v.is_active).map((v) => ({ id: v.id, name: v.name }))}
+              itemProducts={itemProducts}
             />
           </TabsContent>
           <TabsContent value="item-product" className="m-0">

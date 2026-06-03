@@ -370,6 +370,8 @@ export type ItemProduct = {
   units_per_package: number
   reference_price: number | null
   vendor_ids: string[]             // 공급 도매상 ID 목록
+  category: string[]
+  tag: string[]
   memo: string | null
   is_active: boolean
   created_at: string
@@ -387,6 +389,8 @@ export type ItemProductFormInput = {
   package_type: string
   units_per_package: number
   reference_price: string
+  category: string[]
+  tag: string[]
   memo: string
   is_active: boolean
 }

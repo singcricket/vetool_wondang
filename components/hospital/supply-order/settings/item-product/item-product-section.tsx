@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Pencil, Boxes, Search, Link2Off, Loader2, Sparkles } from 'lucide-react'
+import { Plus, Pencil, Boxes, Search, Link2Off, Loader2, Sparkles, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
-import { toggleItemProductActive } from '@/lib/actions/supply-order/item-product-actions'
+import { toggleItemProductActive, bulkDeleteItemProducts } from '@/lib/actions/supply-order/item-product-actions'
 import { toast } from 'sonner'
 import ItemProductFormSheet from './item-product-form-sheet'
 import ItemProductBulkUploadDialog from './item-product-bulk-upload-dialog'
 import ItemProductAiMatchDialog from './item-product-ai-match-dialog'
+import ItemProductBulkEditSheet from './item-product-bulk-edit-sheet'
 import type { ItemMaster, ItemProduct, Vendor } from '@/types/hospital/supply-order-type'
 
 interface Props {
@@ -25,9 +26,26 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
   const [toggling, setToggling] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [aiMatchOpen, setAiMatchOpen] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [bulkEditOpen, setBulkEditOpen] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   const openAdd = () => { setEditing(undefined); setSheetOpen(true) }
   const openEdit = (product: ItemProduct) => { setEditing(product); setSheetOpen(true) }
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`선택한 ${selectedIds.length}개 제품을 삭제하시겠습니까?\n\n연결된 주문 데이터가 있으면 삭제되지 않을 수 있습니다.`)) return
+    try {
+      setBulkDeleting(true)
+      await bulkDeleteItemProducts(hosId, selectedIds)
+      toast.success(`${selectedIds.length}개 제품이 삭제되었습니다.`)
+      setSelectedIds([])
+    } catch {
+      toast.error('삭제에 실패했습니다. 연결된 데이터가 있는지 확인하세요.')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
 
   const handleToggle = async (product: ItemProduct) => {
     try {
@@ -50,7 +68,9 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
         (p.manufacturer ?? '').toLowerCase().includes(q) ||
         (p.specification ?? '').toLowerCase().includes(q) ||
         (p.item_master?.generic_name ?? '').toLowerCase().includes(q) ||
-        (p.item_master?.category ?? []).some((c) => c.toLowerCase().includes(q))
+        (p.item_master?.category ?? []).some((c) => c.toLowerCase().includes(q)) ||
+        (p.category ?? []).some((c) => c.toLowerCase().includes(q)) ||
+        (p.tag ?? []).some((t) => t.toLowerCase().includes(q))
       )
     })
     .sort((a, b) => {
@@ -58,6 +78,24 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
       const bCat = b.item_master?.generic_name ?? 'zzz'
       return aCat.localeCompare(bCat, 'ko') || a.brand_name.localeCompare(b.brand_name, 'ko')
     })
+
+  const filteredIds = filtered.map((p) => p.id)
+  const allChecked = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id))
+  const someChecked = filteredIds.some((id) => selectedIds.includes(id))
+
+  const toggleAll = () => {
+    if (allChecked) {
+      setSelectedIds((prev) => prev.filter((id) => !filteredIds.includes(id)))
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...filteredIds])))
+    }
+  }
+
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
+    )
+  }
 
   const activeCount = products.filter((p) => p.is_active).length
   const unlinkedCount = products.filter((p) => !p.item_master_id).length
@@ -109,6 +147,44 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
         </div>
       )}
 
+      {/* 일괄 수정 액션 바 */}
+      {selectedIds.length > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 px-3 py-2">
+          <span className="text-xs font-medium text-teal-700">
+            {selectedIds.length}개 선택됨
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="text-[11px] text-slate-400 hover:text-slate-600"
+            >
+              선택 해제
+            </button>
+            <Button
+              size="sm"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              className="h-7 gap-1 bg-red-500 px-2.5 text-xs hover:bg-red-600"
+            >
+              {bulkDeleting
+                ? <Loader2 size={12} className="animate-spin" />
+                : <Trash2 size={12} />}
+              삭제
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setBulkEditOpen(true)}
+              disabled={bulkDeleting}
+              className="h-7 gap-1 bg-teal-600 px-2.5 text-xs hover:bg-teal-700"
+            >
+              <SlidersHorizontal size={12} />
+              일괄 수정
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* 빈 상태 */}
       {products.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-12 text-slate-400">
@@ -125,9 +201,20 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
           <table className="w-full text-xs">
             <thead className="bg-slate-50">
               <tr>
+                <th className="border-b px-3 py-2 text-center w-8">
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
+                    onChange={toggleAll}
+                    className="h-3.5 w-3.5 cursor-pointer accent-teal-600"
+                  />
+                </th>
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">제품명</th>
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">제조사</th>
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">품목 마스터</th>
+                <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">카테고리</th>
+                <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">태그</th>
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">성분</th>
                 <th className="border-b px-3 py-2 text-left font-semibold text-slate-500 whitespace-nowrap">포장</th>
                 <th className="border-b px-3 py-2 text-right font-semibold text-slate-500 whitespace-nowrap">참고단가</th>
@@ -138,14 +225,26 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
             <tbody>
               {filtered.map((product, idx) => {
                 const baseUnit = product.item_master?.base_unit ?? '개'
+                const isChecked = selectedIds.includes(product.id)
                 return (
                   <tr
                     key={product.id}
                     className={cn(
                       idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40',
                       !product.is_active && 'opacity-50',
+                      isChecked && 'bg-teal-50/60',
                     )}
                   >
+                    {/* 체크박스 */}
+                    <td className="border-b px-3 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleOne(product.id)}
+                        className="h-3.5 w-3.5 cursor-pointer accent-teal-600"
+                      />
+                    </td>
+
                     {/* 제품명 */}
                     <td className="border-b px-3 py-2">
                       <div className="flex items-center gap-1.5">
@@ -173,6 +272,32 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
                         <div>
                           <span className="font-medium text-slate-700">{product.item_master.generic_name}</span>
                           <span className="ml-1 text-[10px] text-slate-400">{product.item_master.category.join(', ')}</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+
+                    {/* 카테고리 */}
+                    <td className="border-b px-3 py-2">
+                      {product.category && product.category.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {product.category.map((c) => (
+                            <span key={c} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">{c}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+
+                    {/* 태그 */}
+                    <td className="border-b px-3 py-2">
+                      {product.tag && product.tag.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {product.tag.map((t) => (
+                            <span key={t} className="rounded bg-teal-50 px-1.5 py-0.5 text-[10px] text-teal-700">{t}</span>
+                          ))}
                         </div>
                       ) : (
                         <span className="text-slate-300">—</span>
@@ -254,6 +379,16 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
         itemMasters={itemMasters}
         open={aiMatchOpen}
         onOpenChange={setAiMatchOpen}
+      />
+
+      <ItemProductBulkEditSheet
+        hosId={hosId}
+        selectedIds={selectedIds}
+        open={bulkEditOpen}
+        onOpenChange={(v) => {
+          setBulkEditOpen(v)
+          if (!v) setSelectedIds([])
+        }}
       />
     </div>
   )

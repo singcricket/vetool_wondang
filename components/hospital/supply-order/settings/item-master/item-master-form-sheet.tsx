@@ -1,19 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Plus, X, Loader2 } from 'lucide-react'
+import { Plus, X, Loader2, Search, Link2, Link2Off } from 'lucide-react'
 import { toast } from 'sonner'
 import { createItemMaster, updateItemMaster } from '@/lib/actions/supply-order/item-master-actions'
+import { linkItemProductToMaster, unlinkItemProductFromMaster } from '@/lib/actions/supply-order/item-product-actions'
 import {
   ITEM_CATEGORIES,
   type ItemMaster,
   type ItemMasterFormInput,
+  type ItemProduct,
   type Vendor,
 } from '@/types/hospital/supply-order-type'
 
@@ -113,22 +115,136 @@ function TagInput({
   )
 }
 
+function ProductLinkCombobox({
+  candidates,
+  onSelect,
+}: {
+  candidates: ItemProduct[]
+  onSelect: (p: ItemProduct) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return candidates.slice(0, 20)
+    return candidates
+      .filter(
+        (p) =>
+          p.brand_name.toLowerCase().includes(q) ||
+          (p.manufacturer ?? '').toLowerCase().includes(q) ||
+          (p.specification ?? '').toLowerCase().includes(q) ||
+          (p.ingredient ?? '').toLowerCase().includes(q),
+      )
+      .slice(0, 20)
+  }, [candidates, query])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-1.5 rounded-md border border-dashed border-slate-200 bg-white px-2 py-1.5">
+        <Search size={12} className="shrink-0 text-slate-400" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          placeholder="제품 검색해서 추가..."
+          className="flex-1 bg-transparent text-[11px] text-slate-600 placeholder:text-slate-300 focus:outline-none"
+        />
+      </div>
+      {open && (
+        <div className="absolute left-0 right-0 top-8 z-50 max-h-44 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+          {filtered.length === 0 ? (
+            <p className="px-3 py-3 text-center text-[11px] text-slate-400">검색 결과 없음</p>
+          ) : (
+            filtered.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { onSelect(p); setQuery(''); setOpen(false) }}
+                className="flex w-full flex-col px-3 py-2 text-left hover:bg-teal-50"
+              >
+                <span className="text-[11px] font-medium text-slate-800">{p.brand_name}</span>
+                {(p.specification || p.manufacturer) && (
+                  <span className="text-[10px] text-slate-400">
+                    {[p.manufacturer, p.specification].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface Props {
   hosId: string
   item?: ItemMaster
   vendors: Pick<Vendor, 'id' | 'name'>[]
+  itemProducts: ItemProduct[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export default function ItemMasterFormSheet({ hosId, item, vendors, open, onOpenChange }: Props) {
+export default function ItemMasterFormSheet({ hosId, item, vendors, itemProducts, open, onOpenChange }: Props) {
   const isEdit = !!item
   const [form, setForm] = useState<ItemMasterFormInput>(item ? toForm(item) : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [linkedProducts, setLinkedProducts] = useState<ItemProduct[]>([])
+  const [unlinkingId, setUnlinkingId] = useState<string | null>(null)
+  const [linkingId, setLinkingId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (open) setForm(item ? toForm(item) : EMPTY_FORM)
-  }, [open, item])
+    if (open) {
+      setForm(item ? toForm(item) : EMPTY_FORM)
+      setLinkedProducts(item ? itemProducts.filter((p) => p.item_master_id === item.id) : [])
+    }
+  }, [open, item, itemProducts])
+
+  // 연결 가능한 제품: item_master_id가 null인 것 (이미 연결된 것 제외)
+  const linkableCandidates = useMemo(() => {
+    const linkedIds = new Set(linkedProducts.map((p) => p.id))
+    return itemProducts.filter((p) => p.item_master_id === null && !linkedIds.has(p.id))
+  }, [itemProducts, linkedProducts])
+
+  const handleLink = async (product: ItemProduct) => {
+    if (!item) return
+    try {
+      setLinkingId(product.id)
+      await linkItemProductToMaster(hosId, product.id, item.id)
+      setLinkedProducts((prev) => [...prev, { ...product, item_master_id: item.id }])
+      toast.success(`${product.brand_name} 연결됨`)
+    } catch {
+      toast.error('연결에 실패했습니다.')
+    } finally {
+      setLinkingId(null)
+    }
+  }
+
+  const handleUnlink = async (productId: string) => {
+    try {
+      setUnlinkingId(productId)
+      await unlinkItemProductFromMaster(hosId, productId)
+      setLinkedProducts((prev) => prev.filter((p) => p.id !== productId))
+      toast.success('연결이 해제되었습니다.')
+    } catch {
+      toast.error('해제에 실패했습니다.')
+    } finally {
+      setUnlinkingId(null)
+    }
+  }
 
   const set = <K extends keyof ItemMasterFormInput>(key: K, value: ItemMasterFormInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -333,6 +449,66 @@ export default function ItemMasterFormSheet({ hosId, item, vendors, open, onOpen
             <div className="flex items-center justify-between rounded border px-3 py-2">
               <span className="text-xs text-slate-600">활성 품목</span>
               <Switch checked={form.is_active} onCheckedChange={(v) => set('is_active', v)} />
+            </div>
+          )}
+
+          {/* 연결된 제품 — 편집 모드에서만 */}
+          {isEdit && (
+            <div className="space-y-2 rounded-lg border border-dashed p-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Link2 size={12} className="text-teal-500" />
+                  연결된 제품
+                </Label>
+                <span className="text-[10px] text-slate-400">{linkedProducts.length}개</span>
+              </div>
+
+              {linkedProducts.length === 0 ? (
+                <p className="text-[11px] text-slate-400">연결된 제품이 없습니다.</p>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {linkedProducts.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between rounded-md bg-slate-50 px-2.5 py-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-[11px] font-medium text-slate-700">{p.brand_name}</p>
+                        {(p.specification || p.manufacturer) && (
+                          <p className="text-[10px] text-slate-400">
+                            {[p.manufacturer, p.specification].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleUnlink(p.id)}
+                        disabled={unlinkingId === p.id}
+                        className="ml-2 flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-rose-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                      >
+                        {unlinkingId === p.id
+                          ? <Loader2 size={10} className="animate-spin" />
+                          : <><Link2Off size={10} />해제</>
+                        }
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 제품 검색해서 추가 */}
+              <div className="relative">
+                <ProductLinkCombobox
+                  candidates={linkableCandidates}
+                  onSelect={handleLink}
+                />
+                {linkingId && (
+                  <Loader2 size={12} className="absolute right-2 top-2 animate-spin text-teal-500" />
+                )}
+              </div>
+              {linkableCandidates.length === 0 && (
+                <p className="text-[10px] text-slate-300">연결 가능한 미연결 제품이 없습니다.</p>
+              )}
             </div>
           )}
         </div>

@@ -100,6 +100,7 @@ export default function VendorOrderClient({ hosId, vendor, orders, itemMasters }
                 key={order.id}
                 order={order}
                 hosId={hosId}
+                vendorName={vendor.name}
                 onClick={() => router.push(`/hospital/${hosId}/supply-order/order/${vendor.id}/${order.id}` as any)}
                 onEdit={() => setEditingOrder(order)}
               />
@@ -121,6 +122,7 @@ export default function VendorOrderClient({ hosId, vendor, orders, itemMasters }
                   key={order.id}
                   order={order}
                   hosId={hosId}
+                  vendorName={vendor.name}
                   onClick={() => router.push(`/hospital/${hosId}/supply-order/order/${vendor.id}/${order.id}` as any)}
                 />
               ))}

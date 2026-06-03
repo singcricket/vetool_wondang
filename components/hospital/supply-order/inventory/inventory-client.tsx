@@ -21,6 +21,8 @@ interface ItemProduct {
   brand_name: string
   specification: string | null
   manufacturer: string | null
+  category: string[]
+  tag: string[]
 }
 
 // 전체 제품 검색 combobox (연결된 제품이 없을 때)
@@ -150,11 +152,27 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
 
   const [isPending, startTransition] = useTransition()
 
+  // item_master_id → 연결된 제품 목록
+  const productsByMaster = useMemo(() => {
+    const map = new Map<string, ItemProduct[]>()
+    itemProducts.forEach((p) => {
+      if (!p.item_master_id) return
+      const arr = map.get(p.item_master_id) ?? []
+      arr.push(p)
+      map.set(p.item_master_id, arr)
+    })
+    return map
+  }, [itemProducts])
+
+  // 태그: item_master.loc + item_products.tag 통합
   const allLocs = useMemo(() => {
     const set = new Set<string>()
-    items.forEach((item) => item.loc.forEach((l) => set.add(l)))
+    items.forEach((item) => {
+      item.loc.forEach((l) => set.add(l))
+      productsByMaster.get(item.item_master_id)?.forEach((p) => p.tag?.forEach((t) => set.add(t)))
+    })
     return Array.from(set).sort()
-  }, [items])
+  }, [items, productsByMaster])
 
   const activeVendors = useMemo(() => {
     const usedIds = new Set(items.map((i) => i.default_vendor_id).filter(Boolean))
@@ -170,8 +188,25 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
 
     return items.filter((item) => {
       if (q && !item.generic_name.toLowerCase().includes(q)) return false
-      if (selectedCategories.length > 0 && !item.category.some((c) => selectedCategories.includes(c))) return false
-      if (selectedLocs.length > 0 && !item.loc.some((l) => selectedLocs.includes(l))) return false
+
+      // 카테고리: item_master.category OR 연결된 제품의 category
+      if (selectedCategories.length > 0) {
+        const masterMatch = item.category.some((c) => selectedCategories.includes(c))
+        const productMatch = productsByMaster.get(item.item_master_id)?.some(
+          (p) => p.category?.some((c) => selectedCategories.includes(c))
+        ) ?? false
+        if (!masterMatch && !productMatch) return false
+      }
+
+      // 태그: item_master.loc OR 연결된 제품의 tag
+      if (selectedLocs.length > 0) {
+        const masterMatch = item.loc.some((l) => selectedLocs.includes(l))
+        const productMatch = productsByMaster.get(item.item_master_id)?.some(
+          (p) => p.tag?.some((t) => selectedLocs.includes(t))
+        ) ?? false
+        if (!masterMatch && !productMatch) return false
+      }
+
       if (selectedVendors.length > 0 && (!item.default_vendor_id || !selectedVendors.includes(item.default_vendor_id))) return false
 
       // 재고 필터
@@ -189,7 +224,7 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
 
       return true
     })
-  }, [items, query, selectedCategories, selectedLocs, selectedVendors, stockFilter, expiryFilter])
+  }, [items, query, selectedCategories, selectedLocs, selectedVendors, stockFilter, expiryFilter, productsByMaster])
 
   const toggleCheck = (id: string) => {
     setCheckedIds((prev) => {

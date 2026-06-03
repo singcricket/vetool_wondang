@@ -14,10 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Plus, X } from 'lucide-react'
+import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
 import { createItemProduct, updateItemProduct } from '@/lib/actions/supply-order/item-product-actions'
 import type { ItemMaster, ItemProduct, ItemProductFormInput } from '@/types/hospital/supply-order-type'
+import { ITEM_CATEGORIES } from '@/types/hospital/supply-order-type'
 import ItemMasterCombobox from './item-master-combobox'
 
 const PACKAGE_TYPES = ['낱개', '박스', '케이스', '팩', '병', '튜브', '롤', '기타']
@@ -31,6 +33,8 @@ const EMPTY_FORM: ItemProductFormInput = {
   package_type: '낱개',
   units_per_package: 1,
   reference_price: '',
+  category: [],
+  tag: [],
   memo: '',
   is_active: true,
 }
@@ -45,6 +49,8 @@ function toForm(p: ItemProduct): ItemProductFormInput {
     package_type: p.package_type,
     units_per_package: p.units_per_package,
     reference_price: p.reference_price != null ? String(p.reference_price) : '',
+    category: p.category ?? [],
+    tag: p.tag ?? [],
     memo: p.memo ?? '',
     is_active: p.is_active,
   }
@@ -62,13 +68,35 @@ export default function ItemProductFormSheet({ hosId, product, itemMasters, open
   const isEdit = !!product
   const [form, setForm] = useState<ItemProductFormInput>(product ? toForm(product) : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [tagInput, setTagInput] = useState('')
 
   useEffect(() => {
-    if (open) setForm(product ? toForm(product) : EMPTY_FORM)
+    if (open) {
+      setForm(product ? toForm(product) : EMPTY_FORM)
+      setTagInput('')
+    }
   }, [open, product])
 
   const set = <K extends keyof ItemProductFormInput>(key: K, value: ItemProductFormInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
+
+  const toggleCategory = (cat: string) =>
+    setForm((prev) => ({
+      ...prev,
+      category: prev.category.includes(cat)
+        ? prev.category.filter((c) => c !== cat)
+        : [...prev.category, cat],
+    }))
+
+  const addTag = () => {
+    const v = tagInput.trim()
+    if (!v || form.tag.includes(v)) return
+    setForm((prev) => ({ ...prev, tag: [...prev.tag, v] }))
+    setTagInput('')
+  }
+
+  const removeTag = (t: string) =>
+    setForm((prev) => ({ ...prev, tag: prev.tag.filter((v) => v !== t) }))
 
   const selectedMaster = itemMasters.find((m) => m.id === form.item_master_id)
 
@@ -209,6 +237,58 @@ export default function ItemProductFormSheet({ hosId, product, itemMasters, open
                 className="text-xs"
               />
               <span className="shrink-0 text-xs text-slate-400">원</span>
+            </div>
+          </div>
+
+          {/* 카테고리 */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">카테고리</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {ITEM_CATEGORIES.map((cat) => {
+                const active = form.category.includes(cat)
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => toggleCategory(cat)}
+                    className={cn(
+                      'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
+                      active
+                        ? 'border-teal-400 bg-teal-50 font-medium text-teal-700'
+                        : 'border-slate-200 text-slate-500 hover:border-slate-300',
+                    )}
+                  >
+                    {cat}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 태그 */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">태그</Label>
+            {form.tag.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {form.tag.map((t) => (
+                  <span key={t} className="flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] text-teal-700">
+                    {t}
+                    <button type="button" onClick={() => removeTag(t)}><X size={10} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-1.5">
+              <Input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                placeholder="태그 입력 후 Enter"
+                className="text-xs"
+              />
+              <Button type="button" size="icon" variant="outline" onClick={addTag} className="h-9 w-9 shrink-0">
+                <Plus size={14} />
+              </Button>
             </div>
           </div>
 

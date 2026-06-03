@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Pencil, Package, Search, AlertTriangle, Loader2, SlidersHorizontal, Trash2 } from 'lucide-react'
@@ -10,15 +10,16 @@ import { toast } from 'sonner'
 import ItemMasterFormSheet from './item-master-form-sheet'
 import ItemMasterBulkUploadDialog from './item-master-bulk-upload-dialog'
 import ItemMasterBulkEditSheet from './item-master-bulk-edit-sheet'
-import type { ItemMaster, Vendor } from '@/types/hospital/supply-order-type'
+import type { ItemMaster, ItemProduct, Vendor } from '@/types/hospital/supply-order-type'
 
 interface Props {
   hosId: string
   items: ItemMaster[]
   vendors: Pick<Vendor, 'id' | 'name'>[]
+  itemProducts: ItemProduct[]
 }
 
-export default function ItemMasterSection({ hosId, items, vendors }: Props) {
+export default function ItemMasterSection({ hosId, items, vendors, itemProducts }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<ItemMaster | undefined>(undefined)
   const [toggling, setToggling] = useState<string | null>(null)
@@ -89,6 +90,14 @@ export default function ItemMasterSection({ hosId, items, vendors }: Props) {
   }
 
   const activeCount = items.filter((i) => i.is_active).length
+
+  const productCountMap = useMemo(() => {
+    const map = new Map<string, number>()
+    itemProducts.forEach((p) => {
+      if (p.item_master_id) map.set(p.item_master_id, (map.get(p.item_master_id) ?? 0) + 1)
+    })
+    return map
+  }, [itemProducts])
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -195,6 +204,7 @@ export default function ItemMasterSection({ hosId, items, vendors }: Props) {
             <tbody>
               {filtered.map((item, idx) => {
                 const isChecked = selectedIds.includes(item.id)
+                const productCount = productCountMap.get(item.id) ?? 0
                 return (
                   <tr
                     key={item.id}
@@ -226,6 +236,11 @@ export default function ItemMasterSection({ hosId, items, vendors }: Props) {
                         <p className="mt-0.5 truncate text-[10px] text-slate-400 max-w-[160px]">
                           {item.aliases.join(', ')}
                         </p>
+                      )}
+                      {productCount > 0 ? (
+                        <span className="mt-0.5 text-[10px] text-teal-600">제품 {productCount}개 연결됨</span>
+                      ) : (
+                        <span className="mt-0.5 text-[10px] text-slate-300">제품 없음</span>
                       )}
                     </td>
 
@@ -316,6 +331,7 @@ export default function ItemMasterSection({ hosId, items, vendors }: Props) {
         hosId={hosId}
         item={editing}
         vendors={vendors}
+        itemProducts={itemProducts}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
       />
