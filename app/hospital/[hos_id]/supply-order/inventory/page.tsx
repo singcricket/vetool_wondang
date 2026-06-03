@@ -18,7 +18,7 @@ export default async function SupplyInventoryPage(
       .order('name'),
     supabase
       .from('item_products')
-      .select('id, item_master_id, brand_name, specification, manufacturer, category, tag')
+      .select('id, item_master_id, brand_name, specification, manufacturer, package_type, units_per_package, reference_price, category, tag, item_master(id, generic_name, base_unit, category)')
       .eq('hos_id', hos_id)
       .eq('is_active', true)
       .order('brand_name'),
@@ -31,6 +31,9 @@ export default async function SupplyInventoryPage(
     brand_name: string
     specification: string | null
     manufacturer: string | null
+    package_type: string
+    units_per_package: number
+    reference_price: number | null
     category: string[]
     tag: string[]
   }[]

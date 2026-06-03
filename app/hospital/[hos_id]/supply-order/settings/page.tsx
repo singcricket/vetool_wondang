@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getVendors } from '@/lib/actions/supply-order/vendor-actions'
 import { getItemMasters } from '@/lib/actions/supply-order/item-master-actions'

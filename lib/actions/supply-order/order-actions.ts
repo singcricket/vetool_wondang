@@ -100,6 +100,50 @@ export async function createOrder(
   return order.id
 }
 
+// 동일 날짜·업체 draft 주문서 조회
+export async function findDraftOrderByVendorDate(
+  hosId: string,
+  vendorId: string,
+  orderDate: string,
+): Promise<{ id: string; item_count: number } | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, order_items(id)')
+    .eq('hos_id', hosId)
+    .eq('vendor_id', vendorId)
+    .eq('order_date', orderDate)
+    .eq('status', 'draft')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error || !data) return null
+  return { id: data.id, item_count: (data.order_items as any[]).length }
+}
+
+// 기존 주문서에 품목 추가
+export async function appendOrderItems(
+  hosId: string,
+  orderId: string,
+  items: OrderFormInput['items'],
+): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase.from('order_items').insert(
+    items.map((item) => ({
+      order_id: orderId,
+      item_master_id: item.item_master_id,
+      quantity: item.quantity,
+      unit: item.unit,
+      units_per_order_unit: item.units_per_order_unit,
+      unit_price: item.unit_price ? Number(item.unit_price) : null,
+      memo: item.memo.trim() || null,
+    })),
+  )
+  if (error) throw new Error(error.message)
+  revalidatePath(`/hospital/${hosId}/supply-order/order`)
+}
+
 // 주문 품목 상태 변경
 export async function updateOrderItemStatus(
   hosId: string,

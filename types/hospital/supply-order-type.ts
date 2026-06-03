@@ -343,6 +343,25 @@ export type ReviewDeliveryItem = ExtractedDeliveryItem & {
   decision: ReviewItemDecision
 }
 
+// ── Inventory Upload / Review ─────────────────────────────────
+
+export type ReviewInventoryItem = ExtractedDeliveryItem & {
+  _id: string
+  match_status: ReviewItemMatchStatus
+  match_confidence: number | null
+  matched_product_id: string | null
+  item_master_id: string | null          // resolved via matched product
+  decision: 'confirm' | 'skip' | 'new_product'
+  // inline new product fields
+  new_brand_name?: string
+  new_spec?: string
+  new_manufacturer?: string
+  // master linkage
+  pending_master_id?: string             // pick existing master
+  new_master_name?: string               // create new master
+  new_master_base_unit?: string
+}
+
 // ── Bulk Upload — item_products ───────────────────────────────
 
 export type ItemProductCsvRow = {

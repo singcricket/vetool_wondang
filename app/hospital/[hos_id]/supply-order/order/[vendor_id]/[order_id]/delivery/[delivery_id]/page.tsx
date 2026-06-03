@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import { notFound } from 'next/navigation'
 import { getDeliveryById } from '@/lib/actions/supply-order/delivery-actions'
 import { getDeliveryItems } from '@/lib/actions/supply-order/delivery-items-actions'

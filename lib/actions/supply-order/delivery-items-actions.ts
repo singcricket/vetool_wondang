@@ -4,6 +4,67 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { DeliveryItem, DeliveryItemFormInput } from '@/types/hospital/supply-order-type'
 
+export type LastDeliveryItem = {
+  item_master_id: string
+  item_product_id: string | null
+  quantity_received: number
+  unit: string
+  unit_price: number | null
+  units_per_package: number
+}
+
+export async function getLastDeliveryItemsByMaster(
+  hosId: string,
+  vendorId: string,
+  masterIds: string[],
+): Promise<LastDeliveryItem[]> {
+  if (masterIds.length === 0) return []
+  const supabase = await createClient()
+
+  // 해당 업체의 confirmed 납품 목록 — 날짜 내림차순
+  const { data: deliveries } = await supabase
+    .from('deliveries')
+    .select('id')
+    .eq('hos_id', hosId)
+    .eq('vendor_id', vendorId)
+    .eq('status', 'confirmed')
+    .order('delivery_date', { ascending: false })
+
+  if (!deliveries || deliveries.length === 0) return []
+
+  const deliveryIds = deliveries.map((d) => d.id)
+
+  const { data: items, error } = await supabase
+    .from('delivery_items')
+    .select('item_master_id, item_product_id, quantity_received, unit, unit_price, units_per_package, delivery_id')
+    .in('delivery_id', deliveryIds)
+    .in('item_master_id', masterIds)
+
+  if (error) throw new Error(error.message)
+
+  // deliveryIds 순서(최신순)로 정렬 후 품목별 첫 번째(최신) 납품 추출
+  const orderMap = new Map(deliveryIds.map((id, i) => [id, i]))
+  const sorted = (items ?? []).slice().sort(
+    (a, b) => (orderMap.get(a.delivery_id) ?? 999) - (orderMap.get(b.delivery_id) ?? 999),
+  )
+
+  const seen = new Set<string>()
+  const result: LastDeliveryItem[] = []
+  for (const row of sorted) {
+    if (!row.item_master_id || seen.has(row.item_master_id)) continue
+    seen.add(row.item_master_id)
+    result.push({
+      item_master_id: row.item_master_id,
+      item_product_id: row.item_product_id,
+      quantity_received: row.quantity_received,
+      unit: row.unit,
+      unit_price: row.unit_price,
+      units_per_package: row.units_per_package,
+    })
+  }
+  return result
+}
+
 export async function getDeliveryItems(
   hosId: string,
   deliveryId: string,

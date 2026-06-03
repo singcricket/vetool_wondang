@@ -3,7 +3,8 @@
 import { useState, useMemo, useTransition, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Search, AlertTriangle, CheckCircle2, Circle, ClipboardList, ShoppingCart, PackagePlus, X, CalendarClock } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Search, AlertTriangle, CheckCircle2, Circle, ClipboardList, ShoppingCart, PackagePlus, X, CalendarClock, Boxes, Camera } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
 import { ITEM_CATEGORIES } from '@/types/hospital/supply-order-type'
@@ -12,6 +13,7 @@ import { bulkStockIn, type StockInRow } from '@/lib/actions/supply-order/invento
 import InventoryUseSheet from './inventory-use-sheet'
 import InventoryDetailDialog from './inventory-detail-dialog'
 import InventoryOrderDialog, { type OrderDraftItem } from './inventory-order-dialog'
+import InventoryUploadSheet from './inventory-upload-sheet'
 
 type Mode = 'order' | 'stock_in'
 
@@ -21,8 +23,12 @@ interface ItemProduct {
   brand_name: string
   specification: string | null
   manufacturer: string | null
+  package_type: string
+  units_per_package: number
+  reference_price: number | null
   category: string[]
   tag: string[]
+  item_master?: { id: string; generic_name: string; base_unit: string; category: string[] } | null
 }
 
 // 전체 제품 검색 combobox (연결된 제품이 없을 때)
@@ -149,6 +155,12 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
   // 주문 dialog
   const [orderDialogOpen, setOrderDialogOpen] = useState(false)
   const [orderDraftItems, setOrderDraftItems] = useState<OrderDraftItem[]>([])
+
+  // 연결 제품 팝업
+  const [productPopupItem, setProductPopupItem] = useState<InventoryItem | null>(null)
+
+  // 거래명세서 업로드 입고
+  const [uploadSheetOpen, setUploadSheetOpen] = useState(false)
 
   const [isPending, startTransition] = useTransition()
 
@@ -406,7 +418,17 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
         {mode === 'order' ? (
           <><ShoppingCart size={13} className="shrink-0" /> 품목을 선택해 주문 수량을 입력하면 주문서를 만들 수 있습니다.</>
         ) : (
-          <><PackagePlus size={13} className="shrink-0" /> 품목을 선택해 입고 수량을 입력하면 즉시 재고에 반영됩니다.</>
+          <>
+            <PackagePlus size={13} className="shrink-0" />
+            <span className="flex-1">품목을 선택해 입고 수량을 입력하면 즉시 재고에 반영됩니다.</span>
+            <button
+              type="button"
+              onClick={() => setUploadSheetOpen(true)}
+              className="flex shrink-0 items-center gap-1 rounded-md bg-indigo-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-indigo-700"
+            >
+              <Camera size={11} /> 명세서 업로드
+            </button>
+          </>
         )}
       </div>
 
@@ -568,13 +590,29 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
                     {/* 품목명 + 수량 입력 */}
                     <td className="border-b px-3 py-2.5">
                       <div className="font-medium text-slate-800">{item.generic_name}</div>
-                      <div className="mt-0.5 flex flex-wrap gap-1">
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1">
                         {item.category.map((c) => (
                           <span key={c} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{c}</span>
                         ))}
                         {item.loc.map((l) => (
                           <span key={l} className="rounded bg-teal-50 px-1.5 py-0.5 text-[10px] text-teal-600">{l}</span>
                         ))}
+                        {/* 연결 제품 배지 */}
+                        {(() => {
+                          const linked = productsByMaster.get(item.item_master_id) ?? []
+                          return linked.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setProductPopupItem(item) }}
+                              className="flex items-center gap-0.5 rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600 hover:bg-indigo-100 transition-colors"
+                            >
+                              <Boxes size={9} />
+                              제품 {linked.length}개
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-slate-300">제품 없음</span>
+                          )
+                        })()}
                       </div>
 
                       {/* 주문 모드 입력 */}
@@ -781,6 +819,75 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
       open={orderDialogOpen}
       onOpenChange={setOrderDialogOpen}
       onSuccess={clearAll}
+    />
+
+    {/* 연결 제품 팝업 */}
+    <Dialog open={!!productPopupItem} onOpenChange={(v) => { if (!v) setProductPopupItem(null) }}>
+      <DialogContent className="w-full max-w-sm p-0 gap-0">
+        <DialogHeader className="border-b px-5 py-3.5">
+          <DialogTitle className="text-sm">
+            {productPopupItem?.generic_name}
+            <span className="ml-2 font-normal text-slate-400 text-xs">연결된 제품</span>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="overflow-y-auto max-h-[60vh]">
+          {productPopupItem && (() => {
+            const linked = productsByMaster.get(productPopupItem.item_master_id) ?? []
+            return linked.length === 0 ? (
+              <p className="px-5 py-8 text-center text-xs text-slate-400">연결된 제품이 없습니다.</p>
+            ) : (
+              <ul className="divide-y">
+                {linked.map((p) => (
+                  <li key={p.id} className="flex items-start justify-between gap-3 px-5 py-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-sm font-medium text-slate-800 truncate">{p.brand_name}</span>
+                        {!p.item_master_id && (
+                          <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[9px] text-amber-600">연결 필요</span>
+                        )}
+                      </div>
+                      {(p.manufacturer || p.specification) && (
+                        <p className="mt-0.5 text-[11px] text-slate-400">
+                          {[p.manufacturer, p.specification].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                      {p.category && p.category.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {p.category.map((c) => (
+                            <span key={c} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{c}</span>
+                          ))}
+                          {p.tag?.map((t) => (
+                            <span key={t} className="rounded bg-teal-50 px-1.5 py-0.5 text-[10px] text-teal-600">{t}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-[11px] text-slate-500 whitespace-nowrap">
+                        {p.units_per_package > 1
+                          ? `${p.package_type} × ${p.units_per_package}${productPopupItem.base_unit}`
+                          : p.package_type}
+                      </p>
+                      {p.reference_price != null && (
+                        <p className="text-[11px] text-slate-400">{p.reference_price.toLocaleString()}원</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )
+          })()}
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <InventoryUploadSheet
+      hosId={hosId}
+      itemProducts={itemProducts as any}
+      inventoryItems={items}
+      vendors={vendors}
+      open={uploadSheetOpen}
+      onOpenChange={setUploadSheetOpen}
     />
     </>
   )

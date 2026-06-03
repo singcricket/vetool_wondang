@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { deleteDeliveryItem } from '@/lib/actions/supply-order/delivery-items-actions'
 import { updateDeliveryStatus, deleteDelivery } from '@/lib/actions/supply-order/delivery-actions'
 import DeliveryItemFormSheet from './delivery-item-form-sheet'
+import DeliveryDirectInputSheet from './delivery-direct-input-sheet'
 import UploadReviewSheet from './upload-review-sheet'
 import type {
   Delivery, DeliveryItem, DeliveryStatus,
@@ -44,6 +45,7 @@ export default function DeliveryDetailClient({
   const [statusLoading, setStatusLoading] = useState(false)
   const [deleteDeliveryLoading, setDeleteDeliveryLoading] = useState(false)
   const [uploadSheetOpen, setUploadSheetOpen] = useState(false)
+  const [directInputOpen, setDirectInputOpen] = useState(false)
 
   const vendor = order.vendor as any
 
@@ -249,7 +251,7 @@ export default function DeliveryDetailClient({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={openAdd}
+                onClick={() => setDirectInputOpen(true)}
                 className="h-6 gap-1 px-2 text-xs"
               >
                 <Plus size={11} />
@@ -391,6 +393,16 @@ export default function DeliveryDetailClient({
           </button>
         )}
       </div>
+
+      <DeliveryDirectInputSheet
+        hosId={hosId}
+        deliveryId={delivery.id}
+        vendorId={delivery.vendor_id}
+        orderItems={orderItems}
+        itemProducts={itemProducts}
+        open={directInputOpen}
+        onOpenChange={setDirectInputOpen}
+      />
 
       <DeliveryItemFormSheet
         hosId={hosId}
