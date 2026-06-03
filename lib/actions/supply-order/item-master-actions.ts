@@ -95,6 +95,7 @@ export async function updateItemMaster(
 export async function bulkCreateItemMasters(
   hosId: string,
   rows: ItemMasterCsvRow[],
+  defaultVendorId?: string,
 ): Promise<{ success: number; errors: { row: number; message: string }[] }> {
   const supabase = await createClient()
   const errors: { row: number; message: string }[] = []
@@ -143,6 +144,7 @@ export async function bulkCreateItemMasters(
       base_unit: row.base_unit.trim(),
       aliases,
       loc,
+      default_vendor: defaultVendorId || null,
       alert_min_stock: Number(row.alert_min_stock ?? 0) || 0,
       reorder_qty: Number(row.reorder_qty ?? 0) || 0,
     })

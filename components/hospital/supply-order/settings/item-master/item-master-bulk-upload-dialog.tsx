@@ -13,7 +13,7 @@ import { Upload, Download, CheckCircle2, AlertCircle, Loader2, FileSpreadsheet }
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import { bulkCreateItemMasters } from '@/lib/actions/supply-order/item-master-actions'
-import type { ItemMasterCsvRow } from '@/types/hospital/supply-order-type'
+import type { ItemMasterCsvRow, Vendor } from '@/types/hospital/supply-order-type'
 
 // ── 컬럼 정의 ─────────────────────────────────────────────────
 
@@ -133,15 +133,17 @@ function parseFile(file: File): Promise<ItemMasterCsvRow[]> {
 
 interface Props {
   hosId: string
+  vendors: Pick<Vendor, 'id' | 'name'>[]
 }
 
 type UploadState = 'idle' | 'preview' | 'uploading' | 'done'
 
-export default function ItemMasterBulkUploadDialog({ hosId }: Props) {
+export default function ItemMasterBulkUploadDialog({ hosId, vendors }: Props) {
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<UploadState>('idle')
   const [rows, setRows] = useState<ItemMasterCsvRow[]>([])
   const [result, setResult] = useState<{ success: number; errors: { row: number; message: string }[] } | null>(null)
+  const [selectedVendorId, setSelectedVendorId] = useState<string>('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,7 +171,7 @@ export default function ItemMasterBulkUploadDialog({ hosId }: Props) {
         }
         return r as unknown as ItemMasterCsvRow
       })
-      const res = await bulkCreateItemMasters(hosId, plainRows)
+      const res = await bulkCreateItemMasters(hosId, plainRows, selectedVendorId || undefined)
       setResult(res)
       setState('done')
       if (res.success > 0) toast.success(`${res.success}개 품목이 등록되었습니다.`)
@@ -184,6 +186,7 @@ export default function ItemMasterBulkUploadDialog({ hosId }: Props) {
     setState('idle')
     setRows([])
     setResult(null)
+    setSelectedVendorId('')
   }
 
   const handleOpenChange = (v: boolean) => {
@@ -259,6 +262,24 @@ export default function ItemMasterBulkUploadDialog({ hosId }: Props) {
                 </div>
               </div>
 
+              {/* 기본 주문업체 지정 */}
+              {vendors.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-sm font-semibold text-slate-700">기본 주문업체 <span className="font-normal text-slate-400 text-xs">(선택)</span></p>
+                  <p className="text-xs text-slate-500">업로드된 모든 품목에 동일한 기본 주문업체를 지정합니다. 나중에 개별 수정도 가능합니다.</p>
+                  <select
+                    value={selectedVendorId}
+                    onChange={(e) => setSelectedVendorId(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-1 focus:ring-teal-400"
+                  >
+                    <option value="">지정 안함</option>
+                    {vendors.map((v) => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* 파일 선택 */}
               <div
                 className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-8 transition-colors hover:border-teal-300 hover:bg-teal-50/30"
@@ -289,6 +310,11 @@ export default function ItemMasterBulkUploadDialog({ hosId }: Props) {
                   다시 선택
                 </Button>
               </div>
+              {selectedVendorId && (
+                <div className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-teal-700">
+                  기본 주문업체: <strong>{vendors.find((v) => v.id === selectedVendorId)?.name}</strong> 으로 일괄 지정됩니다.
+                </div>
+              )}
               <div className="overflow-x-auto rounded border">
                 <table className="w-full text-[11px]">
                   <thead className="bg-slate-50">

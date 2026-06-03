@@ -108,7 +108,7 @@ export default function ItemMasterSection({ hosId, items, vendors, itemProducts 
           <span className="ml-1 text-xs font-normal text-slate-400">{activeCount}개 활성</span>
         </p>
         <div className="flex gap-2">
-          <ItemMasterBulkUploadDialog hosId={hosId} />
+          <ItemMasterBulkUploadDialog hosId={hosId} vendors={vendors} />
           <Button size="sm" onClick={openAdd} className="gap-1 bg-teal-600 hover:bg-teal-700">
             <Plus size={14} />
             품목 추가
