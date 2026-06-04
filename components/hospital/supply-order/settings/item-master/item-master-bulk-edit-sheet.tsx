@@ -30,6 +30,9 @@ export default function ItemMasterBulkEditSheet({ hosId, selectedIds, vendors, o
   const [locMode, setLocMode] = useState<'add' | 'replace'>('add')
   const [locs, setLocs] = useState<string[]>([])
   const [locInput, setLocInput] = useState('')
+  const [aliasMode, setAliasMode] = useState<'add' | 'replace'>('add')
+  const [aliases, setAliases] = useState<string[]>([])
+  const [aliasInput, setAliasInput] = useState('')
   const [baseUnit, setBaseUnit] = useState('')
   const [isActive, setIsActive] = useState<ActiveOption>('keep')
   const [defaultVendor, setDefaultVendor] = useState<string>('keep')
@@ -42,6 +45,9 @@ export default function ItemMasterBulkEditSheet({ hosId, selectedIds, vendors, o
       setLocMode('add')
       setLocs([])
       setLocInput('')
+      setAliasMode('add')
+      setAliases([])
+      setAliasInput('')
       setBaseUnit('')
       setIsActive('keep')
       setDefaultVendor('keep')
@@ -62,9 +68,19 @@ export default function ItemMasterBulkEditSheet({ hosId, selectedIds, vendors, o
 
   const removeLoc = (l: string) => setLocs((prev) => prev.filter((v) => v !== l))
 
+  const addAlias = () => {
+    const v = aliasInput.trim()
+    if (!v || aliases.includes(v)) return
+    setAliases((prev) => [...prev, v])
+    setAliasInput('')
+  }
+
+  const removeAlias = (a: string) => setAliases((prev) => prev.filter((v) => v !== a))
+
   const hasChanges =
     selectedCategories.length > 0 ||
     locs.length > 0 ||
+    aliases.length > 0 ||
     baseUnit.trim() !== '' ||
     isActive !== 'keep' ||
     defaultVendor !== 'keep'
@@ -76,6 +92,8 @@ export default function ItemMasterBulkEditSheet({ hosId, selectedIds, vendors, o
       categories: selectedCategories,
       locMode,
       locs,
+      aliasMode,
+      aliases,
       base_unit: baseUnit,
       is_active: isActive,
       default_vendor: defaultVendor,
@@ -212,6 +230,60 @@ export default function ItemMasterBulkEditSheet({ hosId, selectedIds, vendors, o
                 className="text-xs"
               />
               <Button type="button" size="icon" variant="outline" onClick={addLoc} className="h-9 w-9 shrink-0">
+                <Plus size={14} />
+              </Button>
+            </div>
+          </div>
+
+          {/* 별칭 */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">별칭</Label>
+              <div className="flex rounded-full border text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setAliasMode('add')}
+                  className={cn(
+                    'rounded-l-full px-2.5 py-0.5 transition-colors',
+                    aliasMode === 'add' ? 'bg-teal-600 text-white' : 'text-slate-500 hover:bg-slate-50',
+                  )}
+                >
+                  추가
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAliasMode('replace')}
+                  className={cn(
+                    'rounded-r-full px-2.5 py-0.5 transition-colors',
+                    aliasMode === 'replace' ? 'bg-teal-600 text-white' : 'text-slate-500 hover:bg-slate-50',
+                  )}
+                >
+                  교체
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              {aliasMode === 'add' ? '입력한 별칭을 기존 값에 추가합니다.' : '기존 별칭을 입력한 값으로 교체합니다.'}
+            </p>
+            {aliases.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {aliases.map((a) => (
+                  <span key={a} className="flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] text-indigo-700">
+                    {a}
+                    <button type="button" onClick={() => removeAlias(a)}><X size={10} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-1.5">
+              <Input
+                value={aliasInput}
+                onChange={(e) => setAliasInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addAlias())}
+                placeholder="별칭 입력 후 Enter"
+                className="text-xs"
+              />
+              <Button type="button" size="icon" variant="outline" onClick={addAlias} className="h-9 w-9 shrink-0">
                 <Plus size={14} />
               </Button>
             </div>

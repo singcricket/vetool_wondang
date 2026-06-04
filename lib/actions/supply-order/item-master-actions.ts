@@ -164,6 +164,8 @@ export type BulkUpdateItemMasterInput = {
   categories: string[]        // 비어있으면 변경 안함
   locMode: 'add' | 'replace'
   locs: string[]              // 비어있으면 변경 안함
+  aliasMode: 'add' | 'replace'
+  aliases: string[]           // 비어있으면 변경 안함
   base_unit: string           // 비어있으면 변경 안함
   is_active: 'keep' | 'true' | 'false'
   default_vendor: 'keep' | 'clear' | string  // 'keep'=변경안함, 'clear'=해제, vendorId=지정
@@ -181,11 +183,12 @@ export async function bulkUpdateItemMasters(
   // add 모드는 기존 배열을 읽어서 병합 필요 → 개별 fetch 후 upsert
   const needFetch = (input.categories.length > 0 && input.categoryMode === 'add')
     || (input.locs.length > 0 && input.locMode === 'add')
+    || (input.aliases.length > 0 && input.aliasMode === 'add')
 
   if (needFetch) {
     const { data: existing, error: fetchError } = await supabase
       .from('item_master')
-      .select('id, category, loc')
+      .select('id, category, loc, aliases')
       .in('id', ids)
       .eq('hos_id', hosId)
     if (fetchError) throw new Error(fetchError.message)
@@ -203,6 +206,11 @@ export async function bulkUpdateItemMasters(
           ? Array.from(new Set([...(row.loc ?? []), ...input.locs]))
           : input.locs
       }
+      if (input.aliases.length > 0) {
+        patch.aliases = input.aliasMode === 'add'
+          ? Array.from(new Set([...(row.aliases ?? []), ...input.aliases]))
+          : input.aliases
+      }
       if (input.base_unit.trim()) patch.base_unit = input.base_unit.trim()
       if (input.is_active !== 'keep') patch.is_active = input.is_active === 'true'
       if (input.default_vendor === 'clear') patch.default_vendor = null
@@ -216,6 +224,7 @@ export async function bulkUpdateItemMasters(
     const patch: Record<string, unknown> = {}
     if (input.categories.length > 0) patch.category = input.categories
     if (input.locs.length > 0) patch.loc = input.locs
+    if (input.aliases.length > 0) patch.aliases = input.aliases
     if (input.base_unit.trim()) patch.base_unit = input.base_unit.trim()
     if (input.is_active !== 'keep') patch.is_active = input.is_active === 'true'
     if (input.default_vendor === 'clear') patch.default_vendor = null
