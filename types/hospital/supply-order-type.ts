@@ -372,6 +372,8 @@ export type ItemProductCsvRow = {
   package_type?: string
   units_per_package?: string
   reference_price?: string
+  category?: string      // 세미콜론(;) 구분 → 배열
+  tag?: string           // 세미콜론(;) 구분 → 배열
   memo?: string
 }
 

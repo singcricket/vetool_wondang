@@ -101,89 +101,95 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
   const unlinkedCount = products.filter((p) => !p.item_master_id).length
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-700">
-          제품
-          <span className="ml-1 text-xs font-normal text-slate-400">{activeCount}개 활성</span>
-          {unlinkedCount > 0 && (
-            <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-              <Link2Off size={10} />
-              {unlinkedCount}개 연결 필요
-            </span>
-          )}
-        </p>
-        <div className="flex gap-2">
-          {unlinkedCount > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setAiMatchOpen(true)}
-              className="gap-1 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
-            >
-              <Sparkles size={14} />
-              AI 매칭
-            </Button>
-          )}
-          <ItemProductBulkUploadDialog hosId={hosId} vendors={vendors} />
-          <Button size="sm" onClick={openAdd} className="gap-1 bg-teal-600 hover:bg-teal-700">
-            <Plus size={14} />
-            제품 추가
-          </Button>
-        </div>
-      </div>
-
-      {/* 검색 */}
-      {products.length > 4 && (
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="제품명, 제조사, 규격, 품목명 검색"
-            className="pl-7 text-xs"
-          />
-        </div>
-      )}
-
-      {/* 일괄 수정 액션 바 */}
-      {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 px-3 py-2">
-          <span className="text-xs font-medium text-teal-700">
-            {selectedIds.length}개 선택됨
-          </span>
+    <div className="flex flex-col">
+      {/* 고정 헤더 영역 */}
+      <div className="sticky top-0 z-10 flex flex-col gap-3 border-b bg-white px-4 pb-3 pt-4">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-slate-700">
+            제품
+            <span className="ml-1 text-xs font-normal text-slate-400">{activeCount}개 활성</span>
+            {unlinkedCount > 0 && (
+              <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                <Link2Off size={10} />
+                {unlinkedCount}개 연결 필요
+              </span>
+            )}
+          </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedIds([])}
-              className="text-[11px] text-slate-400 hover:text-slate-600"
-            >
-              선택 해제
-            </button>
-            <Button
-              size="sm"
-              onClick={handleBulkDelete}
-              disabled={bulkDeleting}
-              className="h-7 gap-1 bg-red-500 px-2.5 text-xs hover:bg-red-600"
-            >
-              {bulkDeleting
-                ? <Loader2 size={12} className="animate-spin" />
-                : <Trash2 size={12} />}
-              삭제
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setBulkEditOpen(true)}
-              disabled={bulkDeleting}
-              className="h-7 gap-1 bg-teal-600 px-2.5 text-xs hover:bg-teal-700"
-            >
-              <SlidersHorizontal size={12} />
-              일괄 수정
+            {unlinkedCount > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setAiMatchOpen(true)}
+                className="gap-1 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                <Sparkles size={14} />
+                AI 매칭
+              </Button>
+            )}
+            <ItemProductBulkUploadDialog hosId={hosId} vendors={vendors} />
+            <Button size="sm" onClick={openAdd} className="gap-1 bg-teal-600 hover:bg-teal-700">
+              <Plus size={14} />
+              제품 추가
             </Button>
           </div>
         </div>
-      )}
+
+        {/* 검색 */}
+        {products.length > 4 && (
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="제품명, 제조사, 규격, 품목명 검색"
+              className="pl-7 text-xs"
+            />
+          </div>
+        )}
+
+        {/* 일괄 수정 액션 바 */}
+        {selectedIds.length > 0 && (
+          <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 px-3 py-2">
+            <span className="text-xs font-medium text-teal-700">
+              {selectedIds.length}개 선택됨
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="text-[11px] text-slate-400 hover:text-slate-600"
+              >
+                선택 해제
+              </button>
+              <Button
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="h-7 gap-1 bg-red-500 px-2.5 text-xs hover:bg-red-600"
+              >
+                {bulkDeleting
+                  ? <Loader2 size={12} className="animate-spin" />
+                  : <Trash2 size={12} />}
+                삭제
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setBulkEditOpen(true)}
+                disabled={bulkDeleting}
+                className="h-7 gap-1 bg-teal-600 px-2.5 text-xs hover:bg-teal-700"
+              >
+                <SlidersHorizontal size={12} />
+                일괄 수정
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 스크롤 콘텐츠 */}
+      <div className="flex flex-col gap-4 p-4">
 
       {/* 빈 상태 */}
       {products.length === 0 && (
@@ -390,6 +396,7 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
           if (!v) setSelectedIds([])
         }}
       />
+      </div>
     </div>
   )
 }

@@ -66,6 +66,20 @@ const COLUMNS = [
     example: '1500',
   },
   {
+    key: 'category',
+    label: '카테고리',
+    required: false,
+    description: '세미콜론(;)으로 구분하여 복수 입력 가능',
+    example: '주사제;수액제',
+  },
+  {
+    key: 'tag',
+    label: '태그',
+    required: false,
+    description: '세미콜론(;)으로 구분하여 복수 입력 가능',
+    example: '냉장;마약류',
+  },
+  {
     key: 'memo',
     label: '메모',
     required: false,
@@ -77,11 +91,11 @@ const COLUMNS = [
 function downloadSampleFile() {
   const headers = COLUMNS.map((c) => c.key)
   const sample = [
-    ['JW 생리식염수 500mL', 'JW중외제약', '500mL', 'NaCl 0.9%', '박스', '100', '1500', ''],
-    ['바이엘 메트로니다졸 주 0.5%', '바이엘코리아', '100mL/바이알', 'Metronidazole 0.5%', '낱개', '1', '3200', ''],
-    ['아목시실린 캡슐 250mg', '한미약품', '250mg', 'Amoxicillin', '병', '100', '850', ''],
-    ['BD 주사기 5mL', 'BD', '5mL', '', '박스', '100', '120', '5cc 루어락'],
-    ['헤파린 생리식염수 10mL', '대한약품', '10mL', 'Heparin 10U/mL', '낱개', '1', '', ''],
+    ['JW 생리식염수 500mL', 'JW중외제약', '500mL', 'NaCl 0.9%', '박스', '100', '1500', '수액제', '냉장', ''],
+    ['바이엘 메트로니다졸 주 0.5%', '바이엘코리아', '100mL/바이알', 'Metronidazole 0.5%', '낱개', '1', '3200', '주사제', '', ''],
+    ['아목시실린 캡슐 250mg', '한미약품', '250mg', 'Amoxicillin', '병', '100', '850', '경구제', '', ''],
+    ['BD 주사기 5mL', 'BD', '5mL', '', '박스', '100', '120', '의료소모품', '', '5cc 루어락'],
+    ['헤파린 생리식염수 10mL', '대한약품', '10mL', 'Heparin 10U/mL', '낱개', '1', '', '주사제;수액제', '혈관', ''],
   ]
 
   const ws = XLSX.utils.aoa_to_sheet([headers, ...sample])

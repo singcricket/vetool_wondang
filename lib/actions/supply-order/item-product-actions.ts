@@ -87,6 +87,9 @@ export async function bulkCreateItemProducts(
       continue
     }
 
+    const parseSemicolon = (val?: string) =>
+      val ? val.split(';').map((s) => s.trim()).filter(Boolean) : []
+
     validRows.push({
       hos_id: hosId,
       item_master_id: null,   // 업로드 후 별도 연결
@@ -97,6 +100,8 @@ export async function bulkCreateItemProducts(
       package_type: row.package_type?.trim() || '낱개',
       units_per_package: Number(row.units_per_package ?? 1) || 1,
       reference_price: row.reference_price ? Number(row.reference_price) || null : null,
+      category: parseSemicolon(row.category),
+      tag: parseSemicolon(row.tag),
       memo: row.memo?.trim() || null,
       vendor_ids: vendorId ? [vendorId] : [],
     })
