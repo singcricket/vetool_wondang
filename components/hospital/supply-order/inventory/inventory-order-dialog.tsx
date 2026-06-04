@@ -16,7 +16,7 @@ import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import {
   createOrder,
-  findDraftOrderByVendorDate,
+  findDraftOrdersByVendor,
   appendOrderItems,
 } from '@/lib/actions/supply-order/order-actions'
 
@@ -42,8 +42,9 @@ type ItemState = {
   vendor_id: string
 }
 
-type ExistingOrder = { id: string; item_count: number }
-type MergeDecision = 'merge' | 'new'
+type DraftOrder = { id: string; order_date: string; item_count: number }
+// 'new' | orderId(string) — 합칠 주문서 id 또는 새로 생성
+type MergeDecision = 'new' | string
 
 export default function InventoryOrderDialog({
   hosId,
@@ -59,16 +60,16 @@ export default function InventoryOrderDialog({
   const [itemStates, setItemStates] = useState<Record<string, ItemState>>({})
   const [saving, setSaving] = useState(false)
 
-  // 기존 주문서 조회 결과: vendorId → ExistingOrder | null
-  const [existingOrders, setExistingOrders] = useState<Record<string, ExistingOrder | null>>({})
-  // 통합 여부 결정: vendorId → 'merge' | 'new'
+  // vendorId → 미완료 주문서 목록
+  const [draftOrders, setDraftOrders] = useState<Record<string, DraftOrder[]>>({})
+  // vendorId → 'new' | orderId
   const [mergeDecisions, setMergeDecisions] = useState<Record<string, MergeDecision>>({})
   const [checking, setChecking] = useState(false)
 
   useEffect(() => {
     if (!open) return
-    setOrderDate(new Date().toISOString().split('T')[0])
-    setExistingOrders({})
+    setOrderDate(today)
+    setDraftOrders({})
     setMergeDecisions({})
     const initial: Record<string, ItemState> = {}
     for (const item of items) {
@@ -86,41 +87,33 @@ export default function InventoryOrderDialog({
   const setVendor = (id: string, vendorId: string) =>
     setItemStates((prev) => ({ ...prev, [id]: { ...prev[id], vendor_id: vendorId } }))
 
-  // 업체별로 그룹핑
   const { grouped, unassigned } = useMemo(() => {
     const g: Record<string, OrderDraftItem[]> = {}
     const u: OrderDraftItem[] = []
     for (const item of items) {
       const vid = itemStates[item.item_master_id]?.vendor_id ?? ''
-      if (!vid) {
-        u.push(item)
-      } else {
-        g[vid] = g[vid] ?? []
-        g[vid].push(item)
-      }
+      if (!vid) u.push(item)
+      else { g[vid] = g[vid] ?? []; g[vid].push(item) }
     }
     return { grouped: g, unassigned: u }
   }, [items, itemStates])
 
-  // 업체 목록이 바뀌거나 날짜가 바뀌면 기존 주문서 조회
   const vendorIds = useMemo(() => Object.keys(grouped).sort().join(','), [grouped])
 
-  const checkExistingOrders = useCallback(async (date: string, vids: string[]) => {
-    if (!vids.length || !date) return
+  const checkDraftOrders = useCallback(async (vids: string[]) => {
+    if (!vids.length) return
     setChecking(true)
     try {
-      const results = await Promise.all(
-        vids.map((vid) => findDraftOrderByVendorDate(hosId, vid, date)),
-      )
-      const next: Record<string, ExistingOrder | null> = {}
-      const decisions: Record<string, MergeDecision> = {}
+      const results = await Promise.all(vids.map((vid) => findDraftOrdersByVendor(hosId, vid)))
+      const nextDrafts: Record<string, DraftOrder[]> = {}
+      const nextDecisions: Record<string, MergeDecision> = {}
       vids.forEach((vid, i) => {
-        next[vid] = results[i]
-        // 기존 주문서가 있으면 기본값 'merge', 없으면 'new'
-        decisions[vid] = results[i] ? 'merge' : 'new'
+        nextDrafts[vid] = results[i]
+        // 기존 주문서 있으면 가장 최근 것으로 기본 선택, 없으면 새로 생성
+        nextDecisions[vid] = results[i].length > 0 ? results[i][0].id : 'new'
       })
-      setExistingOrders(next)
-      setMergeDecisions(decisions)
+      setDraftOrders(nextDrafts)
+      setMergeDecisions(nextDecisions)
     } finally {
       setChecking(false)
     }
@@ -129,8 +122,8 @@ export default function InventoryOrderDialog({
   useEffect(() => {
     if (!open) return
     const vids = vendorIds ? vendorIds.split(',') : []
-    checkExistingOrders(orderDate, vids)
-  }, [open, orderDate, vendorIds, checkExistingOrders])
+    checkDraftOrders(vids)
+  }, [open, vendorIds, checkDraftOrders])
 
   const vendorName = (id: string) => vendors.find((v) => v.id === id)?.name ?? id
 
@@ -140,11 +133,10 @@ export default function InventoryOrderDialog({
     if (!canSubmit) return
     try {
       setSaving(true)
-      const vendorGroups = Object.entries(grouped)
       let mergedCount = 0
       let createdCount = 0
 
-      for (const [vendorId, groupItems] of vendorGroups) {
+      for (const [vendorId, groupItems] of Object.entries(grouped)) {
         const orderItems = groupItems.map((item) => ({
           item_master_id: item.item_master_id,
           quantity: itemStates[item.item_master_id]?.quantity ?? item.quantity,
@@ -155,10 +147,9 @@ export default function InventoryOrderDialog({
         }))
 
         const decision = mergeDecisions[vendorId] ?? 'new'
-        const existing = existingOrders[vendorId]
 
-        if (decision === 'merge' && existing) {
-          await appendOrderItems(hosId, existing.id, orderItems)
+        if (decision !== 'new') {
+          await appendOrderItems(hosId, decision, orderItems)
           mergedCount++
         } else {
           await createOrder(hosId, vendorId, {
@@ -196,18 +187,18 @@ export default function InventoryOrderDialog({
         <div className="flex-1 overflow-y-auto">
           <div className="flex flex-col gap-4 p-5">
 
-            {/* 주문일 */}
+            {/* 신규 주문서 생성 시 사용할 주문일 */}
             <div className="space-y-1.5">
-              <Label className="text-xs">주문일</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={orderDate}
-                  onChange={(e) => setOrderDate(e.target.value)}
-                  className="text-sm"
-                />
-                {checking && <Loader2 size={14} className="shrink-0 animate-spin text-slate-400" />}
-              </div>
+              <Label className="text-xs">
+                신규 주문서 주문일
+                <span className="ml-1 font-normal text-slate-400">(기존 주문서 합산 시 미사용)</span>
+              </Label>
+              <Input
+                type="date"
+                value={orderDate}
+                onChange={(e) => setOrderDate(e.target.value)}
+                className="text-sm"
+              />
             </div>
 
             {/* 업체 미지정 */}
@@ -236,67 +227,93 @@ export default function InventoryOrderDialog({
             )}
 
             {/* 업체별 그룹 */}
-            {Object.entries(grouped).map(([vendorId, groupItems]) => {
-              const existing = existingOrders[vendorId]
-              const decision = mergeDecisions[vendorId] ?? 'new'
+            {checking ? (
+              <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-400">
+                <Loader2 size={14} className="animate-spin" />
+                기존 주문서 확인 중...
+              </div>
+            ) : (
+              Object.entries(grouped).map(([vendorId, groupItems]) => {
+                const drafts = draftOrders[vendorId] ?? []
+                const decision = mergeDecisions[vendorId] ?? 'new'
 
-              return (
-                <div key={vendorId} className="rounded-lg border p-3 space-y-3">
-                  <p className="text-xs font-semibold text-slate-700">
-                    {vendorName(vendorId)}
-                    <span className="ml-1 font-normal text-slate-400">{groupItems.length}개 품목</span>
-                  </p>
+                return (
+                  <div key={vendorId} className="rounded-lg border p-3 space-y-3">
+                    <p className="text-xs font-semibold text-slate-700">
+                      {vendorName(vendorId)}
+                      <span className="ml-1 font-normal text-slate-400">{groupItems.length}개 품목</span>
+                    </p>
 
-                  {/* 기존 주문서 통합 옵션 */}
-                  {existing && (
-                    <div className="rounded-md border border-indigo-200 bg-indigo-50 p-2.5 space-y-2">
-                      <p className="text-[11px] font-medium text-indigo-700">
-                        {orderDate} 동일 업체 주문서가 있습니다 (기존 {existing.item_count}개 품목)
-                      </p>
-                      <div className="flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setMergeDecisions((prev) => ({ ...prev, [vendorId]: 'merge' }))}
-                          className={cn(
-                            'flex flex-1 items-center justify-center gap-1 rounded-md border py-1.5 text-[11px] font-medium transition-colors',
-                            decision === 'merge'
-                              ? 'border-indigo-500 bg-indigo-500 text-white'
-                              : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-300',
-                          )}
-                        >
-                          <GitMerge size={11} /> 기존 주문서에 추가 (추천)
-                        </button>
+                    {/* 주문서 선택 */}
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-semibold text-slate-400">주문서 선택</p>
+                      <div className="flex flex-col gap-1.5">
+
+                        {/* 기존 주문서 목록 */}
+                        {drafts.map((draft) => (
+                          <button
+                            key={draft.id}
+                            type="button"
+                            onClick={() => setMergeDecisions((prev) => ({ ...prev, [vendorId]: draft.id }))}
+                            className={cn(
+                              'flex items-center gap-2 rounded-md border px-3 py-2 text-left text-[11px] transition-colors',
+                              decision === draft.id
+                                ? 'border-indigo-400 bg-indigo-50 text-indigo-800'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50/40',
+                            )}
+                          >
+                            <GitMerge size={12} className={decision === draft.id ? 'text-indigo-500' : 'text-slate-300'} />
+                            <div className="flex-1">
+                              <span className="font-medium">{draft.order_date}</span>
+                              <span className="ml-1.5 text-slate-400">작성중 · {draft.item_count}개 품목</span>
+                            </div>
+                            {decision === draft.id && (
+                              <span className="shrink-0 rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
+                                선택됨
+                              </span>
+                            )}
+                          </button>
+                        ))}
+
+                        {/* 새 주문서 생성 */}
                         <button
                           type="button"
                           onClick={() => setMergeDecisions((prev) => ({ ...prev, [vendorId]: 'new' }))}
                           className={cn(
-                            'flex flex-1 items-center justify-center gap-1 rounded-md border py-1.5 text-[11px] font-medium transition-colors',
+                            'flex items-center gap-2 rounded-md border px-3 py-2 text-left text-[11px] transition-colors',
                             decision === 'new'
-                              ? 'border-slate-600 bg-slate-600 text-white'
-                              : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400',
+                              ? 'border-teal-400 bg-teal-50 text-teal-800'
+                              : 'border-slate-200 bg-white text-slate-500 hover:border-teal-200 hover:bg-teal-50/40',
                           )}
                         >
-                          <PlusCircle size={11} /> 새 주문서 생성
+                          <PlusCircle size={12} className={decision === 'new' ? 'text-teal-500' : 'text-slate-300'} />
+                          <span className="flex-1 font-medium">새 주문서 생성</span>
+                          {decision === 'new' && (
+                            <span className="shrink-0 rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-semibold text-teal-600">
+                              선택됨
+                            </span>
+                          )}
                         </button>
                       </div>
                     </div>
-                  )}
 
-                  <div className="flex flex-col gap-2">
-                    {groupItems.map((item) => (
-                      <ItemRow
-                        key={item.item_master_id}
-                        item={item}
-                        state={itemStates[item.item_master_id]}
-                        vendors={vendors}
-                        onQtyChange={(q) => setQty(item.item_master_id, q)}
-                        onVendorChange={(v) => setVendor(item.item_master_id, v)}
-                      />
-                    ))}
+                    {/* 품목 목록 */}
+                    <div className="flex flex-col gap-2 border-t pt-2">
+                      {groupItems.map((item) => (
+                        <ItemRow
+                          key={item.item_master_id}
+                          item={item}
+                          state={itemStates[item.item_master_id]}
+                          vendors={vendors}
+                          onQtyChange={(q) => setQty(item.item_master_id, q)}
+                          onVendorChange={(v) => setVendor(item.item_master_id, v)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
           </div>
         </div>
 
@@ -314,7 +331,7 @@ export default function InventoryOrderDialog({
             {saving
               ? <Loader2 size={14} className="mr-1 animate-spin" />
               : <ShoppingCart size={14} className="mr-1" />}
-            {saving ? '처리 중...' : submitLabel(grouped, mergeDecisions, existingOrders)}
+            {saving ? '처리 중...' : submitLabel(grouped, mergeDecisions)}
           </Button>
         </div>
       </DialogContent>
@@ -325,12 +342,10 @@ export default function InventoryOrderDialog({
 function submitLabel(
   grouped: Record<string, OrderDraftItem[]>,
   decisions: Record<string, MergeDecision>,
-  existing: Record<string, ExistingOrder | null>,
 ): string {
-  const mergeCount = Object.keys(grouped).filter(
-    (vid) => (decisions[vid] ?? 'new') === 'merge' && existing[vid],
-  ).length
-  const newCount = Object.keys(grouped).length - mergeCount
+  const vendorIds = Object.keys(grouped)
+  const mergeCount = vendorIds.filter((vid) => (decisions[vid] ?? 'new') !== 'new').length
+  const newCount = vendorIds.length - mergeCount
 
   if (mergeCount > 0 && newCount > 0) return `통합 ${mergeCount} · 신규 ${newCount} 주문서 처리`
   if (mergeCount > 0) return `${mergeCount}개 주문서에 품목 추가`

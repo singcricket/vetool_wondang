@@ -100,26 +100,26 @@ export async function createOrder(
   return order.id
 }
 
-// 동일 날짜·업체 draft 주문서 조회
-export async function findDraftOrderByVendorDate(
+// 업체별 미완료(draft) 주문서 전체 조회 (날짜 무관)
+export async function findDraftOrdersByVendor(
   hosId: string,
   vendorId: string,
-  orderDate: string,
-): Promise<{ id: string; item_count: number } | null> {
+): Promise<{ id: string; order_date: string; item_count: number }[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('orders')
-    .select('id, order_items(id)')
+    .select('id, order_date, order_items(id)')
     .eq('hos_id', hosId)
     .eq('vendor_id', vendorId)
-    .eq('order_date', orderDate)
     .eq('status', 'draft')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
+    .order('order_date', { ascending: false })
 
-  if (error || !data) return null
-  return { id: data.id, item_count: (data.order_items as any[]).length }
+  if (error || !data) return []
+  return data.map((r) => ({
+    id: r.id,
+    order_date: r.order_date,
+    item_count: (r.order_items as any[]).length,
+  }))
 }
 
 // 기존 주문서에 품목 추가

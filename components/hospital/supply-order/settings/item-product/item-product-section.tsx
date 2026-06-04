@@ -392,6 +392,7 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
         hosId={hosId}
         selectedIds={selectedIds}
         vendors={vendors}
+        itemMasters={itemMasters}
         open={bulkEditOpen}
         onOpenChange={(v) => {
           setBulkEditOpen(v)

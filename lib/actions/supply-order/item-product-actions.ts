@@ -189,6 +189,7 @@ export type BulkUpdateItemProductInput = {
   tags: string[]
   vendorMode: 'add' | 'replace'
   vendorIds: string[]
+  item_master_id: 'keep' | string   // 'keep'=변경안함, 그 외 = 해당 master로 대체
   is_active: 'keep' | 'true' | 'false'
 }
 
@@ -230,6 +231,10 @@ export async function bulkUpdateItemProducts(
         const existing: string[] = (data as any)?.vendor_ids ?? []
         updates.vendor_ids = Array.from(new Set([...existing, ...input.vendorIds]))
       }
+    }
+
+    if (input.item_master_id !== 'keep') {
+      updates.item_master_id = input.item_master_id || null
     }
 
     if (input.is_active !== 'keep') {

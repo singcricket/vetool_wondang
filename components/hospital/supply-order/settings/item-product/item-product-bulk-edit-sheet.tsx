@@ -11,19 +11,21 @@ import { toast } from 'sonner'
 import { bulkUpdateItemProducts } from '@/lib/actions/supply-order/item-product-actions'
 import type { BulkUpdateItemProductInput } from '@/lib/actions/supply-order/item-product-actions'
 import { ITEM_CATEGORIES } from '@/types/hospital/supply-order-type'
-import type { Vendor } from '@/types/hospital/supply-order-type'
+import type { Vendor, ItemMaster } from '@/types/hospital/supply-order-type'
+import ItemMasterCombobox from './item-master-combobox'
 
 interface Props {
   hosId: string
   selectedIds: string[]
   vendors: Pick<Vendor, 'id' | 'name'>[]
+  itemMasters: ItemMaster[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
 type ActiveOption = 'keep' | 'true' | 'false'
 
-export default function ItemProductBulkEditSheet({ hosId, selectedIds, vendors, open, onOpenChange }: Props) {
+export default function ItemProductBulkEditSheet({ hosId, selectedIds, vendors, itemMasters, open, onOpenChange }: Props) {
   const [categoryMode, setCategoryMode] = useState<'add' | 'replace'>('add')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [tagMode, setTagMode] = useState<'add' | 'replace'>('add')
@@ -31,6 +33,7 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, vendors, 
   const [tagInput, setTagInput] = useState('')
   const [vendorMode, setVendorMode] = useState<'add' | 'replace'>('add')
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([])
+  const [masterId, setMasterId] = useState<string>('')
   const [isActive, setIsActive] = useState<ActiveOption>('keep')
   const [saving, setSaving] = useState(false)
 
@@ -43,6 +46,7 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, vendors, 
       setTagInput('')
       setVendorMode('add')
       setSelectedVendorIds([])
+      setMasterId('')
       setIsActive('keep')
     }
   }, [open])
@@ -65,6 +69,7 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, vendors, 
     selectedCategories.length > 0 ||
     tags.length > 0 ||
     selectedVendorIds.length > 0 ||
+    masterId !== '' ||
     isActive !== 'keep'
 
   const handleSubmit = async () => {
@@ -76,6 +81,7 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, vendors, 
       tags,
       vendorMode,
       vendorIds: selectedVendorIds,
+      item_master_id: masterId !== '' ? masterId : 'keep',
       is_active: isActive,
     }
     try {
@@ -108,6 +114,32 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, vendors, 
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
             비워둔 항목은 변경되지 않습니다.
           </p>
+
+          {/* 품목 마스터 연결 */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">품목 마스터 연결 <span className="font-normal text-slate-400">(대체)</span></Label>
+              {masterId && (
+                <button
+                  type="button"
+                  onClick={() => setMasterId('')}
+                  className="text-[11px] text-slate-400 hover:text-slate-600"
+                >
+                  선택 해제
+                </button>
+              )}
+            </div>
+            <ItemMasterCombobox
+              itemMasters={itemMasters.filter((m) => m.is_active)}
+              value={masterId}
+              onChange={setMasterId}
+            />
+            {masterId && (
+              <p className="text-[11px] text-amber-600">
+                선택한 {selectedIds.length}개 제품의 품목 마스터가 모두 이 항목으로 교체됩니다.
+              </p>
+            )}
+          </div>
 
           {/* 카테고리 */}
           <div className="space-y-2">
