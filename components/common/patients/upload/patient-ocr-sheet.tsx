@@ -100,11 +100,31 @@ export default function PatientOcrSheet({ hosId }: Props) {
     set('breed', '')
   }
 
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const MAX = 1600
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * ratio)
+        canvas.height = Math.round(img.height * ratio)
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        // JPEG 0.82 품질 → 대부분의 핸드폰 사진을 1MB 이하로 압축
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82)
+        resolve(dataUrl.split(',')[1])
+      }
+      img.onerror = reject
+      img.src = url
+    })
+
   const handleFile = async (file: File) => {
-    const arrayBuf = await file.arrayBuffer()
-    const base64 = Buffer.from(arrayBuf).toString('base64')
     setStep('analyzing')
     try {
+      const base64 = await compressImage(file)
       const data = await extractPatientFromImage(base64, hosId)
       setBreedRaw(data.breed_raw)
       setForm(dataToForm(data))
