@@ -18,7 +18,7 @@ import { Loader2, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
 import { createItemProduct, updateItemProduct } from '@/lib/actions/supply-order/item-product-actions'
-import type { ItemMaster, ItemProduct, ItemProductFormInput } from '@/types/hospital/supply-order-type'
+import type { ItemMaster, ItemProduct, ItemProductFormInput, Vendor } from '@/types/hospital/supply-order-type'
 import { ITEM_CATEGORIES } from '@/types/hospital/supply-order-type'
 import ItemMasterCombobox from './item-master-combobox'
 
@@ -35,6 +35,7 @@ const EMPTY_FORM: ItemProductFormInput = {
   reference_price: '',
   category: [],
   tag: [],
+  vendor_ids: [],
   memo: '',
   is_active: true,
 }
@@ -51,6 +52,7 @@ function toForm(p: ItemProduct): ItemProductFormInput {
     reference_price: p.reference_price != null ? String(p.reference_price) : '',
     category: p.category ?? [],
     tag: p.tag ?? [],
+    vendor_ids: p.vendor_ids ?? [],
     memo: p.memo ?? '',
     is_active: p.is_active,
   }
@@ -60,11 +62,12 @@ interface Props {
   hosId: string
   product?: ItemProduct
   itemMasters: ItemMaster[]
+  vendors: Pick<Vendor, 'id' | 'name'>[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export default function ItemProductFormSheet({ hosId, product, itemMasters, open, onOpenChange }: Props) {
+export default function ItemProductFormSheet({ hosId, product, itemMasters, vendors, open, onOpenChange }: Props) {
   const isEdit = !!product
   const [form, setForm] = useState<ItemProductFormInput>(product ? toForm(product) : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -264,6 +267,45 @@ export default function ItemProductFormSheet({ hosId, product, itemMasters, open
               })}
             </div>
           </div>
+
+          {/* 공급 도매상 */}
+          {vendors.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">공급 도매상 <span className="font-normal text-slate-400">(복수 선택 가능)</span></Label>
+              <div className="flex flex-wrap gap-1.5">
+                {vendors.map((v) => {
+                  const active = form.vendor_ids.includes(v.id)
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          vendor_ids: active
+                            ? prev.vendor_ids.filter((id) => id !== v.id)
+                            : [...prev.vendor_ids, v.id],
+                        }))
+                      }
+                      className={cn(
+                        'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
+                        active
+                          ? 'border-teal-400 bg-teal-50 font-medium text-teal-700'
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300',
+                      )}
+                    >
+                      {v.name}
+                    </button>
+                  )
+                })}
+              </div>
+              {form.vendor_ids.length > 0 && (
+                <p className="text-[11px] text-teal-600">
+                  {form.vendor_ids.length}개 도매상 선택됨
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 태그 */}
           <div className="space-y-1.5">

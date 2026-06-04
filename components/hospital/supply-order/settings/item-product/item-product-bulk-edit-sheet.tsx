@@ -11,22 +11,26 @@ import { toast } from 'sonner'
 import { bulkUpdateItemProducts } from '@/lib/actions/supply-order/item-product-actions'
 import type { BulkUpdateItemProductInput } from '@/lib/actions/supply-order/item-product-actions'
 import { ITEM_CATEGORIES } from '@/types/hospital/supply-order-type'
+import type { Vendor } from '@/types/hospital/supply-order-type'
 
 interface Props {
   hosId: string
   selectedIds: string[]
+  vendors: Pick<Vendor, 'id' | 'name'>[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
 type ActiveOption = 'keep' | 'true' | 'false'
 
-export default function ItemProductBulkEditSheet({ hosId, selectedIds, open, onOpenChange }: Props) {
+export default function ItemProductBulkEditSheet({ hosId, selectedIds, vendors, open, onOpenChange }: Props) {
   const [categoryMode, setCategoryMode] = useState<'add' | 'replace'>('add')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [tagMode, setTagMode] = useState<'add' | 'replace'>('add')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
+  const [vendorMode, setVendorMode] = useState<'add' | 'replace'>('add')
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([])
   const [isActive, setIsActive] = useState<ActiveOption>('keep')
   const [saving, setSaving] = useState(false)
 
@@ -37,6 +41,8 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, open, onO
       setTagMode('add')
       setTags([])
       setTagInput('')
+      setVendorMode('add')
+      setSelectedVendorIds([])
       setIsActive('keep')
     }
   }, [open])
@@ -58,6 +64,7 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, open, onO
   const hasChanges =
     selectedCategories.length > 0 ||
     tags.length > 0 ||
+    selectedVendorIds.length > 0 ||
     isActive !== 'keep'
 
   const handleSubmit = async () => {
@@ -67,6 +74,8 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, open, onO
       categories: selectedCategories,
       tagMode,
       tags,
+      vendorMode,
+      vendorIds: selectedVendorIds,
       is_active: isActive,
     }
     try {
@@ -205,6 +214,64 @@ export default function ItemProductBulkEditSheet({ hosId, selectedIds, open, onO
               </Button>
             </div>
           </div>
+
+          {/* 공급 도매상 */}
+          {vendors.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">공급 도매상</Label>
+                <div className="flex rounded-full border text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setVendorMode('add')}
+                    className={cn(
+                      'rounded-l-full px-2.5 py-0.5 transition-colors',
+                      vendorMode === 'add' ? 'bg-teal-600 text-white' : 'text-slate-500 hover:bg-slate-50',
+                    )}
+                  >
+                    추가
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVendorMode('replace')}
+                    className={cn(
+                      'rounded-r-full px-2.5 py-0.5 transition-colors',
+                      vendorMode === 'replace' ? 'bg-teal-600 text-white' : 'text-slate-500 hover:bg-slate-50',
+                    )}
+                  >
+                    교체
+                  </button>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                {vendorMode === 'add' ? '선택한 도매상을 기존 값에 추가합니다.' : '기존 도매상을 선택한 값으로 교체합니다.'}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {vendors.map((v) => {
+                  const active = selectedVendorIds.includes(v.id)
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() =>
+                        setSelectedVendorIds((prev) =>
+                          active ? prev.filter((id) => id !== v.id) : [...prev, v.id]
+                        )
+                      }
+                      className={cn(
+                        'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
+                        active
+                          ? 'border-teal-400 bg-teal-50 font-medium text-teal-700'
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300',
+                      )}
+                    >
+                      {v.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* 활성여부 */}
           <div className="space-y-1.5">

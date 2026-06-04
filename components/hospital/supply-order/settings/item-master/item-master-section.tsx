@@ -59,14 +59,14 @@ export default function ItemMasterSection({ hosId, items, vendors, itemProducts 
 
   const filtered = items
     .filter((i) => {
-      if (!search) return true
-      const q = search.toLowerCase()
-      return (
-        i.generic_name.toLowerCase().includes(q) ||
-        i.category.some((c) => c.toLowerCase().includes(q)) ||
-        i.ingredient.some((v) => v.toLowerCase().includes(q)) ||
-        i.aliases.some((a) => a.toLowerCase().includes(q)) ||
-        i.loc.some((l) => l.toLowerCase().includes(q))
+      const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean)
+      if (!tokens.length) return true
+      return tokens.every((token) =>
+        i.generic_name.toLowerCase().includes(token) ||
+        i.category.some((c) => c.toLowerCase().includes(token)) ||
+        i.ingredient.some((v) => v.toLowerCase().includes(token)) ||
+        i.aliases.some((a) => a.toLowerCase().includes(token)) ||
+        i.loc.some((l) => l.toLowerCase().includes(token))
       )
     })
     .sort((a, b) => (a.category[0] ?? '').localeCompare(b.category[0] ?? '', 'ko') || a.generic_name.localeCompare(b.generic_name, 'ko'))
@@ -125,7 +125,7 @@ export default function ItemMasterSection({ hosId, items, vendors, itemProducts 
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="품목명, 카테고리, 성분, 별칭, 태그 검색"
+              placeholder="품목명, 카테고리, 성분, 별칭, 태그 검색 (스페이스로 복수 키워드)"
               className="pl-7 text-xs"
             />
           </div>

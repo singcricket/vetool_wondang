@@ -412,6 +412,7 @@ export type ItemProductFormInput = {
   reference_price: string
   category: string[]
   tag: string[]
+  vendor_ids: string[]
   memo: string
   is_active: boolean
 }

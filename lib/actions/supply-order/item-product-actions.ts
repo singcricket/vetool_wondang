@@ -33,6 +33,7 @@ export async function createItemProduct(
     reference_price: input.reference_price ? Number(input.reference_price) : null,
     category: input.category ?? [],
     tag: input.tag ?? [],
+    vendor_ids: input.vendor_ids ?? [],
     memo: input.memo.trim() || null,
     is_active: input.is_active,
   })
@@ -59,6 +60,7 @@ export async function updateItemProduct(
       reference_price: input.reference_price ? Number(input.reference_price) : null,
       category: input.category ?? [],
       tag: input.tag ?? [],
+      vendor_ids: input.vendor_ids ?? [],
       memo: input.memo.trim() || null,
       is_active: input.is_active,
     })
@@ -185,6 +187,8 @@ export type BulkUpdateItemProductInput = {
   categories: string[]
   tagMode: 'add' | 'replace'
   tags: string[]
+  vendorMode: 'add' | 'replace'
+  vendorIds: string[]
   is_active: 'keep' | 'true' | 'false'
 }
 
@@ -215,6 +219,16 @@ export async function bulkUpdateItemProducts(
         const { data } = await supabase.from('item_products').select('tag').eq('id', id).single()
         const existing: string[] = (data as any)?.tag ?? []
         updates.tag = Array.from(new Set([...existing, ...input.tags]))
+      }
+    }
+
+    if (input.vendorIds.length > 0 || input.vendorMode === 'replace') {
+      if (input.vendorMode === 'replace') {
+        updates.vendor_ids = input.vendorIds
+      } else {
+        const { data } = await supabase.from('item_products').select('vendor_ids').eq('id', id).single()
+        const existing: string[] = (data as any)?.vendor_ids ?? []
+        updates.vendor_ids = Array.from(new Set([...existing, ...input.vendorIds]))
       }
     }
 

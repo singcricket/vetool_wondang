@@ -61,16 +61,16 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
 
   const filtered = products
     .filter((p) => {
-      if (!search) return true
-      const q = search.toLowerCase()
-      return (
-        p.brand_name.toLowerCase().includes(q) ||
-        (p.manufacturer ?? '').toLowerCase().includes(q) ||
-        (p.specification ?? '').toLowerCase().includes(q) ||
-        (p.item_master?.generic_name ?? '').toLowerCase().includes(q) ||
-        (p.item_master?.category ?? []).some((c) => c.toLowerCase().includes(q)) ||
-        (p.category ?? []).some((c) => c.toLowerCase().includes(q)) ||
-        (p.tag ?? []).some((t) => t.toLowerCase().includes(q))
+      const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean)
+      if (!tokens.length) return true
+      return tokens.every((token) =>
+        p.brand_name.toLowerCase().includes(token) ||
+        (p.manufacturer ?? '').toLowerCase().includes(token) ||
+        (p.specification ?? '').toLowerCase().includes(token) ||
+        (p.item_master?.generic_name ?? '').toLowerCase().includes(token) ||
+        (p.item_master?.category ?? []).some((c) => c.toLowerCase().includes(token)) ||
+        (p.category ?? []).some((c) => c.toLowerCase().includes(token)) ||
+        (p.tag ?? []).some((t) => t.toLowerCase().includes(token))
       )
     })
     .sort((a, b) => {
@@ -143,7 +143,7 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="제품명, 제조사, 규격, 품목명 검색"
+              placeholder="제품명, 제조사, 규격, 품목명, 카테고리, 태그 검색 (스페이스로 복수 키워드)"
               className="pl-7 text-xs"
             />
           </div>
@@ -376,6 +376,7 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
         hosId={hosId}
         product={editing}
         itemMasters={itemMasters}
+        vendors={vendors}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
       />
@@ -390,6 +391,7 @@ export default function ItemProductSection({ hosId, products, itemMasters, vendo
       <ItemProductBulkEditSheet
         hosId={hosId}
         selectedIds={selectedIds}
+        vendors={vendors}
         open={bulkEditOpen}
         onOpenChange={(v) => {
           setBulkEditOpen(v)
