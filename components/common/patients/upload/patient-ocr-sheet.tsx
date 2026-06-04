@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Camera, ChevronDown, Loader2, ScanSearch } from 'lucide-react'
+import { Camera, ChevronDown, ClipboardPaste, Loader2, ScanSearch, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils/utils'
 import { extractPatientFromImage } from '@/lib/actions/patient/patient-ocr-actions'
@@ -88,7 +88,27 @@ export default function PatientOcrSheet({ hosId }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [breedOpen, setBreedOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 클립보드 붙여넣기 (sheet 열려있고 idle 상태일 때만)
+  useEffect(() => {
+    if (!open || step !== 'idle') return
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (file) handleFile(file)
+          break
+        }
+      }
+    }
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, step])
 
   const BREEDS = form.species === 'feline' ? FELINE_BREEDS : CANINE_BREEDS
 
@@ -143,6 +163,7 @@ export default function PatientOcrSheet({ hosId }: Props) {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
+    setIsDragging(false)
     const file = e.dataTransfer.files?.[0]
     if (file) handleFile(file)
   }
@@ -213,18 +234,35 @@ export default function PatientOcrSheet({ hosId }: Props) {
               <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
                 <div
                   onDrop={handleDrop}
-                  onDragOver={(e) => e.preventDefault()}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                  onDragLeave={() => setIsDragging(false)}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-16 transition-colors hover:border-teal-400 hover:bg-teal-50/30"
+                  className={cn(
+                    'flex w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-14 transition-colors',
+                    isDragging
+                      ? 'border-teal-500 bg-teal-50'
+                      : 'border-slate-200 bg-slate-50 hover:border-teal-400 hover:bg-teal-50/30',
+                  )}
                 >
-                  <Camera size={36} className="text-slate-300" />
+                  <Camera size={36} className={isDragging ? 'text-teal-400' : 'text-slate-300'} />
                   <div className="text-center">
-                    <p className="text-sm font-medium text-slate-600">사진 업로드</p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      EMR 환자 정보 화면 사진을 업로드하세요
+                    <p className="text-sm font-semibold text-slate-600">
+                      {isDragging ? '여기에 놓으세요' : '클릭하여 파일 선택'}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-400">JPG, PNG, WEBP 지원</p>
+                    <p className="mt-2 text-xs text-slate-400">또는</p>
                   </div>
+                  <div className="flex items-center gap-4 text-[11px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Upload size={11} />
+                      드래그 앤 드랍
+                    </span>
+                    <span className="text-slate-300">|</span>
+                    <span className="flex items-center gap-1">
+                      <ClipboardPaste size={11} />
+                      Ctrl+V 붙여넣기
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">JPG · PNG · WEBP</p>
                 </div>
                 <input
                   ref={fileInputRef}

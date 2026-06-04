@@ -11,6 +11,7 @@ import EchoChartBody from '@/components/hospital/echocardio/echo-chart/echo-char
 import EchoChartEntry from '@/components/hospital/echocardio/echo-chart/echo-chart-entry'
 import { notFound } from 'next/navigation'
 import type { Species } from '@/types/echocardio/echocardio-type'
+import { getEchoScanImages } from '@/lib/actions/echocardio/echo-scan-actions'
 
 export default async function EchoChartPage(props: {
   params: Promise<{ hos_id: string; target_date: string; echo_id: string }>
@@ -45,11 +46,12 @@ export default async function EchoChartPage(props: {
     )
   }
 
-  const [history, guideImages] = await Promise.all([
+  const [history, guideImages, scanImages] = await Promise.all([
     fetchPatientEchoHistory(chartDetail.patient_id, echo_id),
     chartDetail.template_id
       ? fetchTemplateGuideImages(chartDetail.template_id)
       : fetchActiveTemplateGuideImages(hos_id, species),
+    getEchoScanImages(echo_id),
   ])
 
   return (
@@ -64,6 +66,7 @@ export default async function EchoChartPage(props: {
         history={history}
         guideImages={guideImages}
         hosId={hos_id}
+        initialScanImages={scanImages}
       />
     </div>
   )

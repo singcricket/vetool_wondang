@@ -26,12 +26,15 @@ import { LayoutGridIcon, ListIcon, ImageIcon } from 'lucide-react'
 import EchoInputSectionMode from './echo-chart-input-mode/echo-input-section-mode'
 import EchoInputFlatMode from './echo-chart-input-mode/echo-input-flat-mode'
 import EchoInputGuideMode from './echo-chart-input-mode/echo-input-guide-mode'
+import EchoInputScanMode from './echo-chart-input-mode/echo-input-scan-mode'
+import type { EchoScanImage } from '@/lib/actions/echocardio/echo-scan-actions'
 
 interface EchoChartBodyProps {
   chartDetail: EchoChartDetail
   history: EchoChartDetail[]
   guideImages: EchoTemplateGuideImage[]
   hosId: string
+  initialScanImages?: EchoScanImage[]
 }
 
 type Tab = 'input' | 'report' | 'compare'
@@ -47,6 +50,7 @@ export default function EchoChartBody({
   history,
   guideImages,
   hosId,
+  initialScanImages = [],
 }: EchoChartBodyProps) {
   const { echoContextData, resultMap, setResultMap, updateResult } = useEchoContext()
   const { templatesSpecies, testUIMeta } = echoContextData as any
@@ -68,7 +72,7 @@ export default function EchoChartBody({
   const settings = savedTemplate || templatesSpecies?.[species] || (echoContextData as any).template
 
   const [activeTab, setActiveTab] = useState<Tab>('input')
-  const [inputMode, setInputMode] = useState<'section' | 'flat' | 'guide'>(
+  const [inputMode, setInputMode] = useState<'section' | 'flat' | 'guide' | 'scan'>(
     guideImages.length > 0 ? 'guide' : 'section',
   )
   const [isSaving, startSaving] = useTransition()
@@ -261,6 +265,7 @@ export default function EchoChartBody({
     { key: 'section' as const, label: '섹션', icon: <LayoutGridIcon className="h-3.5 w-3.5" /> },
     { key: 'flat' as const, label: '목록', icon: <ListIcon className="h-3.5 w-3.5" /> },
     { key: 'guide' as const, label: '가이드', icon: <ImageIcon className="h-3.5 w-3.5" /> },
+    { key: 'scan' as const, label: '스캔 입력', icon: <ImageIcon className="h-3.5 w-3.5" /> },
   ]
 
   const sharedInputProps = { resultMap, computedResults, mmodeRefs, onItemChange: handleItemChange }
@@ -371,6 +376,19 @@ export default function EchoChartBody({
                   computedResults={computedResults}
                   mmodeRefs={mmodeRefs}
                   onChange={handleItemChange}
+                />
+              )}
+
+              {/* ── 모드 4: 스캔 이미지 입력 ── */}
+              {inputMode === 'scan' && (
+                <EchoInputScanMode
+                  echoId={chartDetail.id}
+                  hosId={hosId}
+                  species={species}
+                  initialImages={initialScanImages}
+                  resultMap={resultMap}
+                  onApplyField={handleItemChange}
+                  onFindingGenerated={() => startTransition(() => refresh())}
                 />
               )}
             </div>

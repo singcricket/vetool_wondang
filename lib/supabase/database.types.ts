@@ -1120,6 +1120,66 @@ export type Database = {
           },
         ]
       }
+      echo_scan_images: {
+        Row: {
+          ai_model: string | null
+          created_at: string
+          echo_id: string
+          file_name: string
+          file_path: string
+          hos_id: string
+          id: string
+          matched_fields: Json
+          mode_label: string | null
+          ocr_raw_text: string | null
+          public_url: string
+          updated_at: string
+        }
+        Insert: {
+          ai_model?: string | null
+          created_at?: string
+          echo_id: string
+          file_name: string
+          file_path: string
+          hos_id: string
+          id?: string
+          matched_fields?: Json
+          mode_label?: string | null
+          ocr_raw_text?: string | null
+          public_url: string
+          updated_at?: string
+        }
+        Update: {
+          ai_model?: string | null
+          created_at?: string
+          echo_id?: string
+          file_name?: string
+          file_path?: string
+          hos_id?: string
+          id?: string
+          matched_fields?: Json
+          mode_label?: string | null
+          ocr_raw_text?: string | null
+          public_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "echo_scan_images_echo_id_fkey"
+            columns: ["echo_id"]
+            isOneToOne: false
+            referencedRelation: "echo_charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "echo_scan_images_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
       echo_template_guide_images: {
         Row: {
           created_at: string

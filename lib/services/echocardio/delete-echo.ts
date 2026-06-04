@@ -1,12 +1,33 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // =============================================
 // 차트 삭제 (결과값은 CASCADE로 자동 삭제)
+// echo_scan_images Storage 파일도 함께 삭제
 // =============================================
 export async function deleteEchoChart(echoId: string): Promise<void> {
   const supabase = await createClient()
+  const adminClient = createAdminClient()
+
+  // 1. 스캔 이미지 Storage 파일 삭제 (DB 레코드는 CASCADE로 자동 삭제됨)
+  const { data: scanImages } = await supabase
+    .from('echo_scan_images')
+    .select('file_path')
+    .eq('echo_id', echoId)
+
+  if (scanImages && scanImages.length > 0) {
+    const filePaths = scanImages.map((img) => img.file_path)
+    const { error: storageError } = await adminClient.storage
+      .from('echo-scan-images')
+      .remove(filePaths)
+    if (storageError) {
+      console.error('[deleteEchoChart] Storage 삭제 실패:', storageError.message)
+    }
+  }
+
+  // 2. 차트 삭제 (echo_results, echo_scan_images DB 레코드는 CASCADE)
   const { error } = await supabase
     .from('echo_charts')
     .delete()

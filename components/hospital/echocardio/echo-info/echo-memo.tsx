@@ -49,7 +49,7 @@ export default function EchoMemo({ echoId, memo }: Props) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onBlur={handleBlur}
-            className="min-h-[150px] w-full resize-none border-none p-1 text-sm shadow-none focus-visible:ring-0 leading-relaxed"
+            className="min-h-[280px] w-full resize-y border-none p-1 text-sm shadow-none focus-visible:ring-0 leading-relaxed"
           />
         </div>
       )}
