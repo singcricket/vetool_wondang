@@ -4,7 +4,7 @@ import PatientOcrSheet from '@/components/common/patients/upload/patient-ocr-she
 
 export default function RegisterPatientButton({ hosId }: { hosId: string }) {
   return (
-    <div className="hidden items-center gap-1 2xl:mr-0 2xl:flex">
+    <div className="flex items-center gap-1">
       <PatientOcrSheet hosId={hosId} />
 
       <PatientRegisterDialog hosId={hosId} />
