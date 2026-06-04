@@ -97,12 +97,23 @@ export default function UploadReviewSheet({
   const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const
   type AllowedMime = (typeof ALLOWED_MIME)[number]
 
-  const fileToBase64 = (file: File): Promise<string> =>
+  const compressImage = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve((reader.result as string).split(',')[1])
-      reader.onerror = reject
-      reader.readAsDataURL(file)
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const MAX = 1600
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * ratio)
+        canvas.height = Math.round(img.height * ratio)
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1])
+      }
+      img.onerror = reject
+      img.src = url
     })
 
   const handlePhotoFiles = async (files: File[]) => {
@@ -123,8 +134,8 @@ export default function UploadReviewSheet({
             ? `납품전표 OCR 중... (${i + 1}/${validFiles.length}장)`
             : '납품전표 OCR 중...',
         )
-        const base64 = await fileToBase64(file)
-        const extracted = await extractFromInvoicePhoto(base64, file.type as AllowedMime)
+        const base64 = await compressImage(file)
+        const extracted = await extractFromInvoicePhoto(base64, 'image/jpeg')
         allExtracted.push(...extracted)
       }
 

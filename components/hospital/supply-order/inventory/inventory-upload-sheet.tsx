@@ -262,6 +262,25 @@ export default function InventoryUploadSheet({ hosId, itemProducts, inventoryIte
     return vendorProducts.length > 0 ? vendorProducts : itemProducts
   }, [itemProducts, selectedVendorId])
 
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const MAX = 1600
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * ratio)
+        canvas.height = Math.round(img.height * ratio)
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1])
+      }
+      img.onerror = reject
+      img.src = url
+    })
+
   // 이미지 업로드 처리
   const handleImages = async (files: FileList) => {
     if (!files.length) return
@@ -272,10 +291,8 @@ export default function InventoryUploadSheet({ hosId, itemProducts, inventoryIte
       const allExtracted: Awaited<ReturnType<typeof extractFromInvoicePhoto>> = []
 
       for (const file of Array.from(files)) {
-        const buffer = await file.arrayBuffer()
-        const base64 = Buffer.from(buffer).toString('base64')
-        const mimeType = file.type as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
-        const extracted = await extractFromInvoicePhoto(base64, mimeType)
+        const base64 = await compressImage(file)
+        const extracted = await extractFromInvoicePhoto(base64, 'image/jpeg')
         allExtracted.push(...extracted)
       }
 
