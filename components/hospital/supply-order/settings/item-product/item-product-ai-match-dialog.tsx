@@ -80,14 +80,17 @@ export default function ItemProductAiMatchDialog({ hosId, itemMasters, open, onO
   )
 
   const filteredProducts = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return products
-    return products.filter(
-      (p) =>
-        p.brand_name.toLowerCase().includes(q) ||
-        (p.manufacturer ?? '').toLowerCase().includes(q) ||
-        (p.ingredient ?? '').toLowerCase().includes(q) ||
-        (p.specification ?? '').toLowerCase().includes(q)
+    const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    if (!tokens.length) return products
+    return products.filter((p) =>
+      tokens.every((token) =>
+        p.brand_name.toLowerCase().includes(token) ||
+        (p.manufacturer ?? '').toLowerCase().includes(token) ||
+        (p.ingredient ?? '').toLowerCase().includes(token) ||
+        (p.specification ?? '').toLowerCase().includes(token) ||
+        p.category.some((c) => c.toLowerCase().includes(token)) ||
+        p.tag.some((t) => t.toLowerCase().includes(token))
+      )
     )
   }, [products, search])
 
@@ -231,7 +234,7 @@ export default function ItemProductAiMatchDialog({ hosId, itemMasters, open, onO
                     <Input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="제품명, 제조사, 성분, 규격 검색"
+                      placeholder="제품명, 제조사, 성분, 규격, 카테고리, 태그 검색 (스페이스로 복수 키워드)"
                       className="pl-7 text-xs"
                     />
                   </div>

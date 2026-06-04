@@ -11,6 +11,8 @@ export type ProductForMatch = {
   manufacturer: string | null
   ingredient: string | null
   specification: string | null
+  category: string[]
+  tag: string[]
 }
 
 export type MatchResult = {
@@ -24,7 +26,7 @@ export async function getUnlinkedProducts(hosId: string): Promise<ProductForMatc
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('item_products')
-    .select('id, brand_name, manufacturer, ingredient, specification')
+    .select('id, brand_name, manufacturer, ingredient, specification, category, tag')
     .eq('hos_id', hosId)
     .eq('is_active', true)
     .is('item_master_id', null)
