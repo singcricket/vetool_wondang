@@ -164,6 +164,21 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
 
   const [isPending, startTransition] = useTransition()
 
+  // Floating search
+  const searchRef = useRef<HTMLDivElement>(null)
+  const [searchVisible, setSearchVisible] = useState(true)
+  useEffect(() => {
+    const el = searchRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(([entry]) => setSearchVisible(entry.isIntersecting), { threshold: 0 })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  // Pagination
+  const PAGE_SIZE = 100
+  const [page, setPage] = useState(1)
+
   // item_master_id → 연결된 제품 목록
   const productsByMaster = useMemo(() => {
     const map = new Map<string, ItemProduct[]>()
@@ -237,6 +252,15 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
       return true
     })
   }, [items, query, selectedCategories, selectedLocs, selectedVendors, stockFilter, expiryFilter, productsByMaster])
+
+  // 필터 바뀌면 1페이지로
+  useEffect(() => setPage(1), [query, selectedCategories, selectedLocs, selectedVendors, stockFilter, expiryFilter])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const pagedItems = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  )
 
   const toggleCheck = (id: string) => {
     setCheckedIds((prev) => {
@@ -433,7 +457,7 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
       </div>
 
       {/* 검색 */}
-      <div className="relative">
+      <div ref={searchRef} className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={query}
@@ -522,6 +546,7 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
       {/* 결과 수 */}
       <p className="text-[11px] text-slate-400">
         {filtered.length}개 품목
+        {totalPages > 1 && <span className="ml-1">· {page}/{totalPages} 페이지</span>}
         {(selectedCategories.length > 0 || selectedLocs.length > 0 || selectedVendors.length > 0 || query) && (
           <button
             type="button"
@@ -553,7 +578,7 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
                 </td>
               </tr>
             ) : (
-              filtered.map((item, idx) => {
+              pagedItems.map((item, idx) => {
                 const isChecked = checkedIds.has(item.item_master_id)
                 // 이 item_master에 연결된 제품 목록
                 const linkedProducts = itemProducts.filter(
@@ -754,7 +779,59 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
           </tbody>
         </table>
       </div>
+
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="h-8 text-xs"
+          >
+            이전
+          </Button>
+          <span className="text-xs text-slate-500">{page} / {totalPages}</span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="h-8 text-xs"
+          >
+            다음
+          </Button>
+        </div>
+      )}
     </div>
+
+    {/* Floating 검색 */}
+    {!searchVisible && (
+      <div className="fixed left-0 right-0 top-0 z-30 flex justify-center px-4 pt-2 pointer-events-none">
+        <div className="pointer-events-auto w-full max-w-sm">
+          <div className="relative rounded-full border border-slate-300 bg-white shadow-lg">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="품목명 검색"
+              className="h-9 w-full rounded-full bg-transparent pl-9 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Floating bar */}
     {checkedIds.size > 0 && (
