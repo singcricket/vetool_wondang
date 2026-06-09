@@ -1,6 +1,97 @@
 import type { LabRefItem } from './lab-types'
 
 export const labRefSpecial: LabRefItem[] = [
+  // ── 심장·염증·신장 바이오마커 ─────────────────────────────
+  {
+    id: 'crp',
+    nameKo: 'C반응성단백',
+    nameEn: 'CRP',
+    unit: 'mg/L',
+    section: ['special'],
+    testType: 'range',
+    foldProfile: 'enzyme',
+    descriptionKo: '체내 염증이 생기면 간에서 빠르게 만들어지는 단백질입니다. 감염·수술·자가면역 질환 여부를 조기에 감지하는 염증 지표입니다. 개에서 특히 민감하며, 고양이는 반응이 낮아 해석에 주의가 필요합니다.',
+    defaultRefRange: { dog: '<10', cat: '검사 의의 제한적' },
+    ranges: {
+      common: [
+        { min: null, max: 10.0,  resultText: 'Normal',             resultTextKo: '정상',        isAbnormal: false                       },
+        { min: 10.0, max: 40.0,  resultText: 'Mild elevation',     resultTextKo: '경도 상승',   isAbnormal: true,  severity: 'mild'     },
+        { min: 40.0, max: 100.0, resultText: 'Moderate elevation', resultTextKo: '중등도 상승', isAbnormal: true,  severity: 'moderate' },
+        { min: 100.0, max: null, resultText: 'Severe elevation',   resultTextKo: '심한 상승',   isAbnormal: true,  severity: 'high'     },
+      ],
+    },
+    comment: {
+      increase: '급성 염증, 감염, 수술 후, 면역매개성 질환, 종양. 개: 예민한 급성기 단백',
+      decrease: '임상적 의의 낮음',
+      normal: '고양이는 CRP 반응성이 낮아 검사 의의가 제한적',
+    },
+    aiExtractKeywords: ['CRP', 'C-Reactive Protein', 'C반응성단백'],
+  },
+  {
+    id: 'sdma',
+    nameKo: '대칭 디메틸아르기닌',
+    nameEn: 'SDMA',
+    unit: 'μg/dL',
+    section: ['special', 'kidney'],
+    testType: 'range',
+    foldProfile: 'renal',
+    descriptionKo: '신장이 혈액을 걸러내는 능력(사구체 여과율)을 조기에 감지하는 마커입니다. 일반 신장 수치(BUN·크레아티닌)보다 훨씬 일찍 — 신장 기능이 약 40% 감소한 시점부터 — 이상을 포착합니다.',
+    defaultRefRange: { common: '<14' },
+    ranges: {
+      common: [
+        { min: null, max: 14.0, resultText: 'Normal',                    resultTextKo: '정상',             isAbnormal: false                       },
+        { min: 14.0, max: 18.0, resultText: 'Mildly elevated SDMA',      resultTextKo: '경도 SDMA 상승',   isAbnormal: true,  severity: 'mild'     },
+        { min: 18.0, max: 25.0, resultText: 'Moderately elevated SDMA',  resultTextKo: '중등도 SDMA 상승', isAbnormal: true,  severity: 'moderate' },
+        { min: 25.0, max: null, resultText: 'Severely elevated SDMA',    resultTextKo: '심한 SDMA 상승',   isAbnormal: true,  severity: 'high'     },
+      ],
+    },
+    comment: {
+      increase: 'GFR 40% 감소 시점부터 상승 (크레아티닌보다 조기 감지). CKD 조기 발견에 유용',
+      decrease: '임상적 의의 낮음',
+      normal: 'IDEXX SDMA 검사. IRIS 병기 기준 포함',
+    },
+    aiExtractKeywords: ['SDMA', 'Symmetric Dimethylarginine'],
+  },
+  {
+    id: 'nt_probnp',
+    nameKo: 'NT-proBNP (심장표지자)',
+    nameEn: 'NT-proBNP',
+    unit: 'pmol/L',
+    section: ['special'],
+    testType: 'range',
+    foldProfile: 'enzyme',
+    descriptionKo: '심장 근육이 과부하를 받을 때 분비되는 호르몬 조각입니다. 심장 비대·판막 질환·심부전 등 심장에 이상이 생기면 수치가 올라가며, 증상이 나타나기 전 단계의 심장 문제를 조기 발견하는 데 사용합니다.',
+    defaultRefRange: { dog: '<900', cat: '<100' },
+    ranges: {
+      dog: [
+        { min: null,    max: 900.0,  resultText: 'Normal — cardiac disease unlikely',              resultTextKo: '정상 — 심장질환 가능성 낮음',        isAbnormal: false                    },
+        { min: 900.0,  max: 1800.0, resultText: 'Mildly elevated — cardiac monitoring needed',    resultTextKo: '경도 상승 — 심장 모니터링 권장',     isAbnormal: true,  severity: 'mild' },
+        { min: 1800.0, max: null,   resultText: 'Markedly elevated — significant cardiac disease', resultTextKo: '현저한 상승 — 심장질환 가능성 높음', isAbnormal: true,  severity: 'high' },
+      ],
+      cat: [
+        { min: null,   max: 100.0,  resultText: 'Normal — cardiac disease unlikely',          resultTextKo: '정상 — 심장질환 가능성 낮음',       isAbnormal: false                        },
+        { min: 100.0,  max: 270.0,  resultText: 'Equivocal — cardiac disease possible',       resultTextKo: '경계 — 심장질환 가능성',            isAbnormal: true,  severity: 'mild'     },
+        { min: 270.0,  max: 536.0,  resultText: 'Elevated — heart disease likely',            resultTextKo: '상승 — 심장질환 가능성 높음',       isAbnormal: true,  severity: 'moderate' },
+        { min: 536.0,  max: null,   resultText: 'Markedly elevated — CHF likely',             resultTextKo: '현저한 상승 — 울혈성심부전 가능성', isAbnormal: true,  severity: 'high'     },
+      ],
+    },
+    comment: {
+      increase: '심근 스트레스 증가: 심비대·울혈성심부전(CHF)·심근병증·심낭삼출. 개 >1800 pmol/L: 심장초음파 강력 권장. 고양이 >270 pmol/L: 심장질환 시사. 호흡곤란 감별(심인성 vs 폐인성)에 활용',
+      decrease: '임상적 의의 낮음',
+      normal: '심장 기능 선별 바이오마커 (IDEXX Cardiopet® 기준). 기기·랩별 기준치 상이 — 보고서 참고범위 우선 적용',
+    },
+    aiExtractKeywords: [
+      'NT-proBNP', 'NT proBNP', 'NTproBNP',
+      'N-terminal proBNP', 'N-terminal pro-BNP',
+      'proBNP', 'pro-BNP', 'ProBNP',
+      'cProBNP', 'c-ProBNP', 'canine proBNP',
+      'fProBNP', 'f-ProBNP', 'feline proBNP',
+      'Cardiopet proBNP', 'Cardiopet NT-proBNP',
+      'BNP', 'B-type Natriuretic Peptide',
+    ],
+  },
+
+  // ── 간·소화기·췌장 특수검사 ──────────────────────────────
   {
     id: 'bile_acid',
     nameKo: '담즙산',
@@ -9,6 +100,7 @@ export const labRefSpecial: LabRefItem[] = [
     section: ['special', 'liver'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '간이 음식을 소화하고 처리하는 능력을 직접 측정하는 검사입니다. 공복과 식사 후 두 번 채혈해서 간의 순환 기능을 평가합니다. 간질환이나 혈관 단락(PSS) 진단에 중요한 지표입니다.',
     defaultRefRange: { dog: '공복 <10 | 식후 <25', cat: '공복 <5 | 식후 <10' },
     ranges: {
       dog: [
@@ -39,6 +131,7 @@ export const labRefSpecial: LabRefItem[] = [
     section: ['special', 'pancreas'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '췌장에서만 만들어지는 리파아제(지방 소화 효소)를 특이적으로 측정합니다. 일반 리파아제 검사보다 췌장염 진단 정확도가 훨씬 높으며, 개의 췌장염 진단을 위한 핵심 검사입니다.',
     defaultRefRange: { dog: '<200 (60–200: 경계)' },
     ranges: {
       dog: [
@@ -62,6 +155,7 @@ export const labRefSpecial: LabRefItem[] = [
     section: ['special', 'pancreas'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '고양이 췌장에서만 만들어지는 리파아제를 특이적으로 측정합니다. 고양이 췌장염은 구토·설사 같은 전형적인 증상이 없는 경우가 많아 이 검사가 진단에 특히 중요합니다.',
     defaultRefRange: { cat: '<3.5 (3.5–5.3: 경계)' },
     ranges: {
       cat: [
@@ -85,6 +179,7 @@ export const labRefSpecial: LabRefItem[] = [
     section: ['special'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '소장에서 흡수되는 비타민 B12로, 소화기 흡수 능력을 간접적으로 평가합니다. 수치가 낮으면 소장 질환(IBD, 외분비췌장기능부전 등)이나 신장 문제로 흡수가 안 되고 있음을 시사합니다.',
     defaultRefRange: { dog: '200–900', cat: '200–1500' },
     ranges: {
       dog: [
@@ -114,6 +209,7 @@ export const labRefSpecial: LabRefItem[] = [
     section: ['special'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '소장의 흡수 기능과 장내 세균 균형을 평가하는 검사입니다. 코발라민(B12)과 함께 측정하면 소화기 이상 위치를 파악하는 데 유용합니다. 낮으면 소화흡수 장애, 높으면 세균 과증식을 시사합니다.',
     defaultRefRange: { dog: '7.7–24.4', cat: '9.0–28.4' },
     ranges: {
       dog: [
@@ -142,6 +238,7 @@ export const labRefSpecial: LabRefItem[] = [
     section: ['special', 'pancreas'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '췌장이 소화 효소(트립신)를 충분히 만들어내는지 평가하는 검사입니다. 수치가 매우 낮으면 외분비췌장기능부전(EPI)을 진단하는 데 사용되며, 만성 소화장애와 체중감소의 원인을 파악하는 데 중요합니다.',
     defaultRefRange: { dog: '5.7–45.2', cat: '17–49' },
     ranges: {
       dog: [

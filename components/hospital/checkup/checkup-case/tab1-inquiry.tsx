@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { upsertCheckupSection } from '@/lib/actions/checkup/checkup-actions'
-import { analyzePatientRisk } from '@/lib/actions/checkup/inquiry-risk-analysis'
+import { analyzePatientRisk, type BreedRisk, type AgeRisk, type Management } from '@/lib/actions/checkup/inquiry-risk-analysis'
 import type { CheckupSection, CheckupPatient } from '@/types/hospital/checkup-type'
 import type { ExtractedInquiry } from '@/lib/actions/checkup/pdf-extraction'
 
@@ -44,10 +44,10 @@ type InquiryData = {
   external_parasite: string
   prev_checkup: string
 
-  // 섹션 4: AI 리스크 분석
-  ai_breed_risk: string
-  ai_age_risk: string
-  ai_management: string
+  // 섹션 4: AI 리스크 분석 (구조화 JSON 저장)
+  ai_breed_risk: BreedRisk
+  ai_age_risk: AgeRisk
+  ai_management: Management
 }
 
 // ── 초기값 ────────────────────────────────────────────────────
@@ -85,9 +85,16 @@ function initData(
     external_parasite: (raw.external_parasite as string) ?? '',
     prev_checkup: (raw.prev_checkup as string) ?? '',
 
-    ai_breed_risk: (raw.ai_breed_risk as string) ?? '',
-    ai_age_risk: (raw.ai_age_risk as string) ?? '',
-    ai_management: (raw.ai_management as string) ?? '',
+    // 구버전(string) 하위 호환: 문자열이면 첫 번째 서브필드에 통합
+    ai_breed_risk: typeof raw.ai_breed_risk === 'object' && raw.ai_breed_risk !== null
+      ? raw.ai_breed_risk as BreedRisk
+      : { predispositions: String(raw.ai_breed_risk ?? ''), anatomy: '', genetic: '' },
+    ai_age_risk: typeof raw.ai_age_risk === 'object' && raw.ai_age_risk !== null
+      ? raw.ai_age_risk as AgeRisk
+      : { stage: String(raw.ai_age_risk ?? ''), watch_items: '', preventive: '' },
+    ai_management: typeof raw.ai_management === 'object' && raw.ai_management !== null
+      ? raw.ai_management as Management
+      : { diet: '', oral: '', checkup: '', environment: '', warning_signs: String(raw.ai_management ?? '') },
   }
 }
 
@@ -197,6 +204,7 @@ export default function Tab1Inquiry({ checkupId, patient, section, extractedInqu
         ai_age_risk: result.age_risk,
         ai_management: result.management,
       }))
+
       toast.success('AI 분석 완료. 내용을 확인 후 저장하세요.')
     } catch {
       toast.error('AI 분석에 실패했습니다.')
@@ -490,42 +498,128 @@ export default function Tab1Inquiry({ checkupId, patient, section, extractedInqu
           </Button>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div>
-            <FieldLabel sub="(품종별 호발 질환, 해부학적 특이점, 유전성 질환 등)">
-              품종별 특이점
-            </FieldLabel>
-            <Textarea
-              value={form.ai_breed_risk}
-              onChange={(e) => set('ai_breed_risk', e.target.value)}
-              placeholder="AI 분석 버튼을 눌러 자동으로 채우거나 직접 입력하세요."
-              className="min-h-[80px] resize-none text-xs"
-            />
+        <div className="flex flex-col gap-5">
+
+          {/* 품종별 특이점 */}
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-teal-600">품종별 특이점</p>
+            <div className="flex flex-col gap-2">
+              <div>
+                <FieldLabel>호발 질환</FieldLabel>
+                <Textarea
+                  value={form.ai_breed_risk.predispositions}
+                  onChange={(e) => set('ai_breed_risk', { ...form.ai_breed_risk, predispositions: e.target.value })}
+                  placeholder="해당 품종에서 자주 발생하는 질환"
+                  className="min-h-[60px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>해부학적·신체적 특이점</FieldLabel>
+                <Textarea
+                  value={form.ai_breed_risk.anatomy}
+                  onChange={(e) => set('ai_breed_risk', { ...form.ai_breed_risk, anatomy: e.target.value })}
+                  placeholder="체형, 피부, 관절 등 신체 특성"
+                  className="min-h-[60px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>유전적 소인</FieldLabel>
+                <Textarea
+                  value={form.ai_breed_risk.genetic}
+                  onChange={(e) => set('ai_breed_risk', { ...form.ai_breed_risk, genetic: e.target.value })}
+                  placeholder="유전성 질환 또는 유전적 위험 요소"
+                  className="min-h-[60px] resize-none text-xs"
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <FieldLabel sub="(현재 연령에서 흔한 문제, 노령/성장기 특이사항 등)">
-              연령별 건강 리스크
-            </FieldLabel>
-            <Textarea
-              value={form.ai_age_risk}
-              onChange={(e) => set('ai_age_risk', e.target.value)}
-              placeholder="AI 분석 버튼을 눌러 자동으로 채우거나 직접 입력하세요."
-              className="min-h-[80px] resize-none text-xs"
-            />
+          {/* 연령별 건강 리스크 */}
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-teal-600">연령별 건강 리스크</p>
+            <div className="flex flex-col gap-2">
+              <div>
+                <FieldLabel>현재 생애 단계</FieldLabel>
+                <Textarea
+                  value={form.ai_age_risk.stage}
+                  onChange={(e) => set('ai_age_risk', { ...form.ai_age_risk, stage: e.target.value })}
+                  placeholder="이 나이대의 특징 및 건강 변화"
+                  className="min-h-[60px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>주요 모니터링 항목</FieldLabel>
+                <Textarea
+                  value={form.ai_age_risk.watch_items}
+                  onChange={(e) => set('ai_age_risk', { ...form.ai_age_risk, watch_items: e.target.value })}
+                  placeholder="이 나이에 특히 확인해야 할 건강 항목"
+                  className="min-h-[60px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>예방 포인트</FieldLabel>
+                <Textarea
+                  value={form.ai_age_risk.preventive}
+                  onChange={(e) => set('ai_age_risk', { ...form.ai_age_risk, preventive: e.target.value })}
+                  placeholder="권장 예방 검사 및 관리"
+                  className="min-h-[56px] resize-none text-xs"
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <FieldLabel sub="(식이관리 · 구강관리 · 정기검진 · 환경관리 · 주요 이상 증상 관찰)">
-              권장 관리 포인트
-            </FieldLabel>
-            <Textarea
-              value={form.ai_management}
-              onChange={(e) => set('ai_management', e.target.value)}
-              placeholder="AI 분석 버튼을 눌러 자동으로 채우거나 직접 입력하세요."
-              className="min-h-[80px] resize-none text-xs"
-            />
+          {/* 권장 관리 포인트 */}
+          <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-teal-600">권장 관리 포인트</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div>
+                <FieldLabel>식이 관리</FieldLabel>
+                <Textarea
+                  value={form.ai_management.diet}
+                  onChange={(e) => set('ai_management', { ...form.ai_management, diet: e.target.value })}
+                  placeholder="나이·품종 맞춤 식이 권장사항"
+                  className="min-h-[72px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>구강 관리</FieldLabel>
+                <Textarea
+                  value={form.ai_management.oral}
+                  onChange={(e) => set('ai_management', { ...form.ai_management, oral: e.target.value })}
+                  placeholder="양치질, 스켈링 주기 등"
+                  className="min-h-[72px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>정기검진</FieldLabel>
+                <Textarea
+                  value={form.ai_management.checkup}
+                  onChange={(e) => set('ai_management', { ...form.ai_management, checkup: e.target.value })}
+                  placeholder="권장 검진 주기 및 중점 항목"
+                  className="min-h-[72px] resize-none text-xs"
+                />
+              </div>
+              <div>
+                <FieldLabel>환경·생활 관리</FieldLabel>
+                <Textarea
+                  value={form.ai_management.environment}
+                  onChange={(e) => set('ai_management', { ...form.ai_management, environment: e.target.value })}
+                  placeholder="운동, 환경 정비 등"
+                  className="min-h-[72px] resize-none text-xs"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel>즉시 내원이 필요한 이상 증상</FieldLabel>
+                <Textarea
+                  value={form.ai_management.warning_signs}
+                  onChange={(e) => set('ai_management', { ...form.ai_management, warning_signs: e.target.value })}
+                  placeholder="보호자가 반드시 인지해야 할 위험 증상"
+                  className="min-h-[60px] resize-none text-xs"
+                />
+              </div>
+            </div>
           </div>
+
         </div>
       </section>
 

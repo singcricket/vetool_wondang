@@ -10,6 +10,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'liver'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '간세포가 손상될 때 혈액으로 새어 나오는 효소입니다. 간 건강을 평가하는 가장 민감한 지표로, 수치가 높으면 간에 염증이나 손상이 생겼을 가능성을 확인합니다.',
     defaultRefRange: { dog: '10–88', cat: '10–100' },
     ranges: {
       dog: [
@@ -42,6 +43,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'liver'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '간과 근육 세포가 손상될 때 혈액으로 나오는 효소입니다. ALT와 함께 간 건강을 평가하며, 수치가 높으면 간 또는 근육에 이상이 있는지 확인합니다.',
     defaultRefRange: { dog: '0–50', cat: '0–48' },
     ranges: {
       dog: [
@@ -71,6 +73,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'liver'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '간과 담도, 뼈에서 만들어지는 효소입니다. 담즙 흐름 이상이나 간 문제를 평가합니다. 개에서는 스테로이드나 쿠싱증후군으로도 상승할 수 있어 다른 검사와 종합해서 판단합니다.',
     defaultRefRange: { dog: '10–150', cat: '14–111' },
     ranges: {
       dog: [
@@ -186,6 +189,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'kidney'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '신장이 단백질 노폐물을 얼마나 잘 걸러내는지 보여주는 지표입니다. 수치가 높으면 신장 기능이 떨어졌거나 탈수가 있을 수 있습니다. 크레아티닌(CREA)과 함께 신장 건강을 평가합니다.',
     defaultRefRange: { dog: '7–27', cat: '14–36' },
     ranges: {
       dog: [
@@ -217,6 +221,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'kidney'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '근육에서 생성된 노폐물로, 신장을 통해 소변으로 배출됩니다. 신장 기능이 떨어질수록 혈중 수치가 높아집니다. BUN과 함께 신장의 실제 여과 능력을 평가하는 핵심 지표입니다.',
     defaultRefRange: { dog: '0.5–1.8', cat: '0.8–2.4' },
     ranges: {
       dog: [
@@ -241,31 +246,6 @@ export const labRefChemistry: LabRefItem[] = [
     },
     aiExtractKeywords: ['CREA', 'Creatinine', 'CRE', '크레아티닌'],
   },
-  {
-    id: 'sdma',
-    nameKo: '대칭 디메틸아르기닌',
-    nameEn: 'SDMA',
-    unit: 'μg/dL',
-    section: ['chemistry', 'kidney'],
-    testType: 'range',
-    foldProfile: 'renal',
-    defaultRefRange: { common: '<14' },
-    ranges: {
-      common: [
-        { min: null, max: 14.0, resultText: 'Normal',               resultTextKo: '정상',              isAbnormal: false                       },
-        { min: 14.0, max: 18.0, resultText: 'Mildly elevated SDMA', resultTextKo: '경도 SDMA 상승',    isAbnormal: true,  severity: 'mild'     },
-        { min: 18.0, max: 25.0, resultText: 'Moderately elevated SDMA', resultTextKo: '중등도 SDMA 상승', isAbnormal: true, severity: 'moderate' },
-        { min: 25.0, max: null, resultText: 'Severely elevated SDMA', resultTextKo: '심한 SDMA 상승',  isAbnormal: true,  severity: 'high'     },
-      ],
-    },
-    comment: {
-      increase: 'GFR 40% 감소 시점부터 상승 (크레아티닌보다 조기 감지). CKD 조기 발견에 유용',
-      decrease: '임상적 의의 낮음',
-      normal: 'IDEXX SDMA 검사. IRIS 병기 기준 포함',
-    },
-    aiExtractKeywords: ['SDMA', 'Symmetric Dimethylarginine'],
-  },
-
   // ── 췌장 ──────────────────────────────────────────────────
   {
     id: 'amy',
@@ -275,6 +255,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'pancreas'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '췌장과 침샘에서 분비되어 음식물 소화를 돕는 효소입니다. 췌장에 염증이 생기거나 기능에 이상이 있을 때 혈중 수치가 올라갈 수 있습니다.',
     defaultRefRange: { dog: '200–1200', cat: '100–1200' },
     ranges: {
       dog: [
@@ -304,6 +285,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'pancreas'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '췌장에서 분비되어 지방 소화를 돕는 효소입니다. 췌장염 진단에 아밀라아제보다 특이도가 높아, 췌장 건강을 평가하는 데 중요하게 활용됩니다.',
     defaultRefRange: { dog: '0–200', cat: '0–100' },
     ranges: {
       dog: [
@@ -366,6 +348,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'protein'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '간에서 만들어지는 주요 혈중 단백질입니다. 영양 상태와 간 합성 능력을 반영하며, 수치가 낮으면 부종이나 복수가 생길 수 있습니다. 영양 상태·간·신장·장 건강을 종합적으로 평가합니다.',
     defaultRefRange: { dog: '2.3–3.1', cat: '2.2–3.5' },
     ranges: {
       dog: [
@@ -427,6 +410,7 @@ export const labRefChemistry: LabRefItem[] = [
     id: 'glu',
     nameKo: '혈당',
     nameEn: 'GLU',
+    descriptionKo: '혈액 속 포도당(혈당) 수치입니다. 당뇨병 여부를 확인하고 췌장의 인슐린 기능을 평가합니다. 스트레스나 식사 시간에 따라 일시적으로 변할 수 있어 다른 검사와 함께 해석합니다.',
     unit: 'mg/dL',
     section: ['chemistry', 'glucose'],
     testType: 'range',
@@ -500,6 +484,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'lipid'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '혈액 속 지방 성분 중 하나입니다. 너무 높으면 갑상선 기능 저하, 쿠싱증후군, 당뇨, 담즙 문제 등을 의심합니다. 너무 낮으면 영양 불량이나 간 기능 저하를 평가합니다.',
     defaultRefRange: { dog: '130–370', cat: '95–260' },
     ranges: {
       dog: [
@@ -531,6 +516,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'lipid'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '혈액 속 중성지방(트리글리세라이드) 수치입니다. 높으면 비만, 당뇨, 갑상선 기능 저하 등을 의심하며, 심한 경우 췌장염 위험인자가 될 수 있습니다. 고지방 식이 후에도 일시적으로 상승할 수 있습니다.',
     defaultRefRange: { dog: '20–150', cat: '20–130' },
     ranges: {
       dog: [
@@ -745,29 +731,4 @@ export const labRefChemistry: LabRefItem[] = [
     aiExtractKeywords: ['Mg', 'Magnesium', '마그네슘'],
   },
 
-  // ── 기타 ──────────────────────────────────────────────────
-  {
-    id: 'crp',
-    nameKo: 'C반응성단백',
-    nameEn: 'CRP',
-    unit: 'mg/L',
-    section: ['chemistry'],
-    testType: 'range',
-    foldProfile: 'enzyme',
-    defaultRefRange: { dog: '<10', cat: '검사 의의 제한적' },
-    ranges: {
-      common: [
-        { min: null, max: 10.0,  resultText: 'Normal',                 resultTextKo: '정상',              isAbnormal: false                       },
-        { min: 10.0, max: 40.0,  resultText: 'Mild elevation',         resultTextKo: '경도 상승',         isAbnormal: true,  severity: 'mild'     },
-        { min: 40.0, max: 100.0, resultText: 'Moderate elevation',     resultTextKo: '중등도 상승',       isAbnormal: true,  severity: 'moderate' },
-        { min: 100.0, max: null, resultText: 'Severe elevation',       resultTextKo: '심한 상승',         isAbnormal: true,  severity: 'high'     },
-      ],
-    },
-    comment: {
-      increase: '급성 염증, 감염, 수술 후, 면역매개성 질환, 종양. 개: 예민한 급성기 단백',
-      decrease: '임상적 의의 낮음',
-      normal: '고양이는 CRP 반응성이 낮아 검사 의의가 제한적',
-    },
-    aiExtractKeywords: ['CRP', 'C-Reactive Protein', 'C반응성단백'],
-  },
 ]

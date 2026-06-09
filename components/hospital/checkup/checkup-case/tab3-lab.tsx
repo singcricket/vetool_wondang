@@ -28,12 +28,14 @@ import {
   type LabSeverity,
 } from '@/constants/hospital/checkup/lab-ref'
 import { evaluateLabValue, getAutoComment, getDefaultRefRange } from '@/lib/utils/lab-evaluate'
+import type { ExtractedLabRaw } from '@/lib/actions/checkup/pdf-extraction'
 
 interface Props {
   checkupId: string
   patient: CheckupPatient
   labSection: CheckupSection | undefined
   extractedLabItems: LabResultItem[] | null
+  extractedUnmatchedItems: ExtractedLabRaw[] | null
 }
 
 const SEVERITY_BADGE: Record<LabSeverity, string> = {
@@ -67,14 +69,34 @@ function initLabItems(
     result_text: existingMap[ref.id]?.result_text ?? null,
     severity: existingMap[ref.id]?.severity ?? null,
     comment: existingMap[ref.id]?.comment ?? null,
+    source: existingMap[ref.id]?.source,
     section: ref.section,
   }))
 }
 
-export default function Tab3Lab({ checkupId, patient, labSection, extractedLabItems }: Props) {
+function toUnmatchedItem(raw: ExtractedLabRaw): LabResultItem {
+  const id = `unmatched_${raw.nameEn.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`
+  return {
+    id,
+    nameEn: raw.nameEn,
+    nameKo: raw.nameEn,
+    unit: raw.unit ?? '',
+    value: raw.value || null,
+    ref_range: raw.ref_range || null,
+    is_abnormal: raw.is_abnormal ?? null,
+    result_text: null,
+    severity: null,
+    comment: null,
+    section: ['special'],
+    source: 'ai',
+  }
+}
+
+export default function Tab3Lab({ checkupId, patient, labSection, extractedLabItems, extractedUnmatchedItems }: Props) {
   const savedLabItems = ((labSection?.data as any)?.items ?? []) as LabResultItem[]
+  // 저장된 항목 중 ref가 없는 항목은 미분류로 분리
   const savedLabMap: Record<string, LabResultItem> = Object.fromEntries(
-    savedLabItems.map((item) => [item.id, item]),
+    savedLabItems.filter((item) => labRefMap[item.id]).map((item) => [item.id, item]),
   )
 
   const species = patient.species ?? ''
@@ -84,6 +106,8 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
       results: initLabItems(g.items, savedLabMap, species),
     })),
   )
+  const savedUnmatched = savedLabItems.filter((item) => !labRefMap[item.id])
+  const [unmatchedItems, setUnmatchedItems] = useState<LabResultItem[]>(savedUnmatched)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -97,18 +121,53 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
         results: g.results.map((r) => {
           const extracted = extractedMap[r.id]
           if (!extracted) return r
-          const valueFromAi = r.value === null ? extracted.value : r.value
+
+          const isNew = r.value === null && extracted.value !== null
+          const valueFromAi = isNew ? extracted.value : r.value
+          const refRange = extracted.ref_range || r.ref_range
+          const stateSource = isNew ? ('ai' as const) : r.source
+
+          const ref = labRefMap[r.id]
+          const evaled = ref && valueFromAi
+            ? evaluateLabValue(valueFromAi, ref, species, stateSource, refRange)
+            : null
+
           return {
             ...r,
             value: valueFromAi,
-            ref_range: extracted.ref_range ?? r.ref_range,
-            is_abnormal: r.is_abnormal ?? extracted.is_abnormal,
-            source: r.value === null && extracted.value !== null ? ('ai' as const) : r.source,
+            ref_range: refRange,
+            source: stateSource,
+            is_abnormal: evaled ? evaled.isAbnormal : (r.is_abnormal ?? extracted.is_abnormal),
+            result_text: evaled ? evaled.resultTextKo : r.result_text,
+            severity: evaled ? evaled.severity : r.severity,
+            comment: evaled?.isAbnormal && !r.comment && ref
+              ? getAutoComment(ref, evaled.direction)
+              : r.comment,
           }
         }),
       })),
     )
   }, [extractedLabItems])
+
+  useEffect(() => {
+    if (!extractedUnmatchedItems || extractedUnmatchedItems.length === 0) return
+    setUnmatchedItems((prev) => {
+      const newItems = extractedUnmatchedItems
+        .map(toUnmatchedItem)
+        .filter((item) => !prev.some((p) => p.id === item.id))
+      return [...prev, ...newItems]
+    })
+  }, [extractedUnmatchedItems])
+
+  const updateUnmatchedItem = (
+    idx: number,
+    field: 'value' | 'ref_range' | 'is_abnormal' | 'comment',
+    val: string | boolean | null,
+  ) => {
+    setUnmatchedItems((prev) =>
+      prev.map((item, i) => (i === idx ? { ...item, [field]: val } : item)),
+    )
+  }
 
   const updateLabItem = (
     groupIdx: number,
@@ -132,7 +191,7 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
                     ref,
                     patient.species ?? '',
                     r.source,
-                    r.source === 'ai' ? r.ref_range : null,
+                    r.ref_range,
                   )
                 : null
               if (evaled) {
@@ -160,10 +219,15 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
   const handleSave = async () => {
     try {
       setSaving(true)
-      const allLabItems = labGroups.flatMap((g) =>
+      const matchedItems = labGroups.flatMap((g) =>
         g.results.filter((r) => r.value !== null && r.value !== ''),
       )
-      await upsertCheckupSection({ checkupId, sectionType: 'lab', data: { items: allLabItems } })
+      const savedUnmatchedItems = unmatchedItems.filter((r) => r.value !== null && r.value !== '')
+      await upsertCheckupSection({
+        checkupId,
+        sectionType: 'lab',
+        data: { items: [...matchedItems, ...savedUnmatchedItems] },
+      })
       toast.success('저장되었습니다.')
     } catch {
       toast.error('저장에 실패했습니다.')
@@ -306,6 +370,64 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
           </div>
         </div>
       ))}
+
+      {unmatchedItems.length > 0 && (
+        <div className="mb-2">
+          <p className="mb-1.5 rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+            기타 (미분류 검사)
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b text-left text-slate-500">
+                  <th className="w-40 pb-1 pr-3 font-medium">항목명</th>
+                  <th className="w-28 pb-1 pr-3 font-medium">측정값</th>
+                  <th className="w-16 pb-1 pr-3 font-medium">단위</th>
+                  <th className="w-32 pb-1 pr-3 font-medium">참고범위</th>
+                  <th className="pb-1 font-medium">이상여부</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unmatchedItems.map((item, idx) => (
+                  <tr key={item.id} className={item.is_abnormal ? 'bg-red-50' : ''}>
+                    <td className="py-0.5 pr-3 font-medium text-slate-700">{item.nameEn}</td>
+                    <td className="py-0.5 pr-3">
+                      <Input
+                        value={item.value ?? ''}
+                        onChange={(e) => updateUnmatchedItem(idx, 'value', e.target.value || null)}
+                        className="h-6 w-24 border-slate-200 px-1.5 text-xs"
+                        placeholder="—"
+                      />
+                    </td>
+                    <td className="py-0.5 pr-3 text-slate-400">{item.unit}</td>
+                    <td className="py-0.5 pr-3">
+                      <Input
+                        value={item.ref_range ?? ''}
+                        onChange={(e) => updateUnmatchedItem(idx, 'ref_range', e.target.value || null)}
+                        className="h-6 w-28 border-slate-200 px-1.5 text-xs"
+                        placeholder="참고범위"
+                      />
+                    </td>
+                    <td className="py-0.5">
+                      {item.is_abnormal === true ? (
+                        <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                          이상
+                        </span>
+                      ) : item.is_abnormal === false ? (
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                          정상
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-300">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">

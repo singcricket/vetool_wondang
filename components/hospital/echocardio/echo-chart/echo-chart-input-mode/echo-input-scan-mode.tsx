@@ -15,10 +15,11 @@ import {
   ZoomIn,
   Eye,
   ScanText,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import {
   uploadAndProcessEchoScanImage,
-  getEchoScanImages,
   updateScanImageMatchedFields,
   deleteEchoScanImage,
   generateEchoFinding,
@@ -26,6 +27,8 @@ import {
   type MatchedField,
 } from '@/lib/actions/echocardio/echo-scan-actions'
 import type { Species } from '@/types/echocardio/echocardio-type'
+import { ECHO_SECTION_LIST } from '@/types/echocardio/echocardio-type'
+import { useEchoContext } from '@/providers/echo-context-provider'
 
 interface Props {
   echoId: string
@@ -227,6 +230,44 @@ export default function EchoInputScanMode({
       }
     },
     [onApplyField],
+  )
+
+  const handleEditField = useCallback(
+    async (img: EchoScanImage, oldKeywordId: string, updatedField: MatchedField) => {
+      const updated = img.matched_fields.map((f) =>
+        f.keyword_id === oldKeywordId ? updatedField : f,
+      )
+      setImages((prev) =>
+        prev.map((i) => (i.id === img.id ? { ...i, matched_fields: updated } : i)),
+      )
+      try {
+        await updateScanImageMatchedFields(img.id, updated)
+      } catch {
+        setImages((prev) =>
+          prev.map((i) => (i.id === img.id ? { ...i, matched_fields: img.matched_fields } : i)),
+        )
+        toast.error('저장 실패')
+      }
+    },
+    [],
+  )
+
+  const handleDeleteField = useCallback(
+    async (img: EchoScanImage, keywordId: string) => {
+      const updated = img.matched_fields.filter((f) => f.keyword_id !== keywordId)
+      setImages((prev) =>
+        prev.map((i) => (i.id === img.id ? { ...i, matched_fields: updated } : i)),
+      )
+      try {
+        await updateScanImageMatchedFields(img.id, updated)
+      } catch {
+        setImages((prev) =>
+          prev.map((i) => (i.id === img.id ? { ...i, matched_fields: img.matched_fields } : i)),
+        )
+        toast.error('삭제 실패')
+      }
+    },
+    [],
   )
 
   const handleGenerateFinding = () => {
@@ -433,7 +474,10 @@ export default function EchoInputScanMode({
                 ) : (
                   <MatchedFieldList
                     image={selectedImage}
+                    species={species}
                     onToggle={(field) => handleToggleApply(selectedImage, field)}
+                    onEdit={(oldId, updated) => handleEditField(selectedImage, oldId, updated)}
+                    onDelete={(keywordId) => handleDeleteField(selectedImage, keywordId)}
                   />
                 )}
               </div>
@@ -481,10 +525,16 @@ export default function EchoInputScanMode({
 // OCR(수치)와 Vision(주관적 소견)을 섹션으로 나눠 표시
 function MatchedFieldList({
   image,
+  species,
   onToggle,
+  onEdit,
+  onDelete,
 }: {
   image: EchoScanImage
+  species: Species
   onToggle: (field: MatchedField) => void
+  onEdit: (oldKeywordId: string, updated: MatchedField) => void
+  onDelete: (keywordId: string) => void
 }) {
   const ocrFields = image.matched_fields.filter((f) => f.source === 'ocr')
   const visionFields = image.matched_fields.filter((f) => f.source === 'vision')
@@ -503,7 +553,10 @@ function MatchedFieldList({
               <MatchedFieldRow
                 key={field.keyword_id}
                 field={field}
+                species={species}
                 onToggle={() => onToggle(field)}
+                onEdit={(updated) => onEdit(field.keyword_id, updated)}
+                onDelete={() => onDelete(field.keyword_id)}
               />
             ))}
           </div>
@@ -522,7 +575,10 @@ function MatchedFieldList({
               <MatchedFieldRow
                 key={field.keyword_id}
                 field={field}
+                species={species}
                 onToggle={() => onToggle(field)}
+                onEdit={(updated) => onEdit(field.keyword_id, updated)}
+                onDelete={() => onDelete(field.keyword_id)}
               />
             ))}
           </div>
@@ -534,35 +590,153 @@ function MatchedFieldList({
 
 function MatchedFieldRow({
   field,
+  species,
   onToggle,
+  onEdit,
+  onDelete,
 }: {
   field: MatchedField
+  species: Species
   onToggle: () => void
+  onEdit: (updated: MatchedField) => void
+  onDelete: () => void
 }) {
-  const isVision = field.source === 'vision'
+  const { echoContextData } = useEchoContext()
+  const { testUIMeta } = echoContextData
 
-  const activeClass = isVision
-    ? 'border-violet-200 bg-violet-50'
-    : 'border-teal-200 bg-teal-50'
+  const [editing, setEditing] = useState(false)
+  const [draftKeywordId, setDraftKeywordId] = useState(field.keyword_id)
+  const [draftValue, setDraftValue] = useState(field.value)
+
+  const filteredMeta = testUIMeta.filter(
+    (m) => m.species.includes(species) && m.testType !== 'textcomment',
+  )
+  const selectedMeta = filteredMeta.find((m) => m.keywordID === draftKeywordId)
+  const isSelectType = selectedMeta?.testType === 'select'
+
+  function handleKeywordChange(id: string) {
+    setDraftKeywordId(id)
+    setDraftValue('')
+  }
+
+  function handleSave() {
+    const meta = filteredMeta.find((m) => m.keywordID === draftKeywordId)
+    onEdit({
+      ...field,
+      keyword_id: draftKeywordId,
+      keyword_name: meta?.keywordName ?? field.keyword_name,
+      unit: meta?.unit ?? '',
+      value: draftValue,
+    })
+    setEditing(false)
+  }
+
+  function handleCancel() {
+    setDraftKeywordId(field.keyword_id)
+    setDraftValue(field.value)
+    setEditing(false)
+  }
+
+  const isVision = field.source === 'vision'
+  const activeClass = isVision ? 'border-violet-200 bg-violet-50' : 'border-teal-200 bg-teal-50'
   const hoverClass = isVision
     ? 'border-slate-200 bg-white hover:border-violet-200 hover:bg-violet-50/40'
     : 'border-slate-200 bg-white hover:border-teal-200 hover:bg-teal-50/40'
   const checkColor = isVision ? 'text-violet-500' : 'text-teal-500'
   const valueColor = isVision ? 'text-violet-700' : 'text-teal-700'
 
+  if (editing) {
+    return (
+      <div className="flex flex-col gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2">
+        {/* 검사 항목 선택 */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] text-slate-500">검사 항목</span>
+          <select
+            value={draftKeywordId}
+            onChange={(e) => handleKeywordChange(e.target.value)}
+            className="rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-400"
+          >
+            {ECHO_SECTION_LIST.map((section) => {
+              const sectionFields = filteredMeta.filter((m) => m.sections.includes(section))
+              if (!sectionFields.length) return null
+              return (
+                <optgroup key={section} label={section}>
+                  {sectionFields.map((m) => (
+                    <option key={m.keywordID} value={m.keywordID}>
+                      {m.keywordName}
+                    </option>
+                  ))}
+                </optgroup>
+              )
+            })}
+          </select>
+        </div>
+
+        {/* 결과값 입력 */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] text-slate-500">
+            결과값{selectedMeta?.unit ? ` (${selectedMeta.unit})` : ''}
+          </span>
+          {isSelectType ? (
+            <select
+              value={draftValue}
+              onChange={(e) => setDraftValue(e.target.value)}
+              className="rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-400"
+            >
+              <option value="">선택...</option>
+              {selectedMeta?.options?.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={draftValue}
+              onChange={(e) => setDraftValue(e.target.value)}
+              className="rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-400"
+              placeholder="값 입력"
+            />
+          )}
+        </div>
+
+        {/* 저장 / 취소 */}
+        <div className="flex justify-end gap-1.5">
+          <button
+            onClick={handleCancel}
+            className="rounded px-2 py-0.5 text-[11px] text-slate-500 hover:bg-slate-200"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!draftValue.trim()}
+            className="rounded bg-teal-600 px-2 py-0.5 text-[11px] text-white hover:bg-teal-700 disabled:opacity-50"
+          >
+            저장
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onToggle}
+    <div
       className={cn(
-        'flex w-full items-start gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors',
+        'group flex w-full items-start gap-2.5 rounded-lg border px-3 py-2 transition-colors',
         field.applied ? activeClass : hoverClass,
       )}
     >
-      {field.applied
-        ? <CheckCircle2 size={15} className={cn('mt-0.5 shrink-0', checkColor)} />
-        : <Circle size={15} className="mt-0.5 shrink-0 text-slate-300" />}
-      <div className="flex-1 min-w-0">
+      {/* 적용 토글 */}
+      <button type="button" onClick={onToggle} className="mt-0.5 shrink-0">
+        {field.applied
+          ? <CheckCircle2 size={15} className={checkColor} />
+          : <Circle size={15} className="text-slate-300" />}
+      </button>
+
+      {/* 항목 내용 */}
+      <button type="button" onClick={onToggle} className="flex-1 min-w-0 text-left">
         <div className="flex items-baseline gap-1.5">
           <span className="text-xs font-semibold text-slate-800">{field.keyword_name}</span>
           <span className={cn('text-sm font-bold', valueColor)}>
@@ -573,17 +747,35 @@ function MatchedFieldRow({
         {field.raw_text && (
           <p className="mt-0.5 line-clamp-2 text-[10px] text-slate-400">{field.raw_text}</p>
         )}
+      </button>
+
+      {/* 신뢰도 + 편집/삭제 버튼 */}
+      <div className="flex shrink-0 items-center gap-1 self-center">
+        <span className={cn(
+          'rounded px-1.5 py-0.5 text-[10px] font-medium',
+          field.confidence >= 0.9
+            ? 'bg-emerald-100 text-emerald-700'
+            : field.confidence >= 0.7
+            ? 'bg-amber-100 text-amber-700'
+            : 'bg-slate-100 text-slate-500',
+        )}>
+          {Math.round(field.confidence * 100)}%
+        </span>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="flex h-5 w-5 items-center justify-center rounded opacity-0 text-slate-400 hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 transition-opacity"
+        >
+          <Pencil size={11} />
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="flex h-5 w-5 items-center justify-center rounded opacity-0 text-slate-400 hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 transition-opacity"
+        >
+          <Trash2 size={11} />
+        </button>
       </div>
-      <span className={cn(
-        'shrink-0 self-center rounded px-1.5 py-0.5 text-[10px] font-medium',
-        field.confidence >= 0.9
-          ? 'bg-emerald-100 text-emerald-700'
-          : field.confidence >= 0.7
-          ? 'bg-amber-100 text-amber-700'
-          : 'bg-slate-100 text-slate-500',
-      )}>
-        {Math.round(field.confidence * 100)}%
-      </span>
-    </button>
+    </div>
   )
 }

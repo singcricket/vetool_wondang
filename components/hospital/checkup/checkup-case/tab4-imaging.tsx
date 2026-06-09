@@ -47,7 +47,8 @@ type XrayData = {
 
 type UltrasoundData = {
   chart_id: string | null
-  organ_notes: Record<string, string>   // organ_name → 소견 텍스트
+  organ_notes: Record<string, string>        // organ_name → 임상 소견 (AI 분석용)
+  organ_notes_owner: Record<string, string>  // organ_name → 보호자 설명 (리포트 표시용)
 }
 
 type CtMriData = {
@@ -104,6 +105,7 @@ function initUltrasoundData(section: CheckupSection | undefined): UltrasoundData
   return {
     chart_id: raw.chart_id ?? null,
     organ_notes: (raw.organ_notes ?? {}) as Record<string, string>,
+    organ_notes_owner: (raw.organ_notes_owner ?? {}) as Record<string, string>,
   }
 }
 
@@ -126,28 +128,41 @@ function initEchoData(section: CheckupSection | undefined): EchoData {
 
 // ── 장기 소견 텍스트 생성 ────────────────────────────────────
 
-function buildOrganNotes(organsData: UltrasoundOrganData[]): Record<string, string> {
-  const result: Record<string, string> = {}
+function buildOrganNotes(organsData: UltrasoundOrganData[]): {
+  vet: Record<string, string>
+  owner: Record<string, string>
+} {
+  const vet: Record<string, string> = {}
+  const owner: Record<string, string> = {}
+
   for (const organ of organsData) {
-    const lines: string[] = []
+    const vetLines: string[] = []
+    const ownerLines: string[] = []
+    const organKey = organ.organ_name
+
     if ((organ.status === 'abnormal' || organ.status === 'absent') && organ.findings_data) {
-      const summaries = buildChartSummary(
-        organ.findings_data as Record<string, string | number>,
-        'ko',
-        organ.organ_name as Organ,
-      )
-      lines.push(...summaries)
+      const fd = organ.findings_data as Record<string, string | number>
+      vetLines.push(...buildChartSummary(fd, 'ko', organKey as Organ, 'vet'))
+      ownerLines.push(...buildChartSummary(fd, 'ko', organKey as Organ, 'owner'))
     } else if (organ.status === 'normal') {
-      lines.push('특이적인 이상 소견이 관찰되지 않음')
+      vetLines.push('특이적인 이상 소견이 관찰되지 않음')
+      ownerLines.push('특이적인 이상 소견이 관찰되지 않습니다.')
+    } else if (organ.status === 'not_examined') {
+      vetLines.push('검사 불가')
+      ownerLines.push('이번 검진에서는 검사하지 않았습니다.')
     }
+
     if (organ.organ_memo?.trim()) {
-      lines.push(`(메모) ${organ.organ_memo.trim()}`)
+      const memo = organ.organ_memo.trim()
+      vetLines.push(`(메모) ${memo}`)
+      ownerLines.push(memo)
     }
-    if (lines.length > 0) {
-      result[organ.organ_name] = lines.join('\n')
-    }
+
+    if (vetLines.length > 0) vet[organKey] = vetLines.join('\n')
+    if (ownerLines.length > 0) owner[organKey] = ownerLines.join('\n')
   }
-  return result
+
+  return { vet, owner }
 }
 
 // ── 컴포넌트 ──────────────────────────────────────────────────
@@ -206,8 +221,8 @@ export default function Tab4Imaging({
     try {
       setLoadingOrgan(true)
       const organsData = await fetchUltrasoundOrganData(chartId)
-      const notes = buildOrganNotes(organsData)
-      setUltrasound((prev) => ({ ...prev, organ_notes: notes }))
+      const { vet, owner } = buildOrganNotes(organsData)
+      setUltrasound((prev) => ({ ...prev, organ_notes: vet, organ_notes_owner: owner }))
     } catch {
       toast.error('장기 소견을 불러오지 못했습니다.')
     } finally {
@@ -283,6 +298,7 @@ export default function Tab4Imaging({
     setUltrasound((prev) => ({
       ...prev,
       organ_notes: { ...prev.organ_notes, [organName]: value },
+      organ_notes_owner: { ...prev.organ_notes_owner, [organName]: value },
     }))
   }
 

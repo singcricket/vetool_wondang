@@ -146,7 +146,7 @@ export default function EchoGuideUploadDialog({
                 <span className="text-xs">
                   {m.keywordName}
                   <span className="ml-1 text-[10px] text-muted-foreground">
-                    ({m.section})
+                    ({m.sections?.[0]})
                   </span>
                 </span>
               </label>

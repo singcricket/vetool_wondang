@@ -70,6 +70,7 @@ export interface LabRefItem {
   options?: SelectOption[]           // select / multiselect 전용
   defaultRefRange?: string | DefaultRefRange
   foldProfile?: FoldProfile          // AI 경로 fold-change 기준 프로필
+  descriptionKo?: string             // 보호자용 검사 설명 (리포트에 표시)
   comment: {
     increase: string
     decrease: string
@@ -96,4 +97,5 @@ export interface LabResultItem {
   comment: string | null       // 이상 시 코멘트 (자동 입력 후 사용자 수정 가능)
   section: LabSection[]
   source?: 'manual' | 'ai'     // 값 입력 경로
+  descriptionKo?: string        // 보호자용 검사 설명 (lab-ref에서 복사)
 }

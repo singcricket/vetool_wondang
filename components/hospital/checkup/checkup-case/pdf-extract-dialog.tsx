@@ -228,8 +228,8 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
                           </tr>
                         </thead>
                         <tbody className="divide-y">
-                          {result.lab_items.map((item) => (
-                            <tr key={item.id} className={item.is_abnormal ? 'bg-red-50' : ''}>
+                          {result.lab_items.map((item, idx) => (
+                            <tr key={`${item.id}_${idx}`} className={item.is_abnormal ? 'bg-red-50' : ''}>
                               <td className="px-2 py-1 font-medium">{item.nameEn}</td>
                               <td className="px-2 py-1">{item.value ?? '—'}</td>
                               <td className="px-2 py-1 text-slate-400">{item.unit}</td>

@@ -168,8 +168,9 @@ export const isTestVisible = utils.isTestVisible;
 export const buildChartSummary = (
   results: Record<string, string | number>,
   lang: 'en' | 'ko' = 'ko',
-  targetOrgan?: Organ
-) => utils.buildChartSummary(results, organSections, lang, targetOrgan);
+  targetOrgan?: Organ,
+  audience: 'vet' | 'owner' = 'vet'
+) => utils.buildChartSummary(results, organSections, lang, targetOrgan, audience);
 
 export const evaluateImpressionRules = (
   results: Record<string, string>

@@ -5,6 +5,28 @@ import { getAnthropicClient } from '@/lib/ai/anthropic'
 import { findLabRefByKeyword } from '@/constants/hospital/checkup/lab-ref'
 import type { LabResultItem } from '@/constants/hospital/checkup/lab-ref'
 
+// ── Google Vision OCR (이미지 전용) ──────────────────────────
+async function extractTextWithGoogleVision(base64: string): Promise<string> {
+  const apiKey = process.env.GOOGLE_VISION_API_KEY
+  if (!apiKey) return ''
+  try {
+    const res = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requests: [{ image: { content: base64 }, features: [{ type: 'DOCUMENT_TEXT_DETECTION' }] }],
+        }),
+      },
+    )
+    const data = await res.json()
+    return data.responses?.[0]?.fullTextAnnotation?.text ?? ''
+  } catch {
+    return ''
+  }
+}
+
 // ────────────────────────────────────────────────────────────
 // JSON 파싱 헬퍼 (oncology 패턴 재사용)
 // ────────────────────────────────────────────────────────────
@@ -110,7 +132,7 @@ Extract all available information from the provided document(s) and return ONLY 
   },
   "lab_items": [
     {
-      "nameEn": "검사항목 영문명 (예: ALT, WBC, Creatinine)",
+      "nameEn": "검사항목 영문명 표준 약어 (예: ALT, WBC, Creatinine)",
       "value": "수치 (숫자만, 예: 120)",
       "unit": "단위 (예: U/L)",
       "ref_range": "참고범위 원문 그대로 (예: 10-88 또는 10.0-88.0)",
@@ -131,7 +153,24 @@ Rules:
 - For is_abnormal: true if marked as H/L/↑/↓/abnormal, false if explicitly normal, null if unclear
 - If a field has no information in the document, use empty string "" for text fields, empty array [] for lab_items
 - For physical values, extract numbers only without units
-- nameEn should be standard abbreviations (ALT not Alanine Aminotransferase)
+- nameEn MUST use standardized abbreviations. Apply these normalizations:
+  ALKP / ALKPH / SAP / AP → ALP
+  SGPT / GPT → ALT
+  SGOT / GOT → AST
+  GAMMA-GT / γ-GT / GGTP → GGT
+  TBIL / T-BIL → T.Bil
+  DBIL / D-BIL → D.Bil
+  UREA → BUN
+  CREA / CRE / CREAT → Creatinine
+  T-CHOL / TCHO / TC → Cholesterol
+  TG / TRG → Triglyceride
+  HCT / Hematocrit → PCV
+  LEUKO → WBC
+  PLT / Platelet / Thrombocyte → PLT
+  NEU / SEG → Neut
+  LYM → Lymph
+  EOS → Eosino
+  Use the standardized name even if the document uses a different abbreviation.
 - For imaging: extract any radiology/X-ray findings text per body region; use empty string if not present
 - Do not include any text outside the JSON object`
 
@@ -167,27 +206,44 @@ export async function extractCheckupFromPdf(
     }),
   )
 
-  // 2. Claude 호출
-  const fileBlocks = files.flatMap((f, i) => {
-    const docBlock =
-      f.mediaType === 'application/pdf'
-        ? {
-            type: 'document' as const,
-            source: { type: 'base64' as const, media_type: 'application/pdf' as const, data: f.base64 },
-          }
-        : {
-            type: 'image' as const,
-            source: {
-              type: 'base64' as const,
-              media_type: f.mediaType as 'image/jpeg' | 'image/png' | 'image/webp',
-              data: f.base64,
-            },
-          }
-    return [
-      { type: 'text' as const, text: `[문서 ${i + 1}/${files.length}: ${f.fileName}]` },
-      docBlock,
-    ]
-  })
+  // 2. 이미지 파일: Google Vision OCR 병렬 처리
+  const ocrResults = await Promise.all(
+    files.map((f) =>
+      f.mediaType.startsWith('image/')
+        ? extractTextWithGoogleVision(f.base64)
+        : Promise.resolve(''),
+    ),
+  )
+
+  // 3. Claude 호출 블록 구성
+  // - 이미지: Vision OCR 성공 시 텍스트로 전달, 실패 시 이미지 직접 전달 (폴백)
+  // - PDF: Claude document block으로 직접 전달
+  const fileBlocks: Array<{ type: string; [key: string]: unknown }> = []
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i]
+    const ocrText = ocrResults[i]
+    fileBlocks.push({ type: 'text', text: `[문서 ${i + 1}/${files.length}: ${f.fileName}]` })
+
+    if (f.mediaType === 'application/pdf') {
+      fileBlocks.push({
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: f.base64 },
+      })
+    } else if (ocrText) {
+      // Google Vision OCR 성공 → 텍스트로 Claude에 전달
+      fileBlocks.push({ type: 'text', text: `[OCR 추출 텍스트]\n${ocrText}` })
+    } else {
+      // OCR 실패 폴백 → 이미지 직접 전달
+      fileBlocks.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: f.mediaType as 'image/jpeg' | 'image/png' | 'image/webp',
+          data: f.base64,
+        },
+      })
+    }
+  }
 
   let response
   try {
@@ -197,7 +253,7 @@ export async function extractCheckupFromPdf(
       messages: [
         {
           role: 'user',
-          content: [...fileBlocks, { type: 'text' as const, text: EXTRACTION_PROMPT }],
+          content: [...fileBlocks, { type: 'text' as const, text: EXTRACTION_PROMPT }] as any,
         },
       ],
     })
@@ -223,13 +279,16 @@ export async function extractCheckupFromPdf(
     throw new Error('AI 응답 파싱 오류. 다시 시도해주세요.')
   }
 
-  // 3. lab_items → ref 매핑
+  // 3. lab_items → ref 매핑 (동일 id 중복 시 첫 번째 우선)
   const matched: LabResultItem[] = []
+  const matchedIds = new Set<string>()
   const unmatched: ExtractedLabRaw[] = []
 
   for (const raw of parsed.lab_items ?? []) {
     const ref = findLabRefByKeyword(raw.nameEn)
     if (ref) {
+      if (matchedIds.has(ref.id)) continue
+      matchedIds.add(ref.id)
       matched.push({
         id: ref.id,
         nameEn: ref.nameEn,

@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import Anthropic from '@anthropic-ai/sdk'
 import {
   ALL_CHECKUP_TAG_IDS,
-  CHECKUP_TAG_LABEL,
   CHECKUP_IMAGE_TAG_GROUPS,
 } from '@/constants/hospital/checkup/checkup-image-tags'
 
@@ -72,13 +71,24 @@ export async function suggestCheckupImageTags(
   const client = new Anthropic()
 
   const tagDescriptions = CHECKUP_IMAGE_TAG_GROUPS.map((g) => {
-    const tagList = g.tags.map((t) => `  - ${t.id}: ${t.label}`).join('\n')
+    const tagList = g.tags.map((t) => `  ${t.id}: ${t.label}`).join('\n')
     return `[${g.label}]\n${tagList}`
   }).join('\n\n')
 
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 200,
+    max_tokens: 300,
+    system: `당신은 수의학 검진 이미지를 분류하는 전문가입니다.
+이미지 하나에 해당하는 태그가 여러 개일 수 있으며, 해당하는 태그를 모두 반환해야 합니다.
+
+멀티태깅 원칙:
+- 초음파 화면에 간과 담낭이 함께 보이면 → us_liver, us_gallbladder 모두 반환
+- 흉부 방사선이면 → xray_thorax (심장 크기 평가용 화면이어도 동일)
+- 복부 방사선이면 → xray_abdomen
+- Echo 이미지에서 좌심실 측정 화면이면 → echo_lv, 전체 심장 overview면 → echo_overview
+- 척추와 사지가 함께 찍힌 방사선이면 → xray_spine, xray_extremity 모두 반환
+- 해당하는 태그가 없으면 빈 문자열 반환
+- 태그 ID만 쉼표로 구분하여 반환 (그 외 텍스트 금지)`,
     messages: [
       {
         role: 'user',
@@ -93,7 +103,10 @@ export async function suggestCheckupImageTags(
           },
           {
             type: 'text',
-            text: `이 수의학 이미지를 분석하고, 아래 태그 목록 중 이미지에 해당하는 태그 ID들을 쉼표로만 구분하여 반환하세요. 설명 없이 태그 ID만 반환하세요.\n\n${tagDescriptions}`,
+            text: `이 수의학 이미지에 해당하는 태그를 아래 목록에서 모두 선택하세요.
+이미지에 명확히 해당하는 태그만 포함하고, 태그 ID만 쉼표로 구분하여 반환하세요.
+
+${tagDescriptions}`,
           },
         ],
       },

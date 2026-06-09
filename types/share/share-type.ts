@@ -1,5 +1,5 @@
 export type ShareTargetType = 'public' | 'hospital' | 'user'
-export type ShareResourceType = 'note' | 'icu' | 'monitoring' | 'collection' | 'dental' | 'oncology_owner'
+export type ShareResourceType = 'note' | 'icu' | 'monitoring' | 'collection' | 'dental' | 'oncology_owner' | 'checkup'
 export type SharePermissionLevel = 'read' | 'comment' | 'edit'
 
 // ── 공유 권한 테이블 제어 타입 ──

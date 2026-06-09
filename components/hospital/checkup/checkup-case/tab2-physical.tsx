@@ -27,8 +27,8 @@ import {
 } from '@/lib/actions/checkup/linked-chart-actions'
 import type { CheckupSection, CheckupPatient } from '@/types/hospital/checkup-type'
 import type { ExtractedPhysical } from '@/lib/actions/checkup/pdf-extraction'
-import PhysicalExamSection, { type PhysicalValues } from './physical-exam-section'
-import { physicalRefAll } from '@/constants/hospital/checkup/physical-ref'
+import PhysicalExamSection, { type PhysicalValues, sectionStatusKey } from './physical-exam-section'
+import { physicalRefAll, PHYSICAL_SECTION_ORDER } from '@/constants/hospital/checkup/physical-ref'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 import { ophthalmicDomainSections } from '@/constants/hospital/ophthalmic/ophthalmic-exam-domains'
 import type { OphTestItem } from '@/constants/hospital/ophthalmic/ophthalmic-types'
@@ -210,6 +210,11 @@ export default function Tab2Physical({
   const [physical, setPhysical] = useState<PhysicalValues>(() => {
     const init: PhysicalValues = {}
     physicalRefAll.forEach((ref) => { init[ref.id] = savedPhysical[ref.id] ?? '' })
+    // 섹션 정상/이상 상태 키 복원
+    PHYSICAL_SECTION_ORDER.forEach((section) => {
+      const key = sectionStatusKey(section)
+      if (savedPhysical[key]) init[key] = savedPhysical[key]
+    })
     return init
   })
 
@@ -259,6 +264,14 @@ export default function Tab2Physical({
       return generateNeuroReportText(
         (chart.results as Record<string, string | string[]>) ?? {},
         (chart.localisations as Record<string, unknown>) ?? {},
+        {
+          name: patient.name,
+          species: patient.species,
+          breed: patient.breed,
+          gender: patient.gender ?? undefined,
+          birth: patient.birth ?? undefined,
+        },
+        chart.chartDate,
       )
     }
     return chart.summary ?? null

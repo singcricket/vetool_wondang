@@ -65,16 +65,22 @@ export function isTestVisible(
 }
 
 /**
- * 이상 소견만 필터링하여 최종 차트 문구 배열을 반환
+ * 차트 문구 배열을 반환.
+ *
+ * audience:
+ *   'vet'   (기본) — 이상 소견만, resultTextKo 사용
+ *   'owner' — 정상·이상 모두, ownerResultTextKo 우선 사용 (보호자 리포트용)
  */
 export function buildChartSummary(
   results: Record<string, string | number>,
   organSections: OrganSection[],
   lang: 'en' | 'ko' = 'ko',
-  targetOrgan?: Organ
+  targetOrgan?: Organ,
+  audience: 'vet' | 'owner' = 'vet'
 ): string[] {
   const lines: string[] = [];
   const processedTestIDs = new Set<string>();
+  const forOwner = audience === 'owner';
 
   for (const section of organSections) {
     if (targetOrgan && section.organ !== targetOrgan) continue;
@@ -93,8 +99,13 @@ export function buildChartSummary(
           resultText = (results[test.testID + '_other'] as string) || '';
         } else {
           const opt = test.options.find((o) => o.value === val);
-          if (opt && opt.isAbnormal) {
-            resultText = lang === 'ko' ? opt.resultTextKo : opt.resultText;
+          if (opt) {
+            if (forOwner) {
+              // owner: 정상·이상 모두 포함, ownerResultTextKo 우선
+              resultText = opt.ownerResultTextKo ?? (lang === 'ko' ? opt.resultTextKo : opt.resultText);
+            } else if (opt.isAbnormal) {
+              resultText = lang === 'ko' ? opt.resultTextKo : opt.resultText;
+            }
           }
         }
       } else if (test.testType === 'range' && typeof val === 'number') {
@@ -103,11 +114,20 @@ export function buildChartSummary(
             (r.min === null || val >= r.min) &&
             (r.max === null || val < r.max)
         );
-        if (seg && seg.isAbnormal) {
-          resultText = lang === 'ko' ? seg.resultTextKo : seg.resultText;
+        if (seg) {
+          if (forOwner) {
+            resultText = seg.ownerResultTextKo ?? (lang === 'ko' ? seg.resultTextKo : seg.resultText);
+          } else if (seg.isAbnormal) {
+            resultText = lang === 'ko' ? seg.resultTextKo : seg.resultText;
+          }
         }
       } else if (test.testType === 'boolean') {
-        if (val === 'true' && test.positiveIsAbnormal) {
+        const isPositive = val === 'true';
+        if (forOwner) {
+          resultText = isPositive
+            ? (test.positiveOwnerResultTextKo ?? (lang === 'ko' ? test.positiveResultTextKo : test.positiveResultText))
+            : (test.negativeOwnerResultTextKo ?? (lang === 'ko' ? test.negativeResultTextKo : test.negativeResultText));
+        } else if (isPositive && test.positiveIsAbnormal) {
           resultText = lang === 'ko' ? test.positiveResultTextKo : test.positiveResultText;
         }
       } else if (test.testType === 'multiselect' && Array.isArray(val)) {
@@ -115,17 +135,26 @@ export function buildChartSummary(
         const otherVal = val.includes('other') ? (results[test.testID + '_other'] as string) : '';
 
         if (selectedOptions.length > 0 || otherVal) {
-          const labels = selectedOptions.map(o => (lang === 'ko' ? o.labelKo : o.label));
-          if (otherVal) labels.push(otherVal);
-
-          const template = lang === 'ko' ? test.resultTemplateKo : test.resultTemplate;
-          
-          if (template) {
-            resultText = template.replace('{values}', labels.join(', '));
+          if (forOwner) {
+            // owner: 각 선택 옵션별 ownerResultTextKo를 개별 줄로 나열
+            for (const opt of selectedOptions) {
+              const t = opt.ownerResultTextKo ?? (lang === 'ko' ? opt.resultTextKo : opt.resultText)
+              if (t) lines.push(t)
+            }
+            if (otherVal) lines.push(otherVal)
+            continue  // 개별 push 완료, 아래 resultText push 건너뜀
           } else {
-            resultText = lang === 'ko' 
-              ? `${test.testNameKo}: ${labels.join(', ')}` 
-              : `${test.testName}: ${labels.join(', ')}`;
+            const labels = selectedOptions.map(o => (lang === 'ko' ? o.labelKo : o.label));
+            if (otherVal) labels.push(otherVal);
+
+            const template = lang === 'ko' ? test.resultTemplateKo : test.resultTemplate;
+            if (template) {
+              resultText = template.replace('{values}', labels.join(', '));
+            } else {
+              resultText = lang === 'ko'
+                ? `${test.testNameKo}: ${labels.join(', ')}`
+                : `${test.testName}: ${labels.join(', ')}`;
+            }
           }
         }
       }

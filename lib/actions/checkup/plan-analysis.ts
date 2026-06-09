@@ -7,16 +7,28 @@ import type { LabResultItem } from '@/constants/hospital/checkup/lab-types'
 
 // ── 결과 타입 ─────────────────────────────────────────────────
 
+/** 장기계통별 구조화 진단 평가 */
+export type DxEvaluation = {
+  /** 계통 상태: normal | mild | moderate | severe */
+  status: 'normal' | 'mild' | 'moderate' | 'severe'
+  /** 1줄 요약 (예: "경도 간효소 상승") */
+  summary: string
+  /** 보호자용 상세 설명 (2~4줄) */
+  detail: string
+  /** 권장 조치 (1~3줄, • 불릿 형식) */
+  action: string
+}
+
 export type PlanAnalysisResult = {
-  // 1. 기관별 진단
-  dx_musculoskeletal: string
-  dx_cardio_resp: string
-  dx_hepatobiliary: string
-  dx_endocrine: string
-  dx_urogenital: string
-  dx_oral: string
-  dx_ophthalmic: string
-  dx_neuro: string
+  // 1. 기관별 진단 (구조화 JSON)
+  dx_musculoskeletal: DxEvaluation
+  dx_cardio_resp: DxEvaluation
+  dx_hepatobiliary: DxEvaluation
+  dx_endocrine: DxEvaluation
+  dx_urogenital: DxEvaluation
+  dx_oral: DxEvaluation
+  dx_ophthalmic: DxEvaluation
+  dx_neuro: DxEvaluation
   // 2. 치료 및 관리계획
   tx_surgery: string
   tx_medication: string
@@ -50,11 +62,34 @@ function calcAge(birth: string | null): string {
 }
 
 function extractJson(text: string): PlanAnalysisResult {
-  const clean = text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
-  const start = clean.indexOf('{')
-  const end = clean.lastIndexOf('}')
-  if (start === -1 || end === -1) throw new Error('JSON not found in response')
-  return JSON.parse(clean.slice(start, end + 1))
+  if (!text?.trim()) throw new Error('AI 응답이 비어 있습니다.')
+
+  // 1차: 코드블록 제거 후 직접 파싱
+  const stripped = text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
+  try { return JSON.parse(stripped) } catch {}
+
+  // 2차: 중괄호 depth 추적으로 첫 번째 완전한 JSON 객체 추출
+  const start = text.indexOf('{')
+  if (start === -1) throw new Error('AI 응답에서 JSON을 찾을 수 없습니다.')
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (escaped) { escaped = false; continue }
+    if (ch === '\\' && inString) { escaped = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === '{') depth++
+    else if (ch === '}') {
+      depth--
+      if (depth === 0) return JSON.parse(text.slice(start, i + 1))
+    }
+  }
+
+  throw new Error('AI 응답에서 완전한 JSON 객체를 찾을 수 없습니다.')
 }
 
 // ── 섹션 데이터 → 가독성 있는 텍스트 변환 ─────────────────────
@@ -247,26 +282,33 @@ export async function generatePlanSections(params: {
 
 작성 원칙:
 - 보호자에게 쉽게 설명하는 관점으로 작성
-- 이상 소견 없는 계통은 "이상 소견 없음" 또는 "정상 범위 내"로 간단히 표기
-- 이상 소견이 있으면 소견 + 보호자 이해용 간략 설명 포함
-- tx_priority_summary는 1순위(즉각치료)→2순위(적극관리)→3순위(모니터링)→4순위(정기관찰) 형식으로 번호 목록
 - guide_weight: 체중·BCS 기반 목표체중 및 하루 칼로리(kcal ME) 추정치 포함
-- followup_plan: "N개월 후: 검사항목" 형식, 복수 시점 가능
-- 항목당 2~8줄, 임상적으로 의미있고 실용적인 내용
+- tx_priority_summary: 각 순위를 "1순위 (즉각치료): 항목" 형식으로 별도 줄 작성
+- followup_plan: "1개월 후: 검사항목" 형식으로 각 시점 별도 줄 작성
+- 복수 항목 나열 시 "• 항목" 형식으로 줄바꿈(\\n) 사용
 
 [건강검진 데이터]
 ${summary}
 
 반환 JSON 구조 (키 정확히 일치):
+
+dx_* 필드는 반드시 아래 구조의 객체로 반환:
 {
-  "dx_musculoskeletal": "근골격계 진단 및 평가",
-  "dx_cardio_resp": "심혈관/호흡기 진단 및 평가",
-  "dx_hepatobiliary": "간담도계 진단 및 평가",
-  "dx_endocrine": "내분비계 진단 및 평가",
-  "dx_urogenital": "비뇨/생식기 진단 및 평가",
-  "dx_oral": "구강 진단 및 평가",
-  "dx_ophthalmic": "안과 진단 및 평가",
-  "dx_neuro": "신경계 진단 및 평가",
+  "status": "normal" | "mild" | "moderate" | "severe",
+  "summary": "1줄 핵심 요약 (예: '경도 간효소 상승')",
+  "detail": "보호자용 상세 설명 2~4줄. 이상 없으면 '이상 소견 없음'",
+  "action": "권장 조치 1~3줄. • 불릿 사용. 이상 없으면 '정기 건강검진 유지'"
+}
+
+{
+  "dx_musculoskeletal": { "status": "...", "summary": "...", "detail": "...", "action": "..." },
+  "dx_cardio_resp":     { "status": "...", "summary": "...", "detail": "...", "action": "..." },
+  "dx_hepatobiliary":   { "status": "...", "summary": "...", "detail": "...", "action": "..." },
+  "dx_endocrine":       { "status": "...", "summary": "...", "detail": "...", "action": "..." },
+  "dx_urogenital":      { "status": "...", "summary": "...", "detail": "...", "action": "..." },
+  "dx_oral":            { "status": "...", "summary": "...", "detail": "...", "action": "..." },
+  "dx_ophthalmic":      { "status": "...", "summary": "...", "detail": "...", "action": "..." },
+  "dx_neuro":           { "status": "...", "summary": "...", "detail": "...", "action": "..." },
   "tx_surgery": "외과 수술/시술 계획 (없으면 '해당 없음')",
   "tx_medication": "내과 약물/주사 치료 계획",
   "tx_diet_plan": "식이관리 계획",
@@ -281,12 +323,25 @@ ${summary}
 }`
 
   const client = getAnthropicClient()
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }],
-  })
+  let message
+  try {
+    message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8000,
+      messages: [{ role: 'user', content: prompt }],
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('credit balance') || msg.includes('insufficient_quota')) {
+      throw new Error('Anthropic API 크레딧이 부족합니다.')
+    }
+    throw new Error('AI 분석 중 오류가 발생했습니다. 다시 시도해주세요.')
+  }
 
   const text = message.content.find((b) => b.type === 'text')?.text ?? ''
-  return extractJson(text)
+  try {
+    return extractJson(text)
+  } catch {
+    throw new Error('AI 응답 파싱 오류. 다시 시도해주세요.')
+  }
 }

@@ -8,20 +8,32 @@ import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { upsertCheckupSection } from '@/lib/actions/checkup/checkup-actions'
 import { generatePlanSections } from '@/lib/actions/checkup/plan-analysis'
+import type { DxEvaluation } from '@/lib/actions/checkup/plan-analysis'
 import type { CheckupSection, CheckupPatient, CheckupStatus } from '@/types/hospital/checkup-type'
 
 // ── 타입 ─────────────────────────────────────────────────────
 
+const EMPTY_DX: DxEvaluation = { status: 'normal', summary: '', detail: '', action: '' }
+
+/** 저장된 데이터가 문자열(구버전)일 수 있으므로 DxEvaluation으로 정규화 */
+function normalizeDx(raw: unknown): DxEvaluation {
+  if (raw && typeof raw === 'object' && 'status' in raw) return raw as DxEvaluation
+  if (typeof raw === 'string' && raw.trim()) {
+    return { status: 'normal', summary: raw.slice(0, 60), detail: raw, action: '' }
+  }
+  return { ...EMPTY_DX }
+}
+
 type PlanData = {
-  // 1. 기관별 진단
-  dx_musculoskeletal: string
-  dx_cardio_resp: string
-  dx_hepatobiliary: string
-  dx_endocrine: string
-  dx_urogenital: string
-  dx_oral: string
-  dx_ophthalmic: string
-  dx_neuro: string
+  // 1. 기관별 진단 (구조화)
+  dx_musculoskeletal: DxEvaluation
+  dx_cardio_resp: DxEvaluation
+  dx_hepatobiliary: DxEvaluation
+  dx_endocrine: DxEvaluation
+  dx_urogenital: DxEvaluation
+  dx_oral: DxEvaluation
+  dx_ophthalmic: DxEvaluation
+  dx_neuro: DxEvaluation
   // 2. 치료 및 관리계획
   tx_surgery: string
   tx_medication: string
@@ -41,12 +53,34 @@ type PlanData = {
 }
 
 const EMPTY: PlanData = {
-  dx_musculoskeletal: '', dx_cardio_resp: '', dx_hepatobiliary: '',
-  dx_endocrine: '', dx_urogenital: '', dx_oral: '', dx_ophthalmic: '', dx_neuro: '',
+  dx_musculoskeletal: { ...EMPTY_DX }, dx_cardio_resp: { ...EMPTY_DX },
+  dx_hepatobiliary: { ...EMPTY_DX },   dx_endocrine: { ...EMPTY_DX },
+  dx_urogenital: { ...EMPTY_DX },      dx_oral: { ...EMPTY_DX },
+  dx_ophthalmic: { ...EMPTY_DX },      dx_neuro: { ...EMPTY_DX },
   tx_surgery: '', tx_medication: '', tx_diet_plan: '', tx_further_workup: '',
   tx_monitoring: '', tx_priority_summary: '',
   guide_diet: '', guide_weight: '', guide_exercise: '', guide_environment: '',
   followup_plan: '', next_checkup_date: '',
+}
+
+function initForm(saved: Partial<Record<string, unknown>>): PlanData {
+  const DX_KEYS = [
+    'dx_musculoskeletal', 'dx_cardio_resp', 'dx_hepatobiliary', 'dx_endocrine',
+    'dx_urogenital', 'dx_oral', 'dx_ophthalmic', 'dx_neuro',
+  ] as const
+  const result = { ...EMPTY }
+  for (const key of DX_KEYS) {
+    result[key] = normalizeDx(saved[key])
+  }
+  const STRING_KEYS = [
+    'tx_surgery', 'tx_medication', 'tx_diet_plan', 'tx_further_workup',
+    'tx_monitoring', 'tx_priority_summary', 'guide_diet', 'guide_weight',
+    'guide_exercise', 'guide_environment', 'followup_plan', 'next_checkup_date',
+  ] as const
+  for (const key of STRING_KEYS) {
+    if (typeof saved[key] === 'string') result[key] = saved[key] as string
+  }
+  return result
 }
 
 // ── Props ─────────────────────────────────────────────────────
@@ -79,19 +113,146 @@ function FieldBlock({
   onChange: (v: string) => void
   minH?: number
 }) {
+  const [editing, setEditing] = useState(false)
+
   return (
     <div>
-      <p className="mb-1 text-xs font-medium text-slate-600">
-        {label}
-        {sub && <span className="ml-1 font-normal text-slate-400">{sub}</span>}
-      </p>
-      <Textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="resize-none text-xs"
-        style={{ minHeight: minH }}
-        placeholder="AI 분석 버튼을 눌러 자동으로 채우거나 직접 입력하세요."
-      />
+      <div className="mb-1 flex items-center justify-between">
+        <p className="text-xs font-medium text-slate-600">
+          {label}
+          {sub && <span className="ml-1 font-normal text-slate-400">{sub}</span>}
+        </p>
+        {!editing && value && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-[10px] text-slate-400 transition-colors hover:text-teal-600"
+          >
+            수정
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={() => setEditing(false)}
+          autoFocus
+          className="resize-none text-xs leading-relaxed"
+          style={{ minHeight: minH }}
+          placeholder="직접 입력하거나 AI 분석으로 자동 채우세요."
+        />
+      ) : (
+        <div
+          onClick={() => setEditing(true)}
+          className="cursor-text rounded-md border border-slate-200 bg-white px-3 py-2.5 transition-colors hover:border-teal-200"
+          style={{ minHeight: minH }}
+        >
+          {value ? (
+            <p className="whitespace-pre-wrap text-xs leading-relaxed text-slate-700">{value}</p>
+          ) : (
+            <p className="text-xs text-slate-300">클릭하여 입력하거나 AI 분석을 사용하세요.</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const STATUS_LABELS: Record<DxEvaluation['status'], { label: string; cls: string }> = {
+  normal:   { label: '정상',   cls: 'bg-emerald-100 text-emerald-700' },
+  mild:     { label: '경도',   cls: 'bg-amber-100 text-amber-700'     },
+  moderate: { label: '중등도', cls: 'bg-orange-100 text-orange-700'   },
+  severe:   { label: '중증',   cls: 'bg-red-100 text-red-700'         },
+}
+
+function DxFieldBlock({
+  label, value, onChange,
+}: {
+  label: string
+  value: DxEvaluation
+  onChange: (v: DxEvaluation) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const st = STATUS_LABELS[value.status] ?? STATUS_LABELS.normal
+  const hasContent = value.summary || value.detail
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-white">
+      {/* 헤더 */}
+      <div
+        className="flex cursor-pointer items-center justify-between px-3 py-2 hover:bg-slate-50"
+        onClick={() => setOpen((p) => !p)}
+      >
+        <div className="flex items-center gap-2">
+          <p className="text-xs font-medium text-slate-700">{label}</p>
+          <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${st.cls}`}>
+            {st.label}
+          </span>
+        </div>
+        {hasContent && !open && (
+          <p className="max-w-[180px] truncate text-[11px] text-slate-400">{value.summary}</p>
+        )}
+        <span className="ml-2 text-[10px] text-slate-400">{open ? '접기' : '펼치기'}</span>
+      </div>
+
+      {/* 편집 영역 */}
+      {open && (
+        <div className="flex flex-col gap-2 border-t border-slate-100 px-3 pb-3 pt-2">
+          {/* 상태 선택 */}
+          <div>
+            <p className="mb-1 text-[10px] font-medium text-slate-500">상태</p>
+            <div className="flex gap-1.5">
+              {(Object.keys(STATUS_LABELS) as DxEvaluation['status'][]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => onChange({ ...value, status: s })}
+                  className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-opacity ${
+                    STATUS_LABELS[s].cls
+                  } ${value.status === s ? 'opacity-100 ring-1 ring-current' : 'opacity-50'}`}
+                >
+                  {STATUS_LABELS[s].label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* 요약 */}
+          <div>
+            <p className="mb-1 text-[10px] font-medium text-slate-500">1줄 요약</p>
+            <input
+              type="text"
+              value={value.summary}
+              onChange={(e) => onChange({ ...value, summary: e.target.value })}
+              placeholder="예: 경도 간효소 상승"
+              className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-teal-400"
+            />
+          </div>
+          {/* 상세 설명 */}
+          <div>
+            <p className="mb-1 text-[10px] font-medium text-slate-500">보호자 설명</p>
+            <Textarea
+              value={value.detail}
+              onChange={(e) => onChange({ ...value, detail: e.target.value })}
+              placeholder="보호자에게 쉽게 설명하는 2~4줄 소견"
+              className="resize-none text-xs leading-relaxed"
+              style={{ minHeight: 64 }}
+            />
+          </div>
+          {/* 권장 조치 */}
+          <div>
+            <p className="mb-1 text-[10px] font-medium text-slate-500">권장 조치</p>
+            <Textarea
+              value={value.action}
+              onChange={(e) => onChange({ ...value, action: e.target.value })}
+              placeholder="• 항목 형식으로 1~3줄"
+              className="resize-none text-xs leading-relaxed"
+              style={{ minHeight: 48 }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -101,8 +262,8 @@ function FieldBlock({
 export default function Tab5Plan({
   checkupId, patient, planSection, status, onStatusChange,
 }: Props) {
-  const saved = (planSection?.data ?? {}) as Partial<PlanData>
-  const [form, setForm] = useState<PlanData>({ ...EMPTY, ...saved })
+  const saved = (planSection?.data ?? {}) as Partial<Record<string, unknown>>
+  const [form, setForm] = useState<PlanData>(() => initForm(saved))
   const [saving, setSaving] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
 
@@ -158,16 +319,16 @@ export default function Tab5Plan({
 
       {/* ── 1. 기관별 진단 및 평가 ──────────────────── */}
       <section>
-        <SectionHeader title="기관별 진단 및 평가" sub="계통별 요약 평가 소견" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FieldBlock label="근골격계" value={form.dx_musculoskeletal} onChange={(v) => set('dx_musculoskeletal', v)} />
-          <FieldBlock label="심혈관 / 호흡기" value={form.dx_cardio_resp} onChange={(v) => set('dx_cardio_resp', v)} />
-          <FieldBlock label="간담도계" value={form.dx_hepatobiliary} onChange={(v) => set('dx_hepatobiliary', v)} />
-          <FieldBlock label="내분비계" value={form.dx_endocrine} onChange={(v) => set('dx_endocrine', v)} />
-          <FieldBlock label="비뇨 / 생식기" value={form.dx_urogenital} onChange={(v) => set('dx_urogenital', v)} />
-          <FieldBlock label="구강" value={form.dx_oral} onChange={(v) => set('dx_oral', v)} />
-          <FieldBlock label="안과" value={form.dx_ophthalmic} onChange={(v) => set('dx_ophthalmic', v)} />
-          <FieldBlock label="신경계" value={form.dx_neuro} onChange={(v) => set('dx_neuro', v)} />
+        <SectionHeader title="기관별 진단 및 평가" sub="계통별 요약 평가 소견 — AI 분석 후 펼쳐서 확인·수정하세요" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <DxFieldBlock label="근골격계" value={form.dx_musculoskeletal} onChange={(v) => set('dx_musculoskeletal', v)} />
+          <DxFieldBlock label="심혈관 / 호흡기" value={form.dx_cardio_resp} onChange={(v) => set('dx_cardio_resp', v)} />
+          <DxFieldBlock label="간담도계" value={form.dx_hepatobiliary} onChange={(v) => set('dx_hepatobiliary', v)} />
+          <DxFieldBlock label="내분비계" value={form.dx_endocrine} onChange={(v) => set('dx_endocrine', v)} />
+          <DxFieldBlock label="비뇨 / 생식기" value={form.dx_urogenital} onChange={(v) => set('dx_urogenital', v)} />
+          <DxFieldBlock label="구강" value={form.dx_oral} onChange={(v) => set('dx_oral', v)} />
+          <DxFieldBlock label="안과" value={form.dx_ophthalmic} onChange={(v) => set('dx_ophthalmic', v)} />
+          <DxFieldBlock label="신경계" value={form.dx_neuro} onChange={(v) => set('dx_neuro', v)} />
         </div>
       </section>
 

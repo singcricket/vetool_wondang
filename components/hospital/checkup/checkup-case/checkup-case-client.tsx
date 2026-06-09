@@ -9,13 +9,16 @@ import Tab2Physical from './tab2-physical'
 import Tab3Lab from './tab3-lab'
 import Tab4Imaging from './tab4-imaging'
 import Tab5Plan from './tab5-plan'
-import { CalendarDays, Cat, Dog, PawPrint, User } from 'lucide-react'
+import { CalendarDays, Cat, Dog, PawPrint, User, Share2, FileText } from 'lucide-react'
+import Link from 'next/link'
 import { updateCheckupStatus } from '@/lib/actions/checkup/checkup-actions'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import PdfExtractDialog from './pdf-extract-dialog'
 import type { PdfExtractionResult } from '@/lib/actions/checkup/pdf-extraction'
 import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
+import ShareResourceDialog from '@/components/hospital/share/share-resource-dialog'
+import CheckupDeleteDialog from './checkup-delete-dialog'
 
 const STATUS_LABEL: Record<CheckupStatus, string> = {
   draft: '작성중',
@@ -62,6 +65,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
   const router = useRouter()
   const [status, setStatus] = useState<CheckupStatus>(record.status)
   const [pdfExtracted, setPdfExtracted] = useState<PdfExtractionResult | null>(null)
+  const [shareOpen, setShareOpen] = useState(false)
   const [subCharts, setSubCharts] = useState<Record<string, string | null>>(
     (record.sub_charts as Record<string, string | null>) ?? {},
   )
@@ -125,7 +129,28 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
           </div>
 
           <div className="flex items-center gap-3 sm:ml-auto">
+            <CheckupDeleteDialog
+              checkupId={record.id}
+              hosId={hosId}
+              patientName={p.name}
+              checkupDate={record.checkup_date}
+            />
             <CheckupImageUploadDialog checkupId={record.id} hosId={hosId} />
+            <Link
+              href={`/hospital/${hosId}/checkup/${record.checkup_date}/${record.id}/report`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-700"
+            >
+              <FileText size={13} />
+              리포트
+            </Link>
+            <button
+              onClick={() => setShareOpen(true)}
+              className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-700"
+            >
+              <Share2 size={13} />
+              공유
+            </button>
             <PdfExtractDialog
               checkupId={record.id}
               hosId={hosId}
@@ -153,6 +178,15 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
         </div>
       </div>
 
+      <ShareResourceDialog
+        isOpen={shareOpen}
+        onOpenChange={setShareOpen}
+        resourceType="checkup"
+        resourceId={record.id}
+        title={`${p.name} 건강검진 리포트 (${record.checkup_date})`}
+        hosId={hosId}
+      />
+
       {/* Tabs */}
       <Tabs defaultValue="inquiry" className="flex flex-1 flex-col overflow-hidden">
         <TabsList className="shrink-0 rounded-none border-b bg-white px-4 justify-start h-10">
@@ -164,7 +198,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
         </TabsList>
 
         <div className="flex-1 overflow-y-auto">
-          <TabsContent value="inquiry" className="m-0 h-full">
+          <TabsContent value="inquiry" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
             <Tab1Inquiry
               checkupId={record.id}
               patient={p}
@@ -173,7 +207,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
             />
           </TabsContent>
 
-          <TabsContent value="physical" className="m-0 h-full">
+          <TabsContent value="physical" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
             <Tab2Physical
               checkupId={record.id}
               patientId={record.patient_id}
@@ -190,16 +224,17 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
             />
           </TabsContent>
 
-          <TabsContent value="lab" className="m-0 h-full">
+          <TabsContent value="lab" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
             <Tab3Lab
               checkupId={record.id}
               patient={p}
               labSection={getSection('lab')}
               extractedLabItems={pdfExtracted?.lab_items ?? null}
+              extractedUnmatchedItems={pdfExtracted?.unmatched_lab ?? null}
             />
           </TabsContent>
 
-          <TabsContent value="imaging" className="m-0 h-full">
+          <TabsContent value="imaging" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
             <Tab4Imaging
               checkupId={record.id}
               hosId={hosId}
@@ -216,7 +251,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
             />
           </TabsContent>
 
-          <TabsContent value="plan" className="m-0 h-full">
+          <TabsContent value="plan" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
             <Tab5Plan
               checkupId={record.id}
               patient={p}

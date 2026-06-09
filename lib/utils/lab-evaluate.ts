@@ -144,11 +144,15 @@ function parseRefRange(str: string): { min: number | null; max: number | null } 
   return { min: null, max: null }
 }
 
-/** AI 경로: 병원 기기 참고범위 기준 fold-change 평가 */
-export function evaluateByFoldChange(
+/**
+ * AI 경로: 기기 참고범위 직접 비교 평가
+ * - AI가 추출한 ref_range를 파싱해 값이 정상/상승/저하인지 판정
+ * - severity는 fold-change로 산출(profile 있을 때만), 없으면 mild 기본값
+ */
+export function evaluateByAiRefRange(
   value: string | null,
   refRangeStr: string,
-  profile: FoldProfile,
+  profile?: FoldProfile,
 ): EvalResult | null {
   if (!value) return null
   const num = parseFloat(value)
@@ -157,36 +161,45 @@ export function evaluateByFoldChange(
   const { min, max } = parseRefRange(refRangeStr)
   if (min === null && max === null) return null
 
-  let fold: number
-  let direction: '상승' | '저하'
+  const isAbove = max !== null && num > max
+  const isBelow = min !== null && num < min
 
-  if (max !== null && num > max) {
-    fold = num / max
-    direction = '상승'
-  } else if (min !== null && num < min) {
-    fold = min / num
-    direction = '저하'
-  } else {
+  if (!isAbove && !isBelow) {
     return { isAbnormal: false, resultTextKo: '정상 (기기 기준)', severity: null, direction: null }
   }
 
-  const thresholds = FOLD_PROFILES[profile]
-  let severity: LabSeverity = 'critical'
-  let textKo = '매우 심한'
-  for (const t of thresholds) {
-    if (fold <= t.maxFold) {
-      severity = t.severity
-      textKo = t.textKo
-      break
+  const directionLabel = isAbove ? '상승' : '저하'
+  const directionKey: 'high' | 'low' = isAbove ? 'high' : 'low'
+
+  // fold-change로 severity 산출 (profile 없으면 mild 기본)
+  let severity: LabSeverity = 'mild'
+  if (profile) {
+    const bound = isAbove ? max! : min!
+    const fold = isAbove ? num / bound : bound / num
+    const thresholds = FOLD_PROFILES[profile]
+    for (const t of thresholds) {
+      if (fold <= t.maxFold) {
+        severity = t.severity
+        break
+      }
     }
   }
 
   return {
     isAbnormal: true,
-    resultTextKo: `${fold.toFixed(1)}배 ${direction} (기기 기준)`,
+    resultTextKo: `${directionLabel} (기기 기준)`,
     severity,
-    direction: direction === '상승' ? 'high' : 'low',
+    direction: directionKey,
   }
+}
+
+/** @deprecated evaluateByAiRefRange 로 대체됨 */
+export function evaluateByFoldChange(
+  value: string | null,
+  refRangeStr: string,
+  profile: FoldProfile,
+): EvalResult | null {
+  return evaluateByAiRefRange(value, refRangeStr, profile)
 }
 
 /** 이상 방향에 따라 ref.comment 자동 선택 */
@@ -206,22 +219,30 @@ export function getDefaultRefRange(ref: LabRefItem, species: string): string | n
   return (sp === 'dog' ? r.dog : sp === 'cat' ? r.cat : null) ?? r.common ?? null
 }
 
-/** 통합 평가 함수 — testType 및 source에 따라 자동 분기 */
+/**
+ * 통합 평가 함수 — ref_range 우선, 없으면 내부 ranges 폴백
+ *
+ * 평가 우선순위:
+ * 1. ref_range가 "min-max" 형식으로 파싱 가능 → 기기 참고범위 기준으로 정상/이상 판정 + foldProfile로 severity 산출
+ * 2. 파싱 불가(복잡한 형식, 미입력) → 내부 ranges/select/multiselect 기준
+ */
 export function evaluateLabValue(
   value: string | null,
   ref: LabRefItem,
   species: string,
   source?: 'manual' | 'ai',
-  hospitalRefRange?: string | null,
+  refRange?: string | null,
 ): EvalResult | null {
   if (!value) return null
 
-  // AI 경로: fold-change (병원 기기 참고범위 기준)
-  if (source === 'ai' && hospitalRefRange && ref.foldProfile) {
-    return evaluateByFoldChange(value, hospitalRefRange, ref.foldProfile)
+  // ref_range가 있으면 기기 참고범위 우선 시도 (source 무관)
+  if (refRange) {
+    const result = evaluateByAiRefRange(value, refRange, ref.foldProfile)
+    if (result !== null) return result
+    // parseRefRange가 null 반환(파싱 불가)이면 내부 ranges로 폴백
   }
 
-  // 직접 입력 경로: 우리 species-specific ranges 기준
+  // 내부 ranges 폴백 (select/multiselect 포함)
   switch (ref.testType) {
     case 'range':       return evaluateRange(value, ref, species)
     case 'select':      return evaluateSelect(value, ref)
@@ -244,7 +265,7 @@ export function applyEvaluations(
       ref,
       species,
       item.source,
-      item.source === 'ai' ? item.ref_range : null,
+      item.ref_range,
     )
     if (!result) return item
     return {
