@@ -166,8 +166,10 @@ export type Database = {
           created_at: string | null
           hos_id: string
           id: string
+          img_memo: string | null
           img_url: string
           is_cover: boolean | null
+          mark: Json | null
           tags: string[] | null
         }
         Insert: {
@@ -175,8 +177,10 @@ export type Database = {
           created_at?: string | null
           hos_id: string
           id?: string
+          img_memo?: string | null
           img_url: string
           is_cover?: boolean | null
+          mark?: Json | null
           tags?: string[] | null
         }
         Update: {
@@ -184,8 +188,10 @@ export type Database = {
           created_at?: string | null
           hos_id?: string
           id?: string
+          img_memo?: string | null
           img_url?: string
           is_cover?: boolean | null
+          mark?: Json | null
           tags?: string[] | null
         }
         Relationships: [

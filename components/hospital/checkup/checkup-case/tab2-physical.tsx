@@ -25,14 +25,14 @@ import {
   type OphthalmicChartListItem,
   type DentalChartListItem,
 } from '@/lib/actions/checkup/linked-chart-actions'
-import type { CheckupSection, CheckupPatient } from '@/types/hospital/checkup-type'
+import type { CheckupSection, CheckupPatient, NeuroSectionStructured } from '@/types/hospital/checkup-type'
+import { isNeuroStructured } from '@/types/hospital/checkup-type'
 import type { ExtractedPhysical } from '@/lib/actions/checkup/pdf-extraction'
 import PhysicalExamSection, { type PhysicalValues, sectionStatusKey } from './physical-exam-section'
 import { physicalRefAll, PHYSICAL_SECTION_ORDER } from '@/constants/hospital/checkup/physical-ref'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 import { ophthalmicDomainSections } from '@/constants/hospital/ophthalmic/ophthalmic-exam-domains'
 import type { OphTestItem } from '@/constants/hospital/ophthalmic/ophthalmic-types'
-import { generateNeuroReportText } from '@/lib/utils/neuro-report'
 import LinkedChartPanel, { type ChartListItem } from './linked-chart-panel'
 
 // ── 치과 기본 소견 항목 ─────────────────────────────────────────
@@ -227,8 +227,14 @@ export default function Tab2Physical({
   const [ophthalmic, setOphthalmic] = useState<Record<string, string>>(savedOphthalmic)
 
   // ── 신경계 ───────────────────────────────────────────────────
-  const savedNeuro = (neuroSection?.data ?? {}) as { notes?: string }
-  const [neuroNotes, setNeuroNotes] = useState(savedNeuro.notes ?? '')
+  const savedNeuroRaw = (neuroSection?.data ?? {}) as Record<string, unknown>
+  // structured 판별: format === 'structured' 이면 JSON, 아니면 레거시/수동 텍스트
+  const [neuroStructured, setNeuroStructured] = useState<NeuroSectionStructured | null>(
+    isNeuroStructured(savedNeuroRaw) ? savedNeuroRaw : null,
+  )
+  const [neuroNotes, setNeuroNotes] = useState(
+    isNeuroStructured(savedNeuroRaw) ? '' : ((savedNeuroRaw.notes as string) ?? ''),
+  )
 
   // ── 차트 목록 ────────────────────────────────────────────────
   const [neuroCharts, setNeuroCharts] = useState<NeuroChartListItem[]>([])
@@ -256,25 +262,26 @@ export default function Tab2Physical({
     })
   }, [extractedPhysical])
 
-  // ── 신경계 차트 → 텍스트 변환 ────────────────────────────────
-  const getNeuroText = (chartId: string): string | null => {
+  // ── 신경계 차트 → 구조화 데이터 반환 ────────────────────────
+  const getNeuroData = (chartId: string): NeuroSectionStructured | null => {
     const chart = neuroCharts.find((c) => c.id === chartId)
     if (!chart) return null
-    if (chart.results || chart.localisations) {
-      return generateNeuroReportText(
-        (chart.results as Record<string, string | string[]>) ?? {},
-        (chart.localisations as Record<string, unknown>) ?? {},
-        {
-          name: patient.name,
-          species: patient.species,
-          breed: patient.breed,
-          gender: patient.gender ?? undefined,
-          birth: patient.birth ?? undefined,
-        },
-        chart.chartDate,
-      )
+    return {
+      format: 'structured',
+      chartId,
+      results: (chart.results as Record<string, string | string[]>) ?? {},
+      localisations: (chart.localisations as NeuroSectionStructured['localisations']) ?? {},
+      summary: chart.summary ?? null,
     }
-    return chart.summary ?? null
+  }
+
+  const handleNeuroDataLoaded = (data: unknown) => {
+    if (data === null) {
+      // 연동 해제 시 structured 초기화 (수동 입력으로 전환)
+      setNeuroStructured(null)
+      return
+    }
+    if (isNeuroStructured(data)) setNeuroStructured(data)
   }
 
   // ── 새 차트 생성 헬퍼 ────────────────────────────────────────
@@ -330,7 +337,11 @@ export default function Tab2Physical({
         upsertCheckupSection({ checkupId, sectionType: 'physical', data: physical }),
         upsertCheckupSection({ checkupId, sectionType: 'dental_basic', data: dental }),
         upsertCheckupSection({ checkupId, sectionType: 'ophthalmic_basic', data: ophthalmic }),
-        upsertCheckupSection({ checkupId, sectionType: 'neuro_basic', data: { notes: neuroNotes } }),
+        upsertCheckupSection({
+          checkupId,
+          sectionType: 'neuro_basic',
+          data: neuroStructured ?? { format: 'text', notes: neuroNotes },
+        }),
       ])
       toast.success('저장되었습니다.')
     } catch {
@@ -470,16 +481,39 @@ export default function Tab2Physical({
             }
             onLinkChange={(id) => onSubChartChange('neuro', id)}
             onCreateNew={handleCreateNeuroChart}
-            onDataLoaded={(text) => setNeuroNotes(text)}
-            getChartText={getNeuroText}
+            onStructuredDataLoaded={handleNeuroDataLoaded}
+            getChartData={getNeuroData}
           />
         </div>
-        <Textarea
-          value={neuroNotes}
-          onChange={(e) => setNeuroNotes(e.target.value)}
-          placeholder="신경계 검사 소견 (차트 연동 시 자동 입력)"
-          className="min-h-[120px] resize-none text-sm"
-        />
+
+        {neuroStructured ? (
+          /* 구조화 데이터 연동 상태 — 저장된 JSON 표시 */
+          <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-xs text-teal-800">
+            <p className="font-semibold">신경계 차트 연동됨</p>
+            {neuroStructured.summary && (
+              <p className="mt-1 text-teal-700">{neuroStructured.summary}</p>
+            )}
+            <p className="mt-1.5 text-[11px] text-teal-600">
+              검사 항목 {Object.keys(neuroStructured.results).length}개 ·
+              리포트에서 구조화된 표 형식으로 표시됩니다.
+            </p>
+            <button
+              type="button"
+              className="mt-2 text-[11px] text-teal-600 underline hover:text-teal-800"
+              onClick={() => setNeuroStructured(null)}
+            >
+              연동 해제하고 직접 입력으로 전환
+            </button>
+          </div>
+        ) : (
+          /* 수동 텍스트 입력 */
+          <Textarea
+            value={neuroNotes}
+            onChange={(e) => setNeuroNotes(e.target.value)}
+            placeholder="신경계 검사 소견을 직접 입력하거나 차트를 연동하세요"
+            className="min-h-[120px] resize-none text-sm"
+          />
+        )}
       </section>
 
       {/* ── 저장 ────────────────────────────────────────── */}

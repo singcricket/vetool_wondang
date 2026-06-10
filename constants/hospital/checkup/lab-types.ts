@@ -98,4 +98,6 @@ export interface LabResultItem {
   section: LabSection[]
   source?: 'manual' | 'ai'     // 값 입력 경로
   descriptionKo?: string        // 보호자용 검사 설명 (lab-ref에서 복사)
+  include_in_report?: boolean   // 미분류 항목: 리포트 포함 여부 (기본 true)
+  target_section?: LabSection | null // 미분류 항목: 배치할 섹션
 }

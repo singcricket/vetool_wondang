@@ -8,7 +8,7 @@ interface Props {
 export default async function SharedCheckupView({ resourceId }: Props) {
   try {
     const data = await fetchCheckupReportAdmin(resourceId)
-    return <CheckupReport data={data} />
+    return <CheckupReport data={data} isShared />
   } catch (e: any) {
     return (
       <div className="rounded-xl border bg-white p-12 text-center text-slate-500 shadow-sm flex flex-col gap-2">

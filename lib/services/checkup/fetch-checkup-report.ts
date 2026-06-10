@@ -11,6 +11,8 @@ export type CheckupReportImage = {
   img_url: string
   tags: string[]
   is_cover: boolean
+  img_memo: string | null
+  mark: Record<string, unknown> | null
 }
 
 export type CheckupReportData = {
@@ -19,6 +21,7 @@ export type CheckupReportData = {
     checkup_date: string
     vet_name: string | null
     hospital_name: string
+    subCharts: Record<string, string | null>
     patient: {
       name: string
       species: string
@@ -39,7 +42,7 @@ export async function fetchCheckupReportAdmin(checkupId: string): Promise<Checku
   const { data: record, error } = await admin
     .from('checkup_records')
     .select(`
-      id, hos_id, checkup_date, vet_id,
+      id, hos_id, checkup_date, vet_id, sub_charts,
       patients!inner(name, species, breed, hos_patient_id, birth, gender, owner_name)
     `)
     .eq('id', checkupId)
@@ -49,7 +52,7 @@ export async function fetchCheckupReportAdmin(checkupId: string): Promise<Checku
 
   const [sectionsRes, imagesRes, hospitalRes, vetRes] = await Promise.all([
     admin.from('checkup_sections').select('section_type, data').eq('checkup_id', checkupId),
-    admin.from('checkup_images').select('id, img_url, tags, is_cover').eq('checkup_id', checkupId),
+    admin.from('checkup_images').select('id, img_url, tags, is_cover, img_memo, mark').eq('checkup_id', checkupId),
     admin.from('hospitals').select('name').eq('id', record.hos_id).single(),
     record.vet_id
       ? admin.from('users').select('name').eq('user_id', record.vet_id).single()
@@ -64,6 +67,7 @@ export async function fetchCheckupReportAdmin(checkupId: string): Promise<Checku
       checkup_date: record.checkup_date,
       vet_name: vetRes.data?.name ?? null,
       hospital_name: hospitalRes.data?.name ?? '',
+      subCharts: ((record.sub_charts as Record<string, string | null>) ?? {}),
       patient: {
         name: p?.name ?? '',
         species: p?.species ?? '',

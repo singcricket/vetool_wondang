@@ -12,6 +12,7 @@ import type { LabSection, LabResultItem } from '@/constants/hospital/checkup/lab
 import type { DxEvaluation } from '@/lib/actions/checkup/plan-analysis'
 import { physicalRefMap } from '@/constants/hospital/checkup/physical-ref'
 import { xrayFindingMap, xrayMeasurementMap, interpretXrayMeasurement } from '@/constants/hospital/checkup/xray-ref'
+import { labRefMap } from '@/constants/hospital/checkup/lab-ref'
 
 export type OrganRichness = 'full' | 'partial' | 'absent'
 
@@ -30,6 +31,7 @@ export interface XrayOrganFinding {
   /** 계측값일 때 "10.5v · 경도 심장비대" 형태로 표시 */
   valueLabel?: string
   severity: 'mild' | 'moderate' | 'severe'
+  isNormal?: boolean
   ownerMessage: string
 }
 
@@ -56,14 +58,21 @@ export interface OrganModuleConfig {
 
 export type { DxEvaluation }
 
+export interface UsOrganNote {
+  organKey: string
+  label: string
+  note: string
+}
+
 export interface ResolvedOrganSection extends OrganModuleConfig {
   labItems: LabResultItem[]
   physicalFindings: PhysicalFinding[]
   xrayFindings: XrayOrganFinding[]
   /** 구조화 DxEvaluation 또는 구버전 string */
   aiEval: DxEvaluation | string
-  images: { img_url: string; tags: string[] }[]
+  images: { id: string; img_url: string; tags: string[]; img_memo?: string | null; mark?: Record<string, unknown> | null; is_cover?: boolean }[]
   richness: Exclude<OrganRichness, 'absent'>
+  usNotes: UsOrganNote[]
 }
 
 // ── 장기계통 모듈 정의 ────────────────────────────────────────
@@ -93,8 +102,8 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     label: '간·담도계',
     planKey: 'dx_hepatobiliary',
     labSections: ['liver'],
-    labIds: ['tp', 'alb', 'glob', 'bile_acid'],
-    imageTags: ['us_liver', 'us_spleen', 'us_gallbladder'],
+    labIds: ['tp', 'alb', 'glob', 'bile_acid', 'nh3', 'bun', 'chol'],
+    imageTags: ['organ_liver', 'organ_spleen', 'organ_gallbladder'],
     imagingSectionKeys: ['ultrasound_basic'],
     physicalIds: ['liver_size', 'abdominal_palpation', 'abdominal_pain'],
     xrayFindingIds: ['hepatomegaly', 'microhepatica', 'ascites'],
@@ -107,8 +116,8 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     label: '신장·비뇨기계',
     planKey: 'dx_urogenital',
     labSections: ['kidney', 'urinalysis'],
-    labIds: ['sdma', 'phos'],
-    imageTags: ['us_left_kidney', 'us_right_kidney', 'us_urinary_bladder', 'us_left_adrenal', 'us_right_adrenal'],
+    labIds: ['sdma', 'phos', 'ca'],
+    imageTags: ['organ_left_kidney', 'organ_right_kidney', 'organ_urinary_bladder', 'organ_left_adrenal', 'organ_right_adrenal'],
     imagingSectionKeys: ['ultrasound_basic'],
     physicalIds: ['bladder', 'systolic_bp'],
     xrayFindingIds: ['renomegaly', 'small_kidney', 'vesical_calculi', 'nephrolithiasis'],
@@ -121,8 +130,8 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     label: '췌장·소화기계',
     planKey: 'dx_gi',
     labSections: ['pancreas'],
-    labIds: ['pli_dog', 'pli_cat', 'tli', 'b12_cobalamin', 'folate'],
-    imageTags: ['us_pancreas', 'us_stomach', 'us_duodenum', 'us_small_intestine', 'us_colon', 'us_gi_tract', 'us_lymph_node', 'us_free_fluid'],
+    labIds: ['pli_dog', 'pli_cat', 'tli', 'b12_cobalamin', 'folate', 'na', 'k', 'cl'],
+    imageTags: ['organ_pancreas', 'organ_stomach', 'organ_duodenum', 'organ_small_intestine', 'organ_colon', 'organ_gi_tract', 'organ_lymph_node', 'organ_free_fluid'],
     imagingSectionKeys: ['ultrasound_basic'],
     physicalIds: ['abdominal_palpation', 'abdominal_pain', 'intestinal_loops'],
     xrayFindingIds: ['abdominal_mass', 'foreign_body', 'ileus', 'abdominal_calcification'],
@@ -158,9 +167,9 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     label: '내분비계',
     planKey: 'dx_endocrine',
     labSections: ['endocrine', 'thyroid'],
-    labIds: ['glu', 'fructosamine'],
-    imageTags: ['us_left_adrenal', 'us_right_adrenal'],
-    imagingSectionKeys: [],
+    labIds: ['glu', 'fructosamine', 'chol', 'trig'],
+    imageTags: ['organ_left_adrenal', 'organ_right_adrenal'],
+    imagingSectionKeys: ['ultrasound_basic'],
     physicalIds: ['bcs', 'mcs', 'weight_change'],
     xrayFindingIds: ['prostatomegaly'],
     xrayMeasurementIds: [],
@@ -186,7 +195,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     label: '전해질·미네랄',
     planKey: 'dx_electrolyte',
     labSections: ['electrolyte'],
-    labIds: [],
+    labIds: ['na', 'k', 'cl'],
     imageTags: [],
     imagingSectionKeys: [],
     physicalIds: ['skin_turgor', 'dehydration_estimate'],
@@ -256,12 +265,33 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
   },
 ]
 
+// ── 초음파 장기명 한글 매핑 ──────────────────────────────────
+const US_ORGAN_NAME_KO: Record<string, string> = {
+  liver:           '간',
+  gallbladder:     '담낭 및 담도계',
+  spleen:          '비장',
+  pancreas:        '췌장',
+  left_kidney:     '좌측 신장',
+  right_kidney:    '우측 신장',
+  urinary_bladder: '방광',
+  left_adrenal:    '좌측 부신',
+  right_adrenal:   '우측 부신',
+  stomach:         '위',
+  duodenum:        '십이지장',
+  small_intestine: '소장',
+  colon:           '결장',
+  gi_tract:        '위장관 전반',
+  lymph_node:      '복강 림프절',
+  free_fluid:      '복강 내 유리액',
+}
+
 // ── 풍부도 결정 헬퍼 ─────────────────────────────────────────
 
 // 신체검사에서 "정상"으로 간주하는 기본값 패턴 (이 값들은 findings로 표시 안 함)
 const PHYSICAL_NORMAL_PATTERNS = [
   '정상', 'BAR', 'QAR', '없음', '정상 범위', '정상/촉진 불가',
   '검사 미실시', '미실시', '해당 없음', '<5% (임상 징후 없음)',
+  '정규', // 심장 리듬 "정규 (Regular)"
 ]
 function isPhysicalNormal(value: string): boolean {
   return PHYSICAL_NORMAL_PATTERNS.some((p) => value.includes(p))
@@ -274,24 +304,31 @@ function isPhysicalNormal(value: string): boolean {
 export function resolveOrganSections(
   allLabItems: LabResultItem[],
   planData: Record<string, unknown>,
-  allImages: { img_url: string; tags: string[] }[],
+  allImages: { id: string; img_url: string; tags: string[]; img_memo?: string | null; mark?: Record<string, unknown> | null; is_cover?: boolean }[],
   configs: OrganModuleConfig[] = ORGAN_MODULE_CONFIGS,
   physicalData: Record<string, unknown> = {},
   xrayData: Record<string, unknown> = {},
   species: 'dog' | 'cat' = 'dog',
+  imagingSections: Record<string, Record<string, unknown>> = {},
 ): ResolvedOrganSection[] {
   // xray checked 소견 맵 (checked: { [id]: true })
   const xrayChecked = (xrayData.checked ?? {}) as Record<string, boolean>
 
   return configs.reduce<ResolvedOrganSection[]>((acc, config) => {
-    const labItems = allLabItems.filter(
-      (item) =>
-        !!item.value &&
-        (
-          config.labSections.some((s) => item.section?.includes(s)) ||
-          config.labIds.includes(item.id)
-        ),
-    )
+    const labItems = allLabItems
+      .filter(
+        (item) =>
+          !!item.value &&
+          (
+            config.labSections.some((s) => item.section?.includes(s)) ||
+            config.labIds.includes(item.id)
+          ),
+      )
+      .map((item) => {
+        const ref = labRefMap[item.id]
+        if (!ref?.descriptionKo || item.descriptionKo) return item
+        return { ...item, descriptionKo: ref.descriptionKo }
+      })
 
     // 신체검사 소견 — 값이 있고 정상 패턴이 아닌 항목만 포함
     const physicalFindings: PhysicalFinding[] = config.physicalIds.reduce<PhysicalFinding[]>(
@@ -328,7 +365,7 @@ export function resolveOrganSections(
       })
     }
 
-    // 방사선 계측 소견 (VHS, VLAS 등) — 이상값만 포함
+    // 방사선 계측 소견 (VHS, VLAS 등) — 값이 있으면 정상/이상 모두 포함
     for (const mid of config.xrayMeasurementIds) {
       const rawVal = xrayData[mid]
       if (rawVal === undefined || rawVal === null || rawVal === '') continue
@@ -337,17 +374,38 @@ export function resolveOrganSections(
       const mRef = xrayMeasurementMap[mid]
       if (!mRef) continue
       const interp = interpretXrayMeasurement(mRef, numVal, species)
-      if (!interp || !interp.isAbnormal) continue
+      if (!interp) continue
       xrayFindings.push({
         id: mid,
         label: mRef.nameKo,
         type: 'measurement',
         valueLabel: `${numVal}${mRef.unit} · ${interp.resultTextKo}`,
         severity: interp.severity ?? 'mild',
+        isNormal: !interp.isAbnormal,
         ownerMessage: numVal > (typeof mRef.ranges[species][0].max === 'number' ? (mRef.ranges[species][0].max ?? 0) : 0)
           ? mRef.ownerMessage.increase
           : mRef.ownerMessage.decrease,
       })
+    }
+
+    // 초음파 장기별 소견 추출
+    const usNotes: UsOrganNote[] = []
+    for (const sectionKey of config.imagingSectionKeys) {
+      if (sectionKey !== 'ultrasound_basic') continue
+      const usData = imagingSections[sectionKey]
+      if (!usData) continue
+      const organNotesData =
+        (usData.organ_notes_owner as Record<string, string> | undefined) ??
+        (usData.organ_notes as Record<string, string> | undefined)
+      if (!organNotesData) continue
+      for (const tag of config.imageTags) {
+        if (!tag.startsWith('organ_')) continue
+        const organKey = tag.slice(6) // 'organ_liver' → 'liver'
+        const note = organNotesData[organKey]
+        if (note?.trim()) {
+          usNotes.push({ organKey, label: US_ORGAN_NAME_KO[organKey] ?? organKey, note: note.trim() })
+        }
+      }
     }
 
     const rawEval = planData[config.planKey]
@@ -363,11 +421,13 @@ export function resolveOrganSections(
     )
 
     const hasAi = typeof aiEval === 'object' ? !!aiEval.summary : !!aiEval
-    if (labItems.length === 0 && physicalFindings.length === 0 && xrayFindings.length === 0 && !hasAi && images.length === 0) return acc
+    // DxEvaluation 객체가 존재하면 summary가 비어도 "데이터 있음"으로 처리 (정상 소견 카드 표시)
+    const hasAiOrDx = typeof aiEval === 'object' || !!aiEval
+    if (labItems.length === 0 && physicalFindings.length === 0 && xrayFindings.length === 0 && !hasAiOrDx && images.length === 0 && usNotes.length === 0) return acc
 
     const richness: Exclude<OrganRichness, 'absent'> = hasAi ? 'full' : 'partial'
 
-    acc.push({ ...config, labItems, physicalFindings, xrayFindings, aiEval, images, richness })
+    acc.push({ ...config, labItems, physicalFindings, xrayFindings, aiEval, images, richness, usNotes })
     return acc
   }, [])
 }

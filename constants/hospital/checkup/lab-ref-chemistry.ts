@@ -106,6 +106,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'liver'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '담즙 흐름과 간 기능을 평가하는 효소입니다. ALP와 함께 담즙 정체나 간 질환을 확인하는 데 활용됩니다. 수치가 높으면 담도 이상이나 간 손상을 추가로 검사합니다.',
     defaultRefRange: { dog: '0–11', cat: '0–8' },
     ranges: {
       dog: [
@@ -135,6 +136,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'liver'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '적혈구가 분해될 때 생기는 노란색 색소로, 간을 통해 담즙으로 배출됩니다. 수치가 높으면 눈의 흰자나 피부가 노랗게 변하는 황달이 생길 수 있으며, 간·담도 문제나 적혈구 파괴 여부를 평가합니다.',
     defaultRefRange: { dog: '0–0.3', cat: '0–0.4' },
     ranges: {
       dog: [
@@ -164,6 +166,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'liver'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '총 빌리루빈 중 간에서 처리된 형태입니다. 수치가 높으면 담즙 흐름이 막혔거나 간 내부에 문제가 있을 가능성을 평가하며, 담즙정체의 원인을 찾는 데 활용됩니다.',
     defaultRefRange: { common: '0–0.1' },
     ranges: {
       common: [
@@ -275,7 +278,7 @@ export const labRefChemistry: LabRefItem[] = [
       increase: '췌장염, 신부전(신장에서 배설), 장폐색. 비특이적',
       decrease: '임상적 의의 낮음',
     },
-    aiExtractKeywords: ['AMY', 'Amylase', '아밀라아제'],
+    aiExtractKeywords: ['AMY', 'Amylase', '아밀라아제','AMYL'],
   },
   {
     id: 'lipa',
@@ -317,6 +320,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'protein'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '혈액 속 단백질 전체 양입니다. 알부민과 글로불린을 합친 값으로, 영양 상태·간 기능·면역 상태를 종합적으로 반영합니다. 수치가 너무 낮거나 높으면 추가 검사로 원인을 파악합니다.',
     defaultRefRange: { dog: '5.4–7.1', cat: '5.7–7.8' },
     ranges: {
       dog: [
@@ -381,6 +385,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'protein'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '면역 항체를 포함하는 혈중 단백질입니다. 수치가 높으면 만성 염증·면역 질환·감염을, 낮으면 면역 기능 저하를 평가합니다. 알부민과 함께 단백질 균형을 확인하는 데 활용됩니다.',
     defaultRefRange: { dog: '2.8–4.2', cat: '2.6–5.1' },
     ranges: {
       dog: [
@@ -448,6 +453,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'glucose'],
     testType: 'range',
     foldProfile: 'enzyme',
+    descriptionKo: '최근 2~3주 동안의 평균 혈당 수치를 반영하는 지표입니다. 당뇨병이 있는 경우 혈당이 얼마나 잘 조절되고 있는지 확인하는 데 사용됩니다. 단기 스트레스나 식이 변화의 영향을 받지 않아 신뢰도가 높습니다.',
     defaultRefRange: { dog: '262–390', cat: '190–365' },
     ranges: {
       dog: [
@@ -550,6 +556,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'electrolyte'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '체액 균형을 유지하는 핵심 전해질입니다. 수분 섭취·배출, 신장 기능, 부신 기능과 밀접하게 연관됩니다. 수치가 너무 낮거나 높으면 구토·설사·탈수·호르몬 이상 여부를 평가합니다.',
     defaultRefRange: { dog: '140–154', cat: '149–163' },
     ranges: {
       dog: [
@@ -581,6 +588,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'electrolyte'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '심장 박동과 근육 수축에 필수적인 전해질입니다. 수치가 지나치게 낮거나 높으면 심각한 근육 약화나 부정맥이 생길 수 있으며, 신장·부신 기능 이상과도 연관됩니다.',
     defaultRefRange: { dog: '3.7–5.8', cat: '3.5–5.1' },
     ranges: {
       dog: [
@@ -612,6 +620,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'electrolyte'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '나트륨과 함께 체액 균형을 조절하는 전해질입니다. 구토로 인한 위산 소실이나 산-염기 불균형 시 변화하며, 나트륨·칼륨과 함께 종합 평가합니다.',
     defaultRefRange: { dog: '102–120', cat: '111–125' },
     ranges: {
       dog: [
@@ -643,6 +652,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'electrolyte'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '뼈 건강, 신경·근육 기능, 혈액 응고에 필수적인 미네랄입니다. 수치가 비정상이면 부갑상선 이상, 종양, 신장 문제 등을 의심하며 추가 검사로 원인을 파악합니다.',
     defaultRefRange: { dog: '9.3–11.8', cat: '9.0–11.5' },
     ranges: {
       dog: [
@@ -676,6 +686,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'electrolyte'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '뼈와 에너지 대사에 중요한 미네랄로, 신장을 통해 배출됩니다. 신장 기능이 떨어질수록 혈중 수치가 올라가므로, 신부전 진행 여부를 평가하는 데 크레아티닌과 함께 활용됩니다.',
     defaultRefRange: { dog: '2.5–6.0', cat: '3.4–8.5' },
     ranges: {
       dog: [
@@ -707,6 +718,7 @@ export const labRefChemistry: LabRefItem[] = [
     section: ['chemistry', 'electrolyte'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '근육·신경 기능과 에너지 대사에 필요한 전해질입니다. 심한 구토·설사 시 부족해질 수 있으며, 낮은 수치는 저칼슘·저칼륨혈증과 함께 나타나기도 합니다.',
     defaultRefRange: { dog: '1.8–2.4', cat: '1.9–2.5' },
     ranges: {
       dog: [

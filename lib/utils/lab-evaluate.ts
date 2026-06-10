@@ -267,9 +267,10 @@ export function applyEvaluations(
       item.source,
       item.ref_range,
     )
-    if (!result) return item
+    const withDesc = ref.descriptionKo ? { ...item, descriptionKo: ref.descriptionKo } : item
+    if (!result) return withDesc
     return {
-      ...item,
+      ...withDesc,
       is_abnormal: result.isAbnormal,
       result_text: result.resultTextKo,
       severity: result.severity,

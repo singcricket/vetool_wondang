@@ -14,6 +14,8 @@ export type CheckupImage = {
   img_url: string
   tags: string[]
   is_cover: boolean
+  img_memo: string | null
+  mark: Record<string, unknown> | null
   created_at: string
 }
 
@@ -46,11 +48,14 @@ export async function updateCheckupImageTags(
   imageId: string,
   tags: string[],
   isCover: boolean,
+  imgMemo?: string | null,
 ): Promise<void> {
   const supabase = await createClient()
+  const payload: Record<string, unknown> = { tags, is_cover: isCover }
+  if (imgMemo !== undefined) payload.img_memo = imgMemo
   const { error } = await (supabase as any)
     .from('checkup_images')
-    .update({ tags, is_cover: isCover })
+    .update(payload)
     .eq('id', imageId)
   if (error) throw new Error(`태그 저장 실패: ${error.message}`)
 }
@@ -62,6 +67,25 @@ export async function deleteCheckupImages(imageIds: string[]): Promise<void> {
     .delete()
     .in('id', imageIds)
   if (error) throw new Error(`삭제 실패: ${error.message}`)
+}
+
+export async function updateCheckupImageMark(imageId: string, mark: string | null): Promise<void> {
+  const supabase = await createClient()
+  const markData = mark ? JSON.parse(mark) : null
+  const { error } = await (supabase as any)
+    .from('checkup_images')
+    .update({ mark: markData })
+    .eq('id', imageId)
+  if (error) throw new Error(`마킹 저장 실패: ${error.message}`)
+}
+
+export async function updateCheckupImageUrl(imageId: string, newUrl: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await (supabase as any)
+    .from('checkup_images')
+    .update({ img_url: newUrl })
+    .eq('id', imageId)
+  if (error) throw new Error(`이미지 URL 저장 실패: ${error.message}`)
 }
 
 export async function suggestCheckupImageTags(

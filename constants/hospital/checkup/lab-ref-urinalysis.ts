@@ -10,6 +10,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     section: ['urinalysis'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '소변이 얼마나 농축되어 있는지 측정합니다. 신장이 수분을 잘 재흡수할수록 비중이 높고, 신장 기능이 떨어지거나 다음다뇨가 있으면 낮아집니다. 신장 기능 평가의 가장 기본적인 지표입니다.',
     defaultRefRange: { dog: '1.015–1.045', cat: '1.020–1.060' },
     ranges: {
       dog: [
@@ -42,6 +43,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     section: ['urinalysis'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '소변의 산성·알칼리성 정도를 나타냅니다. 요로 결석의 종류와 요로 감염 여부를 평가하는 데 참고하며, 식이와 대사 상태에 따라 달라집니다.',
     defaultRefRange: { common: '5.5–7.5' },
     ranges: {
       common: [
@@ -65,6 +67,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '',
     section: ['urinalysis'],
     testType: 'select',
+    descriptionKo: '소변의 색은 농도, 혈액, 빌리루빈 등 다양한 이상 여부를 반영합니다. 연황색이 정상이며, 적색(혈뇨)이나 갈색(빌리루빈뇨)은 추가 검사가 필요합니다.',
     defaultRefRange: { common: '연황색–황색 (Yellow)' },
     options: [
       { value: '무색',         isAbnormal: true,  severity: 'mild',     labelKo: '무색 — 희석뇨/다뇨' },
@@ -91,6 +94,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '',
     section: ['urinalysis'],
     testType: 'select',
+    descriptionKo: '소변에 단백질이 새어 나오는지 확인합니다. 신장의 여과 기능이 손상되면 단백질이 소변으로 빠져나가 양성 반응이 나타납니다. 양성 시 UPC 검사로 정량 평가합니다.',
     defaultRefRange: { common: '음성 (Negative)' },
     options: [
       { value: 'Negative', isAbnormal: false,                        labelKo: '음성 (정상)' },
@@ -114,6 +118,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     section: ['urinalysis'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '소변에 단백질이 얼마나 빠져나가는지 정확히 정량하는 검사입니다. 신장 여과막의 손상 정도를 평가하며, 만성 신부전 진행 모니터링에 중요하게 사용됩니다.',
     defaultRefRange: { dog: '<0.5', cat: '<0.4' },
     ranges: {
       dog: [
@@ -143,6 +148,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '',
     section: ['urinalysis'],
     testType: 'select',
+    descriptionKo: '소변에 포도당이 있는지 확인합니다. 정상에서는 소변에 당이 검출되지 않으며, 양성이면 혈당 이상(당뇨)이나 신장의 재흡수 기능 저하를 평가합니다.',
     defaultRefRange: { common: '음성 (Negative)' },
     options: [
       { value: 'Negative', isAbnormal: false,                        labelKo: '음성 (정상)' },
@@ -164,6 +170,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '',
     section: ['urinalysis'],
     testType: 'select',
+    descriptionKo: '지방이 에너지로 과도하게 분해될 때 생기는 케톤체가 소변에 나오는지 확인합니다. 당뇨성 케톤산증이나 심한 기아 상태에서 양성이 되며, 높은 수치는 즉각적인 치료가 필요합니다.',
     defaultRefRange: { common: '음성 (Negative)' },
     options: [
       { value: 'Negative', isAbnormal: false,                        labelKo: '음성 (정상)' },
@@ -185,6 +192,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '',
     section: ['urinalysis'],
     testType: 'select',
+    descriptionKo: '소변에 혈액이 섞여 있는지 확인합니다. 방광염·요로결석·종양·용혈 등이 원인이 될 수 있으며, 현미경 침전물 검사로 적혈구 여부를 확인해 원인을 감별합니다.',
     defaultRefRange: { common: '음성 (Negative)' },
     options: [
       { value: 'Negative', isAbnormal: false,                        labelKo: '음성 (정상)' },
@@ -206,6 +214,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '',
     section: ['urinalysis'],
     testType: 'select',
+    descriptionKo: '담즙 색소가 소변에 나오는지 확인합니다. 간 질환이나 담즙 정체 시 양성이 되며, 개에서는 소량(1+)이 정상 범주에 속합니다. 고양이에서 양성이면 간담도 질환을 의심합니다.',
     defaultRefRange: { dog: '음성–1+', cat: '음성' },
     options: [
       { value: 'Negative', isAbnormal: false,                        labelKo: '음성' },
@@ -229,6 +238,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     section: ['urinalysis'],
     testType: 'range',
     foldProfile: 'cell',
+    descriptionKo: '현미경으로 소변 침전물에서 적혈구 수를 세는 검사입니다. 5개/HPF 이상이면 혈뇨로 판정하고, 방광염·요로결석·종양 등의 원인을 추가로 평가합니다.',
     defaultRefRange: { common: '0–5 /HPF' },
     ranges: {
       common: [
@@ -252,6 +262,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     section: ['urinalysis'],
     testType: 'range',
     foldProfile: 'cell',
+    descriptionKo: '현미경으로 소변에서 백혈구 수를 세는 검사입니다. 5개/HPF 이상이면 농뇨(염증)로 판정하고, 요로 감염이나 신우신염 여부를 평가합니다.',
     defaultRefRange: { common: '0–5 /HPF' },
     ranges: {
       common: [
@@ -274,6 +285,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '/LPF',
     section: ['urinalysis'],
     testType: 'select',
+    descriptionKo: '신장의 세뇨관에서 형성된 원통형 구조물이 소변에 나오는지 확인합니다. 초자원주 소량은 정상 범주이지만, 세립원주나 적혈구원주 등이 발견되면 신장 손상의 종류와 심각도를 평가합니다.',
     defaultRefRange: { common: '초자원주 0–2 /LPF, 그 외 음성' },
     options: [
       { value: '없음',                   isAbnormal: false,                        labelKo: '없음 (정상)' },
@@ -298,6 +310,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '',
     section: ['urinalysis'],
     testType: 'multiselect',
+    descriptionKo: '소변에서 미네랄 결정이 발견되는지 확인합니다. 결석 형성 위험이나 요로 감염, 대사 이상을 평가하며, 결정의 종류에 따라 원인과 치료 방향이 달라집니다.',
     defaultRefRange: { common: '음성 (Negative)' },
     options: [
       { value: '없음',              isAbnormal: false,                        labelKo: '없음' },
@@ -321,6 +334,7 @@ export const labRefUrinalysis: LabRefItem[] = [
     unit: '',
     section: ['urinalysis'],
     testType: 'select',
+    descriptionKo: '소변에서 세균이 관찰되는지 확인합니다. 세균이 보이면 요로 감염 가능성이 높으며, 항생제 선택을 위해 배양 및 감수성 검사를 추가로 진행합니다.',
     defaultRefRange: { common: '음성 (Negative)' },
     options: [
       { value: '없음',       isAbnormal: false,                        labelKo: '없음 (정상)' },

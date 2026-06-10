@@ -10,6 +10,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine', 'thyroid'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '갑상선에서 분비되는 주요 호르몬입니다. 수치가 낮으면 개에서 흔한 갑상선기능저하증, 높으면 고양이에서 흔한 갑상선기능항진증을 평가합니다. 체중 변화·식욕·활력 이상 시 기본 스크리닝으로 검사합니다.',
     defaultRefRange: { dog: '1.0–4.0', cat: '0.8–4.0' },
     ranges: {
       dog: [
@@ -42,6 +43,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine', 'thyroid'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '혈액에서 실제로 활성화된 갑상선호르몬 양입니다. 총 T4보다 정확도가 높아, 갑상선 이상이 의심될 때 확진 목적으로 추가 검사합니다.',
     defaultRefRange: { dog: '0.7–4.0', cat: '0.8–4.2' },
     ranges: {
       dog: [
@@ -70,6 +72,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine', 'thyroid'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '뇌하수체에서 분비되어 갑상선을 자극하는 호르몬입니다. T4가 낮을 때 TSH가 높아지는 관계를 이용해 갑상선기능저하증을 진단합니다. 개 전용 검사이며 고양이에는 적용이 제한됩니다.',
     defaultRefRange: { dog: '0.03–0.50', cat: '미확립' },
     ranges: {
       dog: [
@@ -96,6 +99,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '부신에서 분비되는 스트레스 호르몬입니다. 쿠싱증후군(과다)이나 애디슨병(부족)을 초기 평가하는 스크리닝 검사이며, 스트레스에 영향을 받아 단독 수치로 진단하지 않고 추가 검사와 함께 해석합니다.',
     defaultRefRange: { common: '1–5' },
     ranges: {
       common: [
@@ -120,6 +124,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: 'ACTH 호르몬을 주사한 뒤 부신의 반응 능력을 평가하는 검사입니다. 반응이 지나치게 낮으면 부신기능저하증(애디슨병), 지나치게 높으면 쿠싱증후군을 확진하는 데 사용됩니다.',
     defaultRefRange: { dog: '8–17', cat: '8–18' },
     ranges: {
       dog: [
@@ -153,6 +158,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '췌장에서 분비되어 혈당을 낮추는 호르몬입니다. 혈당과 함께 측정해 당뇨 여부나 인슐린을 과다 분비하는 췌장 종양(인슐린종)을 평가합니다.',
     defaultRefRange: { dog: '5–30', cat: '5–25' },
     ranges: {
       dog: [
@@ -183,6 +189,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '혈중 칼슘 수치를 조절하는 호르몬입니다. 칼슘 수치 이상과 함께 원발성 부갑상선기능항진증이나 만성 신부전에 의한 이차성 항진증을 진단하는 데 활용됩니다.',
     defaultRefRange: { common: '2–13' },
     ranges: {
       common: [
@@ -206,6 +213,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '일부 악성 종양이 PTH와 유사한 작용을 하는 이 단백질을 분비해 혈중 칼슘을 높입니다. 원인 불명의 고칼슘혈증 시 종양 관련 여부를 평가하는 검사입니다.',
     defaultRefRange: { common: '<2' },
     ranges: {
       common: [
@@ -229,6 +237,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine'],
     testType: 'range',
     foldProfile: 'renal',
+    descriptionKo: '집에서 아침 소변을 채취해 측정하는 쿠싱증후군 스크리닝 검사입니다. 수치가 정상이면 쿠싱증후군을 거의 배제할 수 있으며, 높으면 확진 검사를 추가로 진행합니다.',
     defaultRefRange: { dog: '<10', cat: '<36' },
     ranges: {
       dog: [
@@ -256,6 +265,7 @@ export const labRefEndocrine: LabRefItem[] = [
     section: ['endocrine'],
     testType: 'range',
     foldProfile: 'electrolyte',
+    descriptionKo: '쿠싱증후군을 확진하는 검사입니다. 소량의 스테로이드를 주사한 후 코르티솔이 억제되지 않으면 쿠싱증후군으로 진단하며, 억제되면 쿠싱증후군을 제외합니다.',
     defaultRefRange: { common: '<1 μg/dL (억제 정상)' },
     ranges: {
       common: [
@@ -280,6 +290,7 @@ export const labRefEndocrine: LabRefItem[] = [
     unit: 'ng/mL',
     section: ['endocrine'],
     testType: 'range',
+    descriptionKo: '번식 주기를 조절하는 호르몬입니다. 개의 배란 시점 예측 및 임신 여부 평가에 활용되며, 자궁 건강 상태(자궁축농증 등)를 확인하는 데도 참고합니다.',
     defaultRefRange: { common: '기저 <1 / 배란 >5' },
     ranges: {
       common: [

@@ -33,9 +33,12 @@ interface Props {
   onLinkChange: (chartId: string | null) => void
   // 새 차트 생성 (neuro 전용)
   onCreateNew?: () => Promise<void>
-  // 결과 불러오기 (neuro / ultrasound)
+  // 텍스트 결과 불러오기 (ultrasound 등)
   onDataLoaded?: (text: string) => void
   getChartText?: (chartId: string) => string | null
+  // 구조화 데이터 불러오기 (neuro 전용) — onDataLoaded 대신 사용
+  onStructuredDataLoaded?: (data: unknown) => void
+  getChartData?: (chartId: string) => unknown | null
 }
 
 export default function LinkedChartPanel({
@@ -49,11 +52,14 @@ export default function LinkedChartPanel({
   onCreateNew,
   onDataLoaded,
   getChartText,
+  onStructuredDataLoaded,
+  getChartData,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [working, setWorking] = useState(false)
 
   const linkedChart = charts.find((c) => c.id === linkedChartId)
+  const isStructuredMode = !!onStructuredDataLoaded
   const isDataPullMode = !!onDataLoaded
 
   const handleLink = async (chartId: string) => {
@@ -61,7 +67,10 @@ export default function LinkedChartPanel({
       setWorking(true)
       await linkSubChartToCheckup(checkupId, chartType, chartId)
       onLinkChange(chartId)
-      if (isDataPullMode && getChartText) {
+      if (isStructuredMode && getChartData) {
+        const data = getChartData(chartId)
+        if (data != null) onStructuredDataLoaded!(data)
+      } else if (isDataPullMode && getChartText) {
         const text = getChartText(chartId)
         if (text) onDataLoaded!(text)
       }
@@ -79,6 +88,7 @@ export default function LinkedChartPanel({
       setWorking(true)
       await clearLinkedSubChart(checkupId, chartType)
       onLinkChange(null)
+      if (isStructuredMode) onStructuredDataLoaded!(null)
       toast.success('연동이 해제되었습니다.')
     } catch {
       toast.error('연동 해제에 실패했습니다.')
@@ -88,13 +98,15 @@ export default function LinkedChartPanel({
   }
 
   const handleRefresh = () => {
-    if (!linkedChartId || !getChartText || !onDataLoaded) return
-    const text = getChartText(linkedChartId)
-    if (text) {
-      onDataLoaded(text)
-      toast.success('결과를 불러왔습니다.')
-    } else {
-      toast.info('불러올 데이터가 없습니다.')
+    if (!linkedChartId) return
+    if (isStructuredMode && getChartData) {
+      const data = getChartData(linkedChartId)
+      if (data != null) { onStructuredDataLoaded!(data); toast.success('결과를 불러왔습니다.') }
+      else toast.info('불러올 데이터가 없습니다.')
+    } else if (isDataPullMode && getChartText && onDataLoaded) {
+      const text = getChartText(linkedChartId)
+      if (text) { onDataLoaded(text); toast.success('결과를 불러왔습니다.') }
+      else toast.info('불러올 데이터가 없습니다.')
     }
   }
 
@@ -142,7 +154,7 @@ export default function LinkedChartPanel({
       )}
 
       {/* 결과 불러오기 */}
-      {isDataPullMode && linkedChart && (
+      {(isDataPullMode || isStructuredMode) && linkedChart && (
         <Button
           size="sm"
           variant="ghost"

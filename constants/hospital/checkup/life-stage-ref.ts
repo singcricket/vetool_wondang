@@ -109,7 +109,7 @@ export const CAT_LIFE_STAGES: LifeStageInfo[] = [
 export const DOG_LIFE_STAGES: LifeStageInfo[] = [
   {
     stage: 'puppy_kitten',
-    stageKo: '퍼피',
+    stageKo: '유년기',
     ageMonthMin: 0,
     ageMonthMax: 12,
     humanAgeRange: '0–15세',
@@ -120,7 +120,7 @@ export const DOG_LIFE_STAGES: LifeStageInfo[] = [
   },
   {
     stage: 'junior',
-    stageKo: '주니어',
+    stageKo: '성장기',  
     ageMonthMin: 13,
     ageMonthMax: 24,
     humanAgeRange: '15–24세',
@@ -131,7 +131,7 @@ export const DOG_LIFE_STAGES: LifeStageInfo[] = [
   },
   {
     stage: 'prime',
-    stageKo: '프라임',
+    stageKo: '성숙기',
     ageMonthMin: 25,
     ageMonthMax: 72,
     humanAgeRange: '24–40세',
@@ -142,7 +142,7 @@ export const DOG_LIFE_STAGES: LifeStageInfo[] = [
   },
   {
     stage: 'mature',
-    stageKo: '성숙기',
+    stageKo: '중년기' ,
     ageMonthMin: 73,
     ageMonthMax: 120,
     humanAgeRange: '44–56세 (소형) / 56–78세 (대형)',
@@ -153,7 +153,7 @@ export const DOG_LIFE_STAGES: LifeStageInfo[] = [
   },
   {
     stage: 'senior',
-    stageKo: '시니어',
+    stageKo: '노령기',
     ageMonthMin: 121,
     ageMonthMax: 168,
     humanAgeRange: '56–76세 (소형) / 78–115세 (대형)',

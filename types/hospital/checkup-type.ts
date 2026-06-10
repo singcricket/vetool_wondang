@@ -68,6 +68,42 @@ export type MonitoringItem = {
   priority: 'high' | 'medium' | 'low'
 }
 
+// ── 신경계 섹션 데이터 판별 유니언 ─────────────────────────────
+export type NeuroSectionStructured = {
+  format: 'structured'
+  chartId: string
+  results: Record<string, string | string[]>
+  localisations: {
+    localisationCandidates?: Array<{
+      location: string
+      locationNameKo?: string
+      confidenceScore: number
+    }>
+    detectedSyndromes?: Array<{
+      nameKo: string
+      interpretationKo: string
+    }>
+    cerebralLateralisation?: {
+      hemisphere: 'left' | 'right' | 'bilateral' | 'undetermined'
+      confidenceScore: number
+      summaryKo?: string
+    } | null
+  }
+  summary: string | null
+}
+
+export type NeuroSectionText = {
+  format: 'text'
+  notes: string
+}
+
+// format 없음 = 레거시 text (`notes` 키만 있는 구형 저장 형식)
+export type NeuroSectionData = NeuroSectionStructured | NeuroSectionText
+
+export function isNeuroStructured(d: unknown): d is NeuroSectionStructured {
+  return typeof d === 'object' && d !== null && (d as any).format === 'structured'
+}
+
 export type CheckupDetail = {
   record: {
     id: string

@@ -89,8 +89,19 @@ function toUnmatchedItem(raw: ExtractedLabRaw): LabResultItem {
     comment: null,
     section: ['special'],
     source: 'ai',
+    include_in_report: true,
+    target_section: null,
   }
 }
+
+const UNMATCHED_SECTION_OPTIONS: { value: LabSection | 'none'; label: string }[] = [
+  { value: 'none',       label: '기타 (미분류)' },
+  { value: 'cbc',        label: 'CBC (혈액검사)' },
+  { value: 'chemistry',  label: '혈청화학' },
+  { value: 'endocrine',  label: '내분비' },
+  { value: 'urinalysis', label: '요검사' },
+  { value: 'special',    label: '특수검사' },
+]
 
 export default function Tab3Lab({ checkupId, patient, labSection, extractedLabItems, extractedUnmatchedItems }: Props) {
   const savedLabItems = ((labSection?.data as any)?.items ?? []) as LabResultItem[]
@@ -161,12 +172,16 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
 
   const updateUnmatchedItem = (
     idx: number,
-    field: 'value' | 'ref_range' | 'is_abnormal' | 'comment',
+    field: 'value' | 'ref_range' | 'is_abnormal' | 'comment' | 'include_in_report' | 'target_section',
     val: string | boolean | null,
   ) => {
     setUnmatchedItems((prev) =>
       prev.map((item, i) => (i === idx ? { ...item, [field]: val } : item)),
     )
+  }
+
+  const removeUnmatchedItem = (idx: number) => {
+    setUnmatchedItems((prev) => prev.filter((_, i) => i !== idx))
   }
 
   const updateLabItem = (
@@ -222,11 +237,10 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
       const matchedItems = labGroups.flatMap((g) =>
         g.results.filter((r) => r.value !== null && r.value !== ''),
       )
-      const savedUnmatchedItems = unmatchedItems.filter((r) => r.value !== null && r.value !== '')
       await upsertCheckupSection({
         checkupId,
         sectionType: 'lab',
-        data: { items: [...matchedItems, ...savedUnmatchedItems] },
+        data: { items: [...matchedItems, ...unmatchedItems] },
       })
       toast.success('저장되었습니다.')
     } catch {
@@ -374,57 +388,118 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
       {unmatchedItems.length > 0 && (
         <div className="mb-2">
           <p className="mb-1.5 rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
-            기타 (미분류 검사)
+            기타 (미분류 검사) — AI 추출 항목
           </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b text-left text-slate-500">
-                  <th className="w-40 pb-1 pr-3 font-medium">항목명</th>
-                  <th className="w-28 pb-1 pr-3 font-medium">측정값</th>
-                  <th className="w-16 pb-1 pr-3 font-medium">단위</th>
-                  <th className="w-32 pb-1 pr-3 font-medium">참고범위</th>
-                  <th className="pb-1 font-medium">이상여부</th>
-                </tr>
-              </thead>
-              <tbody>
-                {unmatchedItems.map((item, idx) => (
-                  <tr key={item.id} className={item.is_abnormal ? 'bg-red-50' : ''}>
-                    <td className="py-0.5 pr-3 font-medium text-slate-700">{item.nameEn}</td>
-                    <td className="py-0.5 pr-3">
+          <p className="mb-2 text-[11px] text-slate-400">
+            리포트 포함 여부, 섹션 배치, 코멘트를 설정할 수 있습니다.
+          </p>
+          <div className="flex flex-col gap-2">
+            {unmatchedItems.map((item, idx) => {
+              const excluded = item.include_in_report === false
+              return (
+                <div
+                  key={item.id}
+                  className={`rounded-lg border p-3 transition-colors ${excluded ? 'border-slate-100 bg-slate-50 opacity-60' : 'border-amber-100 bg-white'}`}
+                >
+                  <div className="flex flex-wrap items-start gap-2">
+                    {/* 포함/제외 토글 */}
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <Checkbox
+                        checked={item.include_in_report !== false}
+                        onCheckedChange={(v) => updateUnmatchedItem(idx, 'include_in_report', !!v)}
+                        className="h-3.5 w-3.5"
+                      />
+                      <span className="text-[10px] text-slate-500">리포트 포함</span>
+                    </div>
+
+                    {/* 항목명 */}
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-semibold text-slate-800">{item.nameEn}</span>
+                      {item.unit && <span className="ml-1 text-[10px] text-slate-400">({item.unit})</span>}
+                    </div>
+
+                    {/* 섹션 배치 */}
+                    <Select
+                      value={item.target_section ?? 'none'}
+                      onValueChange={(v) => updateUnmatchedItem(idx, 'target_section', v === 'none' ? null : v)}
+                    >
+                      <SelectTrigger className="h-6 w-36 border-amber-200 px-1.5 text-[11px]">
+                        <SelectValue placeholder="섹션 배치" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNMATCHED_SECTION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {/* 삭제 버튼 */}
+                    <button
+                      onClick={() => removeUnmatchedItem(idx)}
+                      className="rounded p-0.5 text-slate-300 hover:bg-red-50 hover:text-red-400"
+                    >
+                      <span className="text-[11px]">✕</span>
+                    </button>
+                  </div>
+
+                  {/* 측정값 / 참고범위 / 이상여부 */}
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-slate-400">측정값</span>
                       <Input
                         value={item.value ?? ''}
                         onChange={(e) => updateUnmatchedItem(idx, 'value', e.target.value || null)}
-                        className="h-6 w-24 border-slate-200 px-1.5 text-xs"
+                        className="h-6 w-20 border-slate-200 px-1.5 text-xs"
                         placeholder="—"
+                        disabled={excluded}
                       />
-                    </td>
-                    <td className="py-0.5 pr-3 text-slate-400">{item.unit}</td>
-                    <td className="py-0.5 pr-3">
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-slate-400">참고범위</span>
                       <Input
                         value={item.ref_range ?? ''}
                         onChange={(e) => updateUnmatchedItem(idx, 'ref_range', e.target.value || null)}
-                        className="h-6 w-28 border-slate-200 px-1.5 text-xs"
+                        className="h-6 w-24 border-slate-200 px-1.5 text-xs"
                         placeholder="참고범위"
+                        disabled={excluded}
                       />
-                    </td>
-                    <td className="py-0.5">
-                      {item.is_abnormal === true ? (
-                        <span className="rounded bg-red-500 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                          이상
-                        </span>
-                      ) : item.is_abnormal === false ? (
-                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                          정상
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-slate-300">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-400">이상여부</span>
+                      <Select
+                        value={item.is_abnormal === true ? 'true' : item.is_abnormal === false ? 'false' : 'unknown'}
+                        onValueChange={(v) =>
+                          updateUnmatchedItem(idx, 'is_abnormal', v === 'true' ? true : v === 'false' ? false : null)
+                        }
+                        disabled={excluded}
+                      >
+                        <SelectTrigger className="h-6 w-20 border-slate-200 px-1.5 text-[11px]">
+                          <SelectValue placeholder="—" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unknown" className="text-xs">—</SelectItem>
+                          <SelectItem value="false" className="text-xs">정상</SelectItem>
+                          <SelectItem value="true" className="text-xs">이상</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* 코멘트 */}
+                  <div className="mt-1.5">
+                    <Input
+                      value={item.comment ?? ''}
+                      onChange={(e) => updateUnmatchedItem(idx, 'comment', e.target.value || null)}
+                      className="h-6 w-full border-slate-200 px-2 text-xs placeholder:text-slate-300"
+                      placeholder="코멘트 입력 (선택)"
+                      disabled={excluded}
+                    />
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
