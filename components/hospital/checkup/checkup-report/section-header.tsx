@@ -1,6 +1,7 @@
-import { PawPrint } from 'lucide-react'
+import { PawPrint, MapPin, Phone, Clock } from 'lucide-react'
 import { calcAge, speciesLabel } from './report-utils'
 import type { getLifeStageFromBirth } from '@/constants/hospital/checkup/life-stage-ref'
+import type { HosInfo } from '@/lib/services/checkup/fetch-checkup-report'
 
 type LifeStageResult = ReturnType<typeof getLifeStageFromBirth>
 
@@ -14,6 +15,7 @@ interface ReportHeaderProps {
   checkupDateLabel: string
   vetName: string | null
   hospitalName: string | null
+  hosInfo?: HosInfo | null
   abnormalCount: number
   coverImage?: { img_url: string } | null
   lifeStage: LifeStageResult
@@ -21,7 +23,7 @@ interface ReportHeaderProps {
 
 export function ReportHeader({
   patientName, species, breed, gender, birth, ownerName,
-  checkupDateLabel, vetName, hospitalName,
+  checkupDateLabel, vetName, hospitalName, hosInfo,
   abnormalCount, coverImage, lifeStage,
 }: ReportHeaderProps) {
   return (
@@ -86,11 +88,47 @@ export function ReportHeader({
       </div>
 
       {/* 하단 메타 */}
-      <div className="flex flex-wrap gap-6 bg-slate-50 px-6 py-3 text-xs text-slate-500">
-        <span>검진일 <strong className="text-slate-700">{checkupDateLabel}</strong></span>
-        {vetName && <span>담당의 <strong className="text-slate-700">{vetName}</strong></span>}
-        {hospitalName && <span>병원 <strong className="text-slate-700">{hospitalName}</strong></span>}
-        {ownerName && <span>보호자 <strong className="text-slate-700">{ownerName}</strong></span>}
+      <div className="bg-slate-50 px-4 py-3 text-xs text-slate-500">
+        {/* 검진 정보 행 */}
+        <div className="flex flex-wrap gap-4">
+          <span>검진일 <strong className="text-slate-700">{checkupDateLabel}</strong></span>
+          {vetName && <span>담당의 <strong className="text-slate-700">{vetName}</strong></span>}
+          {ownerName && <span>보호자 <strong className="text-slate-700">{ownerName}</strong></span>}
+        </div>
+
+        {/* 병원 정보 행 */}
+        {(hospitalName || hosInfo?.address || hosInfo?.phone || hosInfo?.hours) && (
+          <div className="mt-2 flex flex-wrap items-start gap-x-4 gap-y-1 border-t border-slate-200 pt-2">
+            {hospitalName && (
+              <span className="font-semibold text-slate-700">{hospitalName}</span>
+            )}
+            {hosInfo?.address && (
+              <span className="flex items-center gap-1">
+                <MapPin size={11} className="shrink-0 text-slate-400" />
+                {hosInfo.address}
+              </span>
+            )}
+            {hosInfo?.phone && (
+              <span className="flex items-center gap-1">
+                <Phone size={11} className="shrink-0 text-slate-400" />
+                {hosInfo.phone}
+              </span>
+            )}
+            {hosInfo?.hours && (
+              <span className="flex items-center gap-1">
+                <Clock size={11} className="shrink-0 text-slate-400" />
+                <span className="whitespace-pre-line">{hosInfo.hours}</span>
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* 표지 문구 */}
+        {hosInfo?.tagline && (
+          <p className="mt-2 border-t border-slate-200 pt-2 text-center text-[11px] italic text-slate-400">
+            {hosInfo.tagline}
+          </p>
+        )}
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import AdminSidebarItem from '@/components/hospital/admin/admin-sidebar-item'
-import { BrainCircuit, CalendarCheck2, SyringeIcon, UserCheckIcon, UsersIcon } from 'lucide-react'
+import { BrainCircuit, CalendarCheck2, SyringeIcon, UserCheckIcon, UsersIcon, Building2 } from 'lucide-react'
 
 interface Props {
   isSuper?: boolean
@@ -49,6 +49,11 @@ const ADMIN_SIDEBAR_ITEMS = [
     name: '근태관리',
     path: 'attendance',
     icon: CalendarCheck2,
+  },
+  {
+    name: '병원 정보',
+    path: 'hos-info',
+    icon: Building2,
   },
 ]
 

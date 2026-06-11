@@ -10,6 +10,9 @@ import UltrasoundDynamicForm from '@/components/hospital/ultrasound/ultrasound-d
 import { organSections, Organ } from '@/constants/hospital/ultrasound'
 
 import { toast } from 'sonner'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { FileText } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import UltrasoundImpressionPanel from '@/components/hospital/ultrasound/ultrasound-impression-panel'
 import { updateUltrasoundChart, upsertUltrasoundOrgan, deleteUltrasoundChart, getPatientUltrasoundCharts } from '@/lib/services/ultrasound/ultrasound-charts'
 import UltrasoundPreviousComparison from '@/components/hospital/ultrasound/ultrasound-previous-comparison'
@@ -142,7 +145,7 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
     >
       <div className="flex h-full w-full bg-slate-50 overflow-hidden">
         {/* Left Side: Organ Navigation Tabs */}
-        <div className="w-48 sm:w-64 border-r bg-white h-full overflow-y-auto">
+        <div className="w-28 sm:w-48 lg:w-64 shrink-0 border-r bg-white h-full overflow-y-auto">
           <UltrasoundOrganTabs
             organs={organSections}
             activeOrgan={activeOrgan}
@@ -190,11 +193,31 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
           )}
         </div>
 
-        {/* Right Side: DDx & Summary Panel */}
-        <div className="w-64 sm:w-80 border-l bg-slate-50 h-full overflow-y-auto p-4 space-y-4">
+        {/* Right Side: DDx & Summary Panel (Desktop) */}
+        <div className="hidden lg:block w-80 border-l bg-slate-50 h-full overflow-y-auto p-4 space-y-4">
           <UltrasoundImpressionPanel organsData={organsData} lang="ko" />
           <UltrasoundImpressionPanel organsData={organsData} lang="en" />
         </div>
+      </div>
+
+      {/* Mobile Floating Action Button for DDx & Summary */}
+      <div className="lg:hidden fixed bottom-6 right-6 z-50">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button className="rounded-full shadow-lg h-14 w-14 p-0 bg-slate-800 hover:bg-slate-700 text-white">
+              <FileText size={24} />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[85vw] sm:max-w-md overflow-y-auto p-4 border-l">
+            <SheetHeader className="mb-4 text-left">
+              <SheetTitle>초음파 소견 및 진단 (DDx)</SheetTitle>
+            </SheetHeader>
+            <div className="space-y-4 pb-8">
+              <UltrasoundImpressionPanel organsData={organsData} lang="ko" />
+              <UltrasoundImpressionPanel organsData={organsData} lang="en" />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </UltrasoundChartLayout>
   )

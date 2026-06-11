@@ -195,6 +195,7 @@ export default function CheckupReport({ data, isShared }: Props) {
             checkupDateLabel={checkupDateLabel}
             vetName={record.vet_name}
             hospitalName={record.hospital_name}
+            hosInfo={record.hos_info}
             abnormalCount={abnormalCount}
             coverImage={coverImage}
             lifeStage={lifeStage}

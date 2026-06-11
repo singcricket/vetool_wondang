@@ -51,7 +51,7 @@ export default function MobileSidebar({ hosId, vetoolUser, plan }: Props) {
           </SheetHeader>
         </VisuallyHidden>
 
-        <ul className="z-50">
+        <ul className="z-50 flex-1 overflow-y-auto py-2">
           {HOS_SIDEBAR_MENUS.filter(
             (menu) => !menu.isVetOnly || vetoolUser.is_vet || vetoolUser.is_super,
           ).map(({ icon, isReady, name, path }) => (

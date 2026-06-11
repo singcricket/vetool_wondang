@@ -46,7 +46,7 @@ export default function MobileSidebarItem({
         }}
         className={cn(
           isActive && 'bg-primary text-white',
-          'flex h-12 w-full justify-start gap-4 rounded-none',
+          'flex h-9 w-full justify-start gap-3 rounded-none text-sm [&>svg]:h-3.5 [&>svg]:w-3.5',
           !isSuper && name === '벳툴' && 'hidden',
         )}
         variant="ghost"

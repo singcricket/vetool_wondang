@@ -15,12 +15,20 @@ export type CheckupReportImage = {
   mark: Record<string, unknown> | null
 }
 
+export type HosInfo = {
+  address?: string
+  phone?: string
+  hours?: string
+  tagline?: string
+}
+
 export type CheckupReportData = {
   record: {
     id: string
     checkup_date: string
     vet_name: string | null
     hospital_name: string
+    hos_info: HosInfo | null
     subCharts: Record<string, string | null>
     patient: {
       name: string
@@ -53,7 +61,7 @@ export async function fetchCheckupReportAdmin(checkupId: string): Promise<Checku
   const [sectionsRes, imagesRes, hospitalRes, vetRes] = await Promise.all([
     admin.from('checkup_sections').select('section_type, data').eq('checkup_id', checkupId),
     admin.from('checkup_images').select('id, img_url, tags, is_cover, img_memo, mark').eq('checkup_id', checkupId),
-    admin.from('hospitals').select('name').eq('id', record.hos_id).single(),
+    admin.from('hospitals').select('name, hos_info').eq('hos_id', record.hos_id).single(),
     record.vet_id
       ? admin.from('users').select('name').eq('user_id', record.vet_id).single()
       : Promise.resolve({ data: null }),
@@ -67,6 +75,7 @@ export async function fetchCheckupReportAdmin(checkupId: string): Promise<Checku
       checkup_date: record.checkup_date,
       vet_name: vetRes.data?.name ?? null,
       hospital_name: hospitalRes.data?.name ?? '',
+      hos_info: (hospitalRes.data?.hos_info as HosInfo) ?? null,
       subCharts: ((record.sub_charts as Record<string, string | null>) ?? {}),
       patient: {
         name: p?.name ?? '',

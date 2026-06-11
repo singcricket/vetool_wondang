@@ -39,7 +39,7 @@ export function ExecutiveSummary({ organSections, labItems, plan }: ExecutiveSum
     <div className="mb-8 break-inside-avoid overflow-hidden rounded-[10px] border border-slate-200 shadow-sm">
 
       {/* ── 헤더 ── */}
-      <div className={`px-6 py-5 ${sty.headerBg}`}>
+      <div className={`px-3 py-2.5 sm:px-6 sm:py-5 ${sty.headerBg}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-white">종합 평가 요약</h2>
           <span className={`rounded-full bg-white/95 px-4 py-1 text-sm font-bold ${sty.badge}`}>
@@ -49,11 +49,11 @@ export function ExecutiveSummary({ organSections, labItems, plan }: ExecutiveSum
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 p-6">
+      <div className="flex flex-col gap-3 p-3 sm:gap-5 sm:p-5">
 
         {/* ── 즉시 처치 강조 박스 ── */}
         {(severeOrgans.length > 0 || criticalLabs.length > 0) && (
-          <div className="rounded-md border border-red-300 bg-red-50 p-4">
+          <div className="rounded-md border border-red-300 bg-red-50 p-3">
             <p className="mb-3 text-sm font-bold uppercase tracking-wide text-red-700">⚠ 즉시 처치 필요</p>
             <div className="flex flex-col gap-2">
               {severeOrgans.map((s) => {
@@ -107,7 +107,7 @@ export function ExecutiveSummary({ organSections, labItems, plan }: ExecutiveSum
               return (
                 <div
                   key={s.key}
-                  className={`flex flex-col gap-2 rounded-[10px] border ${box.border} ${box.bg} px-4 py-3`}
+                  className={`flex flex-col gap-2 rounded-[10px] border ${box.border} ${box.bg} px-2 py-2`}
                 >
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-sm font-bold text-slate-800">{s.label}</span>
@@ -156,7 +156,7 @@ export function ExecutiveSummary({ organSections, labItems, plan }: ExecutiveSum
 
         {/* ── 권장 조치 요약 ── */}
         {urgentAction && (
-          <div className={`rounded-md border p-4 ${sty.alertBorder} ${sty.alertBg}`}>
+          <div className={`rounded-md border p-3 ${sty.alertBorder} ${sty.alertBg}`}>
             <p className={`mb-2 text-sm font-bold uppercase tracking-wide ${sty.alertText}`}>
               권장 조치 요약
             </p>
