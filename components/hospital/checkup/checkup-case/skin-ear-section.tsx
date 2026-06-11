@@ -1,6 +1,7 @@
 'use client'
 
 import { Plus, X, Camera } from 'lucide-react'
+import SkinMapPanel, { type SkinMapMarker } from './skin-map-panel'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -55,7 +56,7 @@ const EAR_FINDINGS = [
   '삼출물 (분비물)',
   '발적 (Erythema)',
   '부종',
-  '악취',
+  '비정상적인 냄새',
   '소양감 (가려움)',
   '고막 이상',
   '이물',
@@ -327,6 +328,7 @@ function EarPanel({
 export interface SkinEarValues {
   skin_lesions_json: string       // JSON.stringify(SkinLesion[])
   skin_lesions_summary: string    // 리포트용 텍스트 요약
+  skin_map_json: string           // JSON.stringify(SkinMapMarker[])
   coat_condition: string
   parasite: string
   ear_od_findings: string         // JSON.stringify(string[])
@@ -342,6 +344,7 @@ interface Props {
   onChange: (key: keyof SkinEarValues, value: string) => void
   checkupId: string
   hosId: string
+  species?: string
   allImages?: CheckupImage[]
   onImageEdited?: () => void
   onImageUploaded?: () => void
@@ -380,9 +383,13 @@ function buildEarSummary(ear: EarExam): string {
 const COAT_OPTIONS = ['정상 (광택, 청결)', '건조/윤기 없음', '기름짐 (Seborrhea)', '탈모 (Alopecia)', '엉킴/매트']
 const PARASITE_OPTIONS = ['없음', '벼룩 (Fleas)', '진드기 (Ticks)', '이 (Lice)', '기생충 분변 (Flea dirt)']
 
-export default function SkinEarSection({ values, onChange, checkupId, hosId, allImages = [], onImageEdited, onImageUploaded }: Props) {
+export default function SkinEarSection({ values, onChange, checkupId, hosId, species = 'dog', allImages = [], onImageEdited, onImageUploaded }: Props) {
   const lesions: SkinLesion[] = (() => {
     try { return JSON.parse(values.skin_lesions_json || '[]') } catch { return [] }
+  })()
+
+  const markers: SkinMapMarker[] = (() => {
+    try { return JSON.parse(values.skin_map_json || '[]') } catch { return [] }
   })()
 
   const dynamicTagGroups: CheckupImageTagGroup[] = lesions.length > 0 ? [{
@@ -459,6 +466,14 @@ export default function SkinEarSection({ values, onChange, checkupId, hosId, all
           </Select>
         </div>
       </div>
+
+      {/* ── 피부 병변 위치도 ── */}
+      <SkinMapPanel
+        species={species}
+        lesions={lesions}
+        markers={markers}
+        onChange={(next) => onChange('skin_map_json', JSON.stringify(next))}
+      />
 
       {/* ── 피부 병변 목록 ── */}
       <div>

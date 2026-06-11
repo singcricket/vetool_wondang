@@ -251,6 +251,7 @@ export default function CheckupReport({ data, isShared }: Props) {
             ophthalmicBasicFindings={ophthalmicBasicFindings}
             checkupId={record.id}
             isShared={isShared}
+            species={patient.species}
           />
         </div>
 

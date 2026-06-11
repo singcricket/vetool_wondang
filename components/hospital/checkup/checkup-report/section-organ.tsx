@@ -1,5 +1,6 @@
 import type React from 'react'
 import { AlertCircle, CheckCircle2, Microscope, Activity, FileText, FlaskConical, ExternalLink, Bone } from 'lucide-react'
+import { SkinMapThumbnail, type SkinMapMarker } from '@/components/hospital/checkup/checkup-case/skin-map-panel'
 import type { LabResultItem } from '@/constants/hospital/checkup/lab-types'
 import type { ResolvedOrganSection, DxEvaluation } from '@/lib/config/checkup-report-modules'
 import { isDxEvaluation, SEVERITY_BADGE } from './report-utils'
@@ -220,14 +221,19 @@ function MusculoskeletalJointBlock({ extraData }: { extraData: Record<string, un
 
 type CheckupImageItem = { id: string; img_url: string; tags: string[]; img_memo?: string | null; mark?: Record<string, unknown> | null; is_cover?: boolean }
 
-function DermaBlock({ extraData, images, checkupId, isShared }: {
+function DermaBlock({ extraData, images, checkupId, isShared, species }: {
   extraData: Record<string, unknown>
   images: CheckupImageItem[]
   checkupId?: string
   isShared?: boolean
+  species?: string
 }) {
   const lesions: SkinLesion[] = (() => {
     try { return JSON.parse((extraData.skin_lesions_json as string) || '[]') } catch { return [] }
+  })()
+
+  const skinMarkers: SkinMapMarker[] = (() => {
+    try { return JSON.parse((extraData.skin_map_json as string) || '[]') } catch { return [] }
   })()
 
   const odFindings: string[] = (() => { try { return JSON.parse((extraData.ear_od_findings as string) || '[]') } catch { return [] } })()
@@ -283,25 +289,37 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
           <div className="flex flex-col gap-2">
             {lesions.map((lesion, i) => {
               const lesionImages = images.filter((img) => img.tags?.includes(`skin_lesion_${lesion.id}`))
+              const hasMapMarkers = skinMarkers.some((m) => m.lesion_id === lesion.id)
+              const showLeftPanel = lesionImages.length > 0 || hasMapMarkers
               return (
                 <div key={lesion.id} className="overflow-hidden rounded-[10px] border border-amber-100 bg-amber-50">
-                  <div className="flex gap-0">
-                    {/* 왼쪽: 병변 이미지 */}
-                    {lesionImages.length > 0 && (
-                      <div className="flex shrink-0 flex-col gap-1 bg-amber-100/60 p-2">
-                        {lesionImages.map((img) => (
-                          <CheckupImgCard
-                            key={img.img_url}
-                            img={img}
-                            checkupId={checkupId ?? ''}
-                            isShared={isShared}
-                            className="h-28 w-28 rounded-md object-cover"
+                  <div className="flex flex-col gap-0">
+                    {/* 상단: 모식도 썸네일 + 병변 이미지 (가로 배치, 줄바꿈 허용) */}
+                    {showLeftPanel && (
+                      <div className="flex flex-wrap gap-1.5 bg-amber-100/60 p-2">
+                        {hasMapMarkers && (
+                          <SkinMapThumbnail
+                            species={species ?? 'dog'}
+                            lesionId={lesion.id}
+                            lesionIndex={i}
+                            markers={skinMarkers}
+                            className="h-28 w-28 sm:h-40 sm:w-40"
                           />
+                        )}
+                        {lesionImages.map((img) => (
+                          <div key={img.img_url} className="w-28 shrink-0 sm:w-40">
+                            <CheckupImgCard
+                              img={img}
+                              checkupId={checkupId ?? ''}
+                              isShared={isShared}
+                              className="h-28 w-28 rounded-md object-cover sm:h-40 sm:w-40"
+                            />
+                          </div>
                         ))}
                       </div>
                     )}
 
-                    {/* 오른쪽: 소견 */}
+                    {/* 하단: 소견 */}
                     <div className="flex flex-1 flex-col justify-center px-4 py-3">
                       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                         <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">병변 {i + 1}</span>
@@ -341,15 +359,16 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
                   <p className="mb-1.5 text-xs font-bold text-slate-500">{label}</p>
                   {/* 귀 사진 */}
                   {earImgs.length > 0 && (
-                    <div className="mb-2 grid grid-cols-3 gap-1">
+                    <div className="mb-2 flex flex-wrap gap-1.5">
                       {earImgs.map((img) => (
-                        <CheckupImgCard
-                          key={img.img_url}
-                          img={img}
-                          checkupId={checkupId ?? ''}
-                          isShared={isShared}
-                          className="aspect-square w-full rounded-md object-cover"
-                        />
+                        <div key={img.img_url} className="w-28 shrink-0 sm:w-40">
+                          <CheckupImgCard
+                            img={img}
+                            checkupId={checkupId ?? ''}
+                            isShared={isShared}
+                            className="h-28 w-28 rounded-md object-cover sm:h-40 sm:w-40"
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
@@ -396,9 +415,10 @@ interface OrganCardProps {
   ophthalmicBasicFindings?: BasicFinding[]
   checkupId?: string
   isShared?: boolean
+  species?: string
 }
 
-function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFindings, checkupId, isShared }: OrganCardProps) {
+function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFindings, checkupId, isShared, species }: OrganCardProps) {
   const abnormalItems = section.labItems.filter((i) => i.is_abnormal)
   const hasImages = section.images.length > 0
   const eval_  = section.aiEval
@@ -610,7 +630,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
 
         {/* 피부·귀 전용 렌더링 */}
         {isDerma && section.extraData && (
-          <DermaBlock extraData={section.extraData} images={section.images} checkupId={checkupId} isShared={isShared} />
+          <DermaBlock extraData={section.extraData} images={section.images} checkupId={checkupId} isShared={isShared} species={species} />
         )}
 
         {/* 혈액·임상병리 검사 결과 카드 */}
@@ -820,9 +840,10 @@ interface OrganSectionsBlockProps {
   ophthalmicBasicFindings?: BasicFinding[]
   checkupId?: string
   isShared?: boolean
+  species?: string
 }
 
-export function OrganSectionsBlock({ organSections, subCharts, dentalBasicFindings, ophthalmicBasicFindings, checkupId, isShared }: OrganSectionsBlockProps) {
+export function OrganSectionsBlock({ organSections, subCharts, dentalBasicFindings, ophthalmicBasicFindings, checkupId, isShared, species }: OrganSectionsBlockProps) {
   if (organSections.length === 0) return null
   return (
     <section className="mb-10 print:break-before-page">
@@ -837,6 +858,7 @@ export function OrganSectionsBlock({ organSections, subCharts, dentalBasicFindin
             ophthalmicBasicFindings={ophthalmicBasicFindings}
             checkupId={checkupId}
             isShared={isShared}
+            species={species}
           />
         ))}
       </div>

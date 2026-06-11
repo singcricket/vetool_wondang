@@ -245,6 +245,7 @@ export default function Tab2Physical({
   const [skinEar, setSkinEar] = useState<SkinEarValues>({
     skin_lesions_json:    savedDermaRaw.skin_lesions_json    ?? '[]',
     skin_lesions_summary: savedDermaRaw.skin_lesions_summary ?? '',
+    skin_map_json:        savedDermaRaw.skin_map_json        ?? '[]',
     coat_condition:       savedDermaRaw.coat_condition       ?? '',
     parasite:             savedDermaRaw.parasite             ?? '',
     ear_od_findings:      savedDermaRaw.ear_od_findings      ?? '[]',
@@ -419,14 +420,12 @@ export default function Tab2Physical({
         <SkinEarSection
           values={skinEar}
           onChange={(key, value) => {
-            setSkinEar((prev) => {
-              const next = { ...prev, [key]: value }
-              if (key === 'skin_lesions_json') onSkinLesionsChange?.(value)
-              return next
-            })
+            if (key === 'skin_lesions_json') onSkinLesionsChange?.(value)
+            setSkinEar((prev) => ({ ...prev, [key]: value }))
           }}
           checkupId={checkupId}
           hosId={hosId}
+          species={patient.species}
           allImages={allCheckupImages.filter((img) =>
             img.tags.some((t) =>
               t === 'organ_ear' || t === 'ear_od' || t === 'ear_os' || t === 'organ_skin' || t.startsWith('skin_lesion_'),
