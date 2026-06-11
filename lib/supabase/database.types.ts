@@ -1364,6 +1364,7 @@ export type Database = {
           district: string
           group_list: string[]
           hos_id: string
+          hos_info: Json | null
           icu_memo_names: string[]
           is_in_charge_system: boolean
           is_personal: boolean
@@ -1386,6 +1387,7 @@ export type Database = {
           district: string
           group_list?: string[]
           hos_id?: string
+          hos_info?: Json | null
           icu_memo_names?: string[]
           is_in_charge_system?: boolean
           is_personal?: boolean
@@ -1408,6 +1410,7 @@ export type Database = {
           district?: string
           group_list?: string[]
           hos_id?: string
+          hos_info?: Json | null
           icu_memo_names?: string[]
           is_in_charge_system?: boolean
           is_personal?: boolean

@@ -95,6 +95,12 @@ export const CHECKUP_IMAGE_TAG_GROUPS: CheckupImageTagGroup[] = [
       { id: 'organ_gi_tract',        label: '위장관 전반' },
       { id: 'organ_lymph_node',      label: '복강 림프절' },
       { id: 'organ_free_fluid',      label: '복강 유리액' },
+      { id: 'organ_heart',            label: '심장' },
+      { id: 'organ_lung',            label: '폐 / 흉강' },
+      { id: 'organ_skin',            label: '피부 (일반)' },
+      { id: 'organ_ear',             label: '귀 (일반)' },
+      { id: 'ear_od',               label: '우이 (OD)' },
+      { id: 'ear_os',               label: '좌이 (OS)' },
     ],
   },
   {

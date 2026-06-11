@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -14,27 +14,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Camera } from 'lucide-react'
 import CheckupImageUploadTab from './checkup-image-upload-tab'
 import CheckupImageManageTab from './checkup-image-manage-tab'
+import type { CheckupImageTagGroup } from '@/constants/hospital/checkup/checkup-image-tags'
 
 interface Props {
   checkupId: string
   hosId: string
+  /** 업로드 시 자동 적용 태그 (병변별 인라인 업로드용) */
+  defaultTags?: string[]
+  /** 동적 태그 그룹 (피부 병변 목록) */
+  dynamicTagGroups?: CheckupImageTagGroup[]
+  /** 커스텀 트리거 (기본: 이미지 버튼) */
+  trigger?: ReactNode
 }
 
-export default function CheckupImageUploadDialog({ checkupId, hosId }: Props) {
+export default function CheckupImageUploadDialog({ checkupId, hosId, defaultTags, dynamicTagGroups, trigger }: Props) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState('upload')
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1.5 border-slate-200 text-xs text-slate-600 hover:bg-slate-50"
-        >
-          <Camera className="h-3.5 w-3.5" />
-          이미지
-        </Button>
+        {trigger ?? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1.5 border-slate-200 text-xs text-slate-600 hover:bg-slate-50"
+          >
+            <Camera className="h-3.5 w-3.5" />
+            이미지
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="flex h-[90vh] max-w-5xl flex-col overflow-hidden p-0">
@@ -61,13 +70,15 @@ export default function CheckupImageUploadDialog({ checkupId, hosId }: Props) {
                 checkupId={checkupId}
                 hosId={hosId}
                 onSuccess={() => setTab('manage')}
+                defaultTags={defaultTags}
+                dynamicTagGroups={dynamicTagGroups}
               />
             )}
           </TabsContent>
 
           <TabsContent value="manage" className="relative m-0 flex-1 overflow-hidden">
             {open && tab === 'manage' && (
-              <CheckupImageManageTab checkupId={checkupId} />
+              <CheckupImageManageTab checkupId={checkupId} dynamicTagGroups={dynamicTagGroups} />
             )}
           </TabsContent>
         </Tabs>

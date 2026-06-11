@@ -14,9 +14,10 @@ const CheckupImageWithMark = dynamic(
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-6 flex items-center gap-2 border-b-2 border-teal-500 pb-3 text-xl font-bold text-slate-800">
-      {children}
-    </h2>
+    <div className="mb-8 flex items-center gap-4">
+      <div className="h-12 w-2 shrink-0 rounded-full bg-gradient-to-b from-teal-500 to-emerald-400" />
+      <h2 className="text-3xl font-black tracking-tight text-slate-800">{children}</h2>
+    </div>
   )
 }
 
@@ -31,9 +32,10 @@ export function AppendixSection({
 }) {
   return (
     <section className="mb-10 print:break-before-page">
-      <div className="mb-6 flex items-center gap-3 border-b-2 border-slate-400 pb-3">
-        <span className="rounded bg-slate-700 px-3 py-0.5 text-xs font-bold text-white">{tag}</span>
-        <h2 className="text-xl font-bold text-slate-800">{title}</h2>
+      <div className="mb-8 flex items-center gap-3">
+        <div className="h-12 w-2 shrink-0 rounded-full bg-gradient-to-b from-teal-400 to-cyan-400" />
+        <span className="rounded-full bg-teal-100 px-3 py-0.5 text-xs font-bold text-teal-700">{tag}</span>
+        <h2 className="text-3xl font-black tracking-tight text-slate-800">{title}</h2>
       </div>
       {children}
     </section>
@@ -43,7 +45,7 @@ export function AppendixSection({
 /** 섹션 내 중제목 — "계통별 평가", "주요 이상 수치" 등 */
 export function SubHeading({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-600">
+    <p className="mb-3 text-sm font-bold tracking-wide text-slate-600">
       {children}
     </p>
   )

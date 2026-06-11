@@ -1,6 +1,8 @@
 'use client'
 
 import React from 'react'
+import { Activity, Stethoscope, Eye, Brain, Smile, Camera } from 'lucide-react'
+import { SectionBlock } from './tab-ui'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,10 +32,12 @@ import { isNeuroStructured } from '@/types/hospital/checkup-type'
 import type { ExtractedPhysical } from '@/lib/actions/checkup/pdf-extraction'
 import PhysicalExamSection, { type PhysicalValues, sectionStatusKey } from './physical-exam-section'
 import { physicalRefAll, PHYSICAL_SECTION_ORDER } from '@/constants/hospital/checkup/physical-ref'
+import SkinEarSection, { type SkinEarValues } from './skin-ear-section'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 import { ophthalmicDomainSections } from '@/constants/hospital/ophthalmic/ophthalmic-exam-domains'
 import type { OphTestItem } from '@/constants/hospital/ophthalmic/ophthalmic-types'
 import LinkedChartPanel, { type ChartListItem } from './linked-chart-panel'
+import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
 
 // ── 치과 기본 소견 항목 ─────────────────────────────────────────
 const DENTAL_BASIC_IDS = [
@@ -64,9 +68,11 @@ interface Props {
   dentalSection: CheckupSection | undefined
   ophthalmicSection: CheckupSection | undefined
   neuroSection: CheckupSection | undefined
+  dermaSection: CheckupSection | undefined
   extractedPhysical: ExtractedPhysical | null
   subCharts: Record<string, string | null>
   onSubChartChange: (chartType: string, chartId: string | null) => void
+  onSkinLesionsChange?: (json: string) => void
 }
 
 const EXTRACTED_PHYSICAL_MAP: Record<keyof ExtractedPhysical, string> = {
@@ -201,9 +207,11 @@ export default function Tab2Physical({
   dentalSection,
   ophthalmicSection,
   neuroSection,
+  dermaSection,
   extractedPhysical,
   subCharts,
   onSubChartChange,
+  onSkinLesionsChange,
 }: Props) {
   // ── 신체검사 ─────────────────────────────────────────────────
   const savedPhysical = (physicalSection?.data ?? {}) as Record<string, string>
@@ -225,6 +233,21 @@ export default function Tab2Physical({
   // ── 안과 기본 ────────────────────────────────────────────────
   const savedOphthalmic = (ophthalmicSection?.data ?? {}) as Record<string, string>
   const [ophthalmic, setOphthalmic] = useState<Record<string, string>>(savedOphthalmic)
+
+  // ── 피부·귀 (SkinEar) — physical 섹션에 병합 저장되므로 physicalSection에서 읽음 ──
+  const savedDermaRaw = (physicalSection?.data ?? {}) as Record<string, string>
+  const [skinEar, setSkinEar] = useState<SkinEarValues>({
+    skin_lesions_json:    savedDermaRaw.skin_lesions_json    ?? '[]',
+    skin_lesions_summary: savedDermaRaw.skin_lesions_summary ?? '',
+    coat_condition:       savedDermaRaw.coat_condition       ?? '',
+    parasite:             savedDermaRaw.parasite             ?? '',
+    ear_od_findings:      savedDermaRaw.ear_od_findings      ?? '[]',
+    ear_od_discharge:     savedDermaRaw.ear_od_discharge     ?? '',
+    ear_os_findings:      savedDermaRaw.ear_os_findings      ?? '[]',
+    ear_os_discharge:     savedDermaRaw.ear_os_discharge     ?? '',
+    ear_notes:            savedDermaRaw.ear_notes            ?? '',
+    ear_exam_summary:     savedDermaRaw.ear_exam_summary     ?? '',
+  })
 
   // ── 신경계 ───────────────────────────────────────────────────
   const savedNeuroRaw = (neuroSection?.data ?? {}) as Record<string, unknown>
@@ -334,14 +357,11 @@ export default function Tab2Physical({
     try {
       setSaving(true)
       await Promise.all([
-        upsertCheckupSection({ checkupId, sectionType: 'physical', data: physical }),
+        // skinEar 데이터를 physical 섹션에 병합 — DB CHECK constraint 우회 (derma는 허용 타입이 아님)
+        upsertCheckupSection({ checkupId, sectionType: 'physical', data: { ...physical, ...skinEar } as unknown as Record<string, unknown> }),
         upsertCheckupSection({ checkupId, sectionType: 'dental_basic', data: dental }),
         upsertCheckupSection({ checkupId, sectionType: 'ophthalmic_basic', data: ophthalmic }),
-        upsertCheckupSection({
-          checkupId,
-          sectionType: 'neuro_basic',
-          data: neuroStructured ?? { format: 'text', notes: neuroNotes },
-        }),
+        upsertCheckupSection({ checkupId, sectionType: 'neuro_basic', data: neuroStructured ?? { format: 'text', notes: neuroNotes } }),
       ])
       toast.success('저장되었습니다.')
     } catch {
@@ -363,29 +383,82 @@ export default function Tab2Physical({
   }))
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-4 p-4">
 
       {/* ── 신체검사 ─────────────────────────────────────── */}
-      <PhysicalExamSection
-        values={physical}
-        onChange={(id, value) => setPhysical((prev) => ({ ...prev, [id]: value }))}
-      />
+      <SectionBlock icon={Activity} title="신체검사" color="teal">
+        <PhysicalExamSection
+          values={physical}
+          onChange={(id, value) => setPhysical((prev) => ({ ...prev, [id]: value }))}
+          checkupId={checkupId}
+          hosId={hosId}
+        />
+      </SectionBlock>
+
+      {/* ── 피부·귀 ──────────────────────────────────────── */}
+      <SectionBlock icon={Smile} title="피부·귀 검사" color="amber">
+        <SkinEarSection
+          values={skinEar}
+          onChange={(key, value) => {
+            setSkinEar((prev) => {
+              const next = { ...prev, [key]: value }
+              if (key === 'skin_lesions_json') onSkinLesionsChange?.(value)
+              return next
+            })
+          }}
+          checkupId={checkupId}
+          hosId={hosId}
+        />
+      </SectionBlock>
 
       {/* ── 치과 기본 소견 ──────────────────────────────── */}
-      <section>
-        <div className="mb-3 flex items-center justify-between border-b pb-1">
-          <h3 className="text-sm font-semibold text-slate-700">치과 기본 소견</h3>
+      <SectionBlock
+        icon={Stethoscope}
+        title="치과 기본 소견"
+        color="rose"
+        action={
           <LinkedChartPanel
             label="치과 차트"
             chartType="dental"
             checkupId={checkupId}
             charts={dentalChartItems}
             linkedChartId={subCharts['dental'] ?? null}
-            buildChartUrl={(id, date) =>
-              `/hospital/${hosId}/dental/${date}/${id}`
-            }
+            buildChartUrl={(id, date) => `/hospital/${hosId}/dental/${date}/${id}`}
             onLinkChange={(id) => onSubChartChange('dental', id)}
             onCreateNew={handleCreateDentalChart}
+          />
+        }
+      >
+        <div className="mb-2 flex items-center gap-2">
+          <CheckupImageUploadDialog
+            checkupId={checkupId}
+            hosId={hosId}
+            defaultTags={['dental']}
+            trigger={
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300 transition-colors"
+              >
+                <Camera size={11} />
+                치과
+              </button>
+            }
+          />
+          <CheckupImageUploadDialog
+            checkupId={checkupId}
+            hosId={hosId}
+            defaultTags={['dental_radio']}
+            trigger={
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-500 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300 transition-colors"
+              >
+                <Camera size={11} />
+                치과 방사선
+              </button>
+            }
           />
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
@@ -420,38 +493,76 @@ export default function Tab2Physical({
             )
           })}
         </div>
-      </section>
+      </SectionBlock>
 
       {/* ── 안과 기본 소견 ──────────────────────────────── */}
-      <section>
-        <div className="mb-3 flex items-center justify-between border-b pb-1">
-          <h3 className="text-sm font-semibold text-slate-700">안과 기본 소견</h3>
+      <SectionBlock
+        icon={Eye}
+        title="안과 기본 소견"
+        color="indigo"
+        action={
           <LinkedChartPanel
             label="안과 차트"
             chartType="ophthalmic"
             checkupId={checkupId}
             charts={ophChartItems}
             linkedChartId={subCharts['ophthalmic'] ?? null}
-            buildChartUrl={(id, date) =>
-              `/hospital/${hosId}/ophthalmic/${date}/${id}`
-            }
+            buildChartUrl={(id, date) => `/hospital/${hosId}/ophthalmic/${date}/${id}`}
             onLinkChange={(id) => onSubChartChange('ophthalmic', id)}
             onCreateNew={handleCreateOphthalmicChart}
           />
-        </div>
+        }
+      >
         <div className="flex flex-col gap-4">
           {ophBasicSections.map((domainSection) => (
             <div key={domainSection.domain}>
-              <p className="mb-1.5 rounded bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
-                {domainSection.domainNameKo}
-              </p>
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <div className="h-3 w-0.5 rounded-full bg-indigo-400" />
+                <p className="text-xs font-bold text-slate-600">{domainSection.domainNameKo}</p>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b text-left text-slate-500">
                       <th className="w-44 pb-1 pr-3 font-medium">항목</th>
-                      <th className="w-36 pb-1 pr-3 font-medium">우안 (OD)</th>
-                      <th className="w-36 pb-1 font-medium">좌안 (OS)</th>
+                      <th className="w-36 pb-1 pr-3 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          우안 (OD)
+                          <CheckupImageUploadDialog
+                            checkupId={checkupId}
+                            hosId={hosId}
+                            defaultTags={['ophthalmic_od']}
+                            trigger={
+                              <button
+                                type="button"
+                                className="rounded-full p-0.5 text-slate-400 hover:bg-teal-50 hover:text-teal-600 transition-colors"
+                                title="우안 사진 업로드"
+                              >
+                                <Camera size={11} />
+                              </button>
+                            }
+                          />
+                        </div>
+                      </th>
+                      <th className="w-36 pb-1 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          좌안 (OS)
+                          <CheckupImageUploadDialog
+                            checkupId={checkupId}
+                            hosId={hosId}
+                            defaultTags={['ophthalmic_os']}
+                            trigger={
+                              <button
+                                type="button"
+                                className="rounded-full p-0.5 text-slate-400 hover:bg-teal-50 hover:text-teal-600 transition-colors"
+                                title="좌안 사진 업로드"
+                              >
+                                <Camera size={11} />
+                              </button>
+                            }
+                          />
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -464,27 +575,28 @@ export default function Tab2Physical({
             </div>
           ))}
         </div>
-      </section>
+      </SectionBlock>
 
       {/* ── 신경계 검사 ──────────────────────────────────── */}
-      <section>
-        <div className="mb-3 flex items-center justify-between border-b pb-1">
-          <h3 className="text-sm font-semibold text-slate-700">신경계 검사</h3>
+      <SectionBlock
+        icon={Brain}
+        title="신경계 검사"
+        color="slate"
+        action={
           <LinkedChartPanel
             label="신경계 차트"
             chartType="neuro"
             checkupId={checkupId}
             charts={neuroChartItems}
             linkedChartId={subCharts['neuro'] ?? null}
-            buildChartUrl={(id, date) =>
-              `/hospital/${hosId}/neuro/${date}/${id}`
-            }
+            buildChartUrl={(id, date) => `/hospital/${hosId}/neuro/${date}/${id}`}
             onLinkChange={(id) => onSubChartChange('neuro', id)}
             onCreateNew={handleCreateNeuroChart}
             onStructuredDataLoaded={handleNeuroDataLoaded}
             getChartData={getNeuroData}
           />
-        </div>
+        }
+      >
 
         {neuroStructured ? (
           /* 구조화 데이터 연동 상태 — 저장된 JSON 표시 */
@@ -514,10 +626,12 @@ export default function Tab2Physical({
             className="min-h-[120px] resize-none text-sm"
           />
         )}
-      </section>
+      </SectionBlock>
 
-      {/* ── 저장 ────────────────────────────────────────── */}
-      <div className="flex justify-end border-t pt-4">
+        </div>
+      </div>
+      {/* ── 저장 고정 바 ────────────────────────────────── */}
+      <div className="shrink-0 flex justify-end border-t bg-white px-4 py-3">
         <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
           {saving ? '저장 중...' : '저장'}
         </Button>

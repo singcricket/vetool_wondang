@@ -17,6 +17,8 @@ import { useRouter } from 'next/navigation'
 import PdfExtractDialog from './pdf-extract-dialog'
 import type { PdfExtractionResult } from '@/lib/actions/checkup/pdf-extraction'
 import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
+import type { SkinLesion } from '@/types/hospital/checkup-type'
+import type { CheckupImageTagGroup } from '@/constants/hospital/checkup/checkup-image-tags'
 import ShareResourceDialog from '@/components/hospital/share/share-resource-dialog'
 import CheckupDeleteDialog from './checkup-delete-dialog'
 
@@ -76,6 +78,28 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
 
   const getSection = (type: string) => sections.find((s) => s.section_type === type)
 
+  const initialSkinLesionsJson = (() => {
+    const physical = getSection('physical')
+    return (physical?.data as Record<string, string> | undefined)?.skin_lesions_json ?? '[]'
+  })()
+  const [skinLesionsJson, setSkinLesionsJson] = useState(initialSkinLesionsJson)
+
+  const globalDynamicTagGroups: CheckupImageTagGroup[] = (() => {
+    try {
+      const lesions: SkinLesion[] = JSON.parse(skinLesionsJson)
+      if (lesions.length === 0) return []
+      return [{
+        group: 'skin_lesions',
+        label: '피부 병변',
+        color: 'teal',
+        tags: lesions.map((l, i) => ({
+          id: `skin_lesion_${l.id}`,
+          label: l.location ? `병변${i + 1} · ${l.location}` : `병변 ${i + 1}`,
+        })),
+      }]
+    } catch { return [] }
+  })()
+
   const handlePdfApply = (result: PdfExtractionResult) => {
     setPdfExtracted(result)
   }
@@ -92,7 +116,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
   }
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-desktop w-full flex-col">
       {/* Header */}
       <div className="shrink-0 border-b bg-white px-4 py-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
@@ -135,7 +159,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               patientName={p.name}
               checkupDate={record.checkup_date}
             />
-            <CheckupImageUploadDialog checkupId={record.id} hosId={hosId} />
+            <CheckupImageUploadDialog checkupId={record.id} hosId={hosId} dynamicTagGroups={globalDynamicTagGroups} />
             <Link
               href={`/hospital/${hosId}/checkup/${record.checkup_date}/${record.id}/report`}
               target="_blank"
@@ -144,13 +168,13 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               <FileText size={13} />
               리포트
             </Link>
-            <button
+            {/* <button
               onClick={() => setShareOpen(true)}
               className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-700"
             >
               <Share2 size={13} />
               공유
-            </button>
+            </button> */}
             <PdfExtractDialog
               checkupId={record.id}
               hosId={hosId}
@@ -188,7 +212,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
       />
 
       {/* Tabs */}
-      <Tabs defaultValue="inquiry" className="flex flex-1 flex-col overflow-hidden">
+      <Tabs defaultValue="inquiry" className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <TabsList className="shrink-0 rounded-none border-b bg-white px-4 justify-start h-10">
           <TabsTrigger value="inquiry" className="text-xs">문진</TabsTrigger>
           <TabsTrigger value="physical" className="text-xs">신체검사</TabsTrigger>
@@ -197,8 +221,8 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
           <TabsTrigger value="plan" className="text-xs">평가/계획</TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 overflow-y-auto">
-          <TabsContent value="inquiry" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <TabsContent value="inquiry" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab1Inquiry
               checkupId={record.id}
               patient={p}
@@ -207,7 +231,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
             />
           </TabsContent>
 
-          <TabsContent value="physical" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
+          <TabsContent value="physical" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab2Physical
               checkupId={record.id}
               patientId={record.patient_id}
@@ -218,13 +242,15 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               dentalSection={getSection('dental_basic')}
               ophthalmicSection={getSection('ophthalmic_basic')}
               neuroSection={getSection('neuro_basic')}
+              dermaSection={getSection('physical')}
               extractedPhysical={pdfExtracted?.physical ?? null}
               subCharts={subCharts}
               onSubChartChange={handleSubChartChange}
+              onSkinLesionsChange={setSkinLesionsJson}
             />
           </TabsContent>
 
-          <TabsContent value="lab" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
+          <TabsContent value="lab" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab3Lab
               checkupId={record.id}
               patient={p}
@@ -234,7 +260,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
             />
           </TabsContent>
 
-          <TabsContent value="imaging" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
+          <TabsContent value="imaging" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab4Imaging
               checkupId={record.id}
               hosId={hosId}
@@ -251,7 +277,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
             />
           </TabsContent>
 
-          <TabsContent value="plan" className="m-0 h-full data-[state=inactive]:hidden" forceMount>
+          <TabsContent value="plan" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab5Plan
               checkupId={record.id}
               patient={p}

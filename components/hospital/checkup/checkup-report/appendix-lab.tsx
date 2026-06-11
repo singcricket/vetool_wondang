@@ -16,7 +16,7 @@ function LabTable({ items, title }: { items: LabResultItem[]; title: string }) {
 
   return (
     <div className="mb-5 break-inside-avoid">
-      <h3 className="mb-2 text-sm font-semibold text-slate-600">{title}</h3>
+      <h3 className="mb-2 text-sm font-bold text-slate-700">{title}</h3>
       <div className="overflow-x-auto rounded-lg border border-slate-200">
         <table className="w-full text-sm">
           <thead>

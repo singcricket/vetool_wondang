@@ -1,7 +1,10 @@
+'use client'
+
+import { useState } from 'react'
 import type React from 'react'
 import {
   Scale, Thermometer, HeartPulse, Wind, Activity,
-  Droplets, Heart, Dumbbell, Layers, Brain,
+  Droplets, Heart, Dumbbell, Brain,
   CircleDot, TrendingUp, TrendingDown, Flame, Target, CheckCircle2,
 } from 'lucide-react'
 import {
@@ -30,7 +33,6 @@ const SECTION_THEME: Partial<Record<PhysicalSection, { gradient: string; Icon: R
   respiratory:     { gradient: 'from-sky-500 to-blue-600',       Icon: Wind      },
   abdomen:         { gradient: 'from-amber-500 to-orange-500',   Icon: Activity  },
   musculoskeletal: { gradient: 'from-emerald-500 to-teal-600',   Icon: Dumbbell  },
-  skin:            { gradient: 'from-purple-500 to-fuchsia-500', Icon: Layers    },
   mentation:       { gradient: 'from-slate-500 to-indigo-600',   Icon: Brain     },
 }
 
@@ -80,8 +82,45 @@ export function VitalNumCard({
   )
 }
 
+// ── BCS 설명 ───────────────────────────────────────────────────
+const BCS_DESCRIPTIONS: Record<number, string> = {
+  1: '극도로 말랐습니다. 지방이 전혀 없고 갈비뼈·척추·골반뼈가 겉으로 뚜렷이 보입니다. 즉각적인 영양 보충과 수의사 상담이 필요합니다.',
+  2: '매우 마른 상태입니다. 갈비뼈가 쉽게 만져지고 허리와 복부가 심하게 들어가 있습니다. 빠른 식이 관리가 필요합니다.',
+  3: '다소 마른 편입니다. 갈비뼈가 쉽게 만져지며 허리 윤곽이 뚜렷합니다. 칼로리 보충을 권장합니다.',
+  4: '이상 체형에 가깝습니다. 갈비뼈가 잘 만져지고 위에서 보면 허리 라인이 자연스럽게 보입니다.',
+  5: '완벽한 이상 체형입니다. 갈비뼈를 쉽게 만질 수 있고 옆에서 보면 복부가 살짝 위로 올라가 있습니다.',
+  6: '약간 과체중입니다. 갈비뼈 위에 지방이 약간 덮여 있고 허리 라인이 불분명해지기 시작합니다.',
+  7: '과체중 상태입니다. 갈비뼈를 만지려면 압력이 필요하며 복부 지방이 눈에 띕니다. 식이 조절이 필요합니다.',
+  8: '비만 상태입니다. 갈비뼈가 잘 만져지지 않으며 허리·목 부위에 지방이 쌓여 있습니다. 적극적인 체중 관리가 필요합니다.',
+  9: '극도 비만 상태입니다. 갈비뼈와 척추에 두꺼운 지방이 덮여 있으며 관절·심장·호흡에 심각한 위험이 있습니다.',
+}
+
+const BCS_ZONE_LEGEND = [
+  { range: '1–2', label: '극도 저체중', color: 'bg-red-400' },
+  { range: '3',   label: '저체중',     color: 'bg-amber-400' },
+  { range: '4–5', label: '이상 체형',  color: 'bg-emerald-500' },
+  { range: '6–7', label: '과체중/비만', color: 'bg-amber-400' },
+  { range: '8–9', label: '극도 비만',  color: 'bg-red-400' },
+]
+
+function bcsZoneDot(n: number) {
+  if (n <= 2) return 'bg-red-400'
+  if (n === 3) return 'bg-amber-400'
+  if (n <= 5) return 'bg-emerald-500'
+  if (n <= 7) return 'bg-amber-400'
+  return 'bg-red-400'
+}
+
+const BCS_REF_SCORES = [1, 3, 5, 7, 9] as const
+
+function nearestBcsRef(bcs: number): number {
+  return bcs <= 2 ? 1 : bcs <= 4 ? 3 : bcs === 5 ? 5 : bcs <= 7 ? 7 : 9
+}
+
 // ── BCS 게이지 ─────────────────────────────────────────────────
-export function BcsGauge({ value }: { value: string | number }) {
+export function BcsGauge({ value, species = 'dog' }: { value: string | number; species?: 'cat' | 'dog' }) {
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+
   const bcs = parseInt(String(value), 10)
   if (!bcs || bcs < 1 || bcs > 9) return null
   const isDanger  = bcs <= 2 || bcs >= 8
@@ -93,41 +132,136 @@ export function BcsGauge({ value }: { value: string | number }) {
     : bcs === 6 ? '과체중'
     : bcs <= 8 ? '비만'
     : '극도 비만'
-  const headerGradient = isDanger  ? 'from-red-500 to-rose-500'
-                        : isWarning ? 'from-amber-500 to-orange-400'
-                        :             'from-emerald-500 to-teal-500'
+  const badgeClass = isDanger  ? 'bg-red-100 text-red-700'
+                   : isWarning ? 'bg-amber-100 text-amber-700'
+                   :             'bg-emerald-100 text-emerald-700'
+  const descBg = isDanger  ? 'border-red-100 bg-red-50 text-red-700'
+               : isWarning ? 'border-amber-100 bg-amber-50 text-amber-700'
+               :             'border-emerald-100 bg-emerald-50 text-emerald-700'
+
+  const activeRef = nearestBcsRef(bcs)
+  const imgFolder = species === 'cat' ? 'cat-bcs' : 'dog-bcs'
+  const imgPrefix = species === 'cat' ? 'cat-bcs' : 'dog-bcs'
+
   return (
-    <div className={`overflow-hidden rounded-2xl border shadow-sm ${isDanger ? 'border-red-200' : isWarning ? 'border-amber-200' : 'border-emerald-200'}`}>
-      <div className={`flex items-center gap-2 bg-gradient-to-r ${headerGradient} px-4 py-3`}>
-        <Scale size={16} className="text-white/80" strokeWidth={1.75} />
-        <p className="text-sm font-bold text-white">BCS (체형 점수)</p>
-        <span className="ml-auto rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold text-white">
-          {bcs} / 9 · {statusLabel}
-        </span>
-      </div>
-      <div className="bg-white p-4">
-        <div className="flex items-center gap-1">
+    <>
+      <div className="rounded-xl bg-white/70 p-3 ring-1 ring-slate-200">
+        {/* 헤더 */}
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Scale size={13} className="text-slate-400" strokeWidth={1.75} />
+            <span className="text-xs font-semibold text-slate-500">BCS (체형 점수)</span>
+          </div>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${badgeClass}`}>
+            {bcs} / 9 · {statusLabel}
+          </span>
+        </div>
+
+        {/* 체형 시각 참고 이미지 — 숫자 게이지 위 */}
+        <div className="mb-3 grid grid-cols-5 gap-1.5">
+          {BCS_REF_SCORES.map((ref) => {
+            const isActive   = ref === activeRef
+            const refDanger  = ref <= 2 || ref >= 8
+            const refWarning = ref === 3 || ref === 7
+            const ringClass  = isActive
+              ? refDanger  ? 'ring-2 ring-red-400'
+              : refWarning ? 'ring-2 ring-amber-400'
+              :               'ring-2 ring-emerald-400'
+              : ''
+            const labelColor = isActive
+              ? refDanger  ? 'text-red-500'
+              : refWarning ? 'text-amber-500'
+              :               'text-emerald-600'
+              : 'text-slate-400'
+            const src = `/checkup/${imgFolder}/${imgPrefix}${ref}.png`
+            return (
+              <div
+                key={ref}
+                className={`flex cursor-zoom-in flex-col items-center gap-1 transition-opacity ${isActive ? 'opacity-100' : 'opacity-35'}`}
+                onClick={() => setLightboxSrc(src)}
+              >
+                <div className={`w-full overflow-hidden rounded-lg ${ringClass}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={`BCS ${ref}`} className="h-auto w-full object-contain" />
+                </div>
+                <span className={`text-[10px] font-bold ${labelColor}`}>BCS {ref}</span>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 숫자 게이지 — 전체 폭 균등 분할 */}
+        <div className="grid grid-cols-9 gap-2 px-1">
           {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-            <div
-              key={n}
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all ${
-                n === bcs
-                  ? isDanger  ? 'bg-red-500 text-white ring-2 ring-red-300 scale-110'
-                  : isWarning ? 'bg-amber-400 text-white ring-2 ring-amber-200 scale-110'
-                  :             'bg-emerald-500 text-white ring-2 ring-emerald-200 scale-110'
-                : n < bcs
-                ? 'bg-slate-200 text-slate-500'
-                : 'border border-slate-200 bg-white text-slate-300'
-              }`}
-            >
-              {n}
+            <div key={n} className="flex flex-col items-center gap-1">
+              <div
+                className={`flex aspect-square w-full items-center justify-center rounded-full text-sm font-bold transition-all ${
+                  n === bcs
+                    ? isDanger  ? 'scale-110 bg-red-500 text-white ring-2 ring-red-300'
+                    : isWarning ? 'scale-110 bg-amber-400 text-white ring-2 ring-amber-200'
+                    :             'scale-110 bg-emerald-500 text-white ring-2 ring-emerald-200'
+                  : n < bcs
+                  ? 'bg-slate-200 text-slate-500'
+                  : 'border border-slate-200 bg-white text-slate-300'
+                }`}
+              >
+                {n}
+              </div>
+              <div className={`h-1.5 w-full max-w-5 rounded-full ${bcsZoneDot(n)}`} />
             </div>
           ))}
         </div>
+
+        {/* 구간 범례 */}
+        <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1">
+          {BCS_ZONE_LEGEND.map(({ range, label, color }) => (
+            <div key={range} className="flex items-center gap-1">
+              <div className={`h-2 w-2 shrink-0 rounded-full ${color}`} />
+              <span className="text-[10px] text-slate-500">{range} {label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 현재 점수 설명 */}
+        <div className={`mt-3 rounded-lg border p-2.5 ${descBg}`}>
+          <p className="text-xs font-semibold leading-relaxed">{BCS_DESCRIPTIONS[bcs]}</p>
+        </div>
       </div>
-    </div>
+
+      {/* 라이트박스 */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-[300] flex cursor-zoom-out items-center justify-center bg-black/85 print:hidden"
+          onClick={() => setLightboxSrc(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxSrc}
+            alt="BCS 참고 이미지"
+            className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            className="absolute right-5 top-5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/20"
+            onClick={() => setLightboxSrc(null)}
+          >
+            닫기
+          </button>
+        </div>
+      )}
+    </>
   )
 }
+
+// ── MCS 설명 ───────────────────────────────────────────────────
+const MCS_DESCRIPTIONS: Record<number, string> = {
+  1: '근육이 심각하게 소실되어 뼈가 뚜렷하게 드러납니다. 전문적인 영양 평가와 재활 치료가 즉시 필요합니다.',
+  2: '근육이 눈에 띄게 감소한 상태입니다. 고단백 식이와 적극적인 운동 요법을 통한 관리를 권장합니다.',
+  3: '근육이 약간 감소한 상태입니다. 균형 잡힌 식이와 꾸준한 운동으로 근육량 유지에 신경 써주세요.',
+  4: '나이와 체형에 적합한 건강한 근육량을 유지하고 있습니다. 현재 생활 습관을 꾸준히 유지해 주세요.',
+}
+
+const MCS_LABELS = ['심한 근감소', '중등도 근감소', '경미한 근감소', '정상']
 
 // ── MCS 게이지 ─────────────────────────────────────────────────
 export function McsGauge({ value }: { value: string }) {
@@ -135,30 +269,37 @@ export function McsGauge({ value }: { value: string }) {
   if (!score || score < 1 || score > 4) return null
   const isDanger  = score <= 2
   const isWarning = score === 3
-  const labels = ['심한 근감소', '중등도 근감소', '경미한 근감소', '정상']
-  const statusLabel = labels[score - 1]
-  const headerGradient = isDanger  ? 'from-red-500 to-rose-500'
-                        : isWarning ? 'from-amber-500 to-orange-400'
-                        :             'from-emerald-500 to-teal-500'
+  const statusLabel = MCS_LABELS[score - 1]
+  const badgeClass = isDanger  ? 'bg-red-100 text-red-700'
+                   : isWarning ? 'bg-amber-100 text-amber-700'
+                   :             'bg-emerald-100 text-emerald-700'
+  const descBg = isDanger  ? 'border-red-100 bg-red-50 text-red-700'
+               : isWarning ? 'border-amber-100 bg-amber-50 text-amber-700'
+               :             'border-emerald-100 bg-emerald-50 text-emerald-700'
+
   return (
-    <div className={`overflow-hidden rounded-2xl border shadow-sm ${isDanger ? 'border-red-200' : isWarning ? 'border-amber-200' : 'border-emerald-200'}`}>
-      <div className={`flex items-center gap-2 bg-gradient-to-r ${headerGradient} px-4 py-3`}>
-        <Dumbbell size={16} className="text-white/80" strokeWidth={1.75} />
-        <p className="text-sm font-bold text-white">MCS (근육 상태)</p>
-        <span className="ml-auto rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold text-white">
+    <div className="rounded-xl bg-white/70 p-3 ring-1 ring-slate-200">
+      {/* 헤더 */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Dumbbell size={13} className="text-slate-400" strokeWidth={1.75} />
+          <span className="text-xs font-semibold text-slate-500">MCS (근육 상태)</span>
+        </div>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${badgeClass}`}>
           {score} / 4 · {statusLabel}
         </span>
       </div>
-      <div className="bg-white p-4">
-        <div className="flex items-center gap-2">
-          {[1, 2, 3, 4].map((n) => (
+
+      {/* 게이지 */}
+      <div className="flex items-end gap-2">
+        {[1, 2, 3, 4].map((n) => (
+          <div key={n} className="flex flex-1 flex-col items-center gap-1">
             <div
-              key={n}
-              className={`flex h-8 flex-1 items-center justify-center rounded-lg text-sm font-bold transition-all ${
+              className={`flex h-8 w-full items-center justify-center rounded-lg text-sm font-bold transition-all ${
                 n === score
-                  ? isDanger  ? 'bg-red-500 text-white ring-2 ring-red-300 scale-105'
-                  : isWarning ? 'bg-amber-400 text-white ring-2 ring-amber-200 scale-105'
-                  :             'bg-emerald-500 text-white ring-2 ring-emerald-200 scale-105'
+                  ? isDanger  ? 'scale-105 bg-red-500 text-white ring-2 ring-red-300'
+                  : isWarning ? 'scale-105 bg-amber-400 text-white ring-2 ring-amber-200'
+                  :             'scale-105 bg-emerald-500 text-white ring-2 ring-emerald-200'
                 : n < score
                 ? 'bg-slate-200 text-slate-500'
                 : 'border border-slate-200 bg-white text-slate-300'
@@ -166,8 +307,14 @@ export function McsGauge({ value }: { value: string }) {
             >
               {n}
             </div>
-          ))}
-        </div>
+            <span className="text-center text-[9px] leading-tight text-slate-400">{MCS_LABELS[n - 1]}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* 현재 등급 설명 */}
+      <div className={`mt-3 rounded-lg border p-2.5 ${descBg}`}>
+        <p className="text-xs font-semibold leading-relaxed">{MCS_DESCRIPTIONS[score]}</p>
       </div>
     </div>
   )
@@ -189,55 +336,54 @@ export function CalorieCard({
   const isIdeal   = bcs >= 4 && bcs <= 5
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
-      <div className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 px-5 py-3.5">
-        <Flame size={16} className="text-white/80" strokeWidth={1.75} />
-        <p className="text-sm font-bold text-white">체중 관리 목표 (BCS 기반 칼로리 계산)</p>
+    <div className="rounded-xl bg-white/70 p-3 ring-1 ring-slate-200">
+      {/* 섹션 레이블 */}
+      <div className="mb-3 flex items-center gap-1.5">
+        <Flame size={13} className="text-teal-500" strokeWidth={1.75} />
+        <span className="text-xs font-semibold text-slate-500">칼로리 계산 (BCS 기반)</span>
       </div>
-      <div className="bg-white p-5">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-            <p className="text-xs text-slate-400">현재 체중</p>
-            <p className="mt-1 font-mono text-xl font-bold text-slate-800">
-              {currentWeight}
-              <span className="ml-0.5 font-sans text-sm font-normal text-slate-400">kg</span>
-            </p>
-          </div>
-          <div className={`rounded-xl border p-3 text-center ${isIdeal ? 'border-emerald-100 bg-emerald-50' : needsLoss ? 'border-amber-100 bg-amber-50' : 'border-blue-100 bg-blue-50'}`}>
-            <p className="text-xs text-slate-400">이상 체중 (추정)</p>
-            <p className={`mt-1 font-mono text-xl font-bold ${isIdeal ? 'text-emerald-700' : needsLoss ? 'text-amber-700' : 'text-blue-700'}`}>
-              {result.idealWeight}
-              <span className="ml-0.5 font-sans text-sm font-normal text-slate-400">kg</span>
-            </p>
-            {!isIdeal && (
-              <p className={`mt-0.5 flex items-center justify-center gap-0.5 text-xs font-semibold ${needsLoss ? 'text-amber-600' : 'text-blue-600'}`}>
-                {needsLoss ? <TrendingDown size={11} strokeWidth={2} /> : <TrendingUp size={11} strokeWidth={2} />}
-                {needsLoss ? '감량 필요' : '증체 필요'}
-              </p>
-            )}
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-            <p className="text-xs text-slate-400">RER (휴식 에너지)</p>
-            <p className="mt-1 font-mono text-xl font-bold text-slate-700">
-              {result.rer}
-              <span className="ml-0.5 font-sans text-sm font-normal text-slate-400">kcal</span>
-            </p>
-          </div>
-          <div className="rounded-xl border border-teal-100 bg-teal-50 p-3 text-center">
-            <p className="text-xs text-slate-400">DER (일일 권장)</p>
-            <p className="mt-1 font-mono text-xl font-bold text-teal-700">
-              {result.der}
-              <span className="ml-0.5 font-sans text-sm font-normal text-slate-400">kcal</span>
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-teal-500">×{result.lifeFactor}</p>
-          </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-center">
+          <p className="text-xs text-slate-400">현재 체중</p>
+          <p className="mt-1 font-mono text-lg font-bold text-slate-800">
+            {currentWeight}
+            <span className="ml-0.5 font-sans text-xs font-normal text-slate-400">kg</span>
+          </p>
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-slate-400">
-          RER = 70 × 이상체중<sup>0.75</sup> · DER = RER × 생활계수
-          {isNeutered ? ' (중성화)' : ' (미중성화)'}
-          {needsLoss ? ' · 감량 모드' : needsGain ? ' · 증체 모드' : ''}
-        </p>
+        <div className={`rounded-lg border p-2.5 text-center ${isIdeal ? 'border-emerald-100 bg-emerald-50' : needsLoss ? 'border-amber-100 bg-amber-50' : 'border-blue-100 bg-blue-50'}`}>
+          <p className="text-xs text-slate-400">이상 체중</p>
+          <p className={`mt-1 font-mono text-lg font-bold ${isIdeal ? 'text-emerald-700' : needsLoss ? 'text-amber-700' : 'text-blue-700'}`}>
+            {result.idealWeight}
+            <span className="ml-0.5 font-sans text-xs font-normal text-slate-400">kg</span>
+          </p>
+          {!isIdeal && (
+            <p className={`mt-0.5 flex items-center justify-center gap-0.5 text-xs font-semibold ${needsLoss ? 'text-amber-600' : 'text-blue-600'}`}>
+              {needsLoss ? <TrendingDown size={10} strokeWidth={2} /> : <TrendingUp size={10} strokeWidth={2} />}
+              {needsLoss ? '감량 필요' : '증체 필요'}
+            </p>
+          )}
+        </div>
+        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-center">
+          <p className="text-xs text-slate-400">RER</p>
+          <p className="mt-1 font-mono text-lg font-bold text-slate-700">
+            {result.rer}
+            <span className="ml-0.5 font-sans text-xs font-normal text-slate-400">kcal</span>
+          </p>
+        </div>
+        <div className="rounded-lg border border-teal-100 bg-teal-50 p-2.5 text-center">
+          <p className="text-xs text-slate-400">DER (일일 권장)</p>
+          <p className="mt-1 font-mono text-lg font-bold text-teal-700">
+            {result.der}
+            <span className="ml-0.5 font-sans text-xs font-normal text-slate-400">kcal</span>
+          </p>
+          <p className="mt-0.5 text-xs font-semibold text-teal-500">×{result.lifeFactor}</p>
+        </div>
       </div>
+      <p className="mt-2.5 text-[11px] leading-relaxed text-slate-400">
+        RER = 70 × 이상체중<sup>0.75</sup> · DER = RER × 생활계수
+        {isNeutered ? ' (중성화)' : ' (미중성화)'}
+        {needsLoss ? ' · 감량 모드' : needsGain ? ' · 증체 모드' : ''}
+      </p>
     </div>
   )
 }
@@ -306,11 +452,15 @@ function WeightManagementBlock({
           )}
         </div>
 
-        {/* BCS / MCS 게이지 */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {hasBcs && <BcsGauge value={bcsNum} />}
-          {hasMcs && <McsGauge value={String(physical.mcs)} />}
-        </div>
+        {/* BCS 게이지 — 전체 폭 */}
+        {hasBcs && <BcsGauge value={bcsNum} species={species} />}
+
+        {/* MCS 게이지 */}
+        {hasMcs && (
+          <div className="mt-3">
+            <McsGauge value={String(physical.mcs)} />
+          </div>
+        )}
 
         {/* 칼로리 계산 */}
         {calorieData && (
@@ -346,17 +496,21 @@ export function PhysicalSection({
   physical, species, bodyWeightKg, bcsNum, lifeStage, isNeutered, images = [], checkupId, isShared,
 }: PhysicalSectionProps) {
   const generalImages = images.filter((img) => img.tags?.includes('physical_general'))
-  const skinImages    = images.filter((img) => img.tags?.includes('physical_skin'))
 
   return (
     <section className="mb-10 break-before-auto">
       <SectionTitle>신체검사</SectionTitle>
 
-      {/* 전신 사진 */}
+      {/* 전신 사진 — 1~3장: 한 줄, 4장+: 2열 */}
       {generalImages.length > 0 && (
-        <div className="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <div className={`mb-5 grid gap-2 ${
+          generalImages.length === 1 ? 'grid-cols-1' :
+          generalImages.length === 2 ? 'grid-cols-2' :
+          generalImages.length === 3 ? 'grid-cols-3' :
+          'grid-cols-2'
+        }`}>
           {generalImages.map((img) => (
-            <CheckupImgCard key={img.img_url} img={img} checkupId={checkupId ?? ''} isShared={isShared} />
+            <CheckupImgCard key={img.img_url} img={img} checkupId={checkupId ?? ''} isShared={isShared} className="aspect-[4/3] w-full" />
           ))}
         </div>
       )}
@@ -420,8 +574,7 @@ export function PhysicalSection({
           )
           const abnormalCount = allFindings.filter((f) => f.isAbnormal).length
           const isAbnormal = status === 'abnormal' || abnormalCount > 0
-          const hasSkinImages = sec === 'skin' && skinImages.length > 0
-          if (!status && allFindings.length === 0 && !hasSkinImages) return null
+          if (!status && allFindings.length === 0) return null
 
           const SectionIcon = theme?.Icon ?? Target
           const gradient = theme?.gradient ?? 'from-slate-400 to-slate-500'
@@ -466,14 +619,6 @@ export function PhysicalSection({
                 </div>
               )}
 
-              {/* 피부 사진 */}
-              {hasSkinImages && (
-                <div className="grid grid-cols-3 gap-1.5 border-t border-slate-100 bg-white p-3 sm:grid-cols-4">
-                  {skinImages.map((img) => (
-                    <CheckupImgCard key={img.img_url} img={img} checkupId={checkupId ?? ''} isShared={isShared} />
-                  ))}
-                </div>
-              )}
             </div>
           )
         })}

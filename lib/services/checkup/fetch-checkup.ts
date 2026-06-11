@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { CheckupSidebarItem, CheckupDetail, CheckupSection, CheckupAiResult } from '@/types/hospital/checkup-type'
+import type { CheckupSidebarItem, CheckupDetail, CheckupSection, CheckupAiResult, CheckupSearchItem } from '@/types/hospital/checkup-type'
 
 const RECORD_SELECT = `
   id,
@@ -116,4 +116,43 @@ export async function fetchCheckupDetail(checkupId: string): Promise<CheckupDeta
         }
       : null,
   }
+}
+
+export async function getCheckupRecords(hosId: string): Promise<CheckupSearchItem[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as any)
+    .from('checkup_records')
+    .select(`
+      id,
+      checkup_date,
+      status,
+      vet_id,
+      created_at,
+      patients!inner(name, species, breed, hos_patient_id)
+    `)
+    .eq('hos_id', hosId)
+    .order('checkup_date', { ascending: false })
+
+  if (error) throw new Error(`getCheckupRecords: ${error.message}`)
+
+  const { data: vetData } = await supabase
+    .from('users')
+    .select('user_id, name')
+    .eq('hos_id', hosId)
+    .eq('is_vet', true)
+
+  const vetMap = new Map((vetData ?? []).map((v: any) => [v.user_id, v.name]))
+
+  return (data ?? []).map((row: any): CheckupSearchItem => ({
+    id: row.id,
+    checkup_date: row.checkup_date,
+    status: row.status,
+    vet_name: row.vet_id ? (vetMap.get(row.vet_id) ?? null) : null,
+    created_at: row.created_at,
+    patient_name: row.patients?.name ?? '',
+    species: row.patients?.species ?? '',
+    breed: row.patients?.breed ?? '',
+    hos_patient_id: row.patients?.hos_patient_id ?? '',
+  }))
 }

@@ -8,6 +8,7 @@ import SharedCollectionView from './_components/shared-collection-view'
 import SharedDentalView from './_components/shared-dental-view'
 import SharedOncologyOwnerView from './_components/shared-oncology-owner-view'
 import SharedCheckupView from './_components/shared-checkup-view'
+import SharedCheckupInquiryPage from './_components/shared-checkup-inquiry-page'
 import { Suspense } from 'react'
 
 export default async function SharedResourcePage(props: { params: Promise<{ share_id: string }> }) {
@@ -66,7 +67,10 @@ export default async function SharedResourcePage(props: { params: Promise<{ shar
             {share.resource_type === 'oncology_owner' && (
               <SharedOncologyOwnerView resourceId={share.resource_id} />
             )}
-            {share.resource_type === 'checkup' && (
+            {share.resource_type === 'checkup' && (share.restricted_data as any)?.mode === 'inquiry' && (
+              <SharedCheckupInquiryPage shareId={shareId} />
+            )}
+            {share.resource_type === 'checkup' && (share.restricted_data as any)?.mode !== 'inquiry' && (
               <SharedCheckupView resourceId={share.resource_id} />
             )}
           </Suspense>

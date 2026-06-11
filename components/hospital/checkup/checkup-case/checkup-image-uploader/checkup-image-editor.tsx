@@ -28,6 +28,7 @@ import {
   updateCheckupImageMark,
   updateCheckupImageTags,
   updateCheckupImageUrl,
+  deleteCheckupImages,
 } from '@/lib/actions/checkup/checkup-image-actions'
 import { uploadCheckupImage } from '@/lib/services/checkup/upload-checkup-image'
 import CheckupImageTagSelector from './checkup-image-tag-selector'
@@ -484,6 +485,20 @@ export default function CheckupImageEditor({
     })
   }
 
+  const handleDeleteImage = () => {
+    if (!confirm('이 이미지를 삭제하시겠습니까? 되돌릴 수 없습니다.')) return
+    startTransition(async () => {
+      try {
+        await deleteCheckupImages([imageId])
+        toast.success('이미지가 삭제되었습니다.')
+        onSaved?.()
+        onClose?.()
+      } catch {
+        toast.error('이미지 삭제에 실패했습니다.')
+      }
+    })
+  }
+
   const saveMark = () => {
     if (!fabricCanvas) return
     startTransition(async () => {
@@ -577,7 +592,7 @@ export default function CheckupImageEditor({
 
           <Button variant="destructive" size="sm" onClick={deleteSelected} className="px-2 shrink-0">
             <Trash2Icon className="w-4 h-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">삭제</span>
+            <span className="hidden sm:inline">선택 삭제</span>
           </Button>
           <Button
             variant="outline"
@@ -652,6 +667,16 @@ export default function CheckupImageEditor({
               <DownloadIcon className="w-4 h-4 sm:mr-2" />
             )}
             <span className="hidden sm:inline">저장하기</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDeleteImage}
+            disabled={isPending}
+            className="border-red-500/60 bg-slate-800 text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 px-3 shrink-0"
+          >
+            <Trash2Icon className="w-4 h-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">이미지 삭제</span>
           </Button>
           {onClose && (
             <Button

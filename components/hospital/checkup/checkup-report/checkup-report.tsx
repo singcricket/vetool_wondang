@@ -1,7 +1,9 @@
 'use client'
 
-import { Printer } from 'lucide-react'
-import type { CheckupReportData } from '@/lib/services/checkup/fetch-checkup-report'
+import { useState, useCallback } from 'react'
+import { Printer, AlertTriangle, Pill, FlaskConical, Salad, CalendarCheck, ChevronRight } from 'lucide-react'
+import type { CheckupReportData, CheckupReportSection, CheckupReportImage } from '@/lib/services/checkup/fetch-checkup-report'
+import { useCheckupReportRealtime } from '@/hooks/use-checkup-report-realtime'
 import type { LabResultItem } from '@/constants/hospital/checkup/lab-types'
 import {
   resolveOrganSections,
@@ -32,6 +34,7 @@ import { OrganSectionsBlock } from './section-organ'
 import { AppendixLab } from './appendix-lab'
 import { AppendixImaging } from './appendix-imaging'
 import { SectionTitle } from './report-ui'
+import { ReportFloatingNav } from './report-floating-nav'
 import type { InquiryData } from './report-types'
 
 interface Props {
@@ -40,7 +43,22 @@ interface Props {
 }
 
 export default function CheckupReport({ data, isShared }: Props) {
-  const { record, sections, images } = data
+  const { record } = data
+
+  const [sections, setSections] = useState<CheckupReportSection[]>(data.sections)
+  const [images, setImages] = useState<CheckupReportImage[]>(data.images)
+
+  const handleUpdate = useCallback(
+    (newSections: CheckupReportSection[], newImages: CheckupReportImage[]) => {
+      setSections(newSections)
+      setImages(newImages)
+    },
+    [],
+  )
+
+  // 공유 뷰(isShared)에서도 리얼타임 적용 — 보호자가 문진 제출 시 즉시 반영
+  useCheckupReportRealtime({ checkupId: record.id, onUpdate: handleUpdate })
+
   const { patient } = record
 
   const getSection = (type: string) =>
@@ -68,7 +86,12 @@ export default function CheckupReport({ data, isShared }: Props) {
     ct_mri:           getSection('ct_mri'),
   }
 
-  const organSections = resolveOrganSections(labItems, plan, images, ORGAN_MODULE_CONFIGS, physical, xrayData, speciesForStage, imagingSections)
+  // physical 섹션에 derma 데이터가 병합 저장되어 있음 (coat_condition, skin_lesions_json 등)
+  const organSections = resolveOrganSections(
+    labItems, plan, images, ORGAN_MODULE_CONFIGS,
+    physical, xrayData, speciesForStage, imagingSections,
+    { derma: physical },
+  )
 
   const subCharts = record.subCharts ?? {}
 
@@ -122,6 +145,17 @@ export default function CheckupReport({ data, isShared }: Props) {
 
   return (
     <div className="bg-white text-slate-900 print:text-[10px]">
+      {/* 플로팅 목차 */}
+      <ReportFloatingNav
+        organSections={organSections}
+        hasPhysical={hasPhysical}
+        hasNeuro={!!neuroData}
+        hasLab={hasLab}
+        hasPlan={hasPlan}
+        hasFollowup={hasFollowup}
+        hasAppendixImaging={true}
+      />
+
       {/* 인쇄 버튼 */}
       <div className="no-print sticky top-0 z-10 flex justify-end gap-2 border-b bg-white px-6 py-2 shadow-sm">
         <button
@@ -150,114 +184,198 @@ export default function CheckupReport({ data, isShared }: Props) {
       <div className="mx-auto max-w-4xl px-6 py-8 print:px-4 print:pb-16 print:pt-10">
 
         {/* ── 환자 헤더 ─────────────────────────────────────── */}
-        <ReportHeader
-          patientName={patient.name}
-          species={patient.species}
-          breed={patient.breed}
-          gender={patient.gender}
-          birth={patient.birth}
-          ownerName={patient.owner_name}
-          checkupDateLabel={checkupDateLabel}
-          vetName={record.vet_name}
-          hospitalName={record.hospital_name}
-          abnormalCount={abnormalCount}
-          coverImage={coverImage}
-          lifeStage={lifeStage}
-        />
+        <div id="section-header">
+          <ReportHeader
+            patientName={patient.name}
+            species={patient.species}
+            breed={patient.breed}
+            gender={patient.gender}
+            birth={patient.birth}
+            ownerName={patient.owner_name}
+            checkupDateLabel={checkupDateLabel}
+            vetName={record.vet_name}
+            hospitalName={record.hospital_name}
+            abnormalCount={abnormalCount}
+            coverImage={coverImage}
+            lifeStage={lifeStage}
+          />
+        </div>
 
         {/* ── 종합 평가 요약 ────────────────────────────────── */}
-        <ExecutiveSummary organSections={organSections} labItems={labItems} plan={plan} />
+        <div id="section-summary">
+          <ExecutiveSummary organSections={organSections} labItems={labItems} plan={plan} />
+        </div>
 
         {/* ── 0. 문진 ───────────────────────────────────────── */}
-        <InquirySection data={inquiry as InquiryData} />
+        <div id="section-inquiry">
+          <InquirySection data={inquiry as InquiryData} />
+        </div>
 
         {/* ── 1. 신체검사 ───────────────────────────────────── */}
         {hasPhysical && (
-          <PhysicalSection
-            physical={physical}
-            species={speciesForStage}
-            bodyWeightKg={bodyWeightKg}
-            bcsNum={bcsNum}
-            lifeStage={lifeStage}
-            isNeutered={isNeutered}
-            images={images}
-            checkupId={record.id}
-            isShared={isShared}
-          />
+          <div id="section-physical">
+            <PhysicalSection
+              physical={physical}
+              species={speciesForStage}
+              bodyWeightKg={bodyWeightKg}
+              bcsNum={bcsNum}
+              lifeStage={lifeStage}
+              isNeutered={isNeutered}
+              images={images}
+              checkupId={record.id}
+              isShared={isShared}
+            />
+          </div>
         )}
 
         {/* ── 1-b. 신경계 검사 ──────────────────────────────── */}
-        <NeuroSection data={neuroData} />
+        <div id="section-neuro">
+          <NeuroSection data={neuroData} />
+        </div>
 
         {/* ── 2. 장기별 종합 평가 ───────────────────────────── */}
-        <OrganSectionsBlock
-          organSections={organSections}
-          subCharts={subCharts}
-          dentalBasicFindings={dentalBasicFindings}
-          ophthalmicBasicFindings={ophthalmicBasicFindings}
-          checkupId={record.id}
-          isShared={isShared}
-        />
+        <div id="section-organs">
+          <OrganSectionsBlock
+            organSections={organSections}
+            subCharts={subCharts}
+            dentalBasicFindings={dentalBasicFindings}
+            ophthalmicBasicFindings={ophthalmicBasicFindings}
+            checkupId={record.id}
+            isShared={isShared}
+          />
+        </div>
 
         {/* ── 3. 종합 권고사항 ──────────────────────────────── */}
         {hasPlan && (
-          <section className="mb-10 print:break-before-page">
+          <section id="section-plan" className="mb-10 print:break-before-page">
             <SectionTitle>종합 평가 및 권고사항</SectionTitle>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-4">
+
               {ps('tx_priority_summary') && (
-                <div className="break-inside-avoid rounded-xl border-2 border-teal-200 bg-teal-50 p-5">
-                  <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-teal-600">치료·관리 우선순위</p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-teal-800">{ps('tx_priority_summary')}</p>
+                <div className="break-inside-avoid overflow-hidden rounded-2xl border border-teal-200 shadow-sm">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-400 px-5 py-3">
+                    <AlertTriangle size={15} className="text-white/90" strokeWidth={2} />
+                    <p className="text-sm font-bold text-white">치료·관리 우선순위</p>
+                  </div>
+                  <div className="bg-teal-50 p-5">
+                    <ul className="space-y-2">
+                      {ps('tx_priority_summary').split('\n').filter((l) => l.trim()).map((line, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-teal-900">
+                          <ChevronRight size={14} className="mt-0.5 shrink-0 text-teal-500" strokeWidth={2.5} />
+                          <span>{line.trim()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
+
               {ps('tx_medication') && (
-                <div className="break-inside-avoid rounded-xl border border-slate-200 p-5">
-                  <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">약물·치료 계획</p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{ps('tx_medication')}</p>
+                <div className="break-inside-avoid overflow-hidden rounded-2xl border border-blue-200 shadow-sm">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-400 px-5 py-3">
+                    <Pill size={15} className="text-white/90" strokeWidth={2} />
+                    <p className="text-sm font-bold text-white">약물·치료 계획</p>
+                  </div>
+                  <div className="bg-blue-50 p-5">
+                    <ul className="space-y-2">
+                      {ps('tx_medication').split('\n').filter((l) => l.trim()).map((line, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-blue-900">
+                          <ChevronRight size={14} className="mt-0.5 shrink-0 text-blue-400" strokeWidth={2.5} />
+                          <span>{line.trim()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
+
               {ps('tx_further_workup') && (
-                <div className="break-inside-avoid rounded-xl border border-slate-200 p-5">
-                  <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">추가 검사 계획</p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{ps('tx_further_workup')}</p>
+                <div className="break-inside-avoid overflow-hidden rounded-2xl border border-violet-200 shadow-sm">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-400 px-5 py-3">
+                    <FlaskConical size={15} className="text-white/90" strokeWidth={2} />
+                    <p className="text-sm font-bold text-white">추가 검사 계획</p>
+                  </div>
+                  <div className="bg-violet-50 p-5">
+                    <ul className="space-y-2">
+                      {ps('tx_further_workup').split('\n').filter((l) => l.trim()).map((line, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-violet-900">
+                          <ChevronRight size={14} className="mt-0.5 shrink-0 text-violet-400" strokeWidth={2.5} />
+                          <span>{line.trim()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
+
               {ps('guide_diet') && (
-                <div className="break-inside-avoid rounded-xl border border-slate-200 p-5">
-                  <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">식이·생활 관리</p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{ps('guide_diet')}</p>
-                  {ps('guide_weight') && (
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{ps('guide_weight')}</p>
-                  )}
+                <div className="break-inside-avoid overflow-hidden rounded-2xl border border-green-200 shadow-sm">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-lime-400 px-5 py-3">
+                    <Salad size={15} className="text-white/90" strokeWidth={2} />
+                    <p className="text-sm font-bold text-white">식이·생활 관리</p>
+                  </div>
+                  <div className="bg-green-50 p-5">
+                    <ul className="space-y-2">
+                      {[ps('guide_diet'), ps('guide_weight')].filter(Boolean).join('\n').split('\n').filter((l) => l.trim()).map((line, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-green-900">
+                          <ChevronRight size={14} className="mt-0.5 shrink-0 text-green-500" strokeWidth={2.5} />
+                          <span>{line.trim()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
+
             </div>
           </section>
         )}
 
         {/* ── 4. 추적관찰 계획 ──────────────────────────────── */}
         {hasFollowup && (
-          <section className="mb-10">
+          <section id="section-followup" className="mb-10">
             <SectionTitle>추적 관찰 계획</SectionTitle>
-            <div className="break-inside-avoid rounded-xl border border-slate-200 p-5">
-              {ps('followup_plan') && (
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{ps('followup_plan')}</p>
-              )}
-              {ps('next_checkup_date') && (
-                <p className="mt-3 text-sm font-medium text-teal-700">
-                  다음 건강검진 예정일:{' '}
-                  {new Date(ps('next_checkup_date')).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-              )}
+            <div className="break-inside-avoid overflow-hidden rounded-2xl border border-sky-200 shadow-sm">
+              <div className="flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-400 px-5 py-3">
+                <CalendarCheck size={15} className="text-white/90" strokeWidth={2} />
+                <p className="text-sm font-bold text-white">추적 관찰 계획</p>
+              </div>
+              <div className="bg-sky-50 p-5">
+                {ps('followup_plan') && (
+                  <ul className="mb-4 space-y-2">
+                    {ps('followup_plan').split('\n').filter((l) => l.trim()).map((line, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-sky-900">
+                        <ChevronRight size={14} className="mt-0.5 shrink-0 text-sky-400" strokeWidth={2.5} />
+                        <span>{line.trim()}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {ps('next_checkup_date') && (
+                  <div className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-sky-200">
+                    <CalendarCheck size={15} className="text-sky-500" strokeWidth={2} />
+                    <span className="text-xs text-sky-600">다음 건강검진 예정일</span>
+                    <span className="text-sm font-bold text-sky-800">
+                      {new Date(ps('next_checkup_date')).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
         )}
 
         {/* ── 부록 A: 임상병리 ──────────────────────────────── */}
-        {hasLab && <AppendixLab labItems={labItems} />}
+        {hasLab && (
+          <div id="section-appendix-lab">
+            <AppendixLab labItems={labItems} />
+          </div>
+        )}
 
         {/* ── 부록 B/C/D: 영상검사 ─────────────────────────── */}
-        <AppendixImaging getSection={getSection} images={images} checkupId={record.id} isShared={isShared} />
+        <div id="section-appendix-imaging">
+          <AppendixImaging getSection={getSection} images={images} checkupId={record.id} isShared={isShared} />
+        </div>
 
         {/* 화면 전용 푸터 */}
         <footer className="border-t pt-6 text-center text-xs text-slate-400 print:hidden">
@@ -269,7 +387,17 @@ export default function CheckupReport({ data, isShared }: Props) {
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+          html, body {
+            height: auto !important;
+            overflow: visible !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          /* 레이아웃 컨테이너 높이·overflow 제거 */
+          body > * { height: auto !important; overflow: visible !important; }
 
           @page {
             size: A4 portrait;

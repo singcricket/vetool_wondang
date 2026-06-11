@@ -1,5 +1,17 @@
 export type CheckupStatus = 'draft' | 'reviewing' | 'approved'
 
+export type CheckupSearchItem = {
+  id: string
+  checkup_date: string
+  status: CheckupStatus
+  vet_name: string | null
+  created_at: string
+  patient_name: string
+  species: string
+  breed: string
+  hos_patient_id: string
+}
+
 export type CheckupSidebarItem = {
   id: string
   patient_id: string
@@ -102,6 +114,25 @@ export type NeuroSectionData = NeuroSectionStructured | NeuroSectionText
 
 export function isNeuroStructured(d: unknown): d is NeuroSectionStructured {
   return typeof d === 'object' && d !== null && (d as any).format === 'structured'
+}
+
+// ── 피부 병변 (다중 병변 지원) ────────────────────────────────
+export type SkinLesion = {
+  id: string
+  types: string[]       // 병변 종류 (복수 선택)
+  location: string      // 부위 (select)
+  distribution: string  // 단발/다발/광범위
+  size_mm: string       // mm
+  notes: string
+}
+
+// ── 귀 검사 (좌우 분리) ───────────────────────────────────────
+export type EarExam = {
+  od_findings: string[]  // 우이 소견 (복수)
+  od_discharge: string   // 우이 삼출물 타입
+  os_findings: string[]  // 좌이 소견 (복수)
+  os_discharge: string   // 좌이 삼출물 타입
+  notes: string
 }
 
 export type CheckupDetail = {

@@ -1,5 +1,6 @@
 'use client'
 
+import { Camera } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -14,6 +15,7 @@ import {
   PHYSICAL_SECTION_LABEL,
   type PhysicalSection,
 } from '@/constants/hospital/checkup/physical-ref'
+import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
 
 export type PhysicalValues = Record<string, string>
 
@@ -25,9 +27,11 @@ type SectionStatus = 'normal' | 'abnormal' | ''
 interface Props {
   values: PhysicalValues
   onChange: (id: string, value: string) => void
+  checkupId?: string
+  hosId?: string
 }
 
-export default function PhysicalExamSection({ values, onChange }: Props) {
+export default function PhysicalExamSection({ values, onChange, checkupId, hosId }: Props) {
   const getStatus = (section: PhysicalSection): SectionStatus =>
     (values[sectionStatusKey(section)] ?? '') as SectionStatus
 
@@ -46,17 +50,41 @@ export default function PhysicalExamSection({ values, onChange }: Props) {
         const showItems = status !== 'normal'
 
         return (
-          <div key={section}>
+          <div key={section} className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
             {/* 섹션 헤더 */}
-            <div className="mb-2 flex items-center justify-between rounded bg-slate-50 px-2 py-1">
-              <p className="text-xs font-semibold text-slate-600">
+            <div className={`flex items-center justify-between px-3 py-2 ${
+              status === 'normal' ? 'bg-emerald-50 border-b border-emerald-100' :
+              status === 'abnormal' ? 'bg-red-50 border-b border-red-100' :
+              'bg-slate-50 border-b border-slate-100'
+            }`}>
+              <p className={`text-xs font-bold ${
+                status === 'normal' ? 'text-emerald-700' :
+                status === 'abnormal' ? 'text-red-700' :
+                'text-slate-600'
+              }`}>
                 {PHYSICAL_SECTION_LABEL[section]}
               </p>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
+                {section === 'body_condition' && checkupId && hosId && (
+                  <CheckupImageUploadDialog
+                    checkupId={checkupId}
+                    hosId={hosId}
+                    defaultTags={['physical_general']}
+                    trigger={
+                      <button
+                        type="button"
+                        className="rounded-full p-0.5 text-slate-400 hover:bg-teal-50 hover:text-teal-600 transition-colors"
+                        title="체형 사진 업로드"
+                      >
+                        <Camera size={13} />
+                      </button>
+                    }
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => setStatus(section, 'normal')}
-                  className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                     status === 'normal'
                       ? 'bg-emerald-500 text-white'
                       : 'bg-white text-slate-400 ring-1 ring-slate-200 hover:ring-emerald-300 hover:text-emerald-600'
@@ -67,7 +95,7 @@ export default function PhysicalExamSection({ values, onChange }: Props) {
                 <button
                   type="button"
                   onClick={() => setStatus(section, 'abnormal')}
-                  className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
                     status === 'abnormal'
                       ? 'bg-red-500 text-white'
                       : 'bg-white text-slate-400 ring-1 ring-slate-200 hover:ring-red-300 hover:text-red-500'
@@ -80,7 +108,7 @@ export default function PhysicalExamSection({ values, onChange }: Props) {
 
             {/* 세부 항목 — normal 선택 시 숨김 */}
             {showItems && (
-              <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 bg-white p-3 sm:grid-cols-2 lg:grid-cols-3">
                 {items.map((item) => (
                   <div key={item.id} className="flex flex-col gap-1">
                     <div className="flex items-baseline justify-between">

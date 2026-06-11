@@ -8,12 +8,16 @@ export * from './lab-ref-chemistry'
 export * from './lab-ref-endocrine'
 export * from './lab-ref-urinalysis'
 export * from './lab-ref-special'
+export * from './lab-ref-blood-gas'
+export * from './lab-ref-coagulation'
 
 import { labRefCbc } from './lab-ref-cbc'
 import { labRefChemistry } from './lab-ref-chemistry'
 import { labRefEndocrine } from './lab-ref-endocrine'
 import { labRefUrinalysis } from './lab-ref-urinalysis'
 import { labRefSpecial } from './lab-ref-special'
+import { labRefBloodGas } from './lab-ref-blood-gas'
+import { labRefCoagulation } from './lab-ref-coagulation'
 import type { LabRefItem, LabSection } from './lab-types'
 
 export const labRefAll: LabRefItem[] = [
@@ -22,6 +26,8 @@ export const labRefAll: LabRefItem[] = [
   ...labRefEndocrine,
   ...labRefUrinalysis,
   ...labRefSpecial,
+  ...labRefBloodGas,
+  ...labRefCoagulation,
 ]
 
 export const labRefMap: Record<string, LabRefItem> = Object.fromEntries(
@@ -107,6 +113,45 @@ const LAB_ALIASES: Record<string, string> = {
   'retic': 'reticulocyte',
   // SDMA
   'symmetric dimethylarginine': 'sdma',
+  // Coagulation
+  'prothrombin time': 'pt',
+  'pro-time': 'pt',
+  'activated partial thromboplastin time': 'aptt',
+  'partial thromboplastin time': 'aptt',
+  'ptt': 'aptt',
+  'fibrin degradation products': 'fdp',
+  'fsp': 'fdp',
+  'thrombin time': 'thrombin_time',
+  'tt': 'thrombin_time',
+  'antithrombin': 'at3',
+  'antithrombin iii': 'at3',
+  'at-iii': 'at3',
+  'von willebrand factor': 'vwf',
+  'vwf antigen': 'vwf',
+  'vwd': 'vwf',
+  // Blood Gas
+  'blood ph': 'ph',
+  'arterial ph': 'ph',
+  'pco2': 'pco2',
+  'pco₂': 'pco2',
+  'partial pressure co2': 'pco2',
+  'po2': 'po2',
+  'po₂': 'po2',
+  'pao2': 'po2',
+  'partial pressure o2': 'po2',
+  'hco3': 'hco3',
+  'hco3-': 'hco3',
+  'bicarbonate': 'hco3',
+  'bicarb': 'hco3',
+  'be': 'base_excess',
+  'bd': 'base_excess',
+  'tco2': 'tco2',
+  'total co2': 'tco2',
+  'spo2': 'spo2',
+  'spo₂': 'spo2',
+  'oxygen saturation': 'spo2',
+  'lactic acid': 'lactate',
+  'ag': 'anion_gap',
 }
 
 export function findLabRefByKeyword(keyword: string): LabRefItem | undefined {

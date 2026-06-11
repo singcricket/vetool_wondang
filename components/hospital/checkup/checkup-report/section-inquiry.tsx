@@ -280,7 +280,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
                 </div>
                 <div>
                   <p className="text-lg font-bold text-white">품종 · 나이별 건강 리스크 분석</p>
-                  <p className="mt-0.5 text-xs text-violet-200">AI 기반 개인화 건강 위험 평가</p>
+                  <p className="mt-0.5 text-xs text-violet-200">품종 · 나이 · 성별 맞춤 건강 위험 평가</p>
                 </div>
               </div>
             </div>

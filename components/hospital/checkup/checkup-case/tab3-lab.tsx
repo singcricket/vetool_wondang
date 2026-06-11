@@ -1,6 +1,8 @@
 'use client'
 
 import React from 'react'
+import { FlaskConical, Microscope } from 'lucide-react'
+import { SectionBlock } from './tab-ui'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -21,6 +23,8 @@ import {
   labRefEndocrine,
   labRefUrinalysis,
   labRefSpecial,
+  labRefBloodGas,
+  labRefCoagulation,
   labRefMap,
   type LabRefItem,
   type LabResultItem,
@@ -45,12 +49,16 @@ const SEVERITY_BADGE: Record<LabSeverity, string> = {
   mild:     'bg-slate-200 text-slate-700',
 }
 
-const LAB_GROUPS: { label: string; section: LabSection; items: LabRefItem[] }[] = [
-  { label: 'CBC (혈액검사)', section: 'cbc', items: labRefCbc },
-  { label: '혈청화학', section: 'chemistry', items: labRefChemistry },
-  { label: '내분비', section: 'endocrine', items: labRefEndocrine },
-  { label: '요검사', section: 'urinalysis', items: labRefUrinalysis },
-  { label: '특수검사', section: 'special', items: labRefSpecial },
+type SectionColor = 'red' | 'orange' | 'teal' | 'amber' | 'sky' | 'purple' | 'slate'
+
+const LAB_GROUPS: { label: string; section: LabSection; items: LabRefItem[]; color: SectionColor }[] = [
+  { label: 'CBC (혈액검사)', section: 'cbc',         items: labRefCbc,         color: 'red'    },
+  { label: '혈청화학',       section: 'chemistry',   items: labRefChemistry,   color: 'orange' },
+  { label: '내분비',         section: 'endocrine',   items: labRefEndocrine,   color: 'teal'   },
+  { label: '요검사',         section: 'urinalysis',  items: labRefUrinalysis,  color: 'amber'  },
+  { label: '혈액가스검사',   section: 'blood_gas',   items: labRefBloodGas,    color: 'sky'    },
+  { label: '응고계 검사',    section: 'coagulation', items: labRefCoagulation, color: 'purple' },
+  { label: '특수검사',       section: 'special',     items: labRefSpecial,     color: 'slate'  },
 ]
 
 function initLabItems(
@@ -95,12 +103,14 @@ function toUnmatchedItem(raw: ExtractedLabRaw): LabResultItem {
 }
 
 const UNMATCHED_SECTION_OPTIONS: { value: LabSection | 'none'; label: string }[] = [
-  { value: 'none',       label: '기타 (미분류)' },
-  { value: 'cbc',        label: 'CBC (혈액검사)' },
-  { value: 'chemistry',  label: '혈청화학' },
-  { value: 'endocrine',  label: '내분비' },
-  { value: 'urinalysis', label: '요검사' },
-  { value: 'special',    label: '특수검사' },
+  { value: 'none',        label: '기타 (미분류)' },
+  { value: 'cbc',         label: 'CBC (혈액검사)' },
+  { value: 'chemistry',   label: '혈청화학' },
+  { value: 'endocrine',   label: '내분비' },
+  { value: 'urinalysis',  label: '요검사' },
+  { value: 'blood_gas',   label: '혈액가스검사' },
+  { value: 'coagulation', label: '응고계 검사' },
+  { value: 'special',     label: '특수검사' },
 ]
 
 export default function Tab3Lab({ checkupId, patient, labSection, extractedLabItems, extractedUnmatchedItems }: Props) {
@@ -251,14 +261,13 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-4 p-4">
       <p className="text-xs text-slate-400">값이 입력된 항목만 저장됩니다.</p>
 
       {labGroups.map((group, gi) => (
-        <div key={group.section} className="mb-2">
-          <p className="mb-1.5 rounded bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
-            {group.label}
-          </p>
+        <SectionBlock key={group.section} icon={FlaskConical} title={group.label} color={group.color}>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -382,14 +391,11 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
               </tbody>
             </table>
           </div>
-        </div>
+        </SectionBlock>
       ))}
 
       {unmatchedItems.length > 0 && (
-        <div className="mb-2">
-          <p className="mb-1.5 rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
-            기타 (미분류 검사) — AI 추출 항목
-          </p>
+        <SectionBlock icon={Microscope} title="기타 (미분류 검사) — AI 추출 항목" color="amber">
           <p className="mb-2 text-[11px] text-slate-400">
             리포트 포함 여부, 섹션 배치, 코멘트를 설정할 수 있습니다.
           </p>
@@ -501,10 +507,12 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
               )
             })}
           </div>
-        </div>
+        </SectionBlock>
       )}
 
-      <div className="flex justify-end">
+        </div>
+      </div>
+      <div className="shrink-0 flex justify-end border-t bg-white px-4 py-3">
         <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
           {saving ? '저장 중...' : '저장'}
         </Button>

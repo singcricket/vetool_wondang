@@ -18,12 +18,16 @@ export default async function HospitalLayout(
   const plan = 'severe'
 
   return (
-    <div className="flex">
-      <DesktopSidebar hosId={hos_id} vetoolUser={vetoolUser} plan={plan} />
+    <div className="flex print:block">
+      <div className="print:hidden">
+        <DesktopSidebar hosId={hos_id} vetoolUser={vetoolUser} plan={plan} />
+      </div>
 
-      <div className="ml-0 flex-1 2xl:ml-10">
-        <MobileLayout hosId={hos_id} vetoolUser={vetoolUser} plan={plan} />
-        <main className="mt-12 2xl:mt-0">
+      <div className="ml-0 flex-1 2xl:ml-10 print:ml-0">
+        <div className="print:hidden">
+          <MobileLayout hosId={hos_id} vetoolUser={vetoolUser} plan={plan} />
+        </div>
+        <main className="mt-12 2xl:mt-0 print:mt-0">
           <MonitoringNotificationProvider hosId={hos_id}>
             {props.children}
           </MonitoringNotificationProvider>

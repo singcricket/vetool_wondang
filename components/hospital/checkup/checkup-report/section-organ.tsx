@@ -5,6 +5,7 @@ import type { ResolvedOrganSection, DxEvaluation } from '@/lib/config/checkup-re
 import { isDxEvaluation, SEVERITY_BADGE } from './report-utils'
 import { SectionTitle } from './report-ui'
 import CheckupImgCard from './checkup-img-card'
+import type { SkinLesion } from '@/types/hospital/checkup-type'
 
 export interface BasicFinding {
   id: string
@@ -18,36 +19,37 @@ export interface BasicFinding {
 
 const DX_STATUS_STYLE: Record<DxEvaluation['status'], {
   badge: string; action: string;
-  headerBg: string; headerBorder: string; headerText: string; headerSubText: string;
-  accentBar: string; countBadge: string;
+  headerGradient: string; cardBorder: string;
+  headerText: string; headerSubText: string;
+  countBadge: string;
 }> = {
   normal:   {
     badge: 'bg-emerald-100 text-emerald-700',
     action: 'bg-emerald-50 border-emerald-200',
-    headerBg: 'bg-teal-50',        headerBorder: 'border-teal-200',
-    headerText: 'text-teal-800',   headerSubText: 'text-teal-600',
-    accentBar: 'bg-teal-400',      countBadge: 'bg-teal-100 text-teal-700',
+    headerGradient: 'from-teal-500 to-emerald-400', cardBorder: 'border-teal-200',
+    headerText: 'text-white',   headerSubText: 'text-white/80',
+    countBadge: 'bg-white/90 text-teal-700',
   },
   mild:     {
     badge: 'bg-amber-100 text-amber-700',
     action: 'bg-amber-50 border-amber-200',
-    headerBg: 'bg-amber-50',       headerBorder: 'border-amber-200',
-    headerText: 'text-amber-800',  headerSubText: 'text-amber-600',
-    accentBar: 'bg-amber-400',     countBadge: 'bg-amber-100 text-amber-700',
+    headerGradient: 'from-amber-500 to-yellow-400', cardBorder: 'border-amber-200',
+    headerText: 'text-white',   headerSubText: 'text-white/80',
+    countBadge: 'bg-white/90 text-amber-700',
   },
   moderate: {
     badge: 'bg-orange-100 text-orange-700',
     action: 'bg-orange-50 border-orange-200',
-    headerBg: 'bg-orange-50',      headerBorder: 'border-orange-200',
-    headerText: 'text-orange-800', headerSubText: 'text-orange-600',
-    accentBar: 'bg-orange-400',    countBadge: 'bg-orange-100 text-orange-700',
+    headerGradient: 'from-orange-500 to-amber-400', cardBorder: 'border-orange-200',
+    headerText: 'text-white',   headerSubText: 'text-white/80',
+    countBadge: 'bg-white/90 text-orange-700',
   },
   severe:   {
     badge: 'bg-red-100 text-red-700',
     action: 'bg-red-50 border-red-200',
-    headerBg: 'bg-red-50',         headerBorder: 'border-red-200',
-    headerText: 'text-red-800',    headerSubText: 'text-red-600',
-    accentBar: 'bg-red-400',       countBadge: 'bg-red-100 text-red-700',
+    headerGradient: 'from-red-500 to-rose-400',    cardBorder: 'border-red-200',
+    headerText: 'text-white',   headerSubText: 'text-white/80',
+    countBadge: 'bg-white/90 text-red-700',
   },
 }
 
@@ -111,7 +113,161 @@ function LabItemCard({ item }: { item: LabResultItem }) {
 
 function SubHeading({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-2.5 text-xs font-bold uppercase tracking-wide text-slate-400">{children}</p>
+    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">{children}</p>
+  )
+}
+
+// ── 피부·귀 전용 블록 ─────────────────────────────────────────
+
+type CheckupImageItem = { id: string; img_url: string; tags: string[]; img_memo?: string | null; mark?: Record<string, unknown> | null; is_cover?: boolean }
+
+function DermaBlock({ extraData, images, checkupId, isShared }: {
+  extraData: Record<string, unknown>
+  images: CheckupImageItem[]
+  checkupId?: string
+  isShared?: boolean
+}) {
+  const lesions: SkinLesion[] = (() => {
+    try { return JSON.parse((extraData.skin_lesions_json as string) || '[]') } catch { return [] }
+  })()
+
+  const odFindings: string[] = (() => { try { return JSON.parse((extraData.ear_od_findings as string) || '[]') } catch { return [] } })()
+  const osFindings: string[] = (() => { try { return JSON.parse((extraData.ear_os_findings as string) || '[]') } catch { return [] } })()
+  const odDischarge = (extraData.ear_od_discharge as string) || ''
+  const osDischarge = (extraData.ear_os_discharge as string) || ''
+  const earNotes = (extraData.ear_notes as string) || ''
+  const coatCondition = (extraData.coat_condition as string) || ''
+  const parasite = (extraData.parasite as string) || ''
+
+  const hasLesions = lesions.length > 0
+  const hasEar = odFindings.length > 0 || osFindings.length > 0 || earNotes
+  const hasCoat = coatCondition || parasite
+
+  if (!hasLesions && !hasEar && !hasCoat) return null
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* 피모·기생충 */}
+      {hasCoat && (
+        <div className="flex flex-wrap gap-2">
+          {coatCondition && (
+            <div className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 ${
+              coatCondition.includes('정상') ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
+            }`}>
+              {coatCondition.includes('정상')
+                ? <CheckCircle2 size={12} className="shrink-0 text-emerald-500" strokeWidth={2} />
+                : <AlertCircle size={12} className="shrink-0 text-amber-500" strokeWidth={2} />
+              }
+              <span className={`text-xs font-semibold ${coatCondition.includes('정상') ? 'text-emerald-700' : 'text-amber-700'}`}>피모</span>
+              <span className="text-xs text-slate-600">{coatCondition}</span>
+            </div>
+          )}
+          {parasite && (
+            <div className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 ${
+              parasite === '없음' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
+            }`}>
+              {parasite === '없음'
+                ? <CheckCircle2 size={12} className="shrink-0 text-emerald-500" strokeWidth={2} />
+                : <AlertCircle size={12} className="shrink-0 text-amber-500" strokeWidth={2} />
+              }
+              <span className={`text-xs font-semibold ${parasite === '없음' ? 'text-emerald-700' : 'text-amber-700'}`}>기생충</span>
+              <span className="text-xs text-slate-600">{parasite}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 피부 병변 카드 */}
+      {hasLesions && (
+        <div>
+          <SubHeading>피부 병변 ({lesions.length}개)</SubHeading>
+          <div className="flex flex-col gap-2">
+            {lesions.map((lesion, i) => {
+              const lesionImages = images.filter((img) => img.tags?.includes(`skin_lesion_${lesion.id}`))
+              return (
+                <div key={lesion.id} className="overflow-hidden rounded-xl border border-amber-100 bg-amber-50">
+                  <div className="flex gap-0">
+                    {/* 왼쪽: 병변 이미지 */}
+                    {lesionImages.length > 0 && (
+                      <div className="flex shrink-0 flex-col gap-1 bg-amber-100/60 p-2">
+                        {lesionImages.map((img) => (
+                          <CheckupImgCard
+                            key={img.img_url}
+                            img={img}
+                            checkupId={checkupId ?? ''}
+                            isShared={isShared}
+                            className="h-28 w-28 rounded-lg object-cover"
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 오른쪽: 소견 */}
+                    <div className="flex flex-1 flex-col justify-center px-4 py-3">
+                      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">병변 {i + 1}</span>
+                        {lesion.location && <span className="text-xs text-slate-600">{lesion.location}</span>}
+                        {lesion.distribution && <span className="text-[11px] text-slate-400">{lesion.distribution}</span>}
+                        {lesion.size_mm && <span className="text-[11px] text-slate-400">{lesion.size_mm}mm</span>}
+                      </div>
+                      {lesion.types.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {lesion.types.map((t) => (
+                            <span key={t} className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">{t}</span>
+                          ))}
+                        </div>
+                      )}
+                      {lesion.notes && <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{lesion.notes}</p>}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 귀 검사 */}
+      {hasEar && (
+        <div>
+          <SubHeading>귀 검사</SubHeading>
+          <div className="grid grid-cols-2 gap-3">
+            {([
+              { label: '우이 (OD)', findings: odFindings, discharge: odDischarge },
+              { label: '좌이 (OS)', findings: osFindings, discharge: osDischarge },
+            ] as const).map(({ label, findings, discharge }) => (
+              <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p className="mb-1.5 text-xs font-bold text-slate-500">{label}</p>
+                {findings.length > 0 ? (
+                  <div className="flex flex-col gap-1">
+                    {findings.map((f) => (
+                      <div
+                        key={f}
+                        className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 ${
+                          f === '정상' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
+                        }`}
+                      >
+                        {f === '정상'
+                          ? <CheckCircle2 size={10} className="shrink-0 text-emerald-500" strokeWidth={2} />
+                          : <AlertCircle size={10} className="shrink-0 text-amber-500" strokeWidth={2} />
+                        }
+                        <span className={`text-xs ${f === '정상' ? 'text-emerald-700' : 'text-amber-700'}`}>{f}</span>
+                      </div>
+                    ))}
+                    {discharge && (
+                      <p className="mt-0.5 text-[11px] text-slate-500">삼출물: {discharge}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-300">소견 없음</p>
+                )}
+              </div>
+            ))}
+          </div>
+          {earNotes && <p className="mt-2 text-xs leading-relaxed text-slate-600">{earNotes}</p>}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -133,15 +289,29 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
   const isDx   = isDxEvaluation(eval_)
   const hasAi  = isDx ? !!eval_.summary : !!(eval_ as string)
 
-  // 상태 결정 — Dx 평가가 없을 때는 이상 항목 여부로 자동 추정
-  const statusKey: DxEvaluation['status'] = isDx
-    ? eval_.status
-    : abnormalItems.length > 0 ? 'mild' : 'normal'
-  const style = DX_STATUS_STYLE[statusKey]
-
-  // 안과/구강: 상단에 배치할 이미지 및 나머지에서 제외할 집합
   const isOphthalmic = section.key === 'ophthalmic'
   const isOral = section.key === 'oral'
+  const isDerma = section.key === 'derma'
+
+  // 상태 결정 — Dx 평가가 없을 때는 이상 항목 여부로 자동 추정
+  // derma: lab 항목 없으므로 extraData(병변·귀·피모)로 이상 여부 판단
+  const dermaHasFindings = isDerma && (() => {
+    if (!section.extraData) return false
+    const d = section.extraData as Record<string, string>
+    const lesions: unknown[] = (() => { try { return JSON.parse(d.skin_lesions_json || '[]') } catch { return [] } })()
+    if (lesions.length > 0) return true
+    const odFindings: string[] = (() => { try { return JSON.parse(d.ear_od_findings || '[]') } catch { return [] } })()
+    const osFindings: string[] = (() => { try { return JSON.parse(d.ear_os_findings || '[]') } catch { return [] } })()
+    const hasEarAbnormal = [...odFindings, ...osFindings].some((f) => f !== '정상')
+    if (hasEarAbnormal) return true
+    const coatAbnormal = d.coat_condition && !d.coat_condition.includes('정상')
+    const parasiteAbnormal = d.parasite && d.parasite !== '없음'
+    return !!(coatAbnormal || parasiteAbnormal)
+  })()
+  const statusKey: DxEvaluation['status'] = isDx
+    ? eval_.status
+    : (abnormalItems.length > 0 || dermaHasFindings) ? 'mild' : 'normal'
+  const style = DX_STATUS_STYLE[statusKey]
   const topImageUrls = new Set<string>()
   const odImages = isOphthalmic ? section.images.filter((img) => img.tags?.includes('ophthalmic_od')) : []
   const osImages = isOphthalmic ? section.images.filter((img) => img.tags?.includes('ophthalmic_os')) : []
@@ -150,7 +320,8 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
   if (isOral) { oralImages.forEach((img) => topImageUrls.add(img.img_url)) }
 
   // 장기 단독 이미지: organ_* 태그가 있고 ultrasound / xray* 태그가 없는 이미지
-  const organOnlyImages = (!isOphthalmic && !isOral)
+  // derma는 DermaBlock에서 직접 렌더링하므로 여기서 제외
+  const organOnlyImages = (!isOphthalmic && !isOral && !isDerma)
     ? section.images.filter((img) =>
         img.tags?.some((t) => t.startsWith('organ_')) &&
         !img.tags?.includes('ultrasound') &&
@@ -158,22 +329,21 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
       )
     : []
   organOnlyImages.forEach((img) => topImageUrls.add(img.img_url))
+  // derma: 모든 이미지를 topImageUrls에 등록 → 하단 remainingImages 중복 방지
+  if (isDerma) section.images.forEach((img) => topImageUrls.add(img.img_url))
 
   return (
-    <div className="break-inside-avoid overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+    <div id={`organ-${section.key}`} className={`break-inside-avoid overflow-hidden rounded-2xl border shadow-sm ${style.cardBorder}`}>
 
-      {/* ── 헤더 (파스텔 배경) ── */}
-      <div className={`relative flex items-center justify-between gap-3 border-b px-5 py-4 ${style.headerBg} ${style.headerBorder}`}>
-        {/* 좌측 색상 바 */}
-        <div className={`absolute inset-y-0 left-0 w-1 rounded-l-2xl ${style.accentBar}`} />
-
-        <div className="flex min-w-0 flex-col pl-2">
+      {/* ── 헤더 (그라데이션) ── */}
+      <div className={`flex items-center justify-between gap-3 bg-gradient-to-r px-5 py-4 ${style.headerGradient}`}>
+        <div className="flex min-w-0 flex-col">
           <h3 className={`text-base font-bold ${style.headerText}`}>{section.label}</h3>
           {isDx && eval_.summary && (
             <p className={`mt-0.5 text-xs leading-relaxed ${style.headerSubText}`}>{eval_.summary}</p>
           )}
           {!hasAi && (
-            <p className="mt-0.5 text-xs text-slate-400">* AI 종합 평가 미포함</p>
+            <p className="mt-0.5 text-xs text-white/60">* 종합 소견 미작성</p>
           )}
         </div>
 
@@ -292,8 +462,8 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
           </div>
         )}
 
-        {/* 신체검사 소견 (oral/ophthalmic 제외: 별도 블록으로 처리) */}
-        {section.physicalFindings.length > 0 && !isOral && !isOphthalmic && (
+        {/* 신체검사 소견 (oral/ophthalmic/derma 제외: 별도 블록으로 처리) */}
+        {section.physicalFindings.length > 0 && !isOral && !isOphthalmic && !isDerma && (
           <div>
             <SubHeading>신체검사 소견</SubHeading>
             <div className="flex flex-wrap gap-2">
@@ -316,26 +486,9 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
           </div>
         )}
 
-        {/* 방사선 소견 */}
-        {section.xrayFindings.length > 0 && (
-          <div>
-            <SubHeading>방사선 소견</SubHeading>
-            <div className="flex flex-wrap gap-2">
-              {section.xrayFindings.map((f) => {
-                const color = f.isNormal
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : f.severity === 'severe'   ? 'border-red-200 bg-red-50 text-red-700'
-                  : f.severity === 'moderate' ? 'border-orange-200 bg-orange-50 text-orange-700'
-                  : 'border-amber-200 bg-amber-50 text-amber-700'
-                return (
-                  <div key={f.id} className={`rounded-xl border px-3 py-1.5 ${color}`}>
-                    <span className="text-xs font-semibold">{f.label}</span>
-                    {f.valueLabel && <span className="ml-1.5 font-mono text-xs">{f.valueLabel}</span>}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+        {/* 피부·귀 전용 렌더링 */}
+        {isDerma && section.extraData && (
+          <DermaBlock extraData={section.extraData} images={section.images} checkupId={checkupId} isShared={isShared} />
         )}
 
         {/* 혈액·임상병리 검사 결과 카드 */}
@@ -362,17 +515,42 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
           </div>
         )}
 
-        {/* 방사선 이미지 (장기 태그 + xray 태그 조합) */}
+        {/* 방사선 이미지 → 방사선 소견 순으로 묶음 */}
         {(() => {
           const xrayImages = section.images.filter((img) =>
             img.tags?.some((t) => t.startsWith('xray')),
           )
-          if (xrayImages.length === 0) return null
+          const hasXray = xrayImages.length > 0 || section.xrayFindings.length > 0
+          if (!hasXray) return null
           return (
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {xrayImages.map((img) => (
-                <CheckupImgCard key={img.img_url} img={img} checkupId={checkupId ?? ''} isShared={isShared} />
-              ))}
+            <div className="flex flex-col gap-3">
+              {xrayImages.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {xrayImages.map((img) => (
+                    <CheckupImgCard key={img.img_url} img={img} checkupId={checkupId ?? ''} isShared={isShared} />
+                  ))}
+                </div>
+              )}
+              {section.xrayFindings.length > 0 && (
+                <div>
+                  <SubHeading>방사선 소견</SubHeading>
+                  <div className="flex flex-wrap gap-2">
+                    {section.xrayFindings.map((f) => {
+                      const color = f.isNormal
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                        : f.severity === 'severe'   ? 'border-red-200 bg-red-50 text-red-700'
+                        : f.severity === 'moderate' ? 'border-orange-200 bg-orange-50 text-orange-700'
+                        : 'border-amber-200 bg-amber-50 text-amber-700'
+                      return (
+                        <div key={f.id} className={`rounded-xl border px-3 py-1.5 ${color}`}>
+                          <span className="text-xs font-semibold">{f.label}</span>
+                          {f.valueLabel && <span className="ml-1.5 font-mono text-xs">{f.valueLabel}</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )
         })()}
@@ -382,33 +560,43 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
           return (
             <div>
               <SubHeading>초음파 소견</SubHeading>
-              <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {section.usNotes.map((n) => {
                   const organImages = section.images.filter((img) =>
                     img.tags?.includes('ultrasound') && img.tags?.includes(`organ_${n.organKey}`),
                   )
                   return (
                     <div key={n.organKey} className="overflow-hidden rounded-xl border border-sky-100 bg-sky-50">
-                      {/* 장기별 초음파 이미지 */}
-                      {organImages.length > 0 && (
-                        <div className="grid grid-cols-3 gap-1 border-b border-sky-100 p-2 sm:grid-cols-4">
-                          {organImages.map((img) => (
-                            <CheckupImgCard
-                              key={img.img_url}
-                              img={img}
-                              checkupId={checkupId ?? ''}
-                              isShared={isShared}
-                            />
-                          ))}
+                      <div className="flex flex-col sm:flex-row">
+                        {/* 이미지: 왼쪽(넓은화면) / 위(모바일) */}
+                        {organImages.length > 0 && (
+                          <div className="flex flex-col gap-2 p-2 sm:w-1/2 sm:shrink-0">
+                            {organImages.map((img) => (
+                              <CheckupImgCard
+                                key={img.img_url}
+                                img={img}
+                                checkupId={checkupId ?? ''}
+                                isShared={isShared}
+                                className="aspect-[4/3] w-full rounded-lg object-cover"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {/* 소견: 오른쪽(넓은화면) / 아래(모바일) */}
+                        <div className={`flex flex-col justify-center px-4 py-3 ${organImages.length > 0 ? 'sm:flex-1' : ''}`}>
+                          <div className="mb-1 flex items-center gap-1.5">
+                            <Microscope size={13} className="text-sky-500" strokeWidth={2} />
+                            <p className="text-xs font-bold text-sky-700">{n.label}</p>
+                          </div>
+                          <ul className="space-y-1">
+                            {n.note.split('\n').filter((line) => line.trim()).map((line, i) => (
+                              <li key={i} className="flex items-start gap-1.5 text-sm leading-relaxed text-slate-700">
+                                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" />
+                                <span>{line.trim()}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                      )}
-                      {/* 소견 텍스트 */}
-                      <div className="px-4 py-3">
-                        <div className="mb-1 flex items-center gap-1.5">
-                          <Microscope size={13} className="text-sky-500" strokeWidth={2} />
-                          <p className="text-xs font-bold text-sky-700">{n.label}</p>
-                        </div>
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{n.note}</p>
                       </div>
                     </div>
                   )
@@ -486,13 +674,13 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
           return (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {remainingImages.map((img) => (
-                <img key={img.img_url} src={img.img_url} alt={section.label} className="w-full rounded-xl object-cover" />
+                <CheckupImgCard key={img.img_url} img={img} checkupId={checkupId ?? ''} isShared={isShared} />
               ))}
             </div>
           )
         })()}
 
-        {!hasAi && !hasImages && section.labItems.length === 0 && section.usNotes.length === 0 && (
+        {!hasAi && !hasImages && section.labItems.length === 0 && section.usNotes.length === 0 && !isDerma && (
           <p className="text-xs text-slate-400">종합 소견이 작성되지 않았습니다.</p>
         )}
 

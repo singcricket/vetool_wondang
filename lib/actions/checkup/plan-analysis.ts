@@ -29,6 +29,7 @@ export type PlanAnalysisResult = {
   dx_oral: DxEvaluation
   dx_ophthalmic: DxEvaluation
   dx_neuro: DxEvaluation
+  dx_derma: DxEvaluation
   // 2. 치료 및 관리계획
   tx_surgery: string
   tx_medication: string
@@ -254,6 +255,19 @@ function buildSummary(
     lines.push('')
   }
 
+  // 피부·귀 — physical 섹션에 병합 저장됨 (DB CHECK constraint으로 derma 타입 불가)
+  const derma = get('physical')
+  const dermaParts: string[] = []
+  if (derma.coat_condition) dermaParts.push(`피모: ${derma.coat_condition}`)
+  if (derma.parasite) dermaParts.push(`기생충: ${derma.parasite}`)
+  if (derma.skin_lesions_summary) dermaParts.push(`피부병변:\n${derma.skin_lesions_summary}`)
+  if (derma.ear_exam_summary) dermaParts.push(`귀 검사:\n${derma.ear_exam_summary}`)
+  if (dermaParts.length) {
+    lines.push('[피부·귀]')
+    lines.push(dermaParts.join('\n'))
+    lines.push('')
+  }
+
   return lines.join('\n')
 }
 
@@ -309,6 +323,7 @@ dx_* 필드는 반드시 아래 구조의 객체로 반환:
   "dx_oral":            { "status": "...", "summary": "...", "detail": "...", "action": "..." },
   "dx_ophthalmic":      { "status": "...", "summary": "...", "detail": "...", "action": "..." },
   "dx_neuro":           { "status": "...", "summary": "...", "detail": "...", "action": "..." },
+  "dx_derma":           { "status": "...", "summary": "...", "detail": "...", "action": "..." },
   "tx_surgery": "외과 수술/시술 계획 (없으면 '해당 없음')",
   "tx_medication": "내과 약물/주사 치료 계획",
   "tx_diet_plan": "식이관리 계획",

@@ -5,8 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
-import { Trash2, Star, AlertCircle, Pencil } from 'lucide-react'
+import { Trash2, Star, AlertCircle, Pencil, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils/utils'
 import {
@@ -19,6 +25,7 @@ import {
   CHECKUP_TAG_LABEL,
   TAG_COLOR_CLASS,
   getTagColor,
+  type CheckupImageTagGroup,
 } from '@/constants/hospital/checkup/checkup-image-tags'
 import dynamic from 'next/dynamic'
 import CheckupImageTagSelector from './checkup-image-tag-selector'
@@ -30,13 +37,15 @@ type ManagedImage = CheckupImage & { selected: boolean; isDirty: boolean }
 
 interface Props {
   checkupId: string
+  dynamicTagGroups?: CheckupImageTagGroup[]
 }
 
-export default function CheckupImageManageTab({ checkupId }: Props) {
+export default function CheckupImageManageTab({ checkupId, dynamicTagGroups }: Props) {
   const [images, setImages] = useState<ManagedImage[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [editorImage, setEditorImage] = useState<ManagedImage | null>(null)
+  const [tagSheetOpen, setTagSheetOpen] = useState(false)
 
   // Long-press state
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -132,17 +141,100 @@ export default function CheckupImageManageTab({ checkupId }: Props) {
     }
   }
 
+  // ── 태그 패널 내용 (데스크톱 오른쪽 + 모바일 Sheet 공용) ─────────
+  const tagPanelHeader = (
+    <>
+      <p className="text-sm font-semibold text-slate-800">태그 관리</p>
+      {selectedImages.length > 1 ? (
+        <p className="mt-1 flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700">
+          <AlertCircle className="h-3 w-3 shrink-0" />
+          {selectedImages.length}개 선택 — 태그를 덮어씁니다
+        </p>
+      ) : selectedImages.length === 1 ? (
+        <p className="mt-1 text-[11px] text-slate-400">이미지의 현재 태그를 편집합니다</p>
+      ) : (
+        <p className="mt-1 text-[11px] text-slate-400">이미지를 클릭해 태그를 편집하세요</p>
+      )}
+    </>
+  )
+
+  const TagPanelContent = (
+    <div
+      className={cn(
+        'flex-1 space-y-4 overflow-y-auto p-3 pb-6',
+        selectedImages.length === 0 && 'pointer-events-none opacity-40',
+      )}
+    >
+      <div className="flex items-center justify-between rounded-md border p-2">
+        <Label className="flex items-center gap-1.5 text-xs font-medium">
+          <Star className="h-3.5 w-3.5 text-amber-500" />
+          표지 / 대표사진
+        </Label>
+        <Switch
+          checked={commonCover}
+          onCheckedChange={(v) =>
+            updateSelected((img) => ({ ...img, is_cover: v }))
+          }
+        />
+      </div>
+      <div>
+        <p className="mb-2 text-xs font-semibold text-slate-600">태그 선택</p>
+        <CheckupImageTagSelector
+          selectedTags={commonTags}
+          onChange={(tags) => updateSelected((img) => ({ ...img, tags }))}
+          dynamicGroups={dynamicTagGroups}
+        />
+      </div>
+      <div>
+        <p className="mb-1.5 text-xs font-semibold text-slate-600">사진 설명 (메모)</p>
+        <textarea
+          value={selectedImages.length === 1 ? (selectedImages[0].img_memo ?? '') : ''}
+          onChange={(e) =>
+            updateSelected((img) => ({ ...img, img_memo: e.target.value }))
+          }
+          disabled={selectedImages.length !== 1}
+          rows={3}
+          placeholder={
+            selectedImages.length > 1
+              ? '단일 선택 시 편집 가능'
+              : '사진에 대한 설명을 입력하세요...'
+          }
+          className="w-full resize-none rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 placeholder:text-slate-300 focus:border-teal-400 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
+        />
+      </div>
+    </div>
+  )
+
   return (
     <>
       <div className="flex h-full flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col md:flex-row overflow-hidden">
-          {/* LEFT: 이미지 그리드 */}
+          {/* ── LEFT: 이미지 그리드 ──────────────────────────── */}
           <div className="flex flex-1 flex-col overflow-hidden border-r min-h-0">
             <div className="flex shrink-0 items-center justify-between border-b bg-white/80 p-3 backdrop-blur-sm">
               <span className="text-sm font-medium text-slate-700">
                 저장된 이미지 ({images.length})
               </span>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
+                {/* 모바일 전용: 태그 설정 버튼 */}
+                <button
+                  type="button"
+                  onClick={() => setTagSheetOpen(true)}
+                  className={cn(
+                    'md:hidden flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
+                    selectedImages.length > 0
+                      ? 'border-teal-300 bg-teal-50 text-teal-700'
+                      : 'border-slate-200 bg-white text-slate-500',
+                  )}
+                >
+                  <SlidersHorizontal size={11} />
+                  태그 설정
+                  {selectedImages.length > 0 && (
+                    <span className="rounded-full bg-teal-500 px-1.5 py-0 text-[10px] font-bold text-white">
+                      {selectedImages.length}
+                    </span>
+                  )}
+                </button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -209,17 +301,21 @@ export default function CheckupImageManageTab({ checkupId }: Props) {
                       )}
                       {img.tags.length > 0 && (
                         <div className="absolute bottom-1 right-5 flex flex-col items-end gap-0.5 pointer-events-none">
-                          {img.tags.slice(0, 2).map((t) => (
-                            <span
-                              key={t}
-                              className={cn(
-                                'rounded px-1 text-[8px] font-medium',
-                                TAG_COLOR_CLASS[getTagColor(t)],
-                              )}
-                            >
-                              {CHECKUP_TAG_LABEL[t]?.slice(0, 5)}
-                            </span>
-                          ))}
+                          {img.tags.slice(0, 2).map((t) => {
+                            const dynamicLabel = dynamicTagGroups?.flatMap((g) => g.tags).find((tag) => tag.id === t)?.label
+                            const label = CHECKUP_TAG_LABEL[t] ?? dynamicLabel ?? t.split('_').at(-1)
+                            return (
+                              <span
+                                key={t}
+                                className={cn(
+                                  'rounded px-1 text-[8px] font-medium',
+                                  TAG_COLOR_CLASS[getTagColor(t)] ?? TAG_COLOR_CLASS.teal,
+                                )}
+                              >
+                                {label?.slice(0, 5)}
+                              </span>
+                            )
+                          })}
                           {img.tags.length > 2 && (
                             <span className="rounded bg-slate-700/70 px-1 text-[8px] text-white">
                               +{img.tags.length - 2}
@@ -234,68 +330,16 @@ export default function CheckupImageManageTab({ checkupId }: Props) {
             )}
           </div>
 
-          {/* RIGHT: 태그 관리 패널 */}
-          <div className="flex w-full shrink-0 flex-col bg-white md:w-72 min-h-0 overflow-hidden">
+          {/* ── RIGHT: 태그 패널 (데스크톱 전용) ─────────────── */}
+          <div className="hidden md:flex md:w-72 shrink-0 flex-col bg-white min-h-0 overflow-hidden">
             <div className="shrink-0 border-b bg-slate-50 p-3">
-              <p className="text-sm font-semibold text-slate-800">태그 관리</p>
-              {selectedImages.length > 1 ? (
-                <p className="mt-1 flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700">
-                  <AlertCircle className="h-3 w-3 shrink-0" />
-                  {selectedImages.length}개 선택 — 태그를 덮어씁니다
-                </p>
-              ) : selectedImages.length === 1 ? (
-                <p className="mt-1 text-[11px] text-slate-400">이미지의 현재 태그를 편집합니다</p>
-              ) : (
-                <p className="mt-1 text-[11px] text-slate-400">이미지를 클릭해 태그를 편집하세요</p>
-              )}
+              {tagPanelHeader}
             </div>
-            <div
-              className={cn(
-                'flex-1 space-y-4 overflow-y-auto p-3',
-                selectedImages.length === 0 && 'pointer-events-none opacity-40',
-              )}
-            >
-              <div className="flex items-center justify-between rounded-md border p-2">
-                <Label className="flex items-center gap-1.5 text-xs font-medium">
-                  <Star className="h-3.5 w-3.5 text-amber-500" />
-                  표지 / 대표사진
-                </Label>
-                <Switch
-                  checked={commonCover}
-                  onCheckedChange={(v) =>
-                    updateSelected((img) => ({ ...img, is_cover: v }))
-                  }
-                />
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold text-slate-600">태그 선택</p>
-                <CheckupImageTagSelector
-                  selectedTags={commonTags}
-                  onChange={(tags) => updateSelected((img) => ({ ...img, tags }))}
-                />
-              </div>
-              <div>
-                <p className="mb-1.5 text-xs font-semibold text-slate-600">사진 설명 (메모)</p>
-                <textarea
-                  value={selectedImages.length === 1 ? (selectedImages[0].img_memo ?? '') : ''}
-                  onChange={(e) =>
-                    updateSelected((img) => ({ ...img, img_memo: e.target.value }))
-                  }
-                  disabled={selectedImages.length !== 1}
-                  rows={3}
-                  placeholder={
-                    selectedImages.length > 1
-                      ? '단일 선택 시 편집 가능'
-                      : '사진에 대한 설명을 입력하세요...'
-                  }
-                  className="w-full resize-none rounded-md border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 placeholder:text-slate-300 focus:border-teal-400 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
-                />
-              </div>
-            </div>
+            {TagPanelContent}
           </div>
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ────────────────────────────────────────── */}
         <div className="flex shrink-0 items-center justify-between border-t bg-white p-4 shadow-md">
           <span className="text-sm text-slate-500">
             {images.length}개 중{' '}
@@ -325,7 +369,35 @@ export default function CheckupImageManageTab({ checkupId }: Props) {
         </div>
       </div>
 
-      {/* Editor Dialog */}
+      {/* ── 모바일: 태그 설정 Sheet ───────────────────────────── */}
+      <Sheet open={tagSheetOpen} onOpenChange={setTagSheetOpen}>
+        <SheetContent side="right" className="flex w-80 flex-col p-0">
+          <SheetHeader className="shrink-0 border-b bg-slate-50 px-4 py-3">
+            <SheetTitle className="text-sm">태그 관리</SheetTitle>
+            {selectedImages.length > 1 ? (
+              <p className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700">
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                {selectedImages.length}개 선택 — 태그를 덮어씁니다
+              </p>
+            ) : selectedImages.length === 1 ? (
+              <p className="text-[11px] text-slate-400">이미지의 현재 태그를 편집합니다</p>
+            ) : (
+              <p className="text-[11px] text-slate-400">이미지를 클릭해 태그를 편집하세요</p>
+            )}
+          </SheetHeader>
+          {TagPanelContent}
+          <div className="shrink-0 border-t bg-white p-3">
+            <Button
+              className="w-full bg-teal-600 hover:bg-teal-700"
+              onClick={() => setTagSheetOpen(false)}
+            >
+              확인
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Editor Dialog ──────────────────────────────────── */}
       <Dialog open={!!editorImage} onOpenChange={(open) => { if (!open) setEditorImage(null) }} modal={false}>
         <DialogContent
           className="max-w-none w-screen h-screen p-0 m-0 rounded-none border-none overflow-hidden [&>button]:hidden z-[150]"

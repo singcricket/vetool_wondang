@@ -12,7 +12,6 @@ export type PhysicalSection =
   | 'respiratory'     // 호흡기계
   | 'abdomen'         // 복부
   | 'musculoskeletal' // 근골격계
-  | 'skin'            // 피부·피모
   | 'mentation'       // 정신 상태
 
 export const PHYSICAL_SECTION_LABEL: Record<PhysicalSection, string> = {
@@ -24,7 +23,6 @@ export const PHYSICAL_SECTION_LABEL: Record<PhysicalSection, string> = {
   respiratory: '호흡기계',
   abdomen: '복부',
   musculoskeletal: '근골격계',
-  skin: '피부·피모',
   mentation: '정신 상태',
 }
 
@@ -489,51 +487,6 @@ const musculoskeletal: PhysicalRefItem[] = [
   },
 ]
 
-// ────────────────────────────────────────────────────────────
-// 피부·피모
-// ────────────────────────────────────────────────────────────
-const skin: PhysicalRefItem[] = [
-  {
-    id: 'coat_condition',
-    nameKo: '피모 상태',
-    nameEn: 'Coat Condition',
-    section: 'skin',
-    inputType: 'select',
-    options: ['정상 (광택, 청결)', '건조/윤기 없음', '기름짐 (Seborrhea)', '탈모 (Alopecia)', '엉킴/매트'],
-  },
-  {
-    id: 'skin_lesions',
-    nameKo: '피부 병변',
-    nameEn: 'Skin Lesions',
-    section: 'skin',
-    inputType: 'select',
-    options: ['없음', '홍반 (Erythema)', '구진/농포', '궤양/미란', '가피 (Crust)', '색소 침착 변화', '종괴/결절'],
-  },
-  {
-    id: 'skin_lesion_location',
-    nameKo: '병변 위치',
-    nameEn: 'Lesion Location',
-    section: 'skin',
-    inputType: 'text',
-  },
-  {
-    id: 'parasite',
-    nameKo: '외부 기생충',
-    nameEn: 'External Parasite',
-    section: 'skin',
-    inputType: 'select',
-    options: ['없음', '벼룩 (Fleas)', '진드기 (Ticks)', '이 (Lice)', '기생충 분변 (Flea dirt)'],
-  },
-  {
-    id: 'ear_exam',
-    nameKo: '귀 검사',
-    nameEn: 'Ear Exam',
-    section: 'skin',
-    inputType: 'select',
-    options: ['정상', '삼출물 (좌)', '삼출물 (우)', '삼출물 (양측)', '냄새', '발적/부종'],
-    comment: '안과·치과는 전문 모듈로 분리. 귀는 피부 범주에서 기본 평가',
-  },
-]
 
 // ────────────────────────────────────────────────────────────
 // 정신 상태
@@ -578,7 +531,6 @@ export const physicalRefAll: PhysicalRefItem[] = [
   ...respiratory,
   ...abdomen,
   ...musculoskeletal,
-  ...skin,
   ...mentation,
 ]
 
@@ -599,6 +551,5 @@ export const PHYSICAL_SECTION_ORDER: PhysicalSection[] = [
   'respiratory',
   'abdomen',
   'musculoskeletal',
-  'skin',
   'mentation',
 ]

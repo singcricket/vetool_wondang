@@ -16,6 +16,8 @@ export type LabSection =
   | 'thyroid'      // 갑상선 (endocrine 하위)
   | 'urinalysis'   // 요검사
   | 'special'      // 특수검사
+  | 'blood_gas'    // 혈액가스검사 (ABG)
+  | 'coagulation'  // 응고계 검사
 
 export const LAB_SECTION_LABEL: Record<LabSection, string> = {
   cbc: '혈액검사 (CBC)',
@@ -31,6 +33,8 @@ export const LAB_SECTION_LABEL: Record<LabSection, string> = {
   thyroid: '갑상선',
   urinalysis: '요검사',
   special: '특수검사',
+  blood_gas: '혈액가스검사',
+  coagulation: '응고계 검사',
 }
 
 export type LabTestType = 'range' | 'select' | 'multiselect' | 'text'

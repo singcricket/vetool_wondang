@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react'
+import {
+  Sparkles, Loader2, CheckCircle2,
+  Stethoscope, ClipboardList, BookOpen, CalendarDays, CalendarCheck, Brain,
+} from 'lucide-react'
+import { SectionBlock, SubSection } from './tab-ui'
 import { toast } from 'sonner'
 import { upsertCheckupSection } from '@/lib/actions/checkup/checkup-actions'
 import { generatePlanSections } from '@/lib/actions/checkup/plan-analysis'
@@ -34,6 +38,7 @@ type PlanData = {
   dx_oral: DxEvaluation
   dx_ophthalmic: DxEvaluation
   dx_neuro: DxEvaluation
+  dx_derma: DxEvaluation
   // 2. 치료 및 관리계획
   tx_surgery: string
   tx_medication: string
@@ -57,6 +62,7 @@ const EMPTY: PlanData = {
   dx_hepatobiliary: { ...EMPTY_DX },   dx_endocrine: { ...EMPTY_DX },
   dx_urogenital: { ...EMPTY_DX },      dx_oral: { ...EMPTY_DX },
   dx_ophthalmic: { ...EMPTY_DX },      dx_neuro: { ...EMPTY_DX },
+  dx_derma: { ...EMPTY_DX },
   tx_surgery: '', tx_medication: '', tx_diet_plan: '', tx_further_workup: '',
   tx_monitoring: '', tx_priority_summary: '',
   guide_diet: '', guide_weight: '', guide_exercise: '', guide_environment: '',
@@ -66,7 +72,7 @@ const EMPTY: PlanData = {
 function initForm(saved: Partial<Record<string, unknown>>): PlanData {
   const DX_KEYS = [
     'dx_musculoskeletal', 'dx_cardio_resp', 'dx_hepatobiliary', 'dx_endocrine',
-    'dx_urogenital', 'dx_oral', 'dx_ophthalmic', 'dx_neuro',
+    'dx_urogenital', 'dx_oral', 'dx_ophthalmic', 'dx_neuro', 'dx_derma',
   ] as const
   const result = { ...EMPTY }
   for (const key of DX_KEYS) {
@@ -94,15 +100,6 @@ interface Props {
 }
 
 // ── 서브 컴포넌트 ─────────────────────────────────────────────
-
-function SectionHeader({ title, sub }: { title: string; sub?: string }) {
-  return (
-    <div className="mb-3 border-b pb-1">
-      <h4 className="text-sm font-semibold text-slate-700">{title}</h4>
-      {sub && <p className="mt-0.5 text-[11px] text-slate-400">{sub}</p>}
-    </div>
-  )
-}
 
 function FieldBlock({
   label, sub, value, onChange, minH = 80,
@@ -296,30 +293,36 @@ export default function Tab5Plan({
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-4 p-4">
 
-      {/* AI 분석 버튼 영역 */}
-      <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 px-4 py-3">
-        <div>
-          <p className="text-sm font-medium text-teal-800">AI 종합 분석</p>
-          <p className="mt-0.5 text-[11px] text-teal-600">
-            탭 1~4 데이터를 종합하여 아래 모든 항목을 자동으로 채웁니다. 생성 후 직접 수정 가능합니다.
-          </p>
-        </div>
-        <Button
-          type="button"
-          onClick={handleAnalyze}
-          disabled={analyzing}
-          className="ml-4 shrink-0 gap-1.5 bg-teal-600 hover:bg-teal-700"
-        >
-          {analyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-          {analyzing ? 'AI 분석 중...' : 'AI 종합 분석'}
-        </Button>
-      </div>
+      {/* ── AI 종합 분석 ─────────────────────────────── */}
+      <SectionBlock
+        icon={Brain}
+        title="AI 종합 분석"
+        color="violet"
+        action={
+          <Button
+            type="button"
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            size="sm"
+            className="h-7 gap-1.5 bg-white/20 text-white hover:bg-white/30"
+          >
+            {analyzing ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+            {analyzing ? 'AI 분석 중...' : 'AI 종합 분석'}
+          </Button>
+        }
+      >
+        <p className="text-xs text-slate-500">
+          탭 1~4 데이터를 종합하여 아래 모든 항목을 자동으로 채웁니다. 생성 후 직접 수정 가능합니다.
+        </p>
+      </SectionBlock>
 
       {/* ── 1. 기관별 진단 및 평가 ──────────────────── */}
-      <section>
-        <SectionHeader title="기관별 진단 및 평가" sub="계통별 요약 평가 소견 — AI 분석 후 펼쳐서 확인·수정하세요" />
+      <SectionBlock icon={Stethoscope} title="기관별 진단 및 평가" color="blue">
+        <p className="mb-3 text-[11px] text-slate-400">계통별 요약 평가 소견 — AI 분석 후 펼쳐서 확인·수정하세요</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <DxFieldBlock label="근골격계" value={form.dx_musculoskeletal} onChange={(v) => set('dx_musculoskeletal', v)} />
           <DxFieldBlock label="심혈관 / 호흡기" value={form.dx_cardio_resp} onChange={(v) => set('dx_cardio_resp', v)} />
@@ -329,54 +332,59 @@ export default function Tab5Plan({
           <DxFieldBlock label="구강" value={form.dx_oral} onChange={(v) => set('dx_oral', v)} />
           <DxFieldBlock label="안과" value={form.dx_ophthalmic} onChange={(v) => set('dx_ophthalmic', v)} />
           <DxFieldBlock label="신경계" value={form.dx_neuro} onChange={(v) => set('dx_neuro', v)} />
+          <DxFieldBlock label="피부·귀" value={form.dx_derma} onChange={(v) => set('dx_derma', v)} />
         </div>
-      </section>
+      </SectionBlock>
 
       {/* ── 2. 치료 및 관리계획 ────────────────────── */}
-      <section>
-        <SectionHeader title="치료 및 관리계획" sub="즉각 치료 / 관리 / 모니터링 / 추가검사 항목 정리" />
+      <SectionBlock icon={ClipboardList} title="치료 및 관리계획" color="teal">
+        <p className="mb-3 text-[11px] text-slate-400">즉각 치료 / 관리 / 모니터링 / 추가검사 항목 정리</p>
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SubSection title="세부 계획" color="teal">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FieldBlock
+                label="외과 수술 / 시술 계획"
+                value={form.tx_surgery}
+                onChange={(v) => set('tx_surgery', v)}
+              />
+              <FieldBlock
+                label="내과 약물 / 주사 치료"
+                value={form.tx_medication}
+                onChange={(v) => set('tx_medication', v)}
+              />
+              <FieldBlock
+                label="식이관리 계획"
+                value={form.tx_diet_plan}
+                onChange={(v) => set('tx_diet_plan', v)}
+              />
+              <FieldBlock
+                label="추가 정밀검사"
+                sub="(추가로 진행해야 할 검사)"
+                value={form.tx_further_workup}
+                onChange={(v) => set('tx_further_workup', v)}
+              />
+              <FieldBlock
+                label="주기적 모니터링 항목"
+                value={form.tx_monitoring}
+                onChange={(v) => set('tx_monitoring', v)}
+              />
+            </div>
+          </SubSection>
+          <SubSection title="우선순위 요약" color="teal">
             <FieldBlock
-              label="외과 수술 / 시술 계획"
-              value={form.tx_surgery}
-              onChange={(v) => set('tx_surgery', v)}
+              label="치료·관리 우선순위 요약"
+              sub="(1순위: 즉각치료 → 2순위: 적극관리 → 3순위: 모니터링)"
+              value={form.tx_priority_summary}
+              onChange={(v) => set('tx_priority_summary', v)}
+              minH={100}
             />
-            <FieldBlock
-              label="내과 약물 / 주사 치료"
-              value={form.tx_medication}
-              onChange={(v) => set('tx_medication', v)}
-            />
-            <FieldBlock
-              label="식이관리 계획"
-              value={form.tx_diet_plan}
-              onChange={(v) => set('tx_diet_plan', v)}
-            />
-            <FieldBlock
-              label="추가 정밀검사"
-              sub="(추가로 진행해야 할 검사)"
-              value={form.tx_further_workup}
-              onChange={(v) => set('tx_further_workup', v)}
-            />
-            <FieldBlock
-              label="주기적 모니터링 항목"
-              value={form.tx_monitoring}
-              onChange={(v) => set('tx_monitoring', v)}
-            />
-          </div>
-          <FieldBlock
-            label="치료·관리 우선순위 요약"
-            sub="(1순위: 즉각치료 → 2순위: 적극관리 → 3순위: 모니터링)"
-            value={form.tx_priority_summary}
-            onChange={(v) => set('tx_priority_summary', v)}
-            minH={100}
-          />
+          </SubSection>
         </div>
-      </section>
+      </SectionBlock>
 
       {/* ── 3. 생활 관리 가이드 ────────────────────── */}
-      <section>
-        <SectionHeader title="생활 관리 가이드" sub="체중·BCS·질환 맞춤형 생활 권고사항" />
+      <SectionBlock icon={BookOpen} title="생활 관리 가이드" color="amber">
+        <p className="mb-3 text-[11px] text-slate-400">체중·BCS·질환 맞춤형 생활 권고사항</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FieldBlock
             label="식이관리"
@@ -403,22 +411,21 @@ export default function Tab5Plan({
             onChange={(v) => set('guide_environment', v)}
           />
         </div>
-      </section>
+      </SectionBlock>
 
       {/* ── 4. 추적 관찰 계획 ──────────────────────── */}
-      <section>
-        <SectionHeader title="추적 관찰 계획" sub="N개월 후: 검사 항목 형식으로 작성" />
+      <SectionBlock icon={CalendarDays} title="추적 관찰 계획" color="indigo">
+        <p className="mb-3 text-[11px] text-slate-400">N개월 후: 검사 항목 형식으로 작성</p>
         <FieldBlock
           label="추적 관찰 일정"
           value={form.followup_plan}
           onChange={(v) => set('followup_plan', v)}
           minH={100}
         />
-      </section>
+      </SectionBlock>
 
       {/* ── 5. 다음 건강검진일 ──────────────────────── */}
-      <section>
-        <SectionHeader title="다음 건강검진 예정일" />
+      <SectionBlock icon={CalendarCheck} title="다음 건강검진 예정일" color="cyan">
         <div className="flex items-center gap-3">
           <Input
             type="date"
@@ -434,10 +441,12 @@ export default function Tab5Plan({
             </span>
           )}
         </div>
-      </section>
+      </SectionBlock>
 
-      {/* ── 저장 / 상태 ─────────────────────────────── */}
-      <div className="flex items-center justify-between border-t pt-4">
+        </div>
+      </div>
+      {/* ── 저장 / 상태 고정 바 ──────────────────────── */}
+      <div className="shrink-0 flex items-center justify-between border-t bg-white px-4 py-3">
         <div className="flex items-center gap-2 text-xs text-slate-500">
           {status === 'draft' && <span>작성 중</span>}
           {status === 'reviewing' && (

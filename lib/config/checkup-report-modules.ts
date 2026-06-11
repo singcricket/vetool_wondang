@@ -54,6 +54,8 @@ export interface OrganModuleConfig {
   xrayFindingIds: string[]
   /** 관련 X-ray 계측 항목 ID (vhs, vlas 등) */
   xrayMeasurementIds: string[]
+  /** 정상 체크 시 리포트에 표시할 카테고리 normal key (xray_normal_{catId}) */
+  xrayCategoryNormalIds: string[]
 }
 
 export type { DxEvaluation }
@@ -73,6 +75,8 @@ export interface ResolvedOrganSection extends OrganModuleConfig {
   images: { id: string; img_url: string; tags: string[]; img_memo?: string | null; mark?: Record<string, unknown> | null; is_cover?: boolean }[]
   richness: Exclude<OrganRichness, 'absent'>
   usNotes: UsOrganNote[]
+  /** 모듈별 추가 raw 데이터 (derma 섹션 등 커스텀 렌더링용) */
+  extraData?: Record<string, unknown>
 }
 
 // ── 장기계통 모듈 정의 ────────────────────────────────────────
@@ -87,13 +91,14 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     key: 'blood',
     label: '혈액학',
     planKey: 'dx_cbc',
-    labSections: ['cbc'],
+    labSections: ['cbc', 'coagulation'],
     labIds: ['crp'],
     imageTags: [],
     imagingSectionKeys: [],
     physicalIds: ['mmc', 'crt', 'mucous_moisture'],
     xrayFindingIds: ['splenomegaly'],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: [],
   },
 
   // ── 간·담도계 ───────────────────────────────────────────────
@@ -108,6 +113,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     physicalIds: ['liver_size', 'abdominal_palpation', 'abdominal_pain'],
     xrayFindingIds: ['hepatomegaly', 'microhepatica', 'ascites'],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: ['xray_normal_abdomen'],
   },
 
   // ── 신장·비뇨기계 ───────────────────────────────────────────
@@ -122,6 +128,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     physicalIds: ['bladder', 'systolic_bp'],
     xrayFindingIds: ['renomegaly', 'small_kidney', 'vesical_calculi', 'nephrolithiasis'],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: ['xray_normal_abdomen'],
   },
 
   // ── 췌장·소화기계 ───────────────────────────────────────────
@@ -136,6 +143,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     physicalIds: ['abdominal_palpation', 'abdominal_pain', 'intestinal_loops'],
     xrayFindingIds: ['abdominal_mass', 'foreign_body', 'ileus', 'abdominal_calcification'],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: ['xray_normal_abdomen'],
   },
 
   // ── 심혈관·호흡기계 ─────────────────────────────────────────
@@ -143,9 +151,9 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     key: 'cardio',
     label: '심혈관·호흡기계',
     planKey: 'dx_cardio_resp',
-    labSections: [],
+    labSections: ['blood_gas'],
     labIds: ['nt_probnp'],
-    imageTags: ['echo', 'xray_thorax'],
+    imageTags: ['echo', 'xray_thorax', 'organ_heart', 'organ_lung'],
     imagingSectionKeys: ['echo_basic', 'xray'],
     physicalIds: [
       'heart_rhythm', 'heart_murmur', 'murmur_location', 'pulse_quality', 'jugular_distension',
@@ -159,6 +167,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
       'diaphragm_abnormality', 'mediastinal_abnormality',
     ],
     xrayMeasurementIds: ['vhs', 'vlas'],
+    xrayCategoryNormalIds: ['xray_normal_thorax'],
   },
 
   // ── 내분비계 ────────────────────────────────────────────────
@@ -173,6 +182,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     physicalIds: ['bcs', 'mcs', 'weight_change'],
     xrayFindingIds: ['prostatomegaly'],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: ['xray_normal_abdomen'],
   },
 
   // ── 지질·대사 ───────────────────────────────────────────────
@@ -187,6 +197,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     physicalIds: ['bcs', 'weight_change'],
     xrayFindingIds: [],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: [],
   },
 
   // ── 전해질·미네랄 ──────────────────────────────────────────
@@ -194,13 +205,14 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     key: 'electrolyte',
     label: '전해질·미네랄',
     planKey: 'dx_electrolyte',
-    labSections: ['electrolyte'],
+    labSections: ['electrolyte', 'blood_gas'],
     labIds: ['na', 'k', 'cl'],
     imageTags: [],
     imagingSectionKeys: [],
     physicalIds: ['skin_turgor', 'dehydration_estimate'],
     xrayFindingIds: [],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: [],
   },
 
   // ── 근골격계 ────────────────────────────────────────────────
@@ -220,6 +232,22 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
       'vertebral_body_change', 'transitional_vertebra',
     ],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: ['xray_normal_extremity', 'xray_normal_spine'],
+  },
+
+  // ── 피부·귀 (Dermatology) ──────────────────────────────────
+  {
+    key: 'derma',
+    label: '피부·귀',
+    planKey: 'dx_derma',
+    labSections: [],
+    labIds: [],
+    imageTags: ['organ_skin', 'organ_ear', 'skin_lesion_'],
+    imagingSectionKeys: [],
+    physicalIds: [],
+    xrayFindingIds: ['tympanic_bulla_opacity'],
+    xrayMeasurementIds: [],
+    xrayCategoryNormalIds: ['xray_normal_skull'],
   },
 
   // ── 구강 ────────────────────────────────────────────────────
@@ -231,9 +259,10 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     labIds: [],
     imageTags: ['dental', 'dental_radio'],
     imagingSectionKeys: [],
-    physicalIds: ['ear_exam'],
-    xrayFindingIds: ['nasal_opacity', 'dental_lesion', 'tympanic_bulla_opacity'],
+    physicalIds: [],
+    xrayFindingIds: ['nasal_opacity', 'dental_lesion'],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: ['xray_normal_skull'],
   },
 
   // ── 안과 ────────────────────────────────────────────────────
@@ -248,6 +277,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     physicalIds: [],
     xrayFindingIds: [],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: [],
   },
 
   // ── 신경계 ──────────────────────────────────────────────────
@@ -262,6 +292,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     physicalIds: ['mentation_status', 'pain_assessment', 'posture', 'gait'],
     xrayFindingIds: ['vertebral_fracture', 'spinal_canal_narrowing', 'skull_lesion'],
     xrayMeasurementIds: [],
+    xrayCategoryNormalIds: ['xray_normal_spine', 'xray_normal_skull'],
   },
 ]
 
@@ -310,6 +341,8 @@ export function resolveOrganSections(
   xrayData: Record<string, unknown> = {},
   species: 'dog' | 'cat' = 'dog',
   imagingSections: Record<string, Record<string, unknown>> = {},
+  /** 모듈 key → 추가 raw 섹션 데이터 (커스텀 렌더링용) */
+  extraSectionData: Record<string, Record<string, unknown>> = {},
 ): ResolvedOrganSection[] {
   // xray checked 소견 맵 (checked: { [id]: true })
   const xrayChecked = (xrayData.checked ?? {}) as Record<string, boolean>
@@ -352,6 +385,27 @@ export function resolveOrganSections(
 
     // 방사선 체크박스 소견
     const xrayFindings: XrayOrganFinding[] = []
+
+    // 카테고리 정상 소견 — normal 체크 시 이상 소견 대신 정상 표시
+    const NORMAL_LABEL: Record<string, string> = {
+      xray_normal_thorax:    '흉부 방사선 특이 소견 없음',
+      xray_normal_abdomen:   '복부 방사선 특이 소견 없음',
+      xray_normal_extremity: '사지 방사선 특이 소견 없음',
+      xray_normal_skull:     '두개골 방사선 특이 소견 없음',
+      xray_normal_spine:     '척추 방사선 특이 소견 없음',
+    }
+    for (const normalId of config.xrayCategoryNormalIds) {
+      if (!xrayChecked[normalId]) continue
+      xrayFindings.push({
+        id: normalId,
+        label: NORMAL_LABEL[normalId] ?? '방사선 특이 소견 없음',
+        type: 'finding',
+        severity: 'mild',
+        isNormal: true,
+        ownerMessage: '방사선 검사에서 특이 소견이 관찰되지 않았습니다.',
+      })
+    }
+
     for (const fid of config.xrayFindingIds) {
       if (!xrayChecked[fid]) continue
       const ref = xrayFindingMap[fid]
@@ -423,11 +477,14 @@ export function resolveOrganSections(
     const hasAi = typeof aiEval === 'object' ? !!aiEval.summary : !!aiEval
     // DxEvaluation 객체가 존재하면 summary가 비어도 "데이터 있음"으로 처리 (정상 소견 카드 표시)
     const hasAiOrDx = typeof aiEval === 'object' || !!aiEval
-    if (labItems.length === 0 && physicalFindings.length === 0 && xrayFindings.length === 0 && !hasAiOrDx && images.length === 0 && usNotes.length === 0) return acc
+    // derma: extraData(physical 병합 데이터)에 기록이 있으면 이미지·AI 없어도 표시
+    const hasExtraData = !!extraSectionData[config.key] && Object.values(extraSectionData[config.key]).some((v) => v)
+    if (labItems.length === 0 && physicalFindings.length === 0 && xrayFindings.length === 0 && !hasAiOrDx && images.length === 0 && usNotes.length === 0 && !hasExtraData) return acc
 
     const richness: Exclude<OrganRichness, 'absent'> = hasAi ? 'full' : 'partial'
+    const extraData = extraSectionData[config.key]
 
-    acc.push({ ...config, labItems, physicalFindings, xrayFindings, aiEval, images, richness, usNotes })
+    acc.push({ ...config, labItems, physicalFindings, xrayFindings, aiEval, images, richness, usNotes, ...(extraData ? { extraData } : {}) })
     return acc
   }, [])
 }

@@ -5,7 +5,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Radiation, ScanLine, Heart, Scan } from 'lucide-react'
+import { SectionBlock } from './tab-ui'
 import { toast } from 'sonner'
 import { upsertCheckupSection } from '@/lib/actions/checkup/checkup-actions'
 import {
@@ -252,11 +253,30 @@ export default function Tab4Imaging({
     window.open(`/hospital/${hosId}/ultrasound/${checkupDate}/${chartId}`, '_blank')
   }
 
-  const toggleFinding = (findingId: string, checked: boolean) => {
-    setXray((prev) => ({
-      ...prev,
-      checked: { ...prev.checked, [findingId]: checked },
-    }))
+  const toggleFinding = (findingId: string, checked: boolean, categoryId?: XrayCategoryId) => {
+    setXray((prev) => {
+      const next = { ...prev.checked, [findingId]: checked }
+      if (checked && categoryId) {
+        // 일반 소견 체크 → 해당 카테고리의 '정상' 해제
+        delete next[`xray_normal_${categoryId}`]
+      }
+      return { ...prev, checked: next }
+    })
+  }
+
+  const toggleNormal = (categoryId: XrayCategoryId, checked: boolean) => {
+    setXray((prev) => {
+      const next: Record<string, boolean> = {}
+      // 해당 카테고리의 모든 기존 소견 해제
+      const catFindingIds = new Set(
+        xrayCategories.find((c) => c.id === categoryId)?.findings.map((f) => f.id) ?? [],
+      )
+      for (const [k, v] of Object.entries(prev.checked)) {
+        if (!catFindingIds.has(k)) next[k] = v
+      }
+      if (checked) next[`xray_normal_${categoryId}`] = true
+      return { ...prev, checked: next }
+    })
   }
 
   const setXrayNote = (categoryId: XrayCategoryId, value: string) => {
@@ -337,29 +357,43 @@ export default function Tab4Imaging({
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-4 p-4">
 
       {/* ── 방사선 ─────────────────────────────────────── */}
-      <section>
-        <h3 className="mb-3 border-b pb-1 text-sm font-semibold text-slate-700">
-          방사선 (X-ray)
-        </h3>
-
+      <SectionBlock icon={Radiation} title="방사선 (X-ray)" color="slate">
         <div className="flex flex-col gap-5">
           {xrayCategories.map((cat) => {
+            const isNormal = !!xray.checked[`xray_normal_${cat.id}`]
             const checkedCount = cat.findings.filter((f) => xray.checked[f.id]).length
             return (
               <div key={cat.id}>
-                <p className="mb-1.5 rounded bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
-                  {cat.label}
-                  {checkedCount > 0 && (
-                    <span className="ml-2 rounded-full bg-teal-100 px-1.5 text-teal-700">
-                      {checkedCount}
-                    </span>
-                  )}
-                </p>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <div className="h-3.5 w-0.5 shrink-0 rounded-full bg-slate-400" />
+                  <p className="text-xs font-bold text-slate-600">
+                    {cat.label}
+                    {isNormal && (
+                      <span className="ml-2 rounded-full bg-emerald-100 px-1.5 text-emerald-700">정상</span>
+                    )}
+                    {!isNormal && checkedCount > 0 && (
+                      <span className="ml-2 rounded-full bg-teal-100 px-1.5 text-teal-700">
+                        {checkedCount}
+                      </span>
+                    )}
+                  </p>
+                </div>
 
                 <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+                  {/* 정상 체크박스 */}
+                  <label className={`flex cursor-pointer items-center gap-1.5 rounded px-1.5 py-0.5 text-xs ${isNormal ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600'}`}>
+                    <Checkbox
+                      checked={isNormal}
+                      onCheckedChange={(v) => toggleNormal(cat.id, !!v)}
+                      className="h-3.5 w-3.5 shrink-0"
+                    />
+                    정상
+                  </label>
                   {cat.findings.map((finding) => (
                     <label
                       key={finding.id}
@@ -371,7 +405,7 @@ export default function Tab4Imaging({
                     >
                       <Checkbox
                         checked={!!xray.checked[finding.id]}
-                        onCheckedChange={(v) => toggleFinding(finding.id, !!v)}
+                        onCheckedChange={(v) => toggleFinding(finding.id, !!v, cat.id)}
                         className="h-3.5 w-3.5 shrink-0"
                       />
                       {finding.label}
@@ -436,18 +470,20 @@ export default function Tab4Imaging({
             )
           })}
         </div>
-      </section>
+      </SectionBlock>
 
       {/* ── 복부초음파 ──────────────────────────────────── */}
-      <section>
-        <div className="mb-3 flex items-center justify-between border-b pb-1">
-          <h3 className="text-sm font-semibold text-slate-700">복부 초음파</h3>
+      <SectionBlock
+        icon={ScanLine}
+        title="복부 초음파"
+        color="cyan"
+        action={
           <div className="flex items-center gap-2">
             {linkedUsId && (
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 px-2 text-xs text-teal-600 hover:bg-teal-50"
+                className="h-6 px-2 text-xs text-white/80 hover:bg-white/20 hover:text-white"
                 onClick={() => loadOrganNotes(linkedUsId)}
                 disabled={loadingOrgan}
               >
@@ -466,47 +502,43 @@ export default function Tab4Imaging({
               onCreateNew={handleCreateUltrasoundChart}
             />
           </div>
-        </div>
-
+        }
+      >
         {/* 장기별 textarea */}
         <div className="flex flex-col gap-3">
-          {organSections.map((section) => {
-            const note = ultrasound.organ_notes[section.organ] ?? ''
-            return (
-              <div key={section.organ}>
-                <p className="mb-1 text-xs font-medium text-slate-600">{section.organNameKo}</p>
-                <Textarea
-                  value={note}
-                  onChange={(e) => setOrganNote(section.organ, e.target.value)}
-                  placeholder={`${section.organNameKo} 소견`}
-                  className="min-h-[56px] resize-none text-xs"
-                />
-              </div>
-            )
-          })}
+          {organSections.map((section) => (
+            <div key={section.organ}>
+              <p className="mb-1 text-xs font-medium text-slate-600">{section.organNameKo}</p>
+              <Textarea
+                value={ultrasound.organ_notes[section.organ] ?? ''}
+                onChange={(e) => setOrganNote(section.organ, e.target.value)}
+                placeholder={`${section.organNameKo} 소견`}
+                className="min-h-[56px] resize-none text-xs"
+              />
+            </div>
+          ))}
         </div>
-      </section>
+      </SectionBlock>
 
       {/* ── 심장초음파 ────────────────────────────────── */}
-      <section>
-        <h3 className="mb-3 border-b pb-1 text-sm font-semibold text-slate-700">
-          심장초음파 (Echocardiography)
-        </h3>
-
+      <SectionBlock icon={Heart} title="심장초음파 (Echocardiography)" color="rose">
         {/* 소견 체크박스 */}
         <div className="flex flex-col gap-5">
           {echoCategories.map((cat) => {
             const checkedCount = cat.findings.filter((f) => echo.checked[f.id]).length
             return (
               <div key={cat.id}>
-                <p className="mb-1.5 rounded bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
-                  {cat.label}
-                  {checkedCount > 0 && (
-                    <span className="ml-2 rounded-full bg-teal-100 px-1.5 text-teal-700">
-                      {checkedCount}
-                    </span>
-                  )}
-                </p>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <div className="h-3.5 w-0.5 shrink-0 rounded-full bg-rose-400" />
+                  <p className="text-xs font-bold text-slate-600">
+                    {cat.label}
+                    {checkedCount > 0 && (
+                      <span className="ml-2 rounded-full bg-teal-100 px-1.5 text-teal-700">
+                        {checkedCount}
+                      </span>
+                    )}
+                  </p>
+                </div>
 
                 <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
                   {cat.findings.map((finding) => (
@@ -585,23 +617,21 @@ export default function Tab4Imaging({
             })}
           </div>
         </div>
-      </section>
+      </SectionBlock>
 
       {/* ── CT / MRI / 내시경 ──────────────────────────── */}
-      <section>
-        <h3 className="mb-3 border-b pb-1 text-sm font-semibold text-slate-700">
-          CT / MRI / 내시경
-        </h3>
+      <SectionBlock icon={Scan} title="CT / MRI / 내시경" color="violet">
         <Textarea
           value={ctMri.notes}
           onChange={(e) => setCtMri({ notes: e.target.value })}
           placeholder="CT, MRI, 내시경 소견 자유 입력"
           className="min-h-[100px] resize-none text-sm"
         />
-      </section>
+      </SectionBlock>
 
-      {/* ── 저장 ──────────────────────────────────────── */}
-      <div className="flex justify-end border-t pt-4">
+        </div>
+      </div>
+      <div className="shrink-0 flex justify-end border-t bg-white px-4 py-3">
         <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
           {saving ? '저장 중...' : '저장'}
         </Button>

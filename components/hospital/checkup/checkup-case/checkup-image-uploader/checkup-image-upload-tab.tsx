@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { X, UploadCloud, Sparkles, Star } from 'lucide-react'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { X, UploadCloud, Sparkles, Star, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils/utils'
 import { uploadCheckupImage, fileToSmallBase64 } from '@/lib/services/checkup/upload-checkup-image'
@@ -14,6 +20,7 @@ import {
   CHECKUP_TAG_LABEL,
   TAG_COLOR_CLASS,
   getTagColor,
+  type CheckupImageTagGroup,
 } from '@/constants/hospital/checkup/checkup-image-tags'
 import CheckupImageTagSelector from './checkup-image-tag-selector'
 
@@ -30,13 +37,16 @@ interface Props {
   checkupId: string
   hosId: string
   onSuccess?: () => void
+  defaultTags?: string[]
+  dynamicTagGroups?: CheckupImageTagGroup[]
 }
 
-export default function CheckupImageUploadTab({ checkupId, hosId, onSuccess }: Props) {
+export default function CheckupImageUploadTab({ checkupId, hosId, onSuccess, defaultTags, dynamicTagGroups }: Props) {
   const [staged, setStaged] = useState<StagedImage[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [tagSheetOpen, setTagSheetOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -62,7 +72,7 @@ export default function CheckupImageUploadTab({ checkupId, hosId, onSuccess }: P
       file,
       previewUrl: URL.createObjectURL(file),
       selected: true,
-      tags: [],
+      tags: defaultTags ? [...defaultTags] : [],
       isCover: false,
     }))
     setStaged((prev) =>
@@ -151,10 +161,42 @@ export default function CheckupImageUploadTab({ checkupId, hosId, onSuccess }: P
     }
   }
 
+  // ── 태그 패널 내용 (데스크톱 오른쪽 + 모바일 Sheet 공용) ─────────
+  const TagPanelContent = (
+    <div className={cn('flex-1 space-y-4 overflow-y-auto p-3 pb-6', selectedImages.length === 0 && 'pointer-events-none opacity-40')}>
+      {/* Cover toggle */}
+      <div className="flex items-center justify-between rounded-md border p-2">
+        <Label className="flex items-center gap-1.5 text-xs font-medium">
+          <Star className="h-3.5 w-3.5 text-amber-500" />
+          표지 / 대표사진
+        </Label>
+        <Switch checked={commonCover} onCheckedChange={handleCoverChange} />
+      </div>
+
+      {/* AI tag button */}
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
+        onClick={handleAiTag}
+        disabled={isAiLoading || selectedImages.length === 0}
+      >
+        <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+        {isAiLoading ? 'AI 분석 중...' : 'AI 태그 자동 분류'}
+      </Button>
+
+      {/* Manual tag selector */}
+      <div>
+        <p className="mb-2 text-xs font-semibold text-slate-600">수동 태그 선택</p>
+        <CheckupImageTagSelector selectedTags={commonTags} onChange={handleTagsChange} dynamicGroups={dynamicTagGroups} />
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex h-full flex-col md:flex-row">
-      {/* LEFT: drop zone + image grid */}
-      <div className="flex flex-1 flex-col overflow-auto border-r p-4">
+      {/* ── LEFT: drop zone + image grid ─────────────────────── */}
+      <div className="flex flex-1 flex-col overflow-auto border-r p-4 pb-20">
         <div
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
           onDragLeave={() => setIsDragging(false)}
@@ -182,14 +224,33 @@ export default function CheckupImageUploadTab({ checkupId, hosId, onSuccess }: P
           <>
             <div className="mb-2 flex items-center justify-between px-1">
               <span className="text-sm font-medium text-slate-700">추가된 이미지 ({staged.length})</span>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
+                {/* 모바일 전용: 태그 설정 버튼 */}
+                <button
+                  type="button"
+                  onClick={() => setTagSheetOpen(true)}
+                  className={cn(
+                    'md:hidden flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
+                    selectedImages.length > 0
+                      ? 'border-teal-300 bg-teal-50 text-teal-700'
+                      : 'border-slate-200 bg-white text-slate-500',
+                  )}
+                >
+                  <SlidersHorizontal size={11} />
+                  태그 설정
+                  {selectedImages.length > 0 && (
+                    <span className="rounded-full bg-teal-500 px-1.5 py-0 text-[10px] font-bold text-white">
+                      {selectedImages.length}
+                    </span>
+                  )}
+                </button>
                 <Button variant="ghost" size="sm" className="h-6 text-xs text-blue-600"
                   onClick={() => setStaged((p) => p.map((i) => ({ ...i, selected: true })))}>전체 선택</Button>
                 <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-500"
                   onClick={() => setStaged((p) => p.map((i) => ({ ...i, selected: false })))}>해제</Button>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 overflow-y-auto pb-20 sm:grid-cols-4">
+            <div className="grid grid-cols-3 gap-2 overflow-y-auto pb-4 sm:grid-cols-4">
               {staged.map((img) => (
                 <div
                   key={img.id}
@@ -221,11 +282,15 @@ export default function CheckupImageUploadTab({ checkupId, hosId, onSuccess }: P
                   )}
                   {img.tags.length > 0 && (
                     <div className="absolute bottom-1 right-1 left-5 flex flex-wrap justify-end gap-0.5 pointer-events-none">
-                      {img.tags.slice(0, 2).map((t) => (
-                        <span key={t} className={cn('rounded px-1 text-[8px] font-medium', TAG_COLOR_CLASS[getTagColor(t)])}>
-                          {CHECKUP_TAG_LABEL[t]?.slice(0, 4)}
-                        </span>
-                      ))}
+                      {img.tags.slice(0, 2).map((t) => {
+                        const dynamicLabel = dynamicTagGroups?.flatMap(g => g.tags).find(tag => tag.id === t)?.label
+                        const label = CHECKUP_TAG_LABEL[t] ?? dynamicLabel ?? t.split('_').at(-1)
+                        return (
+                          <span key={t} className={cn('rounded px-1 text-[8px] font-medium', TAG_COLOR_CLASS[getTagColor(t)] ?? TAG_COLOR_CLASS.amber)}>
+                            {label?.slice(0, 4)}
+                          </span>
+                        )
+                      })}
                       {img.tags.length > 2 && (
                         <span className="rounded bg-slate-700/70 px-1 text-[8px] text-white">+{img.tags.length - 2}</span>
                       )}
@@ -238,53 +303,44 @@ export default function CheckupImageUploadTab({ checkupId, hosId, onSuccess }: P
         )}
       </div>
 
-      {/* RIGHT: tag panel */}
-      <div className="flex w-full flex-col bg-white md:w-72">
+      {/* ── RIGHT: 태그 패널 (데스크톱 전용) ─────────────────── */}
+      <div className="hidden md:flex md:w-72 flex-col bg-white">
         <div className="border-b bg-slate-50 p-3">
           <p className="text-sm font-semibold text-slate-800">선택 이미지 설정</p>
           <p className="mt-0.5 text-[11px] text-slate-500">{selectedImages.length}개 선택. 변경 시 일괄 적용됩니다.</p>
         </div>
+        {TagPanelContent}
+      </div>
 
-        <div className={cn('flex-1 space-y-4 overflow-y-auto p-3 pb-24', selectedImages.length === 0 && 'pointer-events-none opacity-40')}>
-          {/* Cover toggle */}
-          <div className="flex items-center justify-between rounded-md border p-2">
-            <Label className="flex items-center gap-1.5 text-xs font-medium">
-              <Star className="h-3.5 w-3.5 text-amber-500" />
-              표지 / 대표사진
-            </Label>
-            <Switch checked={commonCover} onCheckedChange={handleCoverChange} />
+      {/* ── 모바일: 태그 설정 Sheet ───────────────────────────── */}
+      <Sheet open={tagSheetOpen} onOpenChange={setTagSheetOpen}>
+        <SheetContent side="right" className="flex w-80 flex-col p-0">
+          <SheetHeader className="shrink-0 border-b bg-slate-50 px-4 py-3">
+            <SheetTitle className="text-sm">선택 이미지 설정</SheetTitle>
+            <p className="text-[11px] text-slate-500">{selectedImages.length}개 선택. 변경 시 일괄 적용됩니다.</p>
+          </SheetHeader>
+          {TagPanelContent}
+          <div className="shrink-0 border-t bg-white p-3">
+            <Button
+              className="w-full bg-teal-600 hover:bg-teal-700"
+              onClick={() => setTagSheetOpen(false)}
+            >
+              확인
+            </Button>
           </div>
+        </SheetContent>
+      </Sheet>
 
-          {/* AI tag button */}
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
-            onClick={handleAiTag}
-            disabled={isAiLoading || selectedImages.length === 0}
-          >
-            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-            {isAiLoading ? 'AI 분석 중...' : 'AI 태그 자동 분류'}
-          </Button>
-
-          {/* Manual tag selector */}
-          <div>
-            <p className="mb-2 text-xs font-semibold text-slate-600">수동 태그 선택</p>
-            <CheckupImageTagSelector selectedTags={commonTags} onChange={handleTagsChange} />
-          </div>
-        </div>
-
-        {/* Footer action */}
-        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between border-t bg-white p-4 shadow-md">
-          <span className="text-sm text-slate-500">총 {staged.length}개</span>
-          <Button
-            onClick={handleSave}
-            disabled={staged.length === 0 || isUploading}
-            className="bg-teal-600 hover:bg-teal-700"
-          >
-            {isUploading ? '저장 중...' : '클라우드 저장'}
-          </Button>
-        </div>
+      {/* ── 저장 고정 바 ─────────────────────────────────────── */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between border-t bg-white p-4 shadow-md">
+        <span className="text-sm text-slate-500">총 {staged.length}개</span>
+        <Button
+          onClick={handleSave}
+          disabled={staged.length === 0 || isUploading}
+          className="bg-teal-600 hover:bg-teal-700"
+        >
+          {isUploading ? '저장 중...' : '클라우드 저장'}
+        </Button>
       </div>
     </div>
   )
