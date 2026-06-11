@@ -123,7 +123,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     planKey: 'dx_urogenital',
     labSections: ['kidney', 'urinalysis'],
     labIds: ['sdma', 'phos', 'ca'],
-    imageTags: ['organ_left_kidney', 'organ_right_kidney', 'organ_urinary_bladder', 'organ_left_adrenal', 'organ_right_adrenal'],
+    imageTags: ['organ_left_kidney', 'organ_right_kidney', 'organ_urinary_bladder'],
     imagingSectionKeys: ['ultrasound_basic'],
     physicalIds: ['bladder', 'systolic_bp'],
     xrayFindingIds: ['renomegaly', 'small_kidney', 'vesical_calculi', 'nephrolithiasis'],
