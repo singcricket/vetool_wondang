@@ -1,28 +1,29 @@
 'use server'
 
 import { getAnthropicClient } from '@/lib/ai/anthropic'
+import { createClient } from '@/lib/supabase/server'
+import { calcLifeStage, type LifeStage } from '@/lib/utils/checkup/life-stage'
 
 // ── 타입 ─────────────────────────────────────────────────────
-// 각 항목을 소제목별 키-값 구조로 받아 리포트에서 CSS 개별 적용 가능
 
 export type BreedRisk = {
-  predispositions: string    // 호발 질환·주의 질병
-  anatomy: string            // 해부학적·신체적 특이점
-  genetic: string            // 유전성 질환·유전적 소인
+  predispositions: string
+  anatomy: string
+  genetic: string
 }
 
 export type AgeRisk = {
-  stage: string              // 현재 생애 단계 설명
-  watch_items: string        // 이 나이에 특히 체크해야 할 항목들
-  preventive: string         // 예방 포인트
+  stage: string
+  watch_items: string
+  preventive: string
 }
 
 export type Management = {
-  diet: string               // 식이 관리
-  oral: string               // 구강 관리
-  checkup: string            // 정기검진 권장사항
-  environment: string        // 환경·생활 관리
-  warning_signs: string      // 즉시 내원이 필요한 이상 증상
+  diet: string
+  oral: string
+  checkup: string
+  environment: string
+  warning_signs: string
 }
 
 export type RiskAnalysisResult = {
@@ -31,16 +32,27 @@ export type RiskAnalysisResult = {
   management: Management
 }
 
+export type AnalyzeSource =
+  | 'cache_full'    // 종+품종+연령대 완전 일치
+  | 'cache_breed'   // 품종만 일치 → breed_risk 캐시, age/management AI
+  | 'ai_full'       // 캐시 없음 → 전체 AI
+
+function normalizeBreed(breed: string | null): string {
+  return (breed ?? '혼종').trim().toLowerCase()
+}
+
+function normalizeSpecies(species: string): string {
+  return /^(cat|feline)$/i.test(species) ? 'cat' : 'dog'
+}
+
 // ── 헬퍼 ─────────────────────────────────────────────────────
 
 function calcAgeText(birth: string | null): string {
   if (!birth) return '나이 정보 없음'
-  const b = new Date(birth)
-  const today = new Date()
   const totalMonths =
-    (today.getFullYear() - b.getFullYear()) * 12 +
-    (today.getMonth() - b.getMonth()) +
-    (today.getDate() < b.getDate() ? -1 : 0)
+    (new Date().getFullYear() - new Date(birth).getFullYear()) * 12 +
+    (new Date().getMonth() - new Date(birth).getMonth()) +
+    (new Date().getDate() < new Date(birth).getDate() ? -1 : 0)
   if (totalMonths < 12) return `${totalMonths}개월령`
   const y = Math.floor(totalMonths / 12)
   const m = totalMonths % 12
@@ -50,7 +62,6 @@ function calcAgeText(birth: string | null): string {
 function extractJson(text: string): RiskAnalysisResult {
   const stripped = text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
   try { return JSON.parse(stripped) } catch {}
-
   const start = text.indexOf('{')
   if (start === -1) throw new Error('JSON not found')
   let depth = 0, inString = false, escaped = false
@@ -66,18 +77,23 @@ function extractJson(text: string): RiskAnalysisResult {
   throw new Error('JSON not found')
 }
 
-// ── 메인 액션 ─────────────────────────────────────────────────
+// ── AI 호출 (전체 or 연령만) ──────────────────────────────────
 
-export async function analyzePatientRisk(params: {
-  species: string
+async function callAI(params: {
+  speciesKo: string
   breed: string | null
-  birth: string | null
-  gender: string | null
+  ageText: string
+  genderKo: string
+  skipBreed: boolean
 }): Promise<RiskAnalysisResult> {
-  const { species, breed, birth, gender } = params
-  const ageText = calcAgeText(birth)
-  const speciesKo = /^(cat|feline)$/i.test(species) ? '고양이' : '개'
-  const genderKo = gender ?? '성별 정보 없음'
+  const { speciesKo, breed, ageText, genderKo, skipBreed } = params
+
+  const breedSection = skipBreed ? '' : `
+  "breed_risk": {
+    "predispositions": "${speciesKo === '개' ? '해당 품종에서 특히 주의해야 할 질병 1~3가지를 간결하게' : '해당 품종의 주요 건강 주의사항'}",
+    "anatomy": "해부학적·신체적 특이점 (체형, 피부, 눈, 관절 등)",
+    "genetic": "유전성 질환 또는 유전적 소인 (없으면 '특별한 유전 질환 위험은 보고되지 않았습니다.')"
+  },`
 
   const prompt = `당신은 수의 내과 전문의입니다. 보호자에게 보여줄 건강검진 리포트용 리스크 분석 내용을 작성해 주세요.
 
@@ -93,12 +109,7 @@ export async function analyzePatientRisk(params: {
 - 의학용어 사용 시 괄호로 쉬운 설명 병기
 - JSON만 반환 (코드블록·설명 없이)
 
-{
-  "breed_risk": {
-    "predispositions": "${speciesKo === '개' ? '해당 품종에서 특히 주의해야 할 질병 1~3가지를 간결하게' : '해당 품종의 주요 건강 주의사항'}",
-    "anatomy": "해부학적·신체적 특이점 (체형, 피부, 눈, 관절 등)",
-    "genetic": "유전성 질환 또는 유전적 소인 (없으면 '특별한 유전 질환 위험은 보고되지 않았습니다.')"
-  },
+{${breedSection}
   "age_risk": {
     "stage": "현재 ${ageText} 생애 단계 특징 1~2문장",
     "watch_items": "이 나이에 특히 확인해야 할 건강 항목 (장기 기능, 치아, 체중, 호르몬 등) 2~4가지",
@@ -121,5 +132,123 @@ export async function analyzePatientRisk(params: {
   })
 
   const text = message.content.find((b) => b.type === 'text')?.text ?? ''
+
+  if (skipBreed) {
+    // breed_risk 없이 파싱 → 빈 값으로 채워서 반환
+    const partial = JSON.parse(
+      text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
+    ) as Partial<RiskAnalysisResult>
+    return {
+      breed_risk: { predispositions: '', anatomy: '', genetic: '' },
+      age_risk: partial.age_risk ?? { stage: '', watch_items: '', preventive: '' },
+      management: partial.management ?? { diet: '', oral: '', checkup: '', environment: '', warning_signs: '' },
+    }
+  }
+
   return extractJson(text)
+}
+
+// ── DB 캐시 조회/저장 ─────────────────────────────────────────
+
+type CacheRow = {
+  species: string
+  breed: string
+  life_stage: string
+  breed_risk: BreedRisk
+  age_risk: AgeRisk
+  management: Management
+}
+
+async function queryCache(species: string, breed: string, lifeStage: LifeStage): Promise<CacheRow | null> {
+  const supabase = await createClient()
+  const { data } = await (supabase as any)
+    .from('checkup_breed_risk_cache')
+    .select('species, breed, life_stage, breed_risk, age_risk, management')
+    .eq('species', species)
+    .eq('breed', breed)
+    .eq('life_stage', lifeStage)
+    .maybeSingle()
+  return (data as CacheRow | null) ?? null
+}
+
+async function queryCacheBreedOnly(species: string, breed: string): Promise<CacheRow | null> {
+  const supabase = await createClient()
+  const { data } = await (supabase as any)
+    .from('checkup_breed_risk_cache')
+    .select('species, breed, life_stage, breed_risk, age_risk, management')
+    .eq('species', species)
+    .eq('breed', breed)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return (data as CacheRow | null) ?? null
+}
+
+async function saveCache(row: CacheRow): Promise<void> {
+  const supabase = await createClient()
+  await (supabase as any)
+    .from('checkup_breed_risk_cache')
+    .upsert(
+      { ...row, updated_at: new Date().toISOString() },
+      { onConflict: 'species,breed,life_stage' },
+    )
+}
+
+// ── 메인 액션 ─────────────────────────────────────────────────
+
+export async function analyzePatientRisk(params: {
+  species: string
+  breed: string | null
+  birth: string | null
+  gender: string | null
+}): Promise<RiskAnalysisResult & { source: AnalyzeSource }> {
+  const { species, breed, birth, gender } = params
+
+  const speciesKey  = normalizeSpecies(species)
+  const breedKey    = normalizeBreed(breed)
+  const lifeStage   = calcLifeStage(birth, species)
+  const ageText     = calcAgeText(birth)
+  const speciesKo   = speciesKey === 'cat' ? '고양이' : '개'
+  const genderKo    = gender ?? '성별 정보 없음'
+
+  // ── 1단계: 완전 일치 캐시 조회 ──────────────────────────────
+  const fullHit = await queryCache(speciesKey, breedKey, lifeStage)
+  if (fullHit) {
+    return {
+      breed_risk: fullHit.breed_risk,
+      age_risk:   fullHit.age_risk,
+      management: fullHit.management,
+      source: 'cache_full',
+    }
+  }
+
+  // ── 2단계: 품종만 일치 캐시 조회 ────────────────────────────
+  const breedHit = await queryCacheBreedOnly(speciesKey, breedKey)
+  if (breedHit) {
+    const aiResult = await callAI({ speciesKo, breed, ageText, genderKo, skipBreed: true })
+    const result: RiskAnalysisResult = {
+      breed_risk: breedHit.breed_risk,   // 캐시에서
+      age_risk:   aiResult.age_risk,
+      management: aiResult.management,
+    }
+    await saveCache({
+      species:    speciesKey,
+      breed:      breedKey,
+      life_stage: lifeStage,
+      ...result,
+    })
+    return { ...result, source: 'cache_breed' }
+  }
+
+  // ── 3단계: 전체 AI 호출 ──────────────────────────────────────
+  const aiResult = await callAI({ speciesKo, breed, ageText, genderKo, skipBreed: false })
+  await saveCache({
+    species:    speciesKey,
+    breed:      breedKey,
+    life_stage: lifeStage,
+    breed_risk: aiResult.breed_risk,
+    age_risk:   aiResult.age_risk,
+    management: aiResult.management,
+  })
+  return { ...aiResult, source: 'ai_full' }
 }

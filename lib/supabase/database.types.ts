@@ -160,6 +160,42 @@ export type Database = {
           },
         ]
       }
+      checkup_breed_risk_cache: {
+        Row: {
+          age_risk: Json
+          breed: string
+          breed_risk: Json
+          created_at: string
+          id: string
+          life_stage: string
+          management: Json
+          species: string
+          updated_at: string
+        }
+        Insert: {
+          age_risk: Json
+          breed: string
+          breed_risk: Json
+          created_at?: string
+          id?: string
+          life_stage: string
+          management: Json
+          species: string
+          updated_at?: string
+        }
+        Update: {
+          age_risk?: Json
+          breed?: string
+          breed_risk?: Json
+          created_at?: string
+          id?: string
+          life_stage?: string
+          management?: Json
+          species?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checkup_images: {
         Row: {
           checkup_id: string

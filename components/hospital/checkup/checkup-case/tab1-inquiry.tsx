@@ -191,7 +191,12 @@ export default function Tab1Inquiry({ checkupId, patient, section, extractedInqu
         ai_management: result.management,
       }))
 
-      toast.success('AI 분석 완료. 내용을 확인 후 저장하세요.')
+      const messages: Record<typeof result.source, string> = {
+        cache_full:  '품종·연령 DB 데이터를 적용했습니다.',
+        cache_breed: '품종 DB 적용 + 연령 AI 분석 완료.',
+        ai_full:     'AI 분석 완료. 내용을 확인 후 저장하세요.',
+      }
+      toast.success(messages[result.source])
     } catch {
       toast.error('AI 분석에 실패했습니다.')
     } finally {
