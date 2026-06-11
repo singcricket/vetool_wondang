@@ -65,7 +65,7 @@ export function VitalNumCard({
   const gradient = warn ? 'from-amber-400 to-orange-400' : (accentMap[accentColor] ?? accentMap.teal)
 
   return (
-    <div className={`overflow-hidden rounded-2xl border shadow-sm ${warn ? 'border-amber-200' : 'border-slate-100'}`}>
+    <div className={`overflow-hidden rounded-[10px] border shadow-sm ${warn ? 'border-amber-200' : 'border-slate-100'}`}>
       <div className={`bg-gradient-to-r ${gradient} px-3 py-2 flex items-center gap-2`}>
         {Icon && <Icon size={14} className="text-white/80" strokeWidth={2} />}
         <p className="text-xs font-semibold text-white/90">{label}</p>
@@ -145,7 +145,7 @@ export function BcsGauge({ value, species = 'dog' }: { value: string | number; s
 
   return (
     <>
-      <div className="rounded-xl bg-white/70 p-3 ring-1 ring-slate-200">
+      <div className="rounded-[10px] bg-white/70 p-3 ring-1 ring-slate-200">
         {/* 헤더 */}
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
@@ -180,7 +180,7 @@ export function BcsGauge({ value, species = 'dog' }: { value: string | number; s
                 className={`flex cursor-zoom-in flex-col items-center gap-1 transition-opacity ${isActive ? 'opacity-100' : 'opacity-35'}`}
                 onClick={() => setLightboxSrc(src)}
               >
-                <div className={`w-full overflow-hidden rounded-lg ${ringClass}`}>
+                <div className={`w-full overflow-hidden rounded-md ${ringClass}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt={`BCS ${ref}`} className="h-auto w-full object-contain" />
                 </div>
@@ -223,7 +223,7 @@ export function BcsGauge({ value, species = 'dog' }: { value: string | number; s
         </div>
 
         {/* 현재 점수 설명 */}
-        <div className={`mt-3 rounded-lg border p-2.5 ${descBg}`}>
+        <div className={`mt-3 rounded-md border p-2.5 ${descBg}`}>
           <p className="text-xs font-semibold leading-relaxed">{BCS_DESCRIPTIONS[bcs]}</p>
         </div>
       </div>
@@ -238,7 +238,7 @@ export function BcsGauge({ value, species = 'dog' }: { value: string | number; s
           <img
             src={lightboxSrc}
             alt="BCS 참고 이미지"
-            className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+            className="max-h-[90vh] max-w-[90vw] rounded-[10px] object-contain shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
           <button
@@ -278,7 +278,7 @@ export function McsGauge({ value }: { value: string }) {
                :             'border-emerald-100 bg-emerald-50 text-emerald-700'
 
   return (
-    <div className="rounded-xl bg-white/70 p-3 ring-1 ring-slate-200">
+    <div className="rounded-[10px] bg-white/70 p-3 ring-1 ring-slate-200">
       {/* 헤더 */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
@@ -295,7 +295,7 @@ export function McsGauge({ value }: { value: string }) {
         {[1, 2, 3, 4].map((n) => (
           <div key={n} className="flex flex-1 flex-col items-center gap-1">
             <div
-              className={`flex h-8 w-full items-center justify-center rounded-lg text-sm font-bold transition-all ${
+              className={`flex h-8 w-full items-center justify-center rounded-md text-sm font-bold transition-all ${
                 n === score
                   ? isDanger  ? 'scale-105 bg-red-500 text-white ring-2 ring-red-300'
                   : isWarning ? 'scale-105 bg-amber-400 text-white ring-2 ring-amber-200'
@@ -313,7 +313,7 @@ export function McsGauge({ value }: { value: string }) {
       </div>
 
       {/* 현재 등급 설명 */}
-      <div className={`mt-3 rounded-lg border p-2.5 ${descBg}`}>
+      <div className={`mt-3 rounded-md border p-2.5 ${descBg}`}>
         <p className="text-xs font-semibold leading-relaxed">{MCS_DESCRIPTIONS[score]}</p>
       </div>
     </div>
@@ -336,21 +336,21 @@ export function CalorieCard({
   const isIdeal   = bcs >= 4 && bcs <= 5
 
   return (
-    <div className="rounded-xl bg-white/70 p-3 ring-1 ring-slate-200">
+    <div className="rounded-[10px] bg-white/70 p-3 ring-1 ring-slate-200">
       {/* 섹션 레이블 */}
       <div className="mb-3 flex items-center gap-1.5">
         <Flame size={13} className="text-teal-500" strokeWidth={1.75} />
         <span className="text-xs font-semibold text-slate-500">칼로리 계산 (BCS 기반)</span>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-center">
+        <div className="rounded-md border border-slate-100 bg-slate-50 p-2.5 text-center">
           <p className="text-xs text-slate-400">현재 체중</p>
           <p className="mt-1 font-mono text-lg font-bold text-slate-800">
             {currentWeight}
             <span className="ml-0.5 font-sans text-xs font-normal text-slate-400">kg</span>
           </p>
         </div>
-        <div className={`rounded-lg border p-2.5 text-center ${isIdeal ? 'border-emerald-100 bg-emerald-50' : needsLoss ? 'border-amber-100 bg-amber-50' : 'border-blue-100 bg-blue-50'}`}>
+        <div className={`rounded-md border p-2.5 text-center ${isIdeal ? 'border-emerald-100 bg-emerald-50' : needsLoss ? 'border-amber-100 bg-amber-50' : 'border-blue-100 bg-blue-50'}`}>
           <p className="text-xs text-slate-400">이상 체중</p>
           <p className={`mt-1 font-mono text-lg font-bold ${isIdeal ? 'text-emerald-700' : needsLoss ? 'text-amber-700' : 'text-blue-700'}`}>
             {result.idealWeight}
@@ -363,14 +363,14 @@ export function CalorieCard({
             </p>
           )}
         </div>
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-center">
+        <div className="rounded-md border border-slate-100 bg-slate-50 p-2.5 text-center">
           <p className="text-xs text-slate-400">RER</p>
           <p className="mt-1 font-mono text-lg font-bold text-slate-700">
             {result.rer}
             <span className="ml-0.5 font-sans text-xs font-normal text-slate-400">kcal</span>
           </p>
         </div>
-        <div className="rounded-lg border border-teal-100 bg-teal-50 p-2.5 text-center">
+        <div className="rounded-md border border-teal-100 bg-teal-50 p-2.5 text-center">
           <p className="text-xs text-slate-400">DER (일일 권장)</p>
           <p className="mt-1 font-mono text-lg font-bold text-teal-700">
             {result.der}
@@ -422,9 +422,9 @@ function WeightManagementBlock({
     : { label: '극도 비만', color: 'text-red-600' }
 
   return (
-    <div className="mb-5 overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+    <div className="mb-2 sm:mb-5 overflow-hidden rounded-[10px] border border-slate-200 shadow-sm">
       {/* 헤더 */}
-      <div className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 px-5 py-3.5">
+      <div className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 px-3 py-2.5 sm:px-5 sm:py-3.5">
         <Scale size={16} className="text-white/80" strokeWidth={1.75} />
         <p className="text-sm font-bold text-white">체중 · 체형 관리</p>
         {hasBcs && bcsStatus && (
@@ -434,7 +434,7 @@ function WeightManagementBlock({
         )}
       </div>
 
-      <div className="bg-white p-5">
+      <div className="bg-white p-3 sm:p-5">
         {/* 체중 + 체중변화 */}
         <div className="mb-4 flex flex-wrap items-center gap-4">
           {hasWeight && (
@@ -444,7 +444,7 @@ function WeightManagementBlock({
             </div>
           )}
           {hasWeightChange && (
-            <div className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-1.5">
               <TrendingDown size={14} className="shrink-0 text-amber-500" strokeWidth={2} />
               <span className="text-xs font-semibold text-amber-700">체중 변화</span>
               <span className="text-xs text-amber-800">{String(physical.weight_change)}</span>
@@ -503,7 +503,7 @@ export function PhysicalSection({
 
       {/* 전신 사진 — 1~3장: 한 줄, 4장+: 2열 */}
       {generalImages.length > 0 && (
-        <div className={`mb-5 grid gap-2 ${
+        <div className={`mb-2 sm:mb-5 grid gap-2 ${
           generalImages.length === 1 ? 'grid-cols-1' :
           generalImages.length === 2 ? 'grid-cols-2' :
           generalImages.length === 3 ? 'grid-cols-3' :
@@ -526,7 +526,7 @@ export function PhysicalSection({
       />
 
       {/* ② 활력징후 카드 (체중 제외) */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-2 sm:mb-5 grid grid-cols-2 gap-1 sm:gap-3 sm:grid-cols-4">
         <VitalNumCard
           label="체온" Icon={Thermometer} accentColor="amber"
           value={physical.temperature as string | number | undefined}
@@ -554,7 +554,7 @@ export function PhysicalSection({
       </div>
 
       {/* ③ 계통별 소견 */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-1 sm:gap-3 sm:grid-cols-2">
         {PHYSICAL_SECTION_ORDER.filter((sec) => sec !== 'vitals' && sec !== 'body_condition').map((sec) => {
           const statusKey = sectionStatusKey(sec)
           const status = physical[statusKey] as string | undefined
@@ -582,11 +582,11 @@ export function PhysicalSection({
           return (
             <div
               key={sec}
-              className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm"
+              className="overflow-hidden rounded-[10px] border border-slate-200 shadow-sm"
             >
               {/* 계통 헤더 */}
               <div className={`flex items-center gap-2.5 bg-gradient-to-r ${gradient} px-4 py-3`}>
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/20">
                   <SectionIcon size={14} className="text-white" strokeWidth={1.75} />
                 </div>
                 <p className="flex-1 text-sm font-bold text-white">{PHYSICAL_SECTION_LABEL[sec]}</p>

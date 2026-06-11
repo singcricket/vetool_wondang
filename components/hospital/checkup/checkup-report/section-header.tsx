@@ -25,7 +25,7 @@ export function ReportHeader({
   abnormalCount, coverImage, lifeStage,
 }: ReportHeaderProps) {
   return (
-    <div className="mb-8 overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+    <div className="mb-8 overflow-hidden rounded-[10px] border border-slate-200 shadow-sm">
       {/* 메인 헤더 */}
       <div className="bg-teal-600">
         <div className="flex items-stretch">
@@ -36,10 +36,10 @@ export function ReportHeader({
               <img
                 src={coverImage.img_url}
                 alt={patientName}
-                className="h-40 w-40 rounded-xl border-2 border-white/30 object-cover shadow-md"
+                className="h-40 w-40 rounded-[10px] border-2 border-white/30 object-cover shadow-md"
               />
             ) : (
-              <div className="flex h-40 w-40 flex-col items-center justify-center rounded-xl border-2 border-dashed border-white/30 bg-white/10">
+              <div className="flex h-40 w-40 flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-white/30 bg-white/10">
                 <PawPrint size={32} className="text-white/40" />
                 <p className="mt-2 text-[10px] font-medium text-white/40">사진 없음</p>
               </div>

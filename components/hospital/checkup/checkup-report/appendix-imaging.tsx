@@ -41,7 +41,7 @@ function PhotoFindingRow({
               img={img}
               checkupId={checkupId ?? ''}
               isShared={isShared}
-              className="aspect-[4/3] w-full rounded-lg object-cover"
+              className="aspect-[4/3] w-full rounded-md object-cover"
             />
           ))}
         </div>
@@ -84,7 +84,7 @@ function XrayCategoryBlock({
       {measurementRows.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {measurementRows.map(({ m, val }) => (
-            <div key={m.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5">
+            <div key={m.id} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5">
               <span className="text-xs font-semibold text-slate-500">{m.nameKo}</span>
               <span className="ml-1.5 font-bold text-slate-800">{val}</span>
               <span className="ml-0.5 text-xs text-slate-400">{m.unit}</span>
@@ -101,7 +101,7 @@ function XrayCategoryBlock({
               f.severity === 'moderate' ? 'border-amber-200 bg-amber-50 text-amber-700' :
                                          'border-yellow-200 bg-yellow-50 text-yellow-700'
             return (
-              <div key={f.id} className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${color}`}>
+              <div key={f.id} className={`rounded-md border px-3 py-1.5 text-xs font-medium ${color}`}>
                 {f.label}
               </div>
             )
@@ -113,7 +113,7 @@ function XrayCategoryBlock({
   ) : null
 
   return (
-    <div className="mb-4 break-inside-avoid overflow-hidden rounded-xl border border-blue-100">
+    <div className="mb-4 break-inside-avoid overflow-hidden rounded-[10px] border border-blue-100">
       <div className="border-b bg-blue-50 px-4 py-2.5">
         <h3 className="text-sm font-bold text-blue-800">{categoryLabel}</h3>
       </div>
@@ -142,7 +142,7 @@ function UltrasoundOrganBlock({
   ) : null
 
   return (
-    <div className="mb-3 break-inside-avoid overflow-hidden rounded-xl border border-sky-100">
+    <div className="mb-3 break-inside-avoid overflow-hidden rounded-[10px] border border-sky-100">
       <div className="border-b bg-sky-50 px-3 py-2">
         <p className="text-xs font-bold text-sky-800">{organNameKo}</p>
       </div>
@@ -183,7 +183,7 @@ function EchoCategoryBlock({
       {catMeasurements.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {catMeasurements.map(({ m, val }) => (
-            <div key={m.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5">
+            <div key={m.id} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5">
               <span className="text-xs font-semibold text-slate-500">{m.nameKo}</span>
               <span className="ml-1.5 font-bold text-slate-800">{val}</span>
               <span className="ml-0.5 text-xs text-slate-400">{m.unit}</span>
@@ -200,7 +200,7 @@ function EchoCategoryBlock({
               f.severity === 'moderate' ? 'border-amber-200 bg-amber-50 text-amber-700' :
                                          'border-yellow-200 bg-yellow-50 text-yellow-700'
             return (
-              <div key={f.id} className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${color}`}>
+              <div key={f.id} className={`rounded-md border px-3 py-1.5 text-xs font-medium ${color}`}>
                 {f.label}
               </div>
             )
@@ -212,7 +212,7 @@ function EchoCategoryBlock({
   ) : null
 
   return (
-    <div className="mb-3 break-inside-avoid overflow-hidden rounded-xl border border-indigo-100">
+    <div className="mb-3 break-inside-avoid overflow-hidden rounded-[10px] border border-indigo-100">
       <div className="border-b bg-indigo-50 px-3 py-2">
         <p className="text-xs font-bold text-indigo-800">{categoryLabel}</p>
       </div>
@@ -280,7 +280,7 @@ function ImagingBlock({
   )
 
   return (
-    <div className="mb-4 break-inside-avoid overflow-hidden rounded-xl border border-slate-200">
+    <div className="mb-4 break-inside-avoid overflow-hidden rounded-[10px] border border-slate-200">
       <div className="border-b bg-slate-100 px-4 py-3">
         <h3 className="text-sm font-bold text-slate-800">{label}</h3>
         {purpose && <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{purpose}</p>}
@@ -430,7 +430,7 @@ export function AppendixImaging({ getSection, images, checkupId, isShared }: App
                     img={img}
                     checkupId={checkupId ?? ''}
                     isShared={isShared}
-                    className="aspect-[4/3] w-full rounded-lg object-cover"
+                    className="aspect-[4/3] w-full rounded-md object-cover"
                   />
                 ))}
               </div>

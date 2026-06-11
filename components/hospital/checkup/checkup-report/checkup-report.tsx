@@ -181,7 +181,7 @@ export default function CheckupReport({ data, isShared }: Props) {
         본 리포트는 의료 참고용이며 정확한 진단은 담당 수의사와 상담하세요.
       </div>
 
-      <div className="mx-auto max-w-4xl px-6 py-8 print:px-4 print:pb-16 print:pt-10">
+      <div className="mx-auto max-w-4xl px-0 py-4 sm:px-6 sm:py-8 print:px-0 print:pb-16 print:pt-10">
 
         {/* ── 환자 헤더 ─────────────────────────────────────── */}
         <div id="section-header">
@@ -249,15 +249,15 @@ export default function CheckupReport({ data, isShared }: Props) {
         {hasPlan && (
           <section id="section-plan" className="mb-10 print:break-before-page">
             <SectionTitle>종합 평가 및 권고사항</SectionTitle>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1 sm:gap-4">
 
               {ps('tx_priority_summary') && (
-                <div className="break-inside-avoid overflow-hidden rounded-2xl border border-teal-200 shadow-sm">
+                <div className="break-inside-avoid overflow-hidden rounded-[10px] border border-teal-200 shadow-sm">
                   <div className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-400 px-5 py-3">
                     <AlertTriangle size={15} className="text-white/90" strokeWidth={2} />
                     <p className="text-sm font-bold text-white">치료·관리 우선순위</p>
                   </div>
-                  <div className="bg-teal-50 p-5">
+                  <div className="bg-teal-50 p-3 sm:p-5">
                     <ul className="space-y-2">
                       {ps('tx_priority_summary').split('\n').filter((l) => l.trim()).map((line, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-teal-900">
@@ -271,12 +271,12 @@ export default function CheckupReport({ data, isShared }: Props) {
               )}
 
               {ps('tx_medication') && (
-                <div className="break-inside-avoid overflow-hidden rounded-2xl border border-blue-200 shadow-sm">
+                <div className="break-inside-avoid overflow-hidden rounded-[10px] border border-blue-200 shadow-sm">
                   <div className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-400 px-5 py-3">
                     <Pill size={15} className="text-white/90" strokeWidth={2} />
                     <p className="text-sm font-bold text-white">약물·치료 계획</p>
                   </div>
-                  <div className="bg-blue-50 p-5">
+                  <div className="bg-blue-50 p-3 sm:p-5">
                     <ul className="space-y-2">
                       {ps('tx_medication').split('\n').filter((l) => l.trim()).map((line, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-blue-900">
@@ -290,12 +290,12 @@ export default function CheckupReport({ data, isShared }: Props) {
               )}
 
               {ps('tx_further_workup') && (
-                <div className="break-inside-avoid overflow-hidden rounded-2xl border border-violet-200 shadow-sm">
+                <div className="break-inside-avoid overflow-hidden rounded-[10px] border border-violet-200 shadow-sm">
                   <div className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-400 px-5 py-3">
                     <FlaskConical size={15} className="text-white/90" strokeWidth={2} />
                     <p className="text-sm font-bold text-white">추가 검사 계획</p>
                   </div>
-                  <div className="bg-violet-50 p-5">
+                  <div className="bg-violet-50 p-3 sm:p-5">
                     <ul className="space-y-2">
                       {ps('tx_further_workup').split('\n').filter((l) => l.trim()).map((line, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-violet-900">
@@ -309,12 +309,12 @@ export default function CheckupReport({ data, isShared }: Props) {
               )}
 
               {ps('guide_diet') && (
-                <div className="break-inside-avoid overflow-hidden rounded-2xl border border-green-200 shadow-sm">
+                <div className="break-inside-avoid overflow-hidden rounded-[10px] border border-green-200 shadow-sm">
                   <div className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-lime-400 px-5 py-3">
                     <Salad size={15} className="text-white/90" strokeWidth={2} />
                     <p className="text-sm font-bold text-white">식이·생활 관리</p>
                   </div>
-                  <div className="bg-green-50 p-5">
+                  <div className="bg-green-50 p-3 sm:p-5">
                     <ul className="space-y-2">
                       {[ps('guide_diet'), ps('guide_weight')].filter(Boolean).join('\n').split('\n').filter((l) => l.trim()).map((line, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-green-900">
@@ -335,12 +335,12 @@ export default function CheckupReport({ data, isShared }: Props) {
         {hasFollowup && (
           <section id="section-followup" className="mb-10">
             <SectionTitle>추적 관찰 계획</SectionTitle>
-            <div className="break-inside-avoid overflow-hidden rounded-2xl border border-sky-200 shadow-sm">
+            <div className="break-inside-avoid overflow-hidden rounded-[10px] border border-sky-200 shadow-sm">
               <div className="flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-400 px-5 py-3">
                 <CalendarCheck size={15} className="text-white/90" strokeWidth={2} />
                 <p className="text-sm font-bold text-white">추적 관찰 계획</p>
               </div>
-              <div className="bg-sky-50 p-5">
+              <div className="bg-sky-50 p-3 sm:p-5">
                 {ps('followup_plan') && (
                   <ul className="mb-4 space-y-2">
                     {ps('followup_plan').split('\n').filter((l) => l.trim()).map((line, i) => (
@@ -352,7 +352,7 @@ export default function CheckupReport({ data, isShared }: Props) {
                   </ul>
                 )}
                 {ps('next_checkup_date') && (
-                  <div className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-sky-200">
+                  <div className="inline-flex items-center gap-2 rounded-[10px] bg-white px-4 py-2.5 shadow-sm ring-1 ring-sky-200">
                     <CalendarCheck size={15} className="text-sky-500" strokeWidth={2} />
                     <span className="text-xs text-sky-600">다음 건강검진 예정일</span>
                     <span className="text-sm font-bold text-sky-800">

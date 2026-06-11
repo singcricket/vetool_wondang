@@ -42,7 +42,7 @@ function ConditionBadge({ label, value }: { label: string; value: string }) {
   if (!cfg) return null
   const { Icon } = cfg
   return (
-    <div className={`flex flex-col items-center gap-2 rounded-xl border px-3 py-4 ${cfg.card}`}>
+    <div className={`flex flex-col items-center gap-2 rounded-md border px-3 py-4 ${cfg.card}`}>
       <Icon size={22} className={cfg.icon} strokeWidth={1.5} />
       <p className="text-xs text-slate-400">{label}</p>
       <p className={`text-sm font-bold ${cfg.text}`}>{cfg.label}</p>
@@ -83,14 +83,14 @@ function SectionCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+    <div className="overflow-hidden rounded-[10px] border border-slate-200 shadow-sm">
       <div className={`flex items-center gap-3 px-5 py-4 ${gradient}`}>
-        <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${iconBg}`}>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-md ${iconBg}`}>
           <Icon size={18} className="text-white" strokeWidth={1.75} />
         </div>
         <p className="text-base font-bold text-white">{title}</p>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-3 sm:p-5">{children}</div>
     </div>
   )
 }
@@ -105,7 +105,7 @@ function AiSubHeading({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${color}`}>
+      <div className={`flex h-7 w-7 items-center justify-center rounded-[10px] ${color}`}>
         <Icon size={14} className="text-white" strokeWidth={2} />
       </div>
       <p className="text-sm font-bold text-slate-700">{label}</p>
@@ -126,7 +126,7 @@ function AiCard({
   labelColor: string
 }) {
   return (
-    <div className={`rounded-xl border p-4 ${border} ${bg}`}>
+    <div className={`rounded-md border p-4 ${border} ${bg}`}>
       <div className="mb-2.5 flex items-center gap-2">
         <Icon size={14} className={iconColor} strokeWidth={2} />
         <p className={`text-xs font-bold ${labelColor}`}>{label}</p>
@@ -159,7 +159,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
     <section className="mb-10">
       <SectionTitle>문진</SectionTitle>
 
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-1 sm:gap-5">
 
         {/* ── 주호소 및 병력 ── */}
         {hasChief && (
@@ -169,9 +169,9 @@ export function InquirySection({ data }: { data: InquiryData }) {
             gradient="bg-gradient-to-r from-rose-500 to-pink-500"
             iconBg="bg-white/20"
           >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 sm:gap-4">
               {data.chief_complaint && (
-                <div className="rounded-xl border-2 border-rose-200 bg-rose-50 p-4">
+                <div className="rounded-md border-2 border-rose-200 bg-rose-50 p-4">
                   <div className="mb-2 flex items-center gap-2">
                     <AlertCircle size={15} className="text-rose-500" strokeWidth={2} />
                     <p className="text-xs font-bold text-rose-600">현재 증상 / 주요 호소</p>
@@ -180,7 +180,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
                 </div>
               )}
               {(data.past_history || data.current_diseases) && (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <InquiryField Icon={BookOpen}   label="과거 병력"           value={data.past_history}     />
                   <InquiryField Icon={Pill}        label="현재 관리 중인 질환" value={data.current_diseases} />
                 </div>
@@ -198,13 +198,13 @@ export function InquirySection({ data }: { data: InquiryData }) {
             iconBg="bg-white/20"
           >
             {(data.condition_vitality || data.condition_appetite || data.condition_water) && (
-              <div className="mb-5 grid grid-cols-3 gap-3">
+              <div className="mb-2 grid grid-cols-3 gap-2 sm:mb-5 sm:gap-3">
                 {data.condition_vitality && <ConditionBadge label="활력"   value={data.condition_vitality} />}
                 {data.condition_appetite && <ConditionBadge label="식욕"   value={data.condition_appetite} />}
                 {data.condition_water    && <ConditionBadge label="음수량" value={data.condition_water}    />}
               </div>
             )}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <InquiryField Icon={Droplets}  label="배뇨 상태"        value={data.condition_urination}  />
               <InquiryField Icon={Leaf}      label="배변 상태"        value={data.condition_defecation} />
               {data.condition_notes && (
@@ -218,7 +218,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
 
         {/* ── 생활환경 + 예방의학 ── */}
         {(hasLiving || hasPrevention) && (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-1 sm:gap-5 sm:grid-cols-2">
             {hasLiving && (
               <SectionCard
                 Icon={Home}
@@ -226,7 +226,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
                 gradient="bg-gradient-to-r from-teal-500 to-cyan-500"
                 iconBg="bg-white/20"
               >
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2 sm:gap-4">
                   {data.living_type && (() => {
                     const cfg = LIVING_TYPE_CONFIG[data.living_type]
                     if (!cfg) return <InquiryField Icon={MapPin} label="생활 공간" value={data.living_type} />
@@ -256,7 +256,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
                 gradient="bg-gradient-to-r from-indigo-500 to-violet-500"
                 iconBg="bg-white/20"
               >
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2 sm:gap-4">
                   <InquiryField Icon={Syringe}      label="예방 접종"                  value={data.vaccination}        />
                   <InquiryField Icon={Bug}           label="사상충 예방"                value={data.heartworm}          />
                   <InquiryField Icon={Microscope}    label="내부 구충"                  value={data.internal_parasite}  />
@@ -270,12 +270,12 @@ export function InquirySection({ data }: { data: InquiryData }) {
 
         {/* ── AI 리스크 분석 ── */}
         {hasAiRisk && (
-          <div className="overflow-hidden rounded-2xl border border-violet-200 shadow-sm">
+          <div className="overflow-hidden rounded-[10px] border border-violet-200 shadow-sm">
 
             {/* 헤더 */}
             <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 px-6 py-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white/20">
                   <Dna size={20} className="text-white" strokeWidth={1.75} />
                 </div>
                 <div>
@@ -285,7 +285,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-6 bg-gradient-to-b from-violet-50/50 to-white p-6">
+            <div className="flex flex-col gap-3 bg-gradient-to-b from-violet-50/50 to-white p-3 sm:gap-5 sm:p-5">
 
               {/* 품종별 특이점 */}
               {data.ai_breed_risk && (
@@ -319,7 +319,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-purple-100 bg-purple-50 p-4">
+                    <div className="rounded-md border border-purple-100 bg-purple-50 p-4">
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{data.ai_breed_risk}</p>
                     </div>
                   )}
@@ -358,7 +358,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+                    <div className="rounded-md border border-amber-100 bg-amber-50 p-4">
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{data.ai_age_risk}</p>
                     </div>
                   )}
@@ -404,7 +404,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
                         />
                       )}
                       {data.ai_management.warning_signs && (
-                        <div className="col-span-2 rounded-xl border-2 border-red-200 bg-red-50 p-4 sm:col-span-3">
+                        <div className="col-span-2 rounded-md border-2 border-red-200 bg-red-50 p-4 sm:col-span-3">
                           <div className="mb-2 flex items-center gap-2">
                             <AlertCircle size={15} className="text-red-500" strokeWidth={2} />
                             <p className="text-sm font-bold text-red-600">즉시 내원이 필요한 이상 증상</p>
@@ -414,7 +414,7 @@ export function InquirySection({ data }: { data: InquiryData }) {
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                    <div className="rounded-md border border-emerald-100 bg-emerald-50 p-4">
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{data.ai_management}</p>
                     </div>
                   )}

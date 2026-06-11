@@ -77,9 +77,9 @@ function NeuroContent({ data }: { data: NeuroSectionStructured | string | null }
     const text = typeof data === 'string' ? data : ((data as any).notes as string | undefined) ?? ''
     if (!text.trim()) return null
     return (
-      <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+      <div className="overflow-hidden rounded-[10px] border border-slate-200 shadow-sm">
         <div className="flex items-center gap-2.5 bg-gradient-to-r from-violet-500 to-indigo-500 px-5 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+          <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/20">
             <Brain size={16} className="text-white" strokeWidth={1.75} />
           </div>
           <p className="text-sm font-bold text-white">신경계 검사 소견</p>
@@ -121,9 +121,9 @@ function NeuroContent({ data }: { data: NeuroSectionStructured | string | null }
     <div className="flex flex-col gap-4">
 
       {/* 차트 연동 배지 + 요약 */}
-      <div className="overflow-hidden rounded-2xl border border-teal-200 shadow-sm">
+      <div className="overflow-hidden rounded-[10px] border border-teal-200 shadow-sm">
         <div className="flex items-center gap-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 px-5 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+          <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/20">
             <Brain size={16} className="text-white" strokeWidth={1.75} />
           </div>
           <p className="text-sm font-bold text-white">신경계 종합 소견</p>
@@ -150,11 +150,11 @@ function NeuroContent({ data }: { data: NeuroSectionStructured | string | null }
         return (
           <div
             key={sec.domain}
-            className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm"
+            className="overflow-hidden rounded-[10px] border border-slate-200 shadow-sm"
           >
             {/* 도메인 헤더 */}
             <div className={`flex items-center gap-2.5 bg-gradient-to-r ${gradient} px-4 py-3`}>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/20">
                 <Activity size={14} className="text-white" strokeWidth={1.75} />
               </div>
               <p className="flex-1 text-sm font-bold text-white">{sec.domainNameKo}</p>
@@ -196,9 +196,9 @@ function NeuroContent({ data }: { data: NeuroSectionStructured | string | null }
 
       {/* 병변 위치 분석 */}
       {hasLocalisations && (
-        <div className="overflow-hidden rounded-2xl border border-indigo-200 shadow-sm">
+        <div className="overflow-hidden rounded-[10px] border border-indigo-200 shadow-sm">
           <div className="flex items-center gap-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 px-5 py-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/20">
               <MapPin size={16} className="text-white" strokeWidth={1.75} />
             </div>
             <p className="text-sm font-bold text-white">병변 위치 분석</p>
@@ -213,7 +213,7 @@ function NeuroContent({ data }: { data: NeuroSectionStructured | string | null }
                 </p>
                 <div className="flex flex-col gap-2">
                   {localisations.detectedSyndromes!.map((s, i) => (
-                    <div key={i} className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
+                    <div key={i} className="rounded-[10px] border border-indigo-100 bg-indigo-50 px-4 py-3">
                       <p className="text-sm font-semibold text-indigo-800">{s.nameKo}</p>
                       {s.interpretationKo && (
                         <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{s.interpretationKo}</p>
@@ -231,7 +231,7 @@ function NeuroContent({ data }: { data: NeuroSectionStructured | string | null }
                 </p>
                 <div className="flex flex-col gap-2">
                   {localisations.localisationCandidates!.slice(0, 3).map((c, i) => (
-                    <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-2.5">
+                    <div key={i} className="flex items-center gap-3 rounded-[10px] border border-slate-100 bg-slate-50 px-4 py-2.5">
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
                         {i + 1}
                       </span>
@@ -259,7 +259,7 @@ function NeuroContent({ data }: { data: NeuroSectionStructured | string | null }
                 <p className="mb-2.5 flex items-center gap-1.5 text-xs font-bold text-indigo-700">
                   <Activity size={13} strokeWidth={2} />대뇌 반구 편측화
                 </p>
-                <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
+                <div className="rounded-[10px] border border-indigo-100 bg-indigo-50 px-4 py-3">
                   <p className="text-sm font-semibold text-indigo-800">
                     {localisations.cerebralLateralisation.hemisphere === 'left' ? '좌측'
                      : localisations.cerebralLateralisation.hemisphere === 'right' ? '우측'

@@ -68,7 +68,7 @@ function LabItemCard({ item }: { item: LabResultItem }) {
   const bgColor     = item.is_abnormal ? 'bg-amber-50/60' : 'bg-white'
 
   return (
-    <div className={`flex flex-col gap-2 rounded-2xl border p-4 ${borderColor} ${bgColor}`}>
+    <div className={`flex flex-col gap-2 rounded-[10px] border p-4 ${borderColor} ${bgColor}`}>
 
       {/* 이름 + 배지 */}
       <div className="flex items-start justify-between gap-2">
@@ -88,7 +88,7 @@ function LabItemCard({ item }: { item: LabResultItem }) {
         <span className="font-mono text-lg font-bold text-slate-900">{item.value ?? '—'}</span>
         {item.unit && <span className="text-xs text-slate-400">{item.unit}</span>}
         {item.ref_range && (
-          <span className="ml-auto shrink-0 rounded-lg bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+          <span className="ml-auto shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
             참고: {item.ref_range}
           </span>
         )}
@@ -151,7 +151,7 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
       {hasCoat && (
         <div className="flex flex-wrap gap-2">
           {coatCondition && (
-            <div className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 ${
+            <div className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-1.5 ${
               coatCondition.includes('정상') ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
             }`}>
               {coatCondition.includes('정상')
@@ -163,7 +163,7 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
             </div>
           )}
           {parasite && (
-            <div className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 ${
+            <div className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-1.5 ${
               parasite === '없음' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
             }`}>
               {parasite === '없음'
@@ -185,7 +185,7 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
             {lesions.map((lesion, i) => {
               const lesionImages = images.filter((img) => img.tags?.includes(`skin_lesion_${lesion.id}`))
               return (
-                <div key={lesion.id} className="overflow-hidden rounded-xl border border-amber-100 bg-amber-50">
+                <div key={lesion.id} className="overflow-hidden rounded-[10px] border border-amber-100 bg-amber-50">
                   <div className="flex gap-0">
                     {/* 왼쪽: 병변 이미지 */}
                     {lesionImages.length > 0 && (
@@ -196,7 +196,7 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
                             img={img}
                             checkupId={checkupId ?? ''}
                             isShared={isShared}
-                            className="h-28 w-28 rounded-lg object-cover"
+                            className="h-28 w-28 rounded-md object-cover"
                           />
                         ))}
                       </div>
@@ -238,7 +238,7 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
             ]).map(({ label, findings, discharge, tagKey }) => {
               const earImgs = images.filter((img) => img.tags?.includes(tagKey))
               return (
-                <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div key={label} className="rounded-[10px] border border-slate-100 bg-slate-50 p-3">
                   <p className="mb-1.5 text-xs font-bold text-slate-500">{label}</p>
                   {/* 귀 사진 */}
                   {earImgs.length > 0 && (
@@ -259,7 +259,7 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
                       {findings.map((f) => (
                         <div
                           key={f}
-                          className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 ${
+                          className={`flex items-center gap-1.5 rounded-md border px-2 py-1 ${
                             f === '정상' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
                           }`}
                         >
@@ -350,10 +350,10 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
   if (isDerma) section.images.forEach((img) => topImageUrls.add(img.img_url))
 
   return (
-    <div id={`organ-${section.key}`} className={`break-inside-avoid overflow-hidden rounded-2xl border shadow-sm ${style.cardBorder}`}>
+    <div id={`organ-${section.key}`} className={`break-inside-avoid overflow-hidden rounded-[10px] border shadow-sm ${style.cardBorder}`}>
 
       {/* ── 헤더 (그라데이션) ── */}
-      <div className={`flex items-center justify-between gap-3 bg-gradient-to-r px-5 py-4 ${style.headerGradient}`}>
+      <div className={`flex items-center justify-between gap-3 bg-gradient-to-r px-3 py-2.5 sm:px-5 sm:py-4 ${style.headerGradient}`}>
         <div className="flex min-w-0 flex-col">
           <h3 className={`text-base font-bold ${style.headerText}`}>{section.label}</h3>
           {isDx && eval_.summary && (
@@ -376,7 +376,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 p-5">
+      <div className="flex flex-col gap-3 p-3 sm:gap-6 sm:p-5">
 
         {/* 안과 — 우안(OD) / 좌안(OS) 2컬럼 */}
         {isOphthalmic && (
@@ -388,14 +388,14 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
                 f.eye ? f.eye === (side === 'od' ? 'OD' : 'OS') : f.id.endsWith(`_${side}`),
               )
               return (
-                <div key={side} className="rounded-xl border border-slate-100 bg-slate-50 p-3 flex flex-col gap-3">
+                <div key={side} className="rounded-[10px] border border-slate-100 bg-slate-50 p-3 flex flex-col gap-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{sideLabel}</p>
 
                   {/* 사진 */}
                   {imgs.length > 0 ? (
                     <div className="grid grid-cols-2 gap-1.5">
                       {imgs.map((img) => (
-                        <CheckupImgCard key={img.img_url} img={img} checkupId={checkupId ?? ''} isShared={isShared} className="aspect-square w-full rounded-lg object-cover" />
+                        <CheckupImgCard key={img.img_url} img={img} checkupId={checkupId ?? ''} isShared={isShared} className="aspect-square w-full rounded-md object-cover" />
                       ))}
                     </div>
                   ) : (
@@ -408,7 +408,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
                       {sideFindings.map((f) => (
                         <div
                           key={f.id}
-                          className={`flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 ${f.isAbnormal ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}
+                          className={`flex items-start gap-1.5 rounded-md border px-2.5 py-1.5 ${f.isAbnormal ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}
                         >
                           {f.isAbnormal
                             ? <AlertCircle size={11} className="mt-0.5 shrink-0 text-amber-500" strokeWidth={2} />
@@ -444,7 +444,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
         {isOral && (
           subCharts?.dental
             ? (
-              <div className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+              <div className="flex items-center gap-2 rounded-[10px] border border-sky-200 bg-sky-50 px-4 py-3">
                 <ExternalLink size={14} className="shrink-0 text-sky-500" />
                 <p className="text-sm font-medium text-sky-700">치과 전문 리포트 참조 — 별도 첨부된 치과 검진 리포트를 확인하세요.</p>
               </div>
@@ -456,7 +456,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
                   {dentalBasicFindings.map((f) => (
                     <div
                       key={f.id}
-                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 ${f.isAbnormal ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}
+                      className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-1.5 ${f.isAbnormal ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}
                     >
                       {f.isAbnormal
                         ? <AlertCircle size={12} className="shrink-0 text-amber-500" strokeWidth={2} />
@@ -473,7 +473,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
 
         {/* 안과: 전문 차트 연동 배너 */}
         {isOphthalmic && subCharts?.ophthalmic && (
-          <div className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+          <div className="flex items-center gap-2 rounded-[10px] border border-sky-200 bg-sky-50 px-4 py-3">
             <ExternalLink size={14} className="shrink-0 text-sky-500" />
             <p className="text-sm font-medium text-sky-700">안과 전문 리포트 참조 — 별도 첨부된 안과 검진 리포트를 확인하세요.</p>
           </div>
@@ -487,7 +487,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
               {section.physicalFindings.map((f) => (
                 <div
                   key={f.id}
-                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 ${f.isAbnormal ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}
+                  className={`flex items-center gap-1.5 rounded-[10px] border px-3 py-1.5 ${f.isAbnormal ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}
                 >
                   {f.isAbnormal
                     ? <AlertCircle size={12} className="shrink-0 text-amber-500" strokeWidth={2} />
@@ -559,7 +559,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
                         : f.severity === 'moderate' ? 'border-orange-200 bg-orange-50 text-orange-700'
                         : 'border-amber-200 bg-amber-50 text-amber-700'
                       return (
-                        <div key={f.id} className={`rounded-xl border px-3 py-1.5 ${color}`}>
+                        <div key={f.id} className={`rounded-[10px] border px-3 py-1.5 ${color}`}>
                           <span className="text-xs font-semibold">{f.label}</span>
                           {f.valueLabel && <span className="ml-1.5 font-mono text-xs">{f.valueLabel}</span>}
                         </div>
@@ -583,7 +583,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
                     img.tags?.includes('ultrasound') && img.tags?.includes(`organ_${n.organKey}`),
                   )
                   return (
-                    <div key={n.organKey} className="overflow-hidden rounded-xl border border-sky-100 bg-sky-50">
+                    <div key={n.organKey} className="overflow-hidden rounded-[10px] border border-sky-100 bg-sky-50">
                       <div className="flex flex-col sm:flex-row">
                         {/* 이미지: 왼쪽(넓은화면) / 위(모바일) */}
                         {organImages.length > 0 && (
@@ -594,7 +594,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
                                 img={img}
                                 checkupId={checkupId ?? ''}
                                 isShared={isShared}
-                                className="aspect-[4/3] w-full rounded-lg object-cover"
+                                className="aspect-[4/3] w-full rounded-md object-cover"
                               />
                             ))}
                           </div>
@@ -640,7 +640,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
               {isDx ? (
                 <>
                   {eval_.detail && (
-                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                    <div className="rounded-[10px] border border-slate-100 bg-slate-50 p-4">
                       <div className="mb-1.5 flex items-center gap-1.5">
                         <FileText size={13} className="text-teal-600" strokeWidth={2} />
                         <p className="text-xs font-bold uppercase tracking-wide text-teal-700">종합 소견</p>
@@ -649,7 +649,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
                     </div>
                   )}
                   {eval_.action && (
-                    <div className={`rounded-xl border p-4 ${style.action}`}>
+                    <div className={`rounded-[10px] border p-4 ${style.action}`}>
                       <div className="mb-1.5 flex items-center gap-1.5">
                         <Activity size={13} className="text-slate-600" strokeWidth={2} />
                         <p className="text-xs font-bold uppercase tracking-wide text-slate-600">권장 조치</p>
@@ -659,7 +659,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
                   )}
                 </>
               ) : (
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <div className="rounded-[10px] border border-slate-100 bg-slate-50 p-4">
                   <div className="mb-1.5 flex items-center gap-1.5">
                     <FileText size={13} className="text-teal-600" strokeWidth={2} />
                     <p className="text-xs font-bold uppercase tracking-wide text-teal-700">종합 소견</p>
@@ -722,7 +722,7 @@ export function OrganSectionsBlock({ organSections, subCharts, dentalBasicFindin
   return (
     <section className="mb-10 print:break-before-page">
       <SectionTitle>장기별 종합 평가</SectionTitle>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1 sm:gap-4">
         {organSections.map((section) => (
           <OrganCard
             key={section.key}
