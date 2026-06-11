@@ -1,5 +1,5 @@
 import type React from 'react'
-import { AlertCircle, CheckCircle2, Microscope, Activity, FileText, FlaskConical, ExternalLink } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Microscope, Activity, FileText, FlaskConical, ExternalLink, Bone } from 'lucide-react'
 import type { LabResultItem } from '@/constants/hospital/checkup/lab-types'
 import type { ResolvedOrganSection, DxEvaluation } from '@/lib/config/checkup-report-modules'
 import { isDxEvaluation, SEVERITY_BADGE } from './report-utils'
@@ -114,6 +114,105 @@ function LabItemCard({ item }: { item: LabResultItem }) {
 function SubHeading({ children }: { children: React.ReactNode }) {
   return (
     <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">{children}</p>
+  )
+}
+
+// ── 근골격계 관절 소견 블록 ───────────────────────────────────
+
+const LIMB_LABEL: Record<string, string> = {
+  '우전지 (RF)': 'RF', '좌전지 (LF)': 'LF', '우후지 (RH)': 'RH', '좌후지 (LH)': 'LH',
+}
+
+type EvalEntry = { findings: string[]; note?: string }
+
+function parseJointEvalMap(json: string): Record<string, EvalEntry> {
+  try {
+    const raw = JSON.parse(json || '{}')
+    const result: Record<string, EvalEntry> = {}
+    for (const [k, v] of Object.entries(raw)) {
+      result[k] = Array.isArray(v)
+        ? { findings: v as string[], note: '' }
+        : { findings: (v as EvalEntry).findings ?? [], note: (v as EvalEntry).note ?? '' }
+    }
+    return result
+  } catch { return {} }
+}
+
+function MusculoskeletalJointBlock({ extraData }: { extraData: Record<string, unknown> }) {
+  const gait = (extraData['gait'] as string) || ''
+  const lamenessGrade = (extraData['lameness_grade'] as string) || ''
+  const lamenessLimbRaw = (extraData['lameness_limb'] as string) || ''
+  const limbList = lamenessLimbRaw ? lamenessLimbRaw.split(',').map((l) => l.trim()).filter(Boolean) : []
+
+  const affectedRaw = (extraData['joint_affected'] as string) || ''
+  const selectedJoints = affectedRaw ? affectedRaw.split(',').map((j) => j.trim()).filter(Boolean) : []
+  const evalJsonRaw = (extraData['joint_eval_json'] as string) || ''
+  const evalMap = parseJointEvalMap(evalJsonRaw)
+
+  const hasGaitData = !!gait
+  const hasJointData = selectedJoints.length > 0
+
+  if (!hasGaitData && !hasJointData) return null
+
+  const isLameness = gait === '파행 (Lameness)'
+  const isAbnormalGait = gait && gait !== '정상'
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* 보행 */}
+      {hasGaitData && (
+        <div className={`flex flex-wrap items-center gap-2 rounded-[10px] border px-3 py-2 ${isAbnormalGait ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}>
+          <Activity size={12} className={isAbnormalGait ? 'shrink-0 text-amber-500' : 'shrink-0 text-emerald-500'} strokeWidth={2} />
+          <span className={`text-xs font-semibold ${isAbnormalGait ? 'text-amber-700' : 'text-emerald-700'}`}>보행</span>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${isAbnormalGait ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>{gait}</span>
+          {isLameness && lamenessGrade && (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{lamenessGrade}</span>
+          )}
+          {isLameness && limbList.length > 0 && limbList.map((l) => (
+            <span key={l} className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700">{LIMB_LABEL[l] ?? l}</span>
+          ))}
+        </div>
+      )}
+
+      {/* 관절 소견 */}
+      {hasJointData && (
+        <div className="overflow-hidden rounded-[10px] border border-indigo-200">
+          <div className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-violet-400 px-3 py-2">
+            <Bone size={12} className="text-white/80" strokeWidth={2} />
+            <p className="text-xs font-bold text-white">관절 소견</p>
+            <span className="ml-auto rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">{selectedJoints.length}개 관절</span>
+          </div>
+          <div className="divide-y divide-slate-100 bg-white">
+            {selectedJoints.map((joint) => {
+              const entry = evalMap[joint] ?? { findings: [], note: '' }
+              const { findings, note } = entry
+              return (
+                <div key={joint} className={`px-3 py-2 ${findings.length > 0 ? 'bg-amber-50/60' : ''}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-1.5">
+                      {findings.length > 0
+                        ? <AlertCircle size={11} className="mt-0.5 shrink-0 text-amber-500" strokeWidth={2} />
+                        : <CheckCircle2 size={11} className="mt-0.5 shrink-0 text-emerald-400" strokeWidth={2} />
+                      }
+                      <span className="text-xs font-semibold text-slate-700">{joint}</span>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-1">
+                      {findings.length === 0
+                        ? <span className="text-[11px] text-slate-400">이상 없음</span>
+                        : findings.map((f) => (
+                          <span key={f} className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">{f}</span>
+                        ))
+                      }
+                    </div>
+                  </div>
+                  {note && <p className="mt-1 pl-4 text-[11px] text-slate-500">{note}</p>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -309,6 +408,7 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
   const isOphthalmic = section.key === 'ophthalmic'
   const isOral = section.key === 'oral'
   const isDerma = section.key === 'derma'
+  const isMusculoskeletal = section.key === 'musculoskeletal'
 
   // 상태 결정 — Dx 평가가 없을 때는 이상 항목 여부로 자동 추정
   // derma: lab 항목 없으므로 extraData(병변·귀·피모)로 이상 여부 판단
@@ -501,6 +601,11 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
               ))}
             </div>
           </div>
+        )}
+
+        {/* 근골격계 관절 소견 */}
+        {isMusculoskeletal && section.extraData && (
+          <MusculoskeletalJointBlock extraData={section.extraData} />
         )}
 
         {/* 피부·귀 전용 렌더링 */}

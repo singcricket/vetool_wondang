@@ -26,7 +26,7 @@ export const PHYSICAL_SECTION_LABEL: Record<PhysicalSection, string> = {
   mentation: '정신 상태',
 }
 
-export type PhysicalInputType = 'number' | 'select' | 'multiselect' | 'text' | 'boolean'
+export type PhysicalInputType = 'number' | 'select' | 'multiselect' | 'text' | 'boolean' | 'custom'
 
 export interface PhysicalRefItem {
   id: string
@@ -437,15 +437,33 @@ const abdomen: PhysicalRefItem[] = [
 // 근골격계
 // ────────────────────────────────────────────────────────────
 const musculoskeletal: PhysicalRefItem[] = [
+  // ── 보행 ──
   {
     id: 'gait',
-    nameKo: '보행',
+    nameKo: '보행 상태',
     nameEn: 'Gait',
     section: 'musculoskeletal',
     inputType: 'select',
-    options: ['정상', '경미한 파행 (Grade 1)', '중등도 파행 (Grade 2)', '심한 파행 (Grade 3)', '지지 불가 (Grade 4)', '실조 (Ataxia)'],
+    options: ['정상', '파행 (Lameness)', '실조 (Ataxia)', '편마비 (Hemiparesis)', '하반신마비 (Paraparesis)'],
     referenceRange: { common: '정상' },
   },
+  {
+    id: 'lameness_grade',
+    nameKo: '파행 등급',
+    nameEn: 'Lameness Grade',
+    section: 'musculoskeletal',
+    inputType: 'select',
+    options: ['Grade 1 — 간헐적, 경미', 'Grade 2 — 지속적, 경미', 'Grade 3 — 지속적, 중등도', 'Grade 4 — 심함, 부분 부하', 'Grade 5 — 부하 불가'],
+  },
+  {
+    id: 'lameness_limb',
+    nameKo: '파행 지체',
+    nameEn: 'Affected Limb(s)',
+    section: 'musculoskeletal',
+    inputType: 'multiselect',
+    options: ['우전지 (RF)', '좌전지 (LF)', '우후지 (RH)', '좌후지 (LH)'],
+  },
+  // ── 자세·근육 ──
   {
     id: 'posture',
     nameKo: '자세',
@@ -462,21 +480,37 @@ const musculoskeletal: PhysicalRefItem[] = [
     inputType: 'select',
     options: ['없음', '경미 (국소/대칭)', '중등도', '심함', '비대칭성 위축'],
   },
+  // ── 관절 평가 ──
   {
-    id: 'joint_swelling',
-    nameKo: '관절 부종/통증',
-    nameEn: 'Joint Swelling/Pain',
+    id: 'joint_affected',
+    nameKo: '이상 관절',
+    nameEn: 'Affected Joint(s)',
     section: 'musculoskeletal',
-    inputType: 'select',
-    options: ['없음', '한 관절 (단관절)', '여러 관절 (다관절)', '양측 대칭'],
+    inputType: 'multiselect',
+    options: [
+      '어깨(우)', '어깨(좌)',
+      '팔꿈치(우)', '팔꿈치(좌)',
+      '앞발목(우)', '앞발목(좌)',
+      '고관절(우)', '고관절(좌)',
+      '무릎(우)', '무릎(좌)',
+      '뒷발목(우)', '뒷발목(좌)',
+    ],
+  },
+  {
+    id: 'joint_eval_json',
+    nameKo: '관절별 소견',
+    nameEn: 'Per-joint Findings',
+    section: 'musculoskeletal',
+    inputType: 'custom',
   },
   {
     id: 'joint_detail',
-    nameKo: '이상 관절 (직접 기입)',
-    nameEn: 'Affected Joint(s)',
+    nameKo: '관절 추가 소견',
+    nameEn: 'Joint Notes',
     section: 'musculoskeletal',
     inputType: 'text',
   },
+  // ── 척추 ──
   {
     id: 'spinal_pain',
     nameKo: '척추 통증',

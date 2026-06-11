@@ -555,7 +555,7 @@ export function PhysicalSection({
 
       {/* ③ 계통별 소견 */}
       <div className="grid grid-cols-1 gap-1 sm:gap-3 sm:grid-cols-2">
-        {PHYSICAL_SECTION_ORDER.filter((sec) => sec !== 'vitals' && sec !== 'body_condition').map((sec) => {
+        {PHYSICAL_SECTION_ORDER.filter((sec) => sec !== 'vitals' && sec !== 'body_condition' && sec !== 'musculoskeletal').map((sec) => {
           const statusKey = sectionStatusKey(sec)
           const status = physical[statusKey] as string | undefined
           const sectionFields = getPhysicalRefBySection(sec)

@@ -224,7 +224,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     labIds: ['ca', 'phos', 'mg'],
     imageTags: ['xray_extremity', 'xray_spine', 'physical_musculoskeletal'],
     imagingSectionKeys: ['xray', 'ct_mri'],
-    physicalIds: ['gait', 'posture', 'muscle_atrophy', 'joint_swelling', 'joint_detail', 'spinal_pain', 'mcs'],
+    physicalIds: ['posture', 'muscle_atrophy', 'joint_detail', 'spinal_pain', 'mcs'],
     xrayFindingIds: [
       'degenerative_joint', 'osteoproliferation', 'osteolysis', 'fracture', 'luxation',
       'soft_tissue_swelling', 'bone_density_decreased',

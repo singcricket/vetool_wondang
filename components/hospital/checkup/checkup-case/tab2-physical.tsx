@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Activity, Stethoscope, Eye, Brain, Smile, Camera } from 'lucide-react'
+import { Activity, Stethoscope, Eye, Brain, Smile, Camera, Bone } from 'lucide-react'
 import { SectionBlock } from './tab-ui'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,6 +33,7 @@ import type { ExtractedPhysical } from '@/lib/actions/checkup/pdf-extraction'
 import PhysicalExamSection, { type PhysicalValues, sectionStatusKey } from './physical-exam-section'
 import { physicalRefAll, PHYSICAL_SECTION_ORDER } from '@/constants/hospital/checkup/physical-ref'
 import SkinEarSection, { type SkinEarValues } from './skin-ear-section'
+import MusculoskeletalSection from './musculoskeletal-section'
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 import { ophthalmicDomainSections } from '@/constants/hospital/ophthalmic/ophthalmic-exam-domains'
 import type { OphTestItem } from '@/constants/hospital/ophthalmic/ophthalmic-types'
@@ -402,6 +403,14 @@ export default function Tab2Physical({
           physicalImages={getByTags(['physical_general'])}
           onImageEdited={reloadImages}
           onImageUploaded={reloadImages}
+        />
+      </SectionBlock>
+
+      {/* ── 근골격계·관절 ─────────────────────────────────── */}
+      <SectionBlock icon={Bone} title="근골격계 · 관절검사" color="violet">
+        <MusculoskeletalSection
+          values={physical}
+          onChange={(id, value) => setPhysical((prev) => ({ ...prev, [id]: value }))}
         />
       </SectionBlock>
 

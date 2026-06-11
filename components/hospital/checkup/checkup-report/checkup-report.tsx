@@ -29,6 +29,7 @@ import { ReportHeader } from './section-header'
 import { ExecutiveSummary } from './section-executive-summary'
 import { InquirySection } from './section-inquiry'
 import { PhysicalSection } from './section-physical'
+import { JointSection } from './section-joint'
 import { NeuroSection } from './section-neuro'
 import { OrganSectionsBlock } from './section-organ'
 import { AppendixLab } from './appendix-lab'
@@ -90,7 +91,7 @@ export default function CheckupReport({ data, isShared }: Props) {
   const organSections = resolveOrganSections(
     labItems, plan, images, ORGAN_MODULE_CONFIGS,
     physical, xrayData, speciesForStage, imagingSections,
-    { derma: physical },
+    { derma: physical, musculoskeletal: physical },
   )
 
   const subCharts = record.subCharts ?? {}
@@ -229,7 +230,14 @@ export default function CheckupReport({ data, isShared }: Props) {
           </div>
         )}
 
-        {/* ── 1-b. 신경계 검사 ──────────────────────────────── */}
+        {/* ── 1-b. 근골격계·관절검사 ───────────────────────── */}
+        {hasPhysical && (
+          <div id="section-joint">
+            <JointSection physical={physical} />
+          </div>
+        )}
+
+        {/* ── 1-c. 신경계 검사 ──────────────────────────────── */}
         <div id="section-neuro">
           <NeuroSection data={neuroData} />
         </div>

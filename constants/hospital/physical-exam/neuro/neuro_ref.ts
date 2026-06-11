@@ -4472,13 +4472,21 @@ export function buildNeuroChartSummary(
     runLocalisationEngine(results, context, domainSections);
 
   const topCandidates = localisationCandidates.slice(0, 3);
-  const localisationText = lang === 'ko'
-    ? `【병변 국소화】\n` + topCandidates.map((c, i) =>
-        `  ${i + 1}. ${locationNameKo[c.location] ?? c.location} (신뢰도: ${c.confidence === 'high' ? '높음' : c.confidence === 'medium' ? '중간' : '낮음'})`
-      ).join('\n')
-    : `【Lesion Localisation】\n` + topCandidates.map((c, i) =>
-        `  ${i + 1}. ${locationNameEn[c.location] ?? c.location} (Confidence: ${c.confidence})`
-      ).join('\n');
+  let localisationText = '';
+  
+  if (topCandidates.length > 0) {
+    localisationText = lang === 'ko'
+      ? `【병변 국소화】\n` + topCandidates.map((c, i) =>
+          `  ${i + 1}. ${locationNameKo[c.location] ?? c.location} (신뢰도: ${c.confidence === 'high' ? '높음' : c.confidence === 'medium' ? '중간' : '낮음'})`
+        ).join('\n')
+      : `【Lesion Localisation】\n` + topCandidates.map((c, i) =>
+          `  ${i + 1}. ${locationNameEn[c.location] ?? c.location} (Confidence: ${c.confidence})`
+        ).join('\n');
+  } else {
+    localisationText = lang === 'ko'
+      ? `- 특별한 이상소견이 관찰되지 않습니다.`
+      : `- No specific abnormal findings observed.`;
+  }
 
   // Syndrome text
   const syndromeText = detectedSyndromes.length > 0

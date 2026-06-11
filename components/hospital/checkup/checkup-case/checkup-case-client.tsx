@@ -9,7 +9,7 @@ import Tab2Physical from './tab2-physical'
 import Tab3Lab from './tab3-lab'
 import Tab4Imaging from './tab4-imaging'
 import Tab5Plan from './tab5-plan'
-import { CalendarDays, Cat, Dog, PawPrint, User, Share2, FileText } from 'lucide-react'
+import { CalendarDays, Cat, Dog, PawPrint, User, Share2, FileText, FileCode2 } from 'lucide-react'
 import Link from 'next/link'
 import { updateCheckupStatus } from '@/lib/actions/checkup/checkup-actions'
 import { toast } from 'sonner'
@@ -21,6 +21,7 @@ import type { SkinLesion } from '@/types/hospital/checkup-type'
 import type { CheckupImageTagGroup } from '@/constants/hospital/checkup/checkup-image-tags'
 import ShareResourceDialog from '@/components/hospital/share/share-resource-dialog'
 import CheckupDeleteDialog from './checkup-delete-dialog'
+import CheckupTxtDialog from './checkup-txt-dialog'
 
 const STATUS_LABEL: Record<CheckupStatus, string> = {
   draft: '작성중',
@@ -68,6 +69,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
   const [status, setStatus] = useState<CheckupStatus>(record.status)
   const [pdfExtracted, setPdfExtracted] = useState<PdfExtractionResult | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [txtOpen, setTxtOpen] = useState(false)
   const [subCharts, setSubCharts] = useState<Record<string, string | null>>(
     (record.sub_charts as Record<string, string | null>) ?? {},
   )
@@ -168,6 +170,14 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               <FileText size={13} />
               리포트
             </Link>
+            <button
+              type="button"
+              onClick={() => setTxtOpen(true)}
+              className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-700"
+            >
+              <FileCode2 size={13} />
+              Txt
+            </button>
             {/* <button
               onClick={() => setShareOpen(true)}
               className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-700"
@@ -201,6 +211,14 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
           </div>
         </div>
       </div>
+
+      <CheckupTxtDialog
+        open={txtOpen}
+        onOpenChange={setTxtOpen}
+        sections={sections}
+        patientName={p.name}
+        checkupDate={record.checkup_date}
+      />
 
       <ShareResourceDialog
         isOpen={shareOpen}

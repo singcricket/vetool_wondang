@@ -49,7 +49,7 @@ export default function PhysicalExamSection({ values, onChange, checkupId, hosId
 
   return (
     <div className="flex flex-col gap-4">
-      {PHYSICAL_SECTION_ORDER.map((section) => {
+      {PHYSICAL_SECTION_ORDER.filter((s) => s !== 'musculoskeletal').map((section) => {
         const items = physicalRefAll.filter((item) => item.section === section)
         const status = getStatus(section)
         const showItems = status !== 'normal'
@@ -212,6 +212,8 @@ export default function PhysicalExamSection({ values, onChange, checkupId, hosId
                         placeholder="직접 입력"
                       />
                     )}
+
+                    {item.inputType === 'custom' && null}
 
                     {item.comment && (
                       <p className="text-[10px] leading-tight text-slate-400">{item.comment}</p>
