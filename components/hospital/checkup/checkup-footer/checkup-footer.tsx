@@ -29,7 +29,7 @@ export default function CheckupFooter({ hosId, targetDate }: Props) {
   const segments = path.split('/')
   // segments: ['', 'hospital', hosId, 'checkup', targetDate, checkupIdOrSearch?, 'report'?]
   const seg5 = segments[5]
-  const isSearch = !seg5 || seg5 === 'search'
+  const isSearch = seg5 === 'search'
   const checkupId = !isSearch ? seg5 : null
   const isReport = segments[6] === 'report'
 
