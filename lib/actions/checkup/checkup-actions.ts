@@ -28,6 +28,63 @@ export async function createCheckupRecord(params: {
   return data.id
 }
 
+export async function registerPatientAndCheckupRecord(params: {
+  hosId: string
+  targetDate: string
+  vetId?: string | null
+  patient: {
+    name: string
+    species: string
+    breed: string
+    gender: string
+    birth: string
+    hos_patient_id: string
+    owner_name?: string
+    hos_owner_id?: string
+    microchip_no?: string
+    memo?: string
+    weight?: string
+  }
+}): Promise<string> {
+  const supabase = await createClient()
+
+  const { data: patientData, error: patientError } = await supabase
+    .from('patients')
+    .insert({
+      hos_id: params.hosId,
+      name: params.patient.name,
+      species: params.patient.species,
+      breed: params.patient.breed,
+      gender: params.patient.gender,
+      birth: params.patient.birth,
+      hos_patient_id: params.patient.hos_patient_id,
+      owner_name: params.patient.owner_name ?? null,
+      hos_owner_id: params.patient.hos_owner_id ?? null,
+      microchip_no: params.patient.microchip_no ?? null,
+      memo: params.patient.memo ?? null,
+      weight: params.patient.weight ? parseFloat(params.patient.weight) : null,
+    })
+    .select('patient_id')
+    .single()
+
+  if (patientError) throw new Error(`환자 등록 실패: ${patientError.message}`)
+
+  const { data: checkupData, error: checkupError } = await supabase
+    .from('checkup_records')
+    .insert({
+      hos_id: params.hosId,
+      patient_id: patientData.patient_id,
+      checkup_date: params.targetDate,
+      vet_id: params.vetId ?? null,
+      status: 'draft',
+    })
+    .select('id')
+    .single()
+
+  if (checkupError) throw new Error(`검진 생성 실패: ${checkupError.message}`)
+  return checkupData.id
+}
+
 export async function updateCheckupStatus(
   checkupId: string,
   status: CheckupStatus,

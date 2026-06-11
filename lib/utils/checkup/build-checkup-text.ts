@@ -6,7 +6,10 @@ import {
 import { xrayCategories, xrayFindingMap } from '@/constants/hospital/checkup/xray-ref'
 import { echoCategories, echoFindingMap } from '@/constants/hospital/checkup/echo-ref'
 import { organSections } from '@/constants/hospital/ultrasound'
+import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
+import { ophthalmicDomainSections } from '@/constants/hospital/ophthalmic/ophthalmic-exam-domains'
 import type { CheckupSection } from '@/types/hospital/checkup-type'
+import type { SkinLesion } from '@/types/hospital/checkup-type'
 
 type D = Record<string, unknown>
 
@@ -205,6 +208,89 @@ function buildImagingText(
   return blocks.join('\n\n')
 }
 
+// ── 피부·귀 (physical 섹션 내) ──────────────────────────────
+
+function buildDermaEarText(data: D): string {
+  const blocks: string[] = []
+
+  // 피모·기생충
+  const coatParts: string[] = []
+  if (data.coat_condition) coatParts.push(`피모: ${data.coat_condition}`)
+  if (data.parasite) coatParts.push(`기생충: ${data.parasite}`)
+  if (coatParts.length) blocks.push(coatParts.join(' / '))
+
+  // 피부 병변
+  const lesions: SkinLesion[] = (() => {
+    try { return JSON.parse((data.skin_lesions_json as string) || '[]') } catch { return [] }
+  })()
+  if (lesions.length > 0) {
+    const lesionLines = lesions.map((l, i) => {
+      const parts: string[] = [`병변 ${i + 1}`]
+      if (l.location) parts.push(l.location)
+      if (l.distribution) parts.push(l.distribution)
+      if (l.size_mm) parts.push(`${l.size_mm}mm`)
+      if (l.types?.length) parts.push(l.types.join(', '))
+      if (l.notes) parts.push(l.notes)
+      return `  - ${parts.join(' / ')}`
+    })
+    blocks.push(`피부 병변 (${lesions.length}개)\n${lesionLines.join('\n')}`)
+  }
+
+  // 귀 검사
+  const earLines: string[] = []
+  const odFindings: string[] = (() => { try { return JSON.parse((data.ear_od_findings as string) || '[]') } catch { return [] } })()
+  const osFindings: string[] = (() => { try { return JSON.parse((data.ear_os_findings as string) || '[]') } catch { return [] } })()
+  if (odFindings.length) {
+    const d = data.ear_od_discharge ? ` / 삼출물: ${data.ear_od_discharge}` : ''
+    earLines.push(`  - 우이 (OD): ${odFindings.join(', ')}${d}`)
+  }
+  if (osFindings.length) {
+    const d = data.ear_os_discharge ? ` / 삼출물: ${data.ear_os_discharge}` : ''
+    earLines.push(`  - 좌이 (OS): ${osFindings.join(', ')}${d}`)
+  }
+  if (data.ear_notes) earLines.push(`  - 비고: ${data.ear_notes}`)
+  if (earLines.length) blocks.push(`귀 검사\n${earLines.join('\n')}`)
+
+  if (blocks.length === 0) return ''
+  return `[피부·귀]\n${blocks.join('\n')}`
+}
+
+// ── 치과 기본검사 ────────────────────────────────────────────
+
+function buildDentalText(data: D): string {
+  const lines: string[] = ['[치과 기본검사]']
+  for (const [key, test] of Object.entries(DENTAL_CHART_TESTS)) {
+    const val = data[key] as string | undefined
+    if (!val || val.trim() === '') continue
+    const opt = test.options?.find((o) => o.value === val)
+    const label = opt?.label ?? val
+    lines.push(`  - ${test.testNameKo}: ${label}`)
+  }
+  return lines.length > 1 ? lines.join('\n') : ''
+}
+
+// ── 안과 기본검사 ────────────────────────────────────────────
+
+function buildOphthalmicText(data: D): string {
+  const lines: string[] = ['[안과 기본검사]']
+  for (const domainSection of ophthalmicDomainSections) {
+    const domainLines: string[] = []
+    for (const test of domainSection.tests) {
+      const val = data[test.testID] as string | undefined
+      if (!val || val.trim() === '') continue
+      const options = 'options' in test ? (test as { options: { value: string; labelKo?: string; label: string }[] }).options : []
+      const opt = options.find((o) => o.value === val)
+      const label = opt?.labelKo ?? opt?.label ?? val
+      domainLines.push(`    - ${test.testNameKo}: ${label}`)
+    }
+    if (domainLines.length > 0) {
+      lines.push(`  ${domainSection.domainNameKo}`)
+      lines.push(...domainLines)
+    }
+  }
+  return lines.length > 1 ? lines.join('\n') : ''
+}
+
 // ── 치료 및 관리계획 ────────────────────────────────────────
 
 function buildPlanText(data: D): string {
@@ -249,18 +335,23 @@ function buildPlanText(data: D): string {
 export function buildCheckupText(sections: CheckupSection[]): string {
   const getSection = (type: string) => sections.find((s) => s.section_type === type)
 
-  const inquiryData = (getSection('inquiry')?.data ?? {}) as D
-  const physicalData = (getSection('physical')?.data ?? {}) as D
-  const labData = (getSection('lab')?.data ?? {}) as D
-  const xrayData = (getSection('xray')?.data ?? {}) as D
-  const usData = (getSection('ultrasound_basic')?.data ?? {}) as D
-  const echoData = (getSection('echo_basic')?.data ?? {}) as D
-  const ctMriData = (getSection('ct_mri')?.data ?? {}) as D
-  const planData = (getSection('plan')?.data ?? {}) as D
+  const inquiryData     = (getSection('inquiry')?.data          ?? {}) as D
+  const physicalData    = (getSection('physical')?.data         ?? {}) as D
+  const labData         = (getSection('lab')?.data              ?? {}) as D
+  const xrayData        = (getSection('xray')?.data             ?? {}) as D
+  const usData          = (getSection('ultrasound_basic')?.data ?? {}) as D
+  const echoData        = (getSection('echo_basic')?.data       ?? {}) as D
+  const ctMriData       = (getSection('ct_mri')?.data           ?? {}) as D
+  const dentalData      = (getSection('dental_basic')?.data     ?? {}) as D
+  const ophthalmicData  = (getSection('ophthalmic_basic')?.data ?? {}) as D
+  const planData        = (getSection('plan')?.data             ?? {}) as D
 
   const parts = [
     buildInquiryText(inquiryData),
     buildPhysicalText(physicalData),
+    buildDermaEarText(physicalData),
+    buildDentalText(dentalData),
+    buildOphthalmicText(ophthalmicData),
     buildLabText(labData),
     buildImagingText(xrayData, usData, echoData, ctMriData),
     buildPlanText(planData),
