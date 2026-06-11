@@ -227,3 +227,29 @@ export async function deleteCaseProtocol(caseProtocolId: string) {
 
   revalidatePath('/', 'layout')
 }
+
+export async function updateCaseProtocolStatus(caseProtocolId: string, status: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('onco_case_protocols')
+    .update({ status })
+    .eq('id', caseProtocolId)
+
+  if (error) throw new Error(`상태 업데이트 실패: ${error.message}`)
+
+  revalidatePath('/', 'layout')
+}
+
+export async function updateCaseProtocolNotes(caseProtocolId: string, notes: string | null) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('onco_case_protocols')
+    .update({ notes })
+    .eq('id', caseProtocolId)
+
+  if (error) throw new Error(`노트 업데이트 실패: ${error.message}`)
+
+  revalidatePath('/', 'layout')
+}

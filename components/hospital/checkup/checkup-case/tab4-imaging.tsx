@@ -37,6 +37,10 @@ import {
 } from '@/constants/hospital/ultrasound'
 import type { Organ } from '@/constants/hospital/ultrasound/types'
 import LinkedChartPanel, { type ChartListItem } from './linked-chart-panel'
+import CheckupImageStrip from './checkup-image-strip'
+import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
+import { useCheckupImages } from '@/hooks/use-checkup-images'
+import { Camera } from 'lucide-react'
 
 // ── 저장 데이터 타입 ─────────────────────────────────────────
 
@@ -77,6 +81,28 @@ interface Props {
   extractedImaging: ExtractedImaging | null
   subCharts: Record<string, string | null>
   onSubChartChange: (chartType: string, chartId: string | null) => void
+}
+
+// ── 이미지 태그 매핑 ─────────────────────────────────────────
+
+const XRAY_CAT_TAG: Record<XrayCategoryId, string> = {
+  thorax:    'xray_thorax',
+  abdomen:   'xray_abdomen',
+  extremity: 'xray_extremity',
+  skull:     'xray_skull',
+  spine:     'xray_spine',
+}
+
+const ECHO_CAT_TAG: Record<EchoCategoryId, string> = {
+  lv_systolic:  'echo_lv',
+  lv_size:      'echo_lv',
+  mitral_valve: 'echo_mv',
+  left_atrium:  'echo_la',
+  aortic_valve: 'echo_av',
+  right_heart:  'echo_rv_ra',
+  pulmonary_ht: 'echo_rv_ra',
+  pericardium:  'echo_pericardium',
+  overall:      'echo_overview',
 }
 
 // ── 심각도 배지 ──────────────────────────────────────────────
@@ -182,6 +208,8 @@ export default function Tab4Imaging({
   subCharts,
   onSubChartChange,
 }: Props) {
+  const { getByTags, reload: reloadImages } = useCheckupImages(checkupId)
+
   const [xray, setXray] = useState<XrayData>(() => initXrayData(xraySection))
   const [ultrasound, setUltrasound] = useState<UltrasoundData>(() =>
     initUltrasoundData(ultrasoundSection),
@@ -466,6 +494,31 @@ export default function Tab4Imaging({
                   placeholder={`${cat.label} 소견 직접 입력 또는 AI 추출 결과`}
                   className="min-h-[60px] resize-none text-xs"
                 />
+                {/* 방사선 이미지 썸네일 */}
+                <div className="mt-1.5 flex items-center gap-2">
+                  <CheckupImageUploadDialog
+                    checkupId={checkupId}
+                    hosId={hosId}
+                    defaultTags={[XRAY_CAT_TAG[cat.id]]}
+                    onClose={reloadImages}
+                    trigger={
+                      <button
+                        type="button"
+                        className="flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-400 transition-colors hover:border-teal-300 hover:text-teal-600"
+                        title={`${cat.label} 사진 업로드`}
+                      >
+                        <Camera size={10} />
+                        사진
+                      </button>
+                    }
+                  />
+                  <CheckupImageStrip
+                    checkupId={checkupId}
+                    images={getByTags([XRAY_CAT_TAG[cat.id]])}
+                    onEdited={reloadImages}
+                    maxVisible={6}
+                  />
+                </div>
               </div>
             )
           })}
@@ -506,17 +559,47 @@ export default function Tab4Imaging({
       >
         {/* 장기별 textarea */}
         <div className="flex flex-col gap-3">
-          {organSections.map((section) => (
-            <div key={section.organ}>
-              <p className="mb-1 text-xs font-medium text-slate-600">{section.organNameKo}</p>
-              <Textarea
-                value={ultrasound.organ_notes[section.organ] ?? ''}
-                onChange={(e) => setOrganNote(section.organ, e.target.value)}
-                placeholder={`${section.organNameKo} 소견`}
-                className="min-h-[56px] resize-none text-xs"
-              />
+          {/* 초음파 전체 이미지 */}
+          {getByTags(['ultrasound']).length > 0 && (
+            <div className="flex items-center gap-2 rounded-md border border-slate-100 bg-slate-50 p-2">
+              <p className="shrink-0 text-[11px] font-medium text-slate-500">초음파</p>
+              <CheckupImageStrip checkupId={checkupId} images={getByTags(['ultrasound'])} onEdited={reloadImages} maxVisible={6} />
             </div>
-          ))}
+          )}
+          {organSections.map((section) => {
+            const organTag = `organ_${section.organ}`
+            const organImgs = getByTags([organTag])
+            return (
+              <div key={section.organ}>
+                <div className="mb-1 flex items-center gap-2">
+                  <p className="text-xs font-medium text-slate-600">{section.organNameKo}</p>
+                  <CheckupImageUploadDialog
+                    checkupId={checkupId}
+                    hosId={hosId}
+                    defaultTags={[organTag]}
+                    onClose={reloadImages}
+                    trigger={
+                      <button
+                        type="button"
+                        className="flex items-center gap-0.5 rounded-full border border-slate-200 bg-white px-1.5 py-0 text-[10px] text-slate-400 transition-colors hover:border-teal-300 hover:text-teal-600"
+                      >
+                        <Camera size={9} />
+                      </button>
+                    }
+                  />
+                  {organImgs.length > 0 && (
+                    <CheckupImageStrip checkupId={checkupId} images={organImgs} onEdited={reloadImages} maxVisible={4} />
+                  )}
+                </div>
+                <Textarea
+                  value={ultrasound.organ_notes[section.organ] ?? ''}
+                  onChange={(e) => setOrganNote(section.organ, e.target.value)}
+                  placeholder={`${section.organNameKo} 소견`}
+                  className="min-h-[56px] resize-none text-xs"
+                />
+              </div>
+            )
+          })}
         </div>
       </SectionBlock>
 
@@ -566,6 +649,31 @@ export default function Tab4Imaging({
                   placeholder={`${cat.label} 소견 메모`}
                   className="min-h-[48px] resize-none text-xs"
                 />
+                {/* Echo 이미지 썸네일 */}
+                <div className="mt-1.5 flex items-center gap-2">
+                  <CheckupImageUploadDialog
+                    checkupId={checkupId}
+                    hosId={hosId}
+                    defaultTags={[ECHO_CAT_TAG[cat.id]]}
+                    onClose={reloadImages}
+                    trigger={
+                      <button
+                        type="button"
+                        className="flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-400 transition-colors hover:border-rose-300 hover:text-rose-500"
+                        title={`${cat.label} 사진 업로드`}
+                      >
+                        <Camera size={10} />
+                        사진
+                      </button>
+                    }
+                  />
+                  <CheckupImageStrip
+                    checkupId={checkupId}
+                    images={getByTags([ECHO_CAT_TAG[cat.id]])}
+                    onEdited={reloadImages}
+                    maxVisible={6}
+                  />
+                </div>
               </div>
             )
           })}

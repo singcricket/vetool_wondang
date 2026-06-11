@@ -233,36 +233,53 @@ function DermaBlock({ extraData, images, checkupId, isShared }: {
           <SubHeading>귀 검사</SubHeading>
           <div className="grid grid-cols-2 gap-3">
             {([
-              { label: '우이 (OD)', findings: odFindings, discharge: odDischarge },
-              { label: '좌이 (OS)', findings: osFindings, discharge: osDischarge },
-            ] as const).map(({ label, findings, discharge }) => (
-              <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <p className="mb-1.5 text-xs font-bold text-slate-500">{label}</p>
-                {findings.length > 0 ? (
-                  <div className="flex flex-col gap-1">
-                    {findings.map((f) => (
-                      <div
-                        key={f}
-                        className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 ${
-                          f === '정상' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
-                        }`}
-                      >
-                        {f === '정상'
-                          ? <CheckCircle2 size={10} className="shrink-0 text-emerald-500" strokeWidth={2} />
-                          : <AlertCircle size={10} className="shrink-0 text-amber-500" strokeWidth={2} />
-                        }
-                        <span className={`text-xs ${f === '정상' ? 'text-emerald-700' : 'text-amber-700'}`}>{f}</span>
-                      </div>
-                    ))}
-                    {discharge && (
-                      <p className="mt-0.5 text-[11px] text-slate-500">삼출물: {discharge}</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-300">소견 없음</p>
-                )}
-              </div>
-            ))}
+              { label: '우이 (OD)', findings: odFindings, discharge: odDischarge, tagKey: 'ear_od' as const },
+              { label: '좌이 (OS)', findings: osFindings, discharge: osDischarge, tagKey: 'ear_os' as const },
+            ]).map(({ label, findings, discharge, tagKey }) => {
+              const earImgs = images.filter((img) => img.tags?.includes(tagKey))
+              return (
+                <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <p className="mb-1.5 text-xs font-bold text-slate-500">{label}</p>
+                  {/* 귀 사진 */}
+                  {earImgs.length > 0 && (
+                    <div className="mb-2 grid grid-cols-3 gap-1">
+                      {earImgs.map((img) => (
+                        <CheckupImgCard
+                          key={img.img_url}
+                          img={img}
+                          checkupId={checkupId ?? ''}
+                          isShared={isShared}
+                          className="aspect-square w-full rounded-md object-cover"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {findings.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {findings.map((f) => (
+                        <div
+                          key={f}
+                          className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 ${
+                            f === '정상' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
+                          }`}
+                        >
+                          {f === '정상'
+                            ? <CheckCircle2 size={10} className="shrink-0 text-emerald-500" strokeWidth={2} />
+                            : <AlertCircle size={10} className="shrink-0 text-amber-500" strokeWidth={2} />
+                          }
+                          <span className={`text-xs ${f === '정상' ? 'text-emerald-700' : 'text-amber-700'}`}>{f}</span>
+                        </div>
+                      ))}
+                      {discharge && (
+                        <p className="mt-0.5 text-[11px] text-slate-500">삼출물: {discharge}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-300">소견 없음</p>
+                  )}
+                </div>
+              )
+            })}
           </div>
           {earNotes && <p className="mt-2 text-xs leading-relaxed text-slate-600">{earNotes}</p>}
         </div>

@@ -93,10 +93,14 @@ export type RefSource = {
 
 const SYSTEM_PROMPT = `You are an expert veterinary oncologist. Respond with valid JSON ONLY — absolutely no prose, no markdown fences, no explanation before or after the JSON object.`
 
-function buildUserPrompt(diagnosisName: string, isRescue = false): string {
-  const context = isRescue
+function buildUserPrompt(diagnosisName: string, isRescue = false, additionalContext?: string): string {
+  let context = isRescue
     ? `"${diagnosisName}" 진단 후 1차 치료 실패, rescue/salvage 치료 필요`
     : `"${diagnosisName}" 진단`
+
+  if (additionalContext && additionalContext.trim()) {
+    context += `\n[추가 고려사항/임상정보]: ${additionalContext}`
+  }
 
   const phaseNote = isRescue
     ? '- phase: "rescue" 고정'
@@ -215,30 +219,33 @@ export async function refreshAiOncologyGuide(caseId: string): Promise<AiGuideRes
   return { protocols, isExpired: false, cachedAt: new Date().toISOString() }
 }
 
-export async function getAiRescueGuide(caseId: string): Promise<AiGuideResult> {
+export async function getAiRescueGuide(caseId: string, additionalContext?: string): Promise<AiGuideResult> {
   const supabase = await createClient()
   const { diagnosisKey, diagnosisName, hosId } = await resolveDiagnosisKey(supabase, caseId)
 
   const rescueKey = `${diagnosisKey}__rescue`
 
-  const { data: cached } = await supabase
-    .from('onco_ai_cache')
-    .select('created_at, expires_at')
-    .eq('diagnosis_key', rescueKey)
-    .eq('hos_id', hosId)
-    .eq('query_type', 'treatment_options')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  // 만약 추가 컨텍스트가 있다면 기존 캐시를 무시하고 항상 새로운 AI 질의를 수행합니다.
+  if (!additionalContext || !additionalContext.trim()) {
+    const { data: cached } = await supabase
+      .from('onco_ai_cache')
+      .select('created_at, expires_at')
+      .eq('diagnosis_key', rescueKey)
+      .eq('hos_id', hosId)
+      .eq('query_type', 'treatment_options')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-  const existingProtocols = await fetchProtocolsForKey(supabase, rescueKey, hosId)
-  if (existingProtocols.length > 0) {
-    const isExpired = cached?.expires_at ? new Date(cached.expires_at) < new Date() : false
-    return { protocols: existingProtocols, isExpired, cachedAt: cached?.created_at ?? null }
+    const existingProtocols = await fetchProtocolsForKey(supabase, rescueKey, hosId)
+    if (existingProtocols.length > 0) {
+      const isExpired = cached?.expires_at ? new Date(cached.expires_at) < new Date() : false
+      return { protocols: existingProtocols, isExpired, cachedAt: cached?.created_at ?? null }
+    }
   }
 
-  const protocols = await callClaudeAndSave(supabase, diagnosisName, hosId, rescueKey, true)
+  const protocols = await callClaudeAndSave(supabase, diagnosisName, hosId, rescueKey, true, additionalContext)
   return { protocols, isExpired: false, cachedAt: new Date().toISOString() }
 }
 
@@ -320,6 +327,7 @@ async function callClaudeAndSave(
   hosId: string,
   diagnosisKey: string,
   isRescue = false,
+  additionalContext?: string,
 ): Promise<AiProtocolOption[]> {
   const client = getAnthropicClient()
 
@@ -329,7 +337,7 @@ async function callClaudeAndSave(
       model: 'claude-sonnet-4-6',
       max_tokens: 8192,
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildUserPrompt(diagnosisName, isRescue) }],
+      messages: [{ role: 'user', content: buildUserPrompt(diagnosisName, isRescue, additionalContext) }],
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

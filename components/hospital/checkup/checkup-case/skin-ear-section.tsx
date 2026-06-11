@@ -12,7 +12,9 @@ import {
 } from '@/components/ui/select'
 import type { SkinLesion, EarExam } from '@/types/hospital/checkup-type'
 import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
+import CheckupImageStrip from './checkup-image-strip'
 import type { CheckupImageTagGroup } from '@/constants/hospital/checkup/checkup-image-tags'
+import type { CheckupImage } from '@/lib/actions/checkup/checkup-image-actions'
 
 // ── 상수 ──────────────────────────────────────────────────────
 
@@ -89,6 +91,9 @@ function LesionCard({
   checkupId,
   hosId,
   dynamicTagGroups,
+  lesionImages,
+  onImageEdited,
+  onImageUploaded,
 }: {
   lesion: SkinLesion
   index: number
@@ -97,6 +102,9 @@ function LesionCard({
   checkupId: string
   hosId: string
   dynamicTagGroups: CheckupImageTagGroup[]
+  lesionImages?: CheckupImage[]
+  onImageEdited?: () => void
+  onImageUploaded?: () => void
 }) {
   const toggleType = (t: string) => {
     const next = lesion.types.includes(t)
@@ -115,6 +123,7 @@ function LesionCard({
             hosId={hosId}
             defaultTags={['organ_skin', `skin_lesion_${lesion.id}`]}
             dynamicTagGroups={dynamicTagGroups}
+            onClose={onImageUploaded}
             trigger={
               <button
                 type="button"
@@ -201,6 +210,18 @@ function LesionCard({
           className="h-7 text-xs"
         />
       </div>
+
+      {/* 병변 이미지 썸네일 */}
+      {lesionImages && lesionImages.length > 0 && (
+        <div className="mt-2 border-t border-slate-100 pt-2">
+          <CheckupImageStrip
+            checkupId={checkupId}
+            images={lesionImages}
+            onEdited={onImageEdited}
+            maxVisible={6}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -216,6 +237,9 @@ function EarPanel({
   onDischargeChange,
   checkupId,
   hosId,
+  earImages,
+  onImageEdited,
+  onImageUploaded,
 }: {
   side: 'od' | 'os'
   label: string
@@ -225,6 +249,9 @@ function EarPanel({
   onDischargeChange: (v: string) => void
   checkupId: string
   hosId: string
+  earImages?: CheckupImage[]
+  onImageEdited?: () => void
+  onImageUploaded?: () => void
 }) {
   const showDischarge = findings.includes('삼출물 (분비물)')
 
@@ -242,6 +269,7 @@ function EarPanel({
           checkupId={checkupId}
           hosId={hosId}
           defaultTags={['organ_ear', side === 'od' ? 'ear_od' : 'ear_os']}
+          onClose={onImageUploaded}
           trigger={
             <button
               type="button"
@@ -253,6 +281,15 @@ function EarPanel({
           }
         />
       </div>
+      {earImages && earImages.length > 0 && (
+        <div className="mb-2">
+          <CheckupImageStrip
+            checkupId={checkupId}
+            images={earImages}
+            onEdited={onImageEdited}
+          />
+        </div>
+      )}
       <div className="flex flex-wrap gap-x-3 gap-y-1">
         {EAR_FINDINGS.map((f) => (
           <label key={f} className="flex cursor-pointer items-center gap-1 text-xs text-slate-700">
@@ -305,6 +342,9 @@ interface Props {
   onChange: (key: keyof SkinEarValues, value: string) => void
   checkupId: string
   hosId: string
+  allImages?: CheckupImage[]
+  onImageEdited?: () => void
+  onImageUploaded?: () => void
 }
 
 function buildSkinSummary(lesions: SkinLesion[]): string {
@@ -340,7 +380,7 @@ function buildEarSummary(ear: EarExam): string {
 const COAT_OPTIONS = ['정상 (광택, 청결)', '건조/윤기 없음', '기름짐 (Seborrhea)', '탈모 (Alopecia)', '엉킴/매트']
 const PARASITE_OPTIONS = ['없음', '벼룩 (Fleas)', '진드기 (Ticks)', '이 (Lice)', '기생충 분변 (Flea dirt)']
 
-export default function SkinEarSection({ values, onChange, checkupId, hosId }: Props) {
+export default function SkinEarSection({ values, onChange, checkupId, hosId, allImages = [], onImageEdited, onImageUploaded }: Props) {
   const lesions: SkinLesion[] = (() => {
     try { return JSON.parse(values.skin_lesions_json || '[]') } catch { return [] }
   })()
@@ -457,6 +497,9 @@ export default function SkinEarSection({ values, onChange, checkupId, hosId }: P
               checkupId={checkupId}
               hosId={hosId}
               dynamicTagGroups={dynamicTagGroups}
+              lesionImages={allImages.filter((img) => img.tags.includes(`skin_lesion_${lesion.id}`))}
+              onImageEdited={onImageEdited}
+              onImageUploaded={onImageUploaded}
             />
           ))}
         </div>
@@ -478,6 +521,9 @@ export default function SkinEarSection({ values, onChange, checkupId, hosId }: P
             onDischargeChange={(v) => updateEar({ ...ear, od_discharge: v })}
             checkupId={checkupId}
             hosId={hosId}
+            earImages={allImages.filter((img) => img.tags.includes('ear_od'))}
+            onImageEdited={onImageEdited}
+            onImageUploaded={onImageUploaded}
           />
           <EarPanel
             side="os"
@@ -488,6 +534,9 @@ export default function SkinEarSection({ values, onChange, checkupId, hosId }: P
             onDischargeChange={(v) => updateEar({ ...ear, os_discharge: v })}
             checkupId={checkupId}
             hosId={hosId}
+            earImages={allImages.filter((img) => img.tags.includes('ear_os'))}
+            onImageEdited={onImageEdited}
+            onImageUploaded={onImageUploaded}
           />
         </div>
         <div className="mt-2">

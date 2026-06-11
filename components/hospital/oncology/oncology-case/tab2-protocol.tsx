@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils/utils'
-import { createCaseProtocol, deleteCaseProtocol } from '@/lib/actions/oncology/protocol-actions'
+import { createCaseProtocol, deleteCaseProtocol, updateCaseProtocolStatus, updateCaseProtocolNotes } from '@/lib/actions/oncology/protocol-actions'
 import {
   getAiOncologyGuide,
   getAiRescueGuide,
@@ -257,14 +257,49 @@ function CaseProtocolCard({ cp, patientName, onDelete }: { cp: OncologyCaseProto
     }
   }
 
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      await updateCaseProtocolStatus(cp.id, newStatus)
+      toast.success('상태가 업데이트되었습니다.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '상태 업데이트 실패')
+    }
+  }
+
+  const handleNotesChange = async (newNotes: string) => {
+    if (newNotes === (cp.notes ?? '')) return
+    try {
+      await updateCaseProtocolNotes(cp.id, newNotes)
+      toast.success('노트가 저장되었습니다.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '노트 저장 실패')
+    }
+  }
+
+
   return (
     <div className="border rounded-lg overflow-hidden">
       <div className="px-4 py-3 bg-slate-50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="font-semibold text-slate-800">{cp.protocol.protocol_name}</span>
-          <span className={cn('text-xs px-2 py-0.5 rounded-full', CP_STATUS_COLORS[cp.status] ?? 'bg-slate-100 text-slate-600')}>
-            {CP_STATUS_LABELS[cp.status] ?? cp.status}
-          </span>
+          <Select value={cp.status} onValueChange={handleStatusChange}>
+            <SelectTrigger
+              className={cn(
+                'h-6 w-auto min-w-[80px] border-0 text-xs px-2 py-0.5 rounded-full ring-0 focus:ring-0',
+                CP_STATUS_COLORS[cp.status] ?? 'bg-slate-100 text-slate-600',
+                '[&>span]:font-medium'
+              )}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(CP_STATUS_LABELS).map(([val, label]) => (
+                <SelectItem key={val} value={val}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <span className="text-xs text-slate-500">시작: {cp.start_date}</span>
         </div>
         <div className="flex items-center gap-3">
@@ -351,6 +386,17 @@ function CaseProtocolCard({ cp, patientName, onDelete }: { cp: OncologyCaseProto
             <div>연기: <span className="font-medium text-slate-800">{cp.delayed_doses}회</span></div>
             <div>감량: <span className="font-medium text-slate-800">{cp.reduced_doses}회</span></div>
           </div>
+          
+          <div className="mb-4">
+            <Label className="text-xs font-semibold text-slate-700 mb-1 block">프로토콜 노트</Label>
+            <Textarea
+              className="min-h-[60px] text-xs resize-none bg-white"
+              placeholder="프로토콜 진행에 관한 참고사항이나 메모를 입력하세요 (포커스 아웃 시 자동 저장)"
+              defaultValue={cp.notes ?? ''}
+              onBlur={(e) => handleNotesChange(e.target.value)}
+            />
+          </div>
+
           {cp.schedules.length === 0 ? (
             <p className="text-xs text-slate-400">스케줄이 없습니다.</p>
           ) : (
@@ -574,6 +620,7 @@ export default function Tab2Protocol({ caseDetail, caseProtocols: initialProtoco
 
   // AI 생성
   const [isRescue, setIsRescue] = useState(false)
+  const [rescueContext, setRescueContext] = useState('')
   const [aiGenerating, setAiGenerating] = useState(false)
 
   const [selectedProtocol, setSelectedProtocol] = useState<AiProtocolOption | null>(null)
@@ -610,6 +657,7 @@ export default function Tab2Protocol({ caseDetail, caseProtocols: initialProtoco
     setManualSearchQuery('')
     setManualSearchResults([])
     setIsRescue(false)
+    setRescueContext('')
     setSelectedProtocol(null)
     setEditorOpen(false)
   }
@@ -632,7 +680,7 @@ export default function Tab2Protocol({ caseDetail, caseProtocols: initialProtoco
     setAiGenerating(true)
     try {
       const result = isRescue
-        ? await getAiRescueGuide(caseDetail.id)
+        ? await getAiRescueGuide(caseDetail.id, rescueContext)
         : await getAiOncologyGuide(caseDetail.id)
       if (result.protocols.length === 0) {
         toast.info('추천 프로토콜이 없습니다.')
@@ -799,45 +847,55 @@ export default function Tab2Protocol({ caseDetail, caseProtocols: initialProtoco
             </div>
 
             {/* ③ 두 버튼: AI 추천 / 직접 작성 */}
-            <div className="flex items-center gap-3 border-t pt-3">
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <div
-                    onClick={() => setIsRescue((v) => !v)}
-                    className={cn(
-                      'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer',
-                      isRescue ? 'bg-amber-500' : 'bg-slate-200',
-                    )}
+            <div className="flex flex-col gap-3 border-t pt-3">
+              {isRescue && (
+                <Textarea
+                  value={rescueContext}
+                  onChange={(e) => setRescueContext(e.target.value)}
+                  placeholder="이전 치료 내역, 부작용, 내성 등 Rescue 프로토콜 추천에 필요한 추가 정보를 입력하세요..."
+                  className="min-h-[60px] text-xs resize-none bg-white"
+                />
+              )}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <div
+                      onClick={() => setIsRescue((v) => !v)}
+                      className={cn(
+                        'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors cursor-pointer',
+                        isRescue ? 'bg-amber-500' : 'bg-slate-200',
+                      )}
+                    >
+                      <span className={cn('pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg transition-transform', isRescue ? 'translate-x-4' : 'translate-x-0')} />
+                    </div>
+                    <span className="text-xs text-slate-600 flex items-center gap-1">
+                      {isRescue && <AlertTriangle size={11} className="text-amber-500" />}
+                      {isRescue ? 'Rescue' : '1차'}
+                    </span>
+                  </label>
+                  <Button
+                    onClick={handleGenerateAi}
+                    disabled={aiGenerating}
+                    variant="outline"
+                    size="sm"
+                    className="border-rose-300 text-rose-700 hover:bg-rose-50"
                   >
-                    <span className={cn('pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg transition-transform', isRescue ? 'translate-x-4' : 'translate-x-0')} />
-                  </div>
-                  <span className="text-xs text-slate-600 flex items-center gap-1">
-                    {isRescue && <AlertTriangle size={11} className="text-amber-500" />}
-                    {isRescue ? 'Rescue' : '1차'}
-                  </span>
-                </label>
+                    {aiGenerating
+                      ? <><Loader2 size={13} className="mr-1 animate-spin" />생성 중...</>
+                      : <><Sparkles size={13} className="mr-1" />AI 프로토콜 추천</>
+                    }
+                  </Button>
+                </div>
                 <Button
-                  onClick={handleGenerateAi}
-                  disabled={aiGenerating}
+                  onClick={() => setEditorOpen(true)}
                   variant="outline"
                   size="sm"
-                  className="border-rose-300 text-rose-700 hover:bg-rose-50"
+                  className="border-slate-300 text-slate-700 hover:bg-slate-50"
                 >
-                  {aiGenerating
-                    ? <><Loader2 size={13} className="mr-1 animate-spin" />생성 중...</>
-                    : <><Sparkles size={13} className="mr-1" />AI 프로토콜 추천</>
-                  }
+                  <PenLine size={13} className="mr-1" />
+                  직접 작성
                 </Button>
               </div>
-              <Button
-                onClick={() => setEditorOpen(true)}
-                variant="outline"
-                size="sm"
-                className="border-slate-300 text-slate-700 hover:bg-slate-50"
-              >
-                <PenLine size={13} className="mr-1" />
-                직접 작성
-              </Button>
             </div>
 
             {/* ④ 선택된 프로토콜 → 케이스 추가 */}

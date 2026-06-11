@@ -242,7 +242,7 @@ export const ORGAN_MODULE_CONFIGS: OrganModuleConfig[] = [
     planKey: 'dx_derma',
     labSections: [],
     labIds: [],
-    imageTags: ['organ_skin', 'organ_ear', 'skin_lesion_'],
+    imageTags: ['organ_skin', 'organ_ear', 'ear_od', 'ear_os', 'skin_lesion_'],
     imagingSectionKeys: [],
     physicalIds: [],
     xrayFindingIds: ['tympanic_bulla_opacity'],

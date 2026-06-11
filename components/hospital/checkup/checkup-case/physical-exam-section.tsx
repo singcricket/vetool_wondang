@@ -16,6 +16,8 @@ import {
   type PhysicalSection,
 } from '@/constants/hospital/checkup/physical-ref'
 import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
+import CheckupImageStrip from './checkup-image-strip'
+import type { CheckupImage } from '@/lib/actions/checkup/checkup-image-actions'
 
 export type PhysicalValues = Record<string, string>
 
@@ -29,9 +31,12 @@ interface Props {
   onChange: (id: string, value: string) => void
   checkupId?: string
   hosId?: string
+  physicalImages?: CheckupImage[]
+  onImageEdited?: () => void
+  onImageUploaded?: () => void
 }
 
-export default function PhysicalExamSection({ values, onChange, checkupId, hosId }: Props) {
+export default function PhysicalExamSection({ values, onChange, checkupId, hosId, physicalImages, onImageEdited, onImageUploaded }: Props) {
   const getStatus = (section: PhysicalSection): SectionStatus =>
     (values[sectionStatusKey(section)] ?? '') as SectionStatus
 
@@ -70,6 +75,7 @@ export default function PhysicalExamSection({ values, onChange, checkupId, hosId
                     checkupId={checkupId}
                     hosId={hosId}
                     defaultTags={['physical_general']}
+                    onClose={onImageUploaded}
                     trigger={
                       <button
                         type="button"
@@ -105,6 +111,17 @@ export default function PhysicalExamSection({ values, onChange, checkupId, hosId
                 </button>
               </div>
             </div>
+
+            {/* 체형 이미지 썸네일 */}
+            {section === 'body_condition' && physicalImages && physicalImages.length > 0 && (
+              <div className="border-b border-slate-100 bg-white px-3 py-2">
+                <CheckupImageStrip
+                  checkupId={checkupId!}
+                  images={physicalImages}
+                  onEdited={onImageEdited}
+                />
+              </div>
+            )}
 
             {/* 세부 항목 — normal 선택 시 숨김 */}
             {showItems && (

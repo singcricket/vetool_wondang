@@ -19,15 +19,14 @@ import type { CheckupImageTagGroup } from '@/constants/hospital/checkup/checkup-
 interface Props {
   checkupId: string
   hosId: string
-  /** 업로드 시 자동 적용 태그 (병변별 인라인 업로드용) */
   defaultTags?: string[]
-  /** 동적 태그 그룹 (피부 병변 목록) */
   dynamicTagGroups?: CheckupImageTagGroup[]
-  /** 커스텀 트리거 (기본: 이미지 버튼) */
   trigger?: ReactNode
+  /** 다이얼로그 닫힐 때 호출 (이미지 목록 갱신용) */
+  onClose?: () => void
 }
 
-export default function CheckupImageUploadDialog({ checkupId, hosId, defaultTags, dynamicTagGroups, trigger }: Props) {
+export default function CheckupImageUploadDialog({ checkupId, hosId, defaultTags, dynamicTagGroups, trigger, onClose }: Props) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState('upload')
 
@@ -46,7 +45,7 @@ export default function CheckupImageUploadDialog({ checkupId, hosId, defaultTags
         )}
       </DialogTrigger>
 
-      <DialogContent className="flex h-[90vh] max-w-5xl flex-col overflow-hidden p-0">
+      <DialogContent className="flex h-[90vh] max-w-5xl flex-col overflow-hidden p-0" onCloseAutoFocus={() => onClose?.()}>
         <DialogHeader className="shrink-0 border-b bg-white px-4 py-3">
           <DialogTitle className="text-sm">검진 이미지 관리</DialogTitle>
           <DialogDescription className="hidden">검진 이미지를 업로드하거나 태그를 관리합니다.</DialogDescription>

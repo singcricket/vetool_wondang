@@ -38,6 +38,8 @@ import { ophthalmicDomainSections } from '@/constants/hospital/ophthalmic/ophtha
 import type { OphTestItem } from '@/constants/hospital/ophthalmic/ophthalmic-types'
 import LinkedChartPanel, { type ChartListItem } from './linked-chart-panel'
 import CheckupImageUploadDialog from './checkup-image-uploader/checkup-image-upload-dialog'
+import CheckupImageStrip from './checkup-image-strip'
+import { useCheckupImages } from '@/hooks/use-checkup-images'
 
 // ── 치과 기본 소견 항목 ─────────────────────────────────────────
 const DENTAL_BASIC_IDS = [
@@ -213,6 +215,9 @@ export default function Tab2Physical({
   onSubChartChange,
   onSkinLesionsChange,
 }: Props) {
+  // ── 이미지 ───────────────────────────────────────────────────
+  const { images: allCheckupImages, getByTags, reload: reloadImages } = useCheckupImages(checkupId)
+
   // ── 신체검사 ─────────────────────────────────────────────────
   const savedPhysical = (physicalSection?.data ?? {}) as Record<string, string>
   const [physical, setPhysical] = useState<PhysicalValues>(() => {
@@ -394,6 +399,9 @@ export default function Tab2Physical({
           onChange={(id, value) => setPhysical((prev) => ({ ...prev, [id]: value }))}
           checkupId={checkupId}
           hosId={hosId}
+          physicalImages={getByTags(['physical_general'])}
+          onImageEdited={reloadImages}
+          onImageUploaded={reloadImages}
         />
       </SectionBlock>
 
@@ -410,6 +418,13 @@ export default function Tab2Physical({
           }}
           checkupId={checkupId}
           hosId={hosId}
+          allImages={allCheckupImages.filter((img) =>
+            img.tags.some((t) =>
+              t === 'organ_ear' || t === 'ear_od' || t === 'ear_os' || t === 'organ_skin' || t.startsWith('skin_lesion_'),
+            ),
+          )}
+          onImageEdited={reloadImages}
+          onImageUploaded={reloadImages}
         />
       </SectionBlock>
 
@@ -428,14 +443,16 @@ export default function Tab2Physical({
             buildChartUrl={(id, date) => `/hospital/${hosId}/dental/${date}/${id}`}
             onLinkChange={(id) => onSubChartChange('dental', id)}
             onCreateNew={handleCreateDentalChart}
+            variant="onDark"
           />
         }
       >
-        <div className="mb-2 flex items-center gap-2">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
           <CheckupImageUploadDialog
             checkupId={checkupId}
             hosId={hosId}
             defaultTags={['dental']}
+            onClose={reloadImages}
             trigger={
               <button
                 type="button"
@@ -450,6 +467,7 @@ export default function Tab2Physical({
             checkupId={checkupId}
             hosId={hosId}
             defaultTags={['dental_radio']}
+            onClose={reloadImages}
             trigger={
               <button
                 type="button"
@@ -459,6 +477,11 @@ export default function Tab2Physical({
                 치과 방사선
               </button>
             }
+          />
+          <CheckupImageStrip
+            checkupId={checkupId}
+            images={getByTags(['dental', 'dental_radio'])}
+            onEdited={reloadImages}
           />
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
@@ -510,10 +533,28 @@ export default function Tab2Physical({
             buildChartUrl={(id, date) => `/hospital/${hosId}/ophthalmic/${date}/${id}`}
             onLinkChange={(id) => onSubChartChange('ophthalmic', id)}
             onCreateNew={handleCreateOphthalmicChart}
+            variant="onDark"
           />
         }
       >
         <div className="flex flex-col gap-4">
+          {/* 안과 이미지 썸네일 */}
+          {(getByTags(['ophthalmic_od']).length > 0 || getByTags(['ophthalmic_os']).length > 0) && (
+            <div className="flex gap-4 rounded-md border border-slate-100 bg-slate-50 p-2">
+              {getByTags(['ophthalmic_od']).length > 0 && (
+                <div>
+                  <p className="mb-1 text-[10px] font-medium text-slate-500">우안 (OD)</p>
+                  <CheckupImageStrip checkupId={checkupId} images={getByTags(['ophthalmic_od'])} onEdited={reloadImages} maxVisible={3} />
+                </div>
+              )}
+              {getByTags(['ophthalmic_os']).length > 0 && (
+                <div>
+                  <p className="mb-1 text-[10px] font-medium text-slate-500">좌안 (OS)</p>
+                  <CheckupImageStrip checkupId={checkupId} images={getByTags(['ophthalmic_os'])} onEdited={reloadImages} maxVisible={3} />
+                </div>
+              )}
+            </div>
+          )}
           {ophBasicSections.map((domainSection) => (
             <div key={domainSection.domain}>
               <div className="mb-1.5 flex items-center gap-1.5">
@@ -532,6 +573,7 @@ export default function Tab2Physical({
                             checkupId={checkupId}
                             hosId={hosId}
                             defaultTags={['ophthalmic_od']}
+                            onClose={reloadImages}
                             trigger={
                               <button
                                 type="button"
@@ -551,6 +593,7 @@ export default function Tab2Physical({
                             checkupId={checkupId}
                             hosId={hosId}
                             defaultTags={['ophthalmic_os']}
+                            onClose={reloadImages}
                             trigger={
                               <button
                                 type="button"
@@ -594,6 +637,7 @@ export default function Tab2Physical({
             onCreateNew={handleCreateNeuroChart}
             onStructuredDataLoaded={handleNeuroDataLoaded}
             getChartData={getNeuroData}
+            variant="onDark"
           />
         }
       >

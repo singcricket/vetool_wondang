@@ -31,6 +31,7 @@ interface Props {
   linkedChartId: string | null
   buildChartUrl: (chartId: string, chartDate: string) => string
   onLinkChange: (chartId: string | null) => void
+  variant?: 'default' | 'onDark'
   // 새 차트 생성 (neuro 전용)
   onCreateNew?: () => Promise<void>
   // 텍스트 결과 불러오기 (ultrasound 등)
@@ -49,12 +50,14 @@ export default function LinkedChartPanel({
   linkedChartId,
   buildChartUrl,
   onLinkChange,
+  variant = 'default',
   onCreateNew,
   onDataLoaded,
   getChartText,
   onStructuredDataLoaded,
   getChartData,
 }: Props) {
+  const dark = variant === 'onDark'
   const [open, setOpen] = useState(false)
   const [working, setWorking] = useState(false)
 
@@ -127,14 +130,14 @@ export default function LinkedChartPanel({
     <div className="mb-2 flex flex-wrap items-center gap-2">
       {/* 연동 상태 */}
       {linkedChart ? (
-        <div className="flex items-center gap-1.5 rounded-md border border-teal-200 bg-teal-50 px-2 py-1 text-xs text-teal-700">
+        <div className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${dark ? 'border-white/40 bg-white/15 text-white' : 'border-teal-200 bg-teal-50 text-teal-700'}`}>
           <Link2 size={11} />
           <span className="font-medium">{label}</span>
-          <span className="text-teal-500">·</span>
+          <span className={dark ? 'text-white/60' : 'text-teal-500'}>·</span>
           <span>{linkedChart.chartDate}</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1 rounded-md border border-dashed border-slate-200 px-2 py-1 text-xs text-slate-400">
+        <div className={`flex items-center gap-1 rounded-md border border-dashed px-2 py-1 text-xs ${dark ? 'border-white/40 text-white/70' : 'border-slate-200 text-slate-400'}`}>
           <Link2Off size={11} />
           <span>{label} 연동 없음</span>
         </div>
@@ -146,7 +149,7 @@ export default function LinkedChartPanel({
           href={buildChartUrl(linkedChart.id, linkedChart.chartDate)}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-1 rounded px-1.5 py-1 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className={`flex items-center gap-1 rounded px-1.5 py-1 text-xs ${dark ? 'text-white/70 hover:bg-white/20 hover:text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}
         >
           <ExternalLink size={11} />
           차트 열기
@@ -158,7 +161,7 @@ export default function LinkedChartPanel({
         <Button
           size="sm"
           variant="ghost"
-          className="h-6 px-2 text-xs text-teal-600 hover:bg-teal-50"
+          className={`h-6 px-2 text-xs ${dark ? 'text-white/80 hover:bg-white/20 hover:text-white' : 'text-teal-600 hover:bg-teal-50'}`}
           onClick={handleRefresh}
           disabled={working}
         >
@@ -172,7 +175,7 @@ export default function LinkedChartPanel({
         <Button
           size="sm"
           variant="ghost"
-          className="h-6 px-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600"
+          className={`h-6 px-2 text-xs ${dark ? 'text-white/60 hover:bg-white/20 hover:text-white' : 'text-slate-400 hover:bg-red-50 hover:text-red-600'}`}
           onClick={handleUnlink}
           disabled={working}
         >
@@ -187,7 +190,7 @@ export default function LinkedChartPanel({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-xs border-teal-300 text-teal-700 hover:bg-teal-50"
+            className={`h-6 px-2 text-xs ${dark ? 'border-white/50 bg-white/10 text-white hover:bg-white/20' : 'border-teal-300 text-teal-700 hover:bg-teal-50'}`}
           >
             <Stethoscope size={11} className="mr-1" />
             {linkedChart ? '차트 변경' : '정밀검사 연동'}
