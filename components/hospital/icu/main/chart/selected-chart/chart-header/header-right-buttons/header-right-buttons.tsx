@@ -5,6 +5,7 @@ import OutPatientDialog from '@/components/hospital/icu/main/chart/selected-char
 import ShareChartDialog from '@/components/hospital/icu/main/chart/selected-chart/chart-header/header-right-buttons/share-chart-dialog'
 import type { SelectedIcuChart } from '@/types/icu/chart'
 import AddTemplateDialog from './add-template-dialog'
+import AiAssistSheet from './ai-assist/ai-assist-sheet'
 
 type Props = {
   chartData: SelectedIcuChart
@@ -21,6 +22,14 @@ export default function HeaderRightButtons({
 
   return (
     <div className="absolute right-2 top-1.5 hidden gap-1 2xl:flex">
+      <AiAssistSheet
+        hosId={hosId}
+        icuIoId={icu_io.icu_io_id}
+        icuChartId={icu_chart_id}
+        patientName={patient.name}
+        chartData={chartData}
+      />
+
       <AddTemplateDialog
         orders={orders}
         patientName={patient.name}

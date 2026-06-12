@@ -1472,6 +1472,156 @@ export type Database = {
           },
         ]
       }
+      icu_ai_orders: {
+        Row: {
+          ai_reasoning: string | null
+          approval_status: Database["public"]["Enums"]["icu_ai_approval_status"]
+          approved_order_id: string | null
+          created_at: string
+          drug_conc_mg_per_ml: number | null
+          hos_id: string
+          icu_io_id: string
+          id: string
+          order_detail: Json
+          order_name: string
+          order_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          session_id: string
+          vet_comment: string | null
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          approval_status?: Database["public"]["Enums"]["icu_ai_approval_status"]
+          approved_order_id?: string | null
+          created_at?: string
+          drug_conc_mg_per_ml?: number | null
+          hos_id: string
+          icu_io_id: string
+          id?: string
+          order_detail?: Json
+          order_name: string
+          order_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id: string
+          vet_comment?: string | null
+        }
+        Update: {
+          ai_reasoning?: string | null
+          approval_status?: Database["public"]["Enums"]["icu_ai_approval_status"]
+          approved_order_id?: string | null
+          created_at?: string
+          drug_conc_mg_per_ml?: number | null
+          hos_id?: string
+          icu_io_id?: string
+          id?: string
+          order_detail?: Json
+          order_name?: string
+          order_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string
+          vet_comment?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icu_ai_orders_approved_order_id_fkey"
+            columns: ["approved_order_id"]
+            isOneToOne: false
+            referencedRelation: "icu_orders"
+            referencedColumns: ["icu_chart_order_id"]
+          },
+          {
+            foreignKeyName: "icu_ai_orders_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "icu_ai_orders_icu_io_id_fkey"
+            columns: ["icu_io_id"]
+            isOneToOne: false
+            referencedRelation: "icu_io"
+            referencedColumns: ["icu_io_id"]
+          },
+          {
+            foreignKeyName: "icu_ai_orders_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "icu_ai_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      icu_ai_sessions: {
+        Row: {
+          ai_response: Json | null
+          context_snapshot: Json
+          created_at: string
+          created_by: string | null
+          dx_certainty: Database["public"]["Enums"]["icu_dx_certainty"]
+          dx_name: string
+          error_message: string | null
+          hos_id: string
+          icu_chart_id: string | null
+          icu_io_id: string
+          id: string
+          status: Database["public"]["Enums"]["icu_ai_session_status"]
+        }
+        Insert: {
+          ai_response?: Json | null
+          context_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          dx_certainty: Database["public"]["Enums"]["icu_dx_certainty"]
+          dx_name: string
+          error_message?: string | null
+          hos_id: string
+          icu_chart_id?: string | null
+          icu_io_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["icu_ai_session_status"]
+        }
+        Update: {
+          ai_response?: Json | null
+          context_snapshot?: Json
+          created_at?: string
+          created_by?: string | null
+          dx_certainty?: Database["public"]["Enums"]["icu_dx_certainty"]
+          dx_name?: string
+          error_message?: string | null
+          hos_id?: string
+          icu_chart_id?: string | null
+          icu_io_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["icu_ai_session_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icu_ai_sessions_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "icu_ai_sessions_icu_chart_id_fkey"
+            columns: ["icu_chart_id"]
+            isOneToOne: false
+            referencedRelation: "icu_charts"
+            referencedColumns: ["icu_chart_id"]
+          },
+          {
+            foreignKeyName: "icu_ai_sessions_icu_io_id_fkey"
+            columns: ["icu_io_id"]
+            isOneToOne: false
+            referencedRelation: "icu_io"
+            referencedColumns: ["icu_io_id"]
+          },
+        ]
+      }
       icu_charts: {
         Row: {
           created_at: string
@@ -1669,6 +1819,73 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "patients"
             referencedColumns: ["patient_id"]
+          },
+        ]
+      }
+      icu_lab_results: {
+        Row: {
+          clinical_summary: string | null
+          created_at: string
+          created_by: string | null
+          hos_id: string
+          icu_chart_id: string | null
+          icu_io_id: string
+          id: string
+          items: Json
+          panel_type: string
+          raw_text: string | null
+          source_type: string
+          tested_at: string | null
+        }
+        Insert: {
+          clinical_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          hos_id: string
+          icu_chart_id?: string | null
+          icu_io_id: string
+          id?: string
+          items?: Json
+          panel_type: string
+          raw_text?: string | null
+          source_type?: string
+          tested_at?: string | null
+        }
+        Update: {
+          clinical_summary?: string | null
+          created_at?: string
+          created_by?: string | null
+          hos_id?: string
+          icu_chart_id?: string | null
+          icu_io_id?: string
+          id?: string
+          items?: Json
+          panel_type?: string
+          raw_text?: string | null
+          source_type?: string
+          tested_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icu_lab_results_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "icu_lab_results_icu_chart_id_fkey"
+            columns: ["icu_chart_id"]
+            isOneToOne: false
+            referencedRelation: "icu_charts"
+            referencedColumns: ["icu_chart_id"]
+          },
+          {
+            foreignKeyName: "icu_lab_results_icu_io_id_fkey"
+            columns: ["icu_io_id"]
+            isOneToOne: false
+            referencedRelation: "icu_io"
+            referencedColumns: ["icu_io_id"]
           },
         ]
       }
@@ -4629,7 +4846,9 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      icu_ai_approval_status: "pending" | "approved" | "rejected" | "modified"
+      icu_ai_session_status: "pending" | "completed" | "error" | "cancelled"
+      icu_dx_certainty: "confirmed" | "probable" | "suspected" | "rule_out"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4756,6 +4975,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      icu_ai_approval_status: ["pending", "approved", "rejected", "modified"],
+      icu_ai_session_status: ["pending", "completed", "error", "cancelled"],
+      icu_dx_certainty: ["confirmed", "probable", "suspected", "rule_out"],
+    },
   },
 } as const
