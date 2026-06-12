@@ -62,7 +62,6 @@ export async function registerPatientAndCheckupRecord(params: {
       hos_owner_id: params.patient.hos_owner_id ?? null,
       microchip_no: params.patient.microchip_no ?? null,
       memo: params.patient.memo ?? null,
-      weight: params.patient.weight ? parseFloat(params.patient.weight) : null,
     })
     .select('patient_id')
     .single()

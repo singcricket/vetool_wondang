@@ -130,8 +130,8 @@ export default function CheckupNewPatientTab({
       onRegistered()
       setOpen(false)
       push(`/hospital/${hosId}/checkup/${targetDate}/${checkupId}`)
-    } catch {
-      toast.error('등록에 실패했습니다.')
+    } catch (e: any) {
+      toast.error(e?.message ?? '등록에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
     }
