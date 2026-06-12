@@ -204,21 +204,30 @@ export async function uploadCheckupFile(
   checkupId: string,
   hosId: string,
   file: FileInput,
-): Promise<StorageFileInput> {
-  const supabase = createAdminClient()
+): Promise<{ data: StorageFileInput | null; error: string | null }> {
+  try {
+    const supabase = createAdminClient()
 
-  const ts = Date.now()
-  const safeName = file.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const storagePath = `${hosId}/${checkupId}/${ts}_${safeName}`
+    const ts = Date.now()
+    const safeName = file.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const storagePath = `${hosId}/${checkupId}/${ts}_${safeName}`
 
-  const buffer = Buffer.from(file.base64, 'base64')
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(storagePath, buffer, { contentType: file.mediaType, upsert: false })
+    const buffer = Buffer.from(file.base64, 'base64')
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(storagePath, buffer, { contentType: file.mediaType, upsert: false })
 
-  if (error) throw new Error(`파일 업로드 실패: ${file.fileName} — ${error.message}`)
+    if (error) {
+      console.error('[uploadCheckupFile] storage error:', error.message)
+      return { data: null, error: `파일 업로드 실패: ${file.fileName} — ${error.message}` }
+    }
 
-  return { storagePath, mediaType: file.mediaType, fileName: file.fileName }
+    return { data: { storagePath, mediaType: file.mediaType, fileName: file.fileName }, error: null }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[uploadCheckupFile] unexpected error:', msg)
+    return { data: null, error: `파일 업로드 중 오류: ${msg}` }
+  }
 }
 
 // ────────────────────────────────────────────────────────────
@@ -228,61 +237,60 @@ export async function extractCheckupFromPdf(
   _checkupId: string,
   _hosId: string,
   files: StorageFileInput[],
-): Promise<PdfExtractionResult> {
-  if (files.length === 0) throw new Error('파일을 선택해주세요.')
-  if (files.length > MAX_FILES) throw new Error(`파일은 최대 ${MAX_FILES}개까지 업로드할 수 있습니다.`)
-
-  const supabase = createAdminClient()
-  const client = getAnthropicClient()
-
-  // 1. Storage에서 파일 다운로드 → base64 변환
-  const fileDataArray = await Promise.all(
-    files.map(async (f) => {
-      const { data, error } = await supabase.storage.from(BUCKET).download(f.storagePath)
-      if (error || !data) throw new Error(`파일 다운로드 실패: ${f.fileName}`)
-      const buffer = Buffer.from(await data.arrayBuffer())
-      return { ...f, base64: buffer.toString('base64') }
-    }),
-  )
-
-  // 2. 이미지 파일: Google Vision OCR 병렬 처리
-  const ocrResults = await Promise.all(
-    fileDataArray.map((f) =>
-      f.mediaType.startsWith('image/')
-        ? extractTextWithGoogleVision(f.base64)
-        : Promise.resolve(''),
-    ),
-  )
-
-  // 3. Claude 호출 블록 구성
-  const fileBlocks: Array<{ type: string; [key: string]: unknown }> = []
-  for (let i = 0; i < fileDataArray.length; i++) {
-    const f = fileDataArray[i]
-    const ocrText = ocrResults[i]
-    fileBlocks.push({ type: 'text', text: `[문서 ${i + 1}/${fileDataArray.length}: ${f.fileName}]` })
-
-    if (f.mediaType === 'application/pdf') {
-      fileBlocks.push({
-        type: 'document',
-        source: { type: 'base64', media_type: 'application/pdf', data: f.base64 },
-      })
-    } else if (ocrText) {
-      fileBlocks.push({ type: 'text', text: `[OCR 추출 텍스트]\n${ocrText}` })
-    } else {
-      fileBlocks.push({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: f.mediaType as 'image/jpeg' | 'image/png' | 'image/webp',
-          data: f.base64,
-        },
-      })
-    }
-  }
-
-  let response
+): Promise<{ data: PdfExtractionResult | null; error: string | null }> {
   try {
-    response = await client.messages.create({
+    if (files.length === 0) return { data: null, error: '파일을 선택해주세요.' }
+    if (files.length > MAX_FILES) return { data: null, error: `파일은 최대 ${MAX_FILES}개까지 업로드할 수 있습니다.` }
+
+    const supabase = createAdminClient()
+    const client = getAnthropicClient()
+
+    // 1. Storage에서 파일 다운로드 → base64 변환
+    const fileDataArray = await Promise.all(
+      files.map(async (f) => {
+        const { data, error } = await supabase.storage.from(BUCKET).download(f.storagePath)
+        if (error || !data) throw new Error(`파일 다운로드 실패: ${f.fileName} — ${error?.message ?? 'unknown'}`)
+        const buffer = Buffer.from(await data.arrayBuffer())
+        return { ...f, base64: buffer.toString('base64') }
+      }),
+    )
+
+    // 2. 이미지 파일: Google Vision OCR 병렬 처리
+    const ocrResults = await Promise.all(
+      fileDataArray.map((f) =>
+        f.mediaType.startsWith('image/')
+          ? extractTextWithGoogleVision(f.base64)
+          : Promise.resolve(''),
+      ),
+    )
+
+    // 3. Claude 호출 블록 구성
+    const fileBlocks: Array<{ type: string; [key: string]: unknown }> = []
+    for (let i = 0; i < fileDataArray.length; i++) {
+      const f = fileDataArray[i]
+      const ocrText = ocrResults[i]
+      fileBlocks.push({ type: 'text', text: `[문서 ${i + 1}/${fileDataArray.length}: ${f.fileName}]` })
+
+      if (f.mediaType === 'application/pdf') {
+        fileBlocks.push({
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: f.base64 },
+        })
+      } else if (ocrText) {
+        fileBlocks.push({ type: 'text', text: `[OCR 추출 텍스트]\n${ocrText}` })
+      } else {
+        fileBlocks.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: f.mediaType as 'image/jpeg' | 'image/png' | 'image/webp',
+            data: f.base64,
+          },
+        })
+      }
+    }
+
+    const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8192,
       messages: [
@@ -292,81 +300,84 @@ export async function extractCheckupFromPdf(
         },
       ],
     })
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error('[extractCheckupFromPdf] Claude API 오류:', msg)
+
+    const text = response.content[0].type === 'text' ? response.content[0].text : ''
+
+    let parsed: {
+      inquiry: ExtractedInquiry
+      physical: ExtractedPhysical
+      lab_items: ExtractedLabRaw[]
+      imaging?: ExtractedImaging
+    }
+    try {
+      parsed = extractJson(text)
+    } catch {
+      return { data: null, error: 'AI 응답 파싱 오류. 다시 시도해주세요.' }
+    }
+
+    // 4. lab_items → ref 매핑
+    const matched: LabResultItem[] = []
+    const matchedIds = new Set<string>()
+    const unmatched: ExtractedLabRaw[] = []
+
+    for (const raw of parsed.lab_items ?? []) {
+      const ref = findLabRefByKeyword(raw.nameEn)
+      if (ref) {
+        if (matchedIds.has(ref.id)) continue
+        matchedIds.add(ref.id)
+        matched.push({
+          id: ref.id,
+          nameEn: ref.nameEn,
+          nameKo: ref.nameKo,
+          unit: raw.unit || ref.unit,
+          value: raw.value || null,
+          ref_range: raw.ref_range || null,
+          is_abnormal: raw.is_abnormal ?? null,
+          result_text: null,
+          severity: null,
+          comment: null,
+          source: 'ai' as const,
+          section: ref.section,
+        })
+      } else {
+        unmatched.push(raw)
+      }
+    }
+
+    return {
+      data: {
+        inquiry: {
+          chief_complaint: parsed.inquiry?.chief_complaint ?? '',
+          history: parsed.inquiry?.history ?? '',
+          living_env: parsed.inquiry?.living_env ?? '',
+          diet: parsed.inquiry?.diet ?? '',
+          current_medications: parsed.inquiry?.current_medications ?? '',
+        },
+        physical: {
+          body_weight: parsed.physical?.body_weight ?? '',
+          bcs: parsed.physical?.bcs ?? '',
+          temperature: parsed.physical?.temperature ?? '',
+          pulse: parsed.physical?.pulse ?? '',
+          respiration: parsed.physical?.respiration ?? '',
+        },
+        lab_items: matched,
+        unmatched_lab: unmatched,
+        imaging: {
+          thorax_notes: parsed.imaging?.thorax_notes ?? '',
+          abdomen_notes: parsed.imaging?.abdomen_notes ?? '',
+          extremity_notes: parsed.imaging?.extremity_notes ?? '',
+          skull_notes: parsed.imaging?.skull_notes ?? '',
+          spine_notes: parsed.imaging?.spine_notes ?? '',
+        },
+      },
+      error: null,
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[extractCheckupFromPdf] error:', msg)
     if (msg.includes('credit balance') || msg.includes('insufficient_quota')) {
-      throw new Error('Anthropic API 크레딧이 부족합니다.')
+      return { data: null, error: 'Anthropic API 크레딧이 부족합니다.' }
     }
-    throw new Error('문서 분석 중 오류가 발생했습니다. 다시 시도해주세요.')
-  }
-
-  const text = response.content[0].type === 'text' ? response.content[0].text : ''
-
-  let parsed: {
-    inquiry: ExtractedInquiry
-    physical: ExtractedPhysical
-    lab_items: ExtractedLabRaw[]
-    imaging?: ExtractedImaging
-  }
-  try {
-    parsed = extractJson(text)
-  } catch {
-    throw new Error('AI 응답 파싱 오류. 다시 시도해주세요.')
-  }
-
-  // 4. lab_items → ref 매핑
-  const matched: LabResultItem[] = []
-  const matchedIds = new Set<string>()
-  const unmatched: ExtractedLabRaw[] = []
-
-  for (const raw of parsed.lab_items ?? []) {
-    const ref = findLabRefByKeyword(raw.nameEn)
-    if (ref) {
-      if (matchedIds.has(ref.id)) continue
-      matchedIds.add(ref.id)
-      matched.push({
-        id: ref.id,
-        nameEn: ref.nameEn,
-        nameKo: ref.nameKo,
-        unit: raw.unit || ref.unit,
-        value: raw.value || null,
-        ref_range: raw.ref_range || null,
-        is_abnormal: raw.is_abnormal ?? null,
-        result_text: null,
-        severity: null,
-        comment: null,
-        source: 'ai' as const,
-        section: ref.section,
-      })
-    } else {
-      unmatched.push(raw)
-    }
-  }
-
-  return {
-    inquiry: {
-      chief_complaint: parsed.inquiry?.chief_complaint ?? '',
-      history: parsed.inquiry?.history ?? '',
-      living_env: parsed.inquiry?.living_env ?? '',
-      diet: parsed.inquiry?.diet ?? '',
-      current_medications: parsed.inquiry?.current_medications ?? '',
-    },
-    physical: {
-      body_weight: parsed.physical?.body_weight ?? '',
-      bcs: parsed.physical?.bcs ?? '',
-      temperature: parsed.physical?.temperature ?? '',
-      pulse: parsed.physical?.pulse ?? '',
-      respiration: parsed.physical?.respiration ?? '',
-    },
-    lab_items: matched,
-    unmatched_lab: unmatched,
-    imaging: {
-      thorax_notes: parsed.imaging?.thorax_notes ?? '',
-      abdomen_notes: parsed.imaging?.abdomen_notes ?? '',
-      extremity_notes: parsed.imaging?.extremity_notes ?? '',
-      skull_notes: parsed.imaging?.skull_notes ?? '',
-      spine_notes: parsed.imaging?.spine_notes ?? '',
-    },
+    return { data: null, error: `문서 분석 오류: ${msg}` }
   }
 }

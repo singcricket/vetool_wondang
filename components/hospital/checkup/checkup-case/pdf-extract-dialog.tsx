@@ -87,18 +87,24 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
         const base64 = isImage ? await compressImage(file) : await fileToBase64(file)
         const mediaType = isImage ? 'image/jpeg' : file.type
 
-        const storageFile = await uploadCheckupFile(checkupId, hosId, {
+        const uploadResult = await uploadCheckupFile(checkupId, hosId, {
           base64,
           mediaType,
           fileName: file.name,
         })
-        storagePaths.push(storageFile)
+        if (uploadResult.error || !uploadResult.data) {
+          throw new Error(uploadResult.error ?? '파일 업로드 실패')
+        }
+        storagePaths.push(uploadResult.data)
         setUploadProgress(Math.round(((i + 1) / localFiles.length) * 100))
       }
 
       // 업로드된 파일들을 AI로 일괄 분석
       setStatus('extracting')
-      const extracted = await extractCheckupFromPdf(checkupId, hosId, storagePaths)
+      const { data: extracted, error: extractError } = await extractCheckupFromPdf(checkupId, hosId, storagePaths)
+      if (extractError || !extracted) {
+        throw new Error(extractError ?? 'AI 분석 실패')
+      }
       setResult(extracted)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '추출 중 오류가 발생했습니다.')

@@ -1,3 +1,5 @@
+export const maxDuration = 300
+
 import { fetchCheckupDetail } from '@/lib/services/checkup/fetch-checkup'
 import CheckupCaseClient from '@/components/hospital/checkup/checkup-case/checkup-case-client'
 import { notFound } from 'next/navigation'
