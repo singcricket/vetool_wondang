@@ -12,18 +12,11 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { FileText, Upload, Sparkles, CheckCircle2, AlertCircle, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
 import {
-  createCheckupUploadUrls,
+  uploadCheckupFile,
   extractCheckupFromPdf,
   type PdfExtractionResult,
 } from '@/lib/actions/checkup/pdf-extraction'
-
-interface LocalFile {
-  file: File
-  fileName: string
-  mediaType: string
-}
 
 interface Props {
   checkupId: string
@@ -31,23 +24,48 @@ interface Props {
   onApply: (result: PdfExtractionResult) => void
 }
 
+// 이미지 압축 (max 1600px, 0.82 quality JPEG)
+function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const MAX = 1600
+      const ratio = Math.min(MAX / img.width, MAX / img.height, 1)
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * ratio)
+      canvas.height = Math.round(img.height * ratio)
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1])
+    }
+    img.onerror = reject
+    img.src = url
+  })
+}
+
+// 일반 파일 → base64
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve((reader.result as string).split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
   const [open, setOpen] = useState(false)
-  const [localFiles, setLocalFiles] = useState<LocalFile[]>([])
+  const [localFiles, setLocalFiles] = useState<File[]>([])
   const [status, setStatus] = useState<'idle' | 'uploading' | 'extracting'>('idle')
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [result, setResult] = useState<PdfExtractionResult | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? [])
     if (selected.length === 0) return
-    const converted: LocalFile[] = selected.map((file) => ({
-      file,
-      fileName: file.name,
-      mediaType: file.type,
-    }))
-    setLocalFiles((prev) => [...prev, ...converted].slice(0, 5))
-    // input 초기화 (같은 파일 재선택 가능하도록)
+    setLocalFiles((prev) => [...prev, ...selected].slice(0, 5))
     e.target.value = ''
   }
 
@@ -58,43 +76,35 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
     }
     try {
       setStatus('uploading')
+      setUploadProgress(0)
       setResult(null)
 
-      // 1. 서버에서 서명된 업로드 URL 발급
-      const uploadInfos = await createCheckupUploadUrls(
-        checkupId,
-        hosId,
-        localFiles.map((f) => ({ fileName: f.fileName, mediaType: f.mediaType })),
-      )
+      // 파일 1개씩 압축 → base64 → Storage 업로드 (Vercel 4.5MB 제한 우회)
+      const storagePaths = []
+      for (let i = 0; i < localFiles.length; i++) {
+        const file = localFiles[i]
+        const isImage = file.type.startsWith('image/')
+        const base64 = isImage ? await compressImage(file) : await fileToBase64(file)
+        const mediaType = isImage ? 'image/jpeg' : file.type
 
-      // 2. 브라우저 → Supabase Storage 직접 업로드 (Vercel 413 우회)
-      const supabase = createClient()
-      await Promise.all(
-        uploadInfos.map((info, i) =>
-          supabase.storage
-            .from('checkup-documents')
-            .uploadToSignedUrl(info.storagePath, info.token, localFiles[i].file, {
-              contentType: info.mediaType,
-            }),
-        ),
-      )
+        const storageFile = await uploadCheckupFile(checkupId, hosId, {
+          base64,
+          mediaType,
+          fileName: file.name,
+        })
+        storagePaths.push(storageFile)
+        setUploadProgress(Math.round(((i + 1) / localFiles.length) * 100))
+      }
 
-      // 3. 서버 액션에 storage path만 전달 → AI 분석
+      // 업로드된 파일들을 AI로 일괄 분석
       setStatus('extracting')
-      const extracted = await extractCheckupFromPdf(
-        checkupId,
-        hosId,
-        uploadInfos.map((info) => ({
-          storagePath: info.storagePath,
-          mediaType: info.mediaType,
-          fileName: info.fileName,
-        })),
-      )
+      const extracted = await extractCheckupFromPdf(checkupId, hosId, storagePaths)
       setResult(extracted)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '추출 중 오류가 발생했습니다.')
     } finally {
       setStatus('idle')
+      setUploadProgress(0)
     }
   }
 
@@ -121,7 +131,12 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
     : 0
 
   const isLoading = status !== 'idle'
-  const statusLabel = status === 'uploading' ? '파일 업로드 중...' : status === 'extracting' ? 'AI 분석 중...' : 'AI 추출 시작'
+  const statusLabel =
+    status === 'uploading'
+      ? `파일 업로드 중... (${uploadProgress}%)`
+      : status === 'extracting'
+        ? 'AI 분석 중...'
+        : 'AI 추출 시작'
 
   return (
     <>
@@ -171,9 +186,9 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
                   <div key={i} className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-1.5 text-sm">
                     <span className="flex items-center gap-2 truncate">
                       <FileText className="h-4 w-4 shrink-0 text-teal-600" />
-                      <span className="truncate text-slate-700">{f.fileName}</span>
+                      <span className="truncate text-slate-700">{f.name}</span>
                       <span className="shrink-0 text-xs text-slate-400">
-                        {(f.file.size / 1024 / 1024).toFixed(1)} MB
+                        {(f.size / 1024 / 1024).toFixed(1)} MB
                       </span>
                     </span>
                     <button
@@ -207,7 +222,6 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
                   <span className="text-sm font-medium text-teal-800">추출 완료 — 내용 확인 후 적용하세요</span>
                 </div>
 
-                {/* 문진 */}
                 {inquiryCount > 0 && (
                   <div>
                     <p className="mb-1.5 text-xs font-semibold text-slate-600">
@@ -230,7 +244,6 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
                   </div>
                 )}
 
-                {/* 신체검사 수치 */}
                 {physicalCount > 0 && (
                   <div>
                     <p className="mb-1.5 text-xs font-semibold text-slate-600">
@@ -246,7 +259,6 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
                   </div>
                 )}
 
-                {/* 검사 수치 */}
                 {result.lab_items.length > 0 && (
                   <div>
                     <p className="mb-1.5 text-xs font-semibold text-slate-600">
@@ -283,7 +295,6 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
                   </div>
                 )}
 
-                {/* 매핑 실패 항목 */}
                 {result.unmatched_lab.length > 0 && (
                   <div className="flex items-start gap-2 rounded-md bg-amber-50 p-2 text-xs text-amber-700">
                     <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -297,7 +308,6 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
             )}
           </div>
 
-          {/* 버튼 */}
           <div className="flex justify-end gap-2 border-t pt-4">
             <Button variant="outline" onClick={handleClose} disabled={isLoading}>취소</Button>
             {result && (

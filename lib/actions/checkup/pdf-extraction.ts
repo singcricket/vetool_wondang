@@ -65,13 +65,22 @@ function extractJson<T = unknown>(text: string): T {
     }
   }
 
-  console.error('[extractJson] 중괄호 미완성 — 응답이 잘렸을 수 있음. 원문 길이:', stripped.length, '/ 앞 500자:', stripped.slice(0, 500))
+  console.error('[extractJson] 중괄호 미완성. 원문 길이:', stripped.length, '/ 앞 500자:', stripped.slice(0, 500))
   throw new Error('No valid JSON object found in response (possibly truncated)')
 }
 
 // ────────────────────────────────────────────────────────────
 // 타입
 // ────────────────────────────────────────────────────────────
+
+/** 클라이언트 → 서버 액션: 파일 1개의 base64 데이터 */
+export type FileInput = {
+  base64: string
+  mediaType: string
+  fileName: string
+}
+
+/** Storage에 업로드 완료된 파일 참조 */
 export type StorageFileInput = {
   storagePath: string
   mediaType: string
@@ -185,52 +194,39 @@ Rules:
 - Do not include any text outside the JSON object`
 
 // ────────────────────────────────────────────────────────────
-// 서명된 업로드 URL 발급 (클라이언트에서 Storage에 직접 업로드하기 위해)
+// STEP 1: 파일 1개를 Storage에 업로드하고 path 반환
+//   클라이언트에서 파일당 1번씩 호출 → Vercel 4.5MB 제한 우회
 // ────────────────────────────────────────────────────────────
 const BUCKET = 'checkup-documents'
 const MAX_FILES = 5
 
-export type UploadUrlInfo = {
-  storagePath: string
-  token: string
-  mediaType: string
-  fileName: string
-}
-
-export async function createCheckupUploadUrls(
+export async function uploadCheckupFile(
   checkupId: string,
   hosId: string,
-  fileInfos: Array<{ fileName: string; mediaType: string }>,
-): Promise<UploadUrlInfo[]> {
-  if (fileInfos.length === 0) throw new Error('파일을 선택해주세요.')
-  if (fileInfos.length > MAX_FILES) throw new Error(`파일은 최대 ${MAX_FILES}개까지 업로드할 수 있습니다.`)
-
+  file: FileInput,
+): Promise<StorageFileInput> {
   const supabase = createAdminClient()
-  const results: UploadUrlInfo[] = []
 
-  for (const f of fileInfos) {
-    const ts = Date.now()
-    const safeName = f.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const path = `${hosId}/${checkupId}/${ts}_${safeName}`
+  const ts = Date.now()
+  const safeName = file.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const storagePath = `${hosId}/${checkupId}/${ts}_${safeName}`
 
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUploadUrl(path)
+  const buffer = Buffer.from(file.base64, 'base64')
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(storagePath, buffer, { contentType: file.mediaType, upsert: false })
 
-    if (error || !data) throw new Error(`업로드 URL 생성 실패: ${f.fileName}`)
+  if (error) throw new Error(`파일 업로드 실패: ${file.fileName} — ${error.message}`)
 
-    results.push({ storagePath: path, token: data.token, mediaType: f.mediaType, fileName: f.fileName })
-  }
-
-  return results
+  return { storagePath, mediaType: file.mediaType, fileName: file.fileName }
 }
 
 // ────────────────────────────────────────────────────────────
-// 메인 액션 — Storage에 업로드된 파일 경로를 받아 AI 분석
+// STEP 2: Storage에 업로드된 파일들을 AI로 분석
 // ────────────────────────────────────────────────────────────
 export async function extractCheckupFromPdf(
-  checkupId: string,
-  hosId: string,
+  _checkupId: string,
+  _hosId: string,
   files: StorageFileInput[],
 ): Promise<PdfExtractionResult> {
   if (files.length === 0) throw new Error('파일을 선택해주세요.')
@@ -298,6 +294,7 @@ export async function extractCheckupFromPdf(
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
+    console.error('[extractCheckupFromPdf] Claude API 오류:', msg)
     if (msg.includes('credit balance') || msg.includes('insufficient_quota')) {
       throw new Error('Anthropic API 크레딧이 부족합니다.')
     }
@@ -318,7 +315,7 @@ export async function extractCheckupFromPdf(
     throw new Error('AI 응답 파싱 오류. 다시 시도해주세요.')
   }
 
-  // 4. lab_items → ref 매핑 (동일 id 중복 시 첫 번째 우선)
+  // 4. lab_items → ref 매핑
   const matched: LabResultItem[] = []
   const matchedIds = new Set<string>()
   const unmatched: ExtractedLabRaw[] = []
