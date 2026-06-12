@@ -48,23 +48,20 @@ export async function registerPatientAndCheckupRecord(params: {
 }): Promise<string> {
   const supabase = await createClient()
 
-  const { data: patientData, error: patientError } = await supabase
-    .from('patients')
-    .insert({
-      hos_id: params.hosId,
-      name: params.patient.name,
-      species: params.patient.species,
-      breed: params.patient.breed,
-      gender: params.patient.gender,
-      birth: params.patient.birth,
-      hos_patient_id: params.patient.hos_patient_id,
-      owner_name: params.patient.owner_name ?? null,
-      hos_owner_id: params.patient.hos_owner_id ?? null,
-      microchip_no: params.patient.microchip_no ?? null,
-      memo: params.patient.memo ?? null,
-    })
-    .select('patient_id')
-    .single()
+  const { data: patientId, error: patientError } = await supabase.rpc('register_patient', {
+    hos_id_input: params.hosId,
+    name_input: params.patient.name,
+    species_input: params.patient.species,
+    breed_input: params.patient.breed,
+    gender_input: params.patient.gender,
+    birth_input: params.patient.birth,
+    hos_patient_id_input: params.patient.hos_patient_id ?? '',
+    owner_name_input: params.patient.owner_name ?? '',
+    hos_owner_id_input: params.patient.hos_owner_id ?? '',
+    microchip_no_input: params.patient.microchip_no ?? '',
+    memo_input: params.patient.memo ?? '',
+    body_weight_input: params.patient.weight ?? '',
+  })
 
   if (patientError) throw new Error(`환자 등록 실패: ${patientError.message}`)
 
@@ -72,7 +69,7 @@ export async function registerPatientAndCheckupRecord(params: {
     .from('checkup_records')
     .insert({
       hos_id: params.hosId,
-      patient_id: patientData.patient_id,
+      patient_id: patientId,
       checkup_date: params.targetDate,
       vet_id: params.vetId ?? null,
       status: 'draft',

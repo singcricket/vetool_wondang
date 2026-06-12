@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getAnthropicClient } from '@/lib/ai/anthropic'
 import { findLabRefByKeyword } from '@/constants/hospital/checkup/lab-ref'
 import type { LabResultItem } from '@/constants/hospital/checkup/lab-ref'
@@ -205,7 +205,7 @@ export async function createCheckupUploadUrls(
   if (fileInfos.length === 0) throw new Error('파일을 선택해주세요.')
   if (fileInfos.length > MAX_FILES) throw new Error(`파일은 최대 ${MAX_FILES}개까지 업로드할 수 있습니다.`)
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const results: UploadUrlInfo[] = []
 
   for (const f of fileInfos) {
@@ -236,7 +236,7 @@ export async function extractCheckupFromPdf(
   if (files.length === 0) throw new Error('파일을 선택해주세요.')
   if (files.length > MAX_FILES) throw new Error(`파일은 최대 ${MAX_FILES}개까지 업로드할 수 있습니다.`)
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const client = getAnthropicClient()
 
   // 1. Storage에서 파일 다운로드 → base64 변환
