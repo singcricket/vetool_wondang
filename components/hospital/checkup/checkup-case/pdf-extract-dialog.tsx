@@ -261,6 +261,11 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
                       {result.physical.pulse && <Badge variant="outline">맥박 {result.physical.pulse}</Badge>}
                       {result.physical.respiration && <Badge variant="outline">호흡 {result.physical.respiration}</Badge>}
                       {result.physical.bcs && <Badge variant="outline">BCS {result.physical.bcs}</Badge>}
+                      {result.physical.systolic_bp && (
+                        <Badge variant="outline">
+                          BP {result.physical.systolic_bp}{result.physical.diastolic_bp ? `/${result.physical.diastolic_bp}` : ''} mmHg
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 )}

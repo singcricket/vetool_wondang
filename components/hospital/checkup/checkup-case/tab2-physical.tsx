@@ -84,6 +84,8 @@ const EXTRACTED_PHYSICAL_MAP: Record<keyof ExtractedPhysical, string> = {
   temperature: 'temperature',
   pulse: 'heart_rate',
   respiration: 'respiratory_rate',
+  systolic_bp: 'systolic_bp',
+  diastolic_bp: 'diastolic_bp',
 }
 
 // ── 안과 테스트 렌더 헬퍼 ───────────────────────────────────────

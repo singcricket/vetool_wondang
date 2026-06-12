@@ -101,6 +101,8 @@ export type ExtractedPhysical = {
   temperature: string
   pulse: string
   respiration: string
+  systolic_bp: string
+  diastolic_bp: string
 }
 
 export type ExtractedLabRaw = {
@@ -147,7 +149,9 @@ Extract all available information from the provided document(s) and return ONLY 
     "bcs": "숫자만 1-9",
     "temperature": "숫자만 섭씨 (예: 38.5)",
     "pulse": "숫자만 (예: 100)",
-    "respiration": "숫자만 (예: 24)"
+    "respiration": "숫자만 (예: 24)",
+    "systolic_bp": "수축기 혈압 숫자만 mmHg (예: 140). BP가 단일값이면 여기에 입력",
+    "diastolic_bp": "이완기 혈압 숫자만 mmHg (예: 85). 없으면 빈 문자열"
   },
   "lab_items": [
     {
@@ -359,6 +363,8 @@ export async function extractCheckupFromPdf(
           temperature: parsed.physical?.temperature ?? '',
           pulse: parsed.physical?.pulse ?? '',
           respiration: parsed.physical?.respiration ?? '',
+          systolic_bp: parsed.physical?.systolic_bp ?? '',
+          diastolic_bp: parsed.physical?.diastolic_bp ?? '',
         },
         lab_items: matched,
         unmatched_lab: unmatched,
