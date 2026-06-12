@@ -331,7 +331,7 @@ export function CalorieCard({
   species: 'cat' | 'dog'
 }) {
   const result = calcCalories(currentWeight, bcs, isNeutered, ageStage, species)
-  const needsLoss = bcs >= 7
+  const needsLoss = bcs >= 6
   const needsGain = bcs <= 3
   const isIdeal   = bcs >= 4 && bcs <= 5
 
