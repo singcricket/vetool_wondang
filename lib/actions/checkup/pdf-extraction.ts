@@ -28,23 +28,24 @@ async function extractTextWithGoogleVision(base64: string): Promise<string> {
 }
 
 // ────────────────────────────────────────────────────────────
-// JSON 파싱 헬퍼 (oncology 패턴 재사용)
+// JSON 파싱 헬퍼
 // ────────────────────────────────────────────────────────────
 function extractJson<T = unknown>(text: string): T {
-  try { return JSON.parse(text.trim()) } catch {}
-
   const stripped = text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
   try { return JSON.parse(stripped) } catch {}
 
-  const start = text.indexOf('{')
-  if (start === -1) throw new Error('No JSON object found in response')
+  const start = stripped.indexOf('{')
+  if (start === -1) {
+    console.error('[extractJson] JSON 시작 없음. 원문(앞 500자):', stripped.slice(0, 500))
+    throw new Error('No JSON object found in response')
+  }
 
   let depth = 0
   let inString = false
   let escaped = false
 
-  for (let i = start; i < text.length; i++) {
-    const ch = text[i]
+  for (let i = start; i < stripped.length; i++) {
+    const ch = stripped[i]
     if (escaped) { escaped = false; continue }
     if (ch === '\\' && inString) { escaped = true; continue }
     if (ch === '"') { inString = !inString; continue }
@@ -52,18 +53,27 @@ function extractJson<T = unknown>(text: string): T {
     if (ch === '{') depth++
     else if (ch === '}') {
       depth--
-      if (depth === 0) return JSON.parse(text.slice(start, i + 1))
+      if (depth === 0) {
+        const candidate = stripped.slice(start, i + 1)
+        try {
+          return JSON.parse(candidate)
+        } catch (e) {
+          console.error('[extractJson] 추출된 JSON 파싱 실패 (앞 500자):', candidate.slice(0, 500), e)
+          throw new Error('Extracted JSON is malformed')
+        }
+      }
     }
   }
 
-  throw new Error('No valid JSON object found in response')
+  console.error('[extractJson] 중괄호 미완성 — 응답이 잘렸을 수 있음. 원문 길이:', stripped.length, '/ 앞 500자:', stripped.slice(0, 500))
+  throw new Error('No valid JSON object found in response (possibly truncated)')
 }
 
 // ────────────────────────────────────────────────────────────
 // 타입
 // ────────────────────────────────────────────────────────────
-export type FileInput = {
-  base64: string
+export type StorageFileInput = {
+  storagePath: string
   mediaType: string
   fileName: string
 }
@@ -103,8 +113,8 @@ export type ExtractedImaging = {
 export type PdfExtractionResult = {
   inquiry: ExtractedInquiry
   physical: ExtractedPhysical
-  lab_items: LabResultItem[]     // ref 매핑 완료된 항목
-  unmatched_lab: ExtractedLabRaw[] // ref 매핑 실패 항목
+  lab_items: LabResultItem[]
+  unmatched_lab: ExtractedLabRaw[]
   imaging: ExtractedImaging
 }
 
@@ -175,15 +185,53 @@ Rules:
 - Do not include any text outside the JSON object`
 
 // ────────────────────────────────────────────────────────────
-// 메인 액션
+// 서명된 업로드 URL 발급 (클라이언트에서 Storage에 직접 업로드하기 위해)
 // ────────────────────────────────────────────────────────────
 const BUCKET = 'checkup-documents'
 const MAX_FILES = 5
 
+export type UploadUrlInfo = {
+  storagePath: string
+  token: string
+  mediaType: string
+  fileName: string
+}
+
+export async function createCheckupUploadUrls(
+  checkupId: string,
+  hosId: string,
+  fileInfos: Array<{ fileName: string; mediaType: string }>,
+): Promise<UploadUrlInfo[]> {
+  if (fileInfos.length === 0) throw new Error('파일을 선택해주세요.')
+  if (fileInfos.length > MAX_FILES) throw new Error(`파일은 최대 ${MAX_FILES}개까지 업로드할 수 있습니다.`)
+
+  const supabase = await createClient()
+  const results: UploadUrlInfo[] = []
+
+  for (const f of fileInfos) {
+    const ts = Date.now()
+    const safeName = f.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${hosId}/${checkupId}/${ts}_${safeName}`
+
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUploadUrl(path)
+
+    if (error || !data) throw new Error(`업로드 URL 생성 실패: ${f.fileName}`)
+
+    results.push({ storagePath: path, token: data.token, mediaType: f.mediaType, fileName: f.fileName })
+  }
+
+  return results
+}
+
+// ────────────────────────────────────────────────────────────
+// 메인 액션 — Storage에 업로드된 파일 경로를 받아 AI 분석
+// ────────────────────────────────────────────────────────────
 export async function extractCheckupFromPdf(
   checkupId: string,
   hosId: string,
-  files: FileInput[],
+  files: StorageFileInput[],
 ): Promise<PdfExtractionResult> {
   if (files.length === 0) throw new Error('파일을 선택해주세요.')
   if (files.length > MAX_FILES) throw new Error(`파일은 최대 ${MAX_FILES}개까지 업로드할 수 있습니다.`)
@@ -191,24 +239,19 @@ export async function extractCheckupFromPdf(
   const supabase = await createClient()
   const client = getAnthropicClient()
 
-  // 1. Storage 업로드 (non-fatal)
-  await Promise.all(
-    files.map(async (file) => {
-      try {
-        const ts = Date.now()
-        const safeName = file.fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
-        const path = `${hosId}/${checkupId}/${ts}_${safeName}`
-        const buffer = Buffer.from(file.base64, 'base64')
-        await supabase.storage
-          .from(BUCKET)
-          .upload(path, buffer, { contentType: file.mediaType, upsert: false })
-      } catch {}
+  // 1. Storage에서 파일 다운로드 → base64 변환
+  const fileDataArray = await Promise.all(
+    files.map(async (f) => {
+      const { data, error } = await supabase.storage.from(BUCKET).download(f.storagePath)
+      if (error || !data) throw new Error(`파일 다운로드 실패: ${f.fileName}`)
+      const buffer = Buffer.from(await data.arrayBuffer())
+      return { ...f, base64: buffer.toString('base64') }
     }),
   )
 
   // 2. 이미지 파일: Google Vision OCR 병렬 처리
   const ocrResults = await Promise.all(
-    files.map((f) =>
+    fileDataArray.map((f) =>
       f.mediaType.startsWith('image/')
         ? extractTextWithGoogleVision(f.base64)
         : Promise.resolve(''),
@@ -216,13 +259,11 @@ export async function extractCheckupFromPdf(
   )
 
   // 3. Claude 호출 블록 구성
-  // - 이미지: Vision OCR 성공 시 텍스트로 전달, 실패 시 이미지 직접 전달 (폴백)
-  // - PDF: Claude document block으로 직접 전달
   const fileBlocks: Array<{ type: string; [key: string]: unknown }> = []
-  for (let i = 0; i < files.length; i++) {
-    const f = files[i]
+  for (let i = 0; i < fileDataArray.length; i++) {
+    const f = fileDataArray[i]
     const ocrText = ocrResults[i]
-    fileBlocks.push({ type: 'text', text: `[문서 ${i + 1}/${files.length}: ${f.fileName}]` })
+    fileBlocks.push({ type: 'text', text: `[문서 ${i + 1}/${fileDataArray.length}: ${f.fileName}]` })
 
     if (f.mediaType === 'application/pdf') {
       fileBlocks.push({
@@ -230,10 +271,8 @@ export async function extractCheckupFromPdf(
         source: { type: 'base64', media_type: 'application/pdf', data: f.base64 },
       })
     } else if (ocrText) {
-      // Google Vision OCR 성공 → 텍스트로 Claude에 전달
       fileBlocks.push({ type: 'text', text: `[OCR 추출 텍스트]\n${ocrText}` })
     } else {
-      // OCR 실패 폴백 → 이미지 직접 전달
       fileBlocks.push({
         type: 'image',
         source: {
@@ -249,7 +288,7 @@ export async function extractCheckupFromPdf(
   try {
     response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: 8192,
       messages: [
         {
           role: 'user',
@@ -279,7 +318,7 @@ export async function extractCheckupFromPdf(
     throw new Error('AI 응답 파싱 오류. 다시 시도해주세요.')
   }
 
-  // 3. lab_items → ref 매핑 (동일 id 중복 시 첫 번째 우선)
+  // 4. lab_items → ref 매핑 (동일 id 중복 시 첫 번째 우선)
   const matched: LabResultItem[] = []
   const matchedIds = new Set<string>()
   const unmatched: ExtractedLabRaw[] = []

@@ -27,10 +27,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   extractLabResultFromFile,
+  checkDuplicatePanels,
   saveMultipleLabResults,
   saveLabResult,
   type ExtractedLabResult,
   type ExtractedLabPanel,
+  type DuplicateCheckResult,
 } from '@/lib/actions/icu/lab-result-actions'
 
 const PANEL_OPTIONS = [
@@ -56,6 +58,9 @@ type PanelDraft = {
   tested_at: string
   rows: ItemRow[]
   expanded: boolean
+  isDuplicate?: boolean     // DB에 같은 날짜+타입 존재
+  overwrite?: boolean       // 덮어쓰기 여부 (기본 false = skip)
+  existingId?: string
 }
 
 interface Props {
@@ -154,14 +159,29 @@ function OcrTab({
       setClinicalSummary(result.clinical_summary ?? '')
 
       if (result.lab_panels.length > 0) {
-        setPanels(result.lab_panels.map((p, i) => ({
+        const drafts: PanelDraft[] = result.lab_panels.map((p, i) => ({
           panel_type: p.panel_type,
           tested_at: p.tested_at ? p.tested_at.slice(0, 16) : '',
           rows: Object.entries(p.items).map(([key, value]) => ({ key, value })),
           expanded: i === 0,
-        })))
+        }))
+
+        // 중복 체크
+        const dupResults = await checkDuplicatePanels({
+          icuIoId,
+          panels: drafts.map((d) => ({
+            panelType: d.panel_type,
+            testedAt: d.tested_at ? new Date(d.tested_at).toISOString() : null,
+          })),
+        })
+        dupResults.forEach((dup, i) => {
+          drafts[i].isDuplicate = dup.isDuplicate
+          drafts[i].existingId = dup.existingId
+          drafts[i].overwrite = false
+        })
+
+        setPanels(drafts)
       } else {
-        // 혈액검사 없이 임상 노트만 있는 경우
         setPanels([])
       }
 
@@ -171,7 +191,7 @@ function OcrTab({
       setStep('idle')
       setFileState(null)
     }
-  }, [hosId])
+  }, [hosId, icuIoId])
 
   const handleFile = (file: File) => {
     const reader = new FileReader()
@@ -213,7 +233,7 @@ function OcrTab({
       const hasPanels = panels.some((p) => p.rows.some((r) => r.key.trim()))
 
       if (hasPanels) {
-        await saveMultipleLabResults({
+        const result = await saveMultipleLabResults({
           icuIoId,
           icuChartId,
           hosId,
@@ -223,11 +243,18 @@ function OcrTab({
               panelType: p.panel_type,
               items: Object.fromEntries(p.rows.filter((r) => r.key.trim()).map((r) => [r.key.trim(), r.value])),
               testedAt: p.tested_at ? new Date(p.tested_at).toISOString() : null,
+              overwrite: p.overwrite ?? false,
             })),
           clinicalSummary: clinicalSummary.trim() || null,
           rawText: extracted?.raw_text,
           sourceType,
         })
+        const msg = [
+          result.savedIds.length > 0 && `${result.savedIds.length}건 저장`,
+          result.overwrittenCount > 0 && `${result.overwrittenCount}건 덮어씀`,
+          result.skippedCount > 0 && `${result.skippedCount}건 중복 건너뜀`,
+        ].filter(Boolean).join(', ')
+        toast.success(`분석 결과 저장 완료 (${msg})`)
       } else if (clinicalSummary.trim()) {
         // 임상 요약만 있는 경우 — panel_type: 'other', items: {} 로 저장
         await saveLabResult({
@@ -361,9 +388,19 @@ function OcrTab({
         {/* 혈액검사 패널 목록 */}
         {panels.length > 0 ? (
           <div className="space-y-2">
-            <p className="text-[11px] font-medium text-muted-foreground">검사 패널 ({panels.length}개)</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-medium text-muted-foreground">검사 패널 ({panels.length}개)</p>
+              {panels.some((p) => p.isDuplicate) && (
+                <span className="text-[10px] text-amber-600">
+                  ⚠ 이미 등록된 날짜 포함 — 기본적으로 건너뜁니다
+                </span>
+              )}
+            </div>
             {panels.map((panel, idx) => (
-              <div key={idx} className="rounded-md border bg-white">
+              <div
+                key={idx}
+                className={`rounded-md border bg-white ${panel.isDuplicate && !panel.overwrite ? 'opacity-60' : ''}`}
+              >
                 <div
                   className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted/30"
                   onClick={() => updatePanel(idx, { expanded: !panel.expanded })}
@@ -391,7 +428,24 @@ function OcrTab({
                     className="h-6 flex-1 text-[11px]"
                     onClick={(e) => e.stopPropagation()}
                   />
-                  <span className="shrink-0 text-[11px] text-muted-foreground">{panel.rows.filter(r => r.key.trim()).length}항목</span>
+                  {panel.isDuplicate ? (
+                    <button
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                        panel.overwrite
+                          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        updatePanel(idx, { overwrite: !panel.overwrite })
+                      }}
+                      title={panel.overwrite ? '클릭하면 건너뜀으로 변경' : '클릭하면 덮어쓰기로 변경'}
+                    >
+                      {panel.overwrite ? '덮어쓰기' : '이미 등록됨'}
+                    </button>
+                  ) : (
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{panel.rows.filter(r => r.key.trim()).length}항목</span>
+                  )}
                   <ChevronDownIcon
                     size={13}
                     className={`shrink-0 text-muted-foreground transition-transform ${panel.expanded ? 'rotate-180' : ''}`}
