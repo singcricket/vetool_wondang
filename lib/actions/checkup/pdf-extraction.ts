@@ -193,6 +193,7 @@ Rules:
   NEU / SEG → Neut
   LYM → Lymph
   EOS → Eosino
+  NH3 / Ammonia / 암모니아 → NH3
   Use the standardized name even if the document uses a different abbreviation.
 - For imaging: extract any radiology/X-ray findings text per body region; use empty string if not present
 - Do not include any text outside the JSON object`
@@ -241,6 +242,7 @@ export async function extractCheckupFromPdf(
   _checkupId: string,
   _hosId: string,
   files: StorageFileInput[],
+  checkupDate?: string,
 ): Promise<{ data: PdfExtractionResult | null; error: string | null }> {
   try {
     if (files.length === 0) return { data: null, error: '파일을 선택해주세요.' }
@@ -294,13 +296,17 @@ export async function extractCheckupFromPdf(
       }
     }
 
+    const dateInstruction = checkupDate
+      ? `\n\nIMPORTANT — Date filtering rule for lab_items:\n- The target exam date is ${checkupDate}.\n- If a lab test item appears on MULTIPLE different dates in the document, extract ONLY the result for ${checkupDate}.\n- If a lab test item appears on only ONE date (or no date is specified), extract it regardless of the date.`
+      : ''
+
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8192,
       messages: [
         {
           role: 'user',
-          content: [...fileBlocks, { type: 'text' as const, text: EXTRACTION_PROMPT }] as any,
+          content: [...fileBlocks, { type: 'text' as const, text: EXTRACTION_PROMPT + dateInstruction }] as any,
         },
       ],
     })

@@ -183,6 +183,37 @@ export const labRefChemistry: LabRefItem[] = [
     aiExtractKeywords: ['D.Bil', 'Direct Bilirubin', 'DBIL'],
   },
 
+  {
+    id: 'nh3',
+    nameKo: '암모니아',
+    nameEn: 'NH3',
+    unit: 'μg/dL',
+    section: ['chemistry', 'liver'],
+    testType: 'range',
+    foldProfile: 'enzyme',
+    descriptionKo: '간에서 해독되어야 할 암모니아가 혈중에 쌓이면 간성 뇌증 등 신경 증상을 유발할 수 있습니다. 간 기능 저하, 문맥전신순환로(PSS) 의심 시 중요한 지표입니다.',
+    defaultRefRange: { dog: '0–98', cat: '0–90' },
+    ranges: {
+      dog: [
+        { min: null, max: 98,  resultText: 'Normal',                         resultTextKo: '정상',                isAbnormal: false                       },
+        { min: 98,   max: 150, resultText: 'Mild hyperammonemia',            resultTextKo: '경도 고암모니아혈증', isAbnormal: true,  severity: 'mild'     },
+        { min: 150,  max: 250, resultText: 'Moderate hyperammonemia',        resultTextKo: '중등도 고암모니아혈증', isAbnormal: true, severity: 'moderate' },
+        { min: 250,  max: null, resultText: 'Severe hyperammonemia',         resultTextKo: '심한 고암모니아혈증', isAbnormal: true,  severity: 'high'     },
+      ],
+      cat: [
+        { min: null, max: 90,  resultText: 'Normal',                         resultTextKo: '정상',                isAbnormal: false                       },
+        { min: 90,   max: 140, resultText: 'Mild hyperammonemia',            resultTextKo: '경도 고암모니아혈증', isAbnormal: true,  severity: 'mild'     },
+        { min: 140,  max: 220, resultText: 'Moderate hyperammonemia',        resultTextKo: '중등도 고암모니아혈증', isAbnormal: true, severity: 'moderate' },
+        { min: 220,  max: null, resultText: 'Severe hyperammonemia',         resultTextKo: '심한 고암모니아혈증', isAbnormal: true,  severity: 'high'     },
+      ],
+    },
+    comment: {
+      increase: '간기능 저하, 문맥전신순환로(PSS), 간성 뇌증, 선천성 요소회로 결함',
+      decrease: '임상적 의의 낮음',
+    },
+    aiExtractKeywords: ['NH3', 'Ammonia', '암모니아'],
+  },
+
   // ── 신장 기능 ──────────────────────────────────────────────
   {
     id: 'bun',

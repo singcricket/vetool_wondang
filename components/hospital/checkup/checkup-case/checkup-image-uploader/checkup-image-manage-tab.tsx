@@ -265,7 +265,7 @@ export default function CheckupImageManageTab({ checkupId, dynamicTagGroups }: P
             ) : (
               <div className="flex-1 overflow-y-auto p-3">
                 <p className="mb-2 text-[11px] text-slate-400">길게 누르면 에디터가 열립니다</p>
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 content-start pb-4">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 content-start pb-4">
                   {images.map((img) => (
                     <div
                       key={img.id}

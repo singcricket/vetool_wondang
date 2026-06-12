@@ -188,6 +188,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
             <PdfExtractDialog
               checkupId={record.id}
               hosId={hosId}
+              checkupDate={record.checkup_date}
               onApply={handlePdfApply}
             />
             <div className="flex items-center gap-1 text-xs text-slate-500">

@@ -21,6 +21,7 @@ import {
 interface Props {
   checkupId: string
   hosId: string
+  checkupDate: string
   onApply: (result: PdfExtractionResult) => void
 }
 
@@ -54,7 +55,7 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
-export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
+export default function PdfExtractDialog({ checkupId, hosId, checkupDate, onApply }: Props) {
   const [open, setOpen] = useState(false)
   const [localFiles, setLocalFiles] = useState<File[]>([])
   const [status, setStatus] = useState<'idle' | 'uploading' | 'extracting'>('idle')
@@ -101,7 +102,7 @@ export default function PdfExtractDialog({ checkupId, hosId, onApply }: Props) {
 
       // 업로드된 파일들을 AI로 일괄 분석
       setStatus('extracting')
-      const { data: extracted, error: extractError } = await extractCheckupFromPdf(checkupId, hosId, storagePaths)
+      const { data: extracted, error: extractError } = await extractCheckupFromPdf(checkupId, hosId, storagePaths, checkupDate)
       if (extractError || !extracted) {
         throw new Error(extractError ?? 'AI 분석 실패')
       }

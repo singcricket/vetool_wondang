@@ -250,7 +250,7 @@ export default function CheckupImageUploadTab({ checkupId, hosId, onSuccess, def
                   onClick={() => setStaged((p) => p.map((i) => ({ ...i, selected: false })))}>해제</Button>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 overflow-y-auto pb-4 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 overflow-y-auto pb-4 sm:grid-cols-3">
               {staged.map((img) => (
                 <div
                   key={img.id}
