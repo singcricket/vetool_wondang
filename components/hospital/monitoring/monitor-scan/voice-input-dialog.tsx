@@ -46,45 +46,54 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, onI
     setInterimText('')
     setVitals(null)
     setMemo(null)
+    setCorrectedTranscript(null)
     isHoldingRef.current = true
     startTimeRef.current = Date.now()
 
-    const recognition = new SpeechRecognitionClass()
-    recognition.lang = 'ko-KR'
-    recognition.continuous = true
-    recognition.interimResults = true
-    recognitionRef.current = recognition
+    // 세션마다 새 인스턴스를 만들어 이전 오디오 버퍼 재처리(중복 인식) 방지
+    const launchSession = (base: string) => {
+      const recognition = new SpeechRecognitionClass()
+      recognition.lang = 'ko-KR'
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognitionRef.current = recognition
 
-    recognition.onresult = (event) => {
-      let interim = ''
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          transcriptRef.current += event.results[i][0].transcript + ' '
-        } else {
-          interim += event.results[i][0].transcript
+      let sessionFinal = ''
+
+      recognition.onresult = (event) => {
+        sessionFinal = ''
+        let interim = ''
+        for (let i = 0; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            sessionFinal += event.results[i][0].transcript + ' '
+          } else {
+            interim += event.results[i][0].transcript
+          }
+        }
+        transcriptRef.current = base + sessionFinal
+        setFinalText(transcriptRef.current)
+        setInterimText(interim)
+      }
+
+      recognition.onerror = (event) => {
+        if (event.error !== 'aborted') {
+          toast.error(`음성 인식 오류: ${event.error}`)
+          setRecording(false)
+          isHoldingRef.current = false
         }
       }
-      setFinalText(transcriptRef.current)
-      setInterimText(interim)
-    }
 
-    recognition.onerror = (event) => {
-      if (event.error !== 'aborted') {
-        toast.error(`음성 인식 오류: ${event.error}`)
-        setRecording(false)
-        isHoldingRef.current = false
+      // 무음으로 자동 종료 시 새 세션으로 재시작 (누적 base 전달)
+      recognition.onend = () => {
+        if (isHoldingRef.current) {
+          launchSession(base + sessionFinal)
+        }
       }
+
+      recognition.start()
     }
 
-    // continuous=true여도 모바일에서 무음 시 자동 종료됨 → 홀딩 중이면 재시작
-    recognition.onend = () => {
-      if (isHoldingRef.current) {
-        try { recognition.start() } catch { /* ignore */ }
-      }
-      // stopRecording 호출 시 onend를 덮어쓰므로 이 분기는 재시작 전용
-    }
-
-    recognition.start()
+    launchSession('')
     setRecording(true)
   }, [])
 
@@ -232,12 +241,10 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, onI
                     ? 'w-32 h-32 bg-red-500 scale-105 shadow-[0_0_0_16px_rgba(239,68,68,0.12)]'
                     : 'w-32 h-32 bg-teal-500 hover:bg-teal-600 active:scale-95 shadow-xl',
                 ].join(' ')}
-                onMouseDown={startRecording}
-                onMouseUp={stopRecording}
-                onMouseLeave={() => { if (recording) stopRecording() }}
-                onTouchStart={(e) => { e.preventDefault(); startRecording() }}
-                onTouchEnd={(e) => { e.preventDefault(); stopRecording() }}
-                onTouchCancel={(e) => { e.preventDefault(); stopRecording() }}
+                onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); startRecording() }}
+                onPointerUp={stopRecording}
+                onPointerLeave={() => { if (recording) stopRecording() }}
+                onPointerCancel={() => { if (recording) stopRecording() }}
                 onContextMenu={(e) => e.preventDefault()}
               >
                 {recording
