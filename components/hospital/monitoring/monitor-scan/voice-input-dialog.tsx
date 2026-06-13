@@ -50,50 +50,39 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, onI
     isHoldingRef.current = true
     startTimeRef.current = Date.now()
 
-    // 세션마다 새 인스턴스를 만들어 이전 오디오 버퍼 재처리(중복 인식) 방지
-    const launchSession = (base: string) => {
-      const recognition = new SpeechRecognitionClass()
-      recognition.lang = 'ko-KR'
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognitionRef.current = recognition
+    const recognition = new SpeechRecognitionClass()
+    recognition.lang = 'ko-KR'
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognitionRef.current = recognition
 
-      let sessionFinal = ''
-
-      recognition.onresult = (event) => {
-        sessionFinal = ''
-        let interim = ''
-        for (let i = 0; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            sessionFinal += event.results[i][0].transcript + ' '
-          } else {
-            interim += event.results[i][0].transcript
-          }
-        }
-        transcriptRef.current = base + sessionFinal
-        setFinalText(transcriptRef.current)
-        setInterimText(interim)
-      }
-
-      recognition.onerror = (event) => {
-        if (event.error !== 'aborted') {
-          toast.error(`음성 인식 오류: ${event.error}`)
-          setRecording(false)
-          isHoldingRef.current = false
+    recognition.onresult = (event) => {
+      let interim = ''
+      // event.resultIndex 부터만 처리 → 이미 처리한 결과 중복 누적 방지
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          transcriptRef.current += event.results[i][0].transcript + ' '
+        } else {
+          interim += event.results[i][0].transcript
         }
       }
-
-      // 무음으로 자동 종료 시 새 세션으로 재시작 (누적 base 전달)
-      recognition.onend = () => {
-        if (isHoldingRef.current) {
-          launchSession(base + sessionFinal)
-        }
-      }
-
-      recognition.start()
+      setFinalText(transcriptRef.current)
+      setInterimText(interim)
     }
 
-    launchSession('')
+    recognition.onerror = (event) => {
+      if (event.error !== 'aborted') {
+        toast.error(`음성 인식 오류: ${event.error}`)
+        setRecording(false)
+        isHoldingRef.current = false
+      }
+    }
+
+    // 재시작하지 않음 — 재시작 시 오디오 버퍼를 처음부터 재처리해 중복 발생
+    // stopRecording에서 onend를 덮어써 분석을 시작
+    recognition.onend = () => {}
+
+    recognition.start()
     setRecording(true)
   }, [])
 
