@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { CheckIcon, XIcon, ChevronDownIcon, FlaskConicalIcon } from 'lucide-react'
+import { CheckIcon, XIcon, ChevronDownIcon, FlaskConicalIcon, BeakerIcon, ZapIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,7 @@ import {
   approveAiOrder,
   rejectAiOrder,
   type StoredAiOrder,
+  type EvidenceLevel,
 } from '@/lib/actions/icu/ai-session-actions'
 import { parseDoseMgPerKg } from '@/lib/utils/icu/drug-calc'
 import { DEFAULT_ICU_ORDER_TYPE_DIC } from '@/constants/hospital/icu/chart/order'
@@ -37,6 +38,7 @@ export default function AiOrderCard({ order, hosId, icuChartId, patientWeight, o
   const detail = order.order_detail ?? {}
   const orderComment = detail.order_comment ?? ''
   const orderTimes: string[] = detail.order_times ?? []
+  const evidenceLevel: EvidenceLevel = (detail as any).evidence_level ?? 'standard'
 
   const [expanded, setExpanded] = useState(false)
   const [rejectMode, setRejectMode] = useState(false)
@@ -122,6 +124,16 @@ export default function AiOrderCard({ order, hosId, icuChartId, patientWeight, o
           {DEFAULT_ICU_ORDER_TYPE_DIC[order.order_type as keyof typeof DEFAULT_ICU_ORDER_TYPE_DIC] ?? order.order_type}
         </span>
         <span className="flex-1 truncate text-sm font-medium">{order.order_name}</span>
+        {evidenceLevel === 'latest' && (
+          <span className="flex shrink-0 items-center gap-0.5 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+            <ZapIcon size={9} />최신 프로토콜
+          </span>
+        )}
+        {evidenceLevel === 'experimental' && (
+          <span className="flex shrink-0 items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+            <BeakerIcon size={9} />연구 단계
+          </span>
+        )}
         {statusBadge}
         <ChevronDownIcon
           size={14}
@@ -147,8 +159,26 @@ export default function AiOrderCard({ order, hosId, icuChartId, patientWeight, o
 
           {/* AI 근거 */}
           {order.ai_reasoning && (
-            <div className="mb-3 rounded bg-muted/40 px-2.5 py-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">AI 근거: </span>
+            <div className={`mb-3 rounded px-2.5 py-2 text-xs ${
+              evidenceLevel === 'experimental'
+                ? 'border border-amber-200 bg-amber-50 text-amber-900'
+                : evidenceLevel === 'latest'
+                  ? 'border border-blue-200 bg-blue-50 text-blue-900'
+                  : 'bg-muted/40 text-muted-foreground'
+            }`}>
+              <div className="mb-1 flex items-center gap-1 font-semibold">
+                {evidenceLevel === 'experimental' && <BeakerIcon size={11} className="text-amber-600" />}
+                {evidenceLevel === 'latest' && <ZapIcon size={11} className="text-blue-600" />}
+                <span className={
+                  evidenceLevel === 'experimental' ? 'text-amber-700'
+                  : evidenceLevel === 'latest' ? 'text-blue-700'
+                  : 'text-foreground'
+                }>
+                  {evidenceLevel === 'experimental' ? '연구 단계 — 근거 및 출처'
+                   : evidenceLevel === 'latest' ? '최신 프로토콜 — 근거 및 출처'
+                   : 'AI 근거'}
+                </span>
+              </div>
               {order.ai_reasoning}
             </div>
           )}

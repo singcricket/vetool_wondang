@@ -49,12 +49,15 @@ function extractJsonObject<T = unknown>(text: string): T {
 
 // ── 타입 ──────────────────────────────────────────────────────
 
+export type EvidenceLevel = 'standard' | 'latest' | 'experimental'
+
 export type AiOrderSuggestion = {
   order_type: string
   order_name: string
   order_comment: string
   order_times: string[]
   ai_reasoning: string
+  evidence_level: EvidenceLevel
   drug_in_hos_drugs: boolean
 }
 
@@ -303,6 +306,7 @@ export async function requestAiRecommendation(params: {
           order_comment: order.order_comment,
           order_times: order.order_times,
           summary: aiResponse.summary,
+          evidence_level: order.evidence_level ?? 'standard',
         } as any,
         ai_reasoning: order.ai_reasoning,
         approval_status: 'pending' as const,
@@ -438,9 +442,14 @@ ${ctx.additional_context ? `━━ 추가 임상 정보 / 피드백 ━━\n${ct
 7. order_times는 하루 투여 횟수에 맞게 24시간 형식("0800", "1600", "2400" 등)으로 작성하세요.
 8. drug_in_hos_drugs는 일반적으로 동물병원에 비치된 약물이면 true, 특수 약물이면 false로 설정하세요.
 9. order_type은 다음 중 하나: fluid(수액), injection(주사), po(경구), checklist(체크), test(검사), feed(식이), manual(기타)
+10. 최신 치료 프로토콜 및 약물을 적극 포함하세요. 단, 모든 오더에 반드시 evidence_level을 지정하세요:
+    - "standard": 교과서적·정형화된 치료 (널리 검증된 표준 프로토콜)
+    - "latest": 최근 수의학 문헌/가이드라인에 근거하며 임상 채택이 확산 중인 최신 프로토콜
+    - "experimental": 사례보고·전임상 연구 등 근거가 제한적이거나 아직 표준화되지 않은 치료
+11. evidence_level이 "latest" 또는 "experimental"인 오더의 ai_reasoning에는 반드시 근거 출처(저자·저널명·연도 또는 가이드라인명)를 포함하세요.
 
 JSON만 반환 (설명, 마크다운 없이):
-{"summary":"치료 방향 요약","orders":[{"order_type":"fluid","order_name":"0.9% NaCl","order_comment":"27 mL/hr IV CRI, 첨가제: KCl 20mEq/L + 비타민B 1mL","order_times":[],"ai_reasoning":"저칼륨·고나트륨 교정 목적. 24시간당 Na 10mEq/L 이하로 서서히 교정. 2~4시간 후 전해질 재검사 필요.","drug_in_hos_drugs":true}]}`
+{"summary":"치료 방향 요약","orders":[{"order_type":"fluid","order_name":"0.9% NaCl","order_comment":"27 mL/hr IV CRI, 첨가제: KCl 20mEq/L + 비타민B 1mL","order_times":[],"ai_reasoning":"저칼륨·고나트륨 교정 목적. 24시간당 Na 10mEq/L 이하로 서서히 교정. 2~4시간 후 전해질 재검사 필요.","evidence_level":"standard","drug_in_hos_drugs":true}]}`
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
