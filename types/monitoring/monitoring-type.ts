@@ -63,47 +63,126 @@ export type MsvitalResults =
 export interface VitalConfig {
   vitalName: string;
   type: "range" | "select" | "text";
-  min?: string;    // range 타입일 때 사용
-  max?: string;    // range 타입일 때 사용
-  unit?: string;   // 단위 (화면에 표시용)
-  options?: string[]; // select 타입일 때 사용
+  canine?: { min: string; max: string };
+  feline?: { min: string; max: string };
+  unit?: string;
+  options?: string[];
 }
 
 export const VITAL_REFERENCE_DATA: VitalConfig[] = [
-  { vitalName: "체온(°C)", type: "range", min: "37.5", max: "39.3", unit: "°C" },
-  { vitalName: "심박수(HR)", type: "range", min: "80", max: "150", unit: "bpm" },
-  { vitalName: "호흡수(RR)", type: "range", min: "15", max: "30", unit: "회/분" },
-  { vitalName: "혈압(BP)", type: "range", min: "80", max: "150", unit: "mmHg" }, // 수축기/이완기 등 복합 입력이 많으므로 text 또는 전용 포맷 권장
-  { vitalName: "SPO2", type: "range", min: "95", max: "100", unit: "%" },
-  { vitalName: "혈당", type: "range", min: "80", max: "120", unit: "mg/dL" },
-  { vitalName: "EtCO2", type: "range", min: "35", max: "45", unit: "mmHg" },
-  { 
-    vitalName: "MMC", 
-    type: "select", 
-    options: ["Pink", "Pale", "Icteric(황달)", "Cyanotic(청색증)", "Congested"] 
+  {
+    vitalName: "체온(°C)", type: "range",
+    canine: { min: "37.5", max: "39.2" },
+    feline: { min: "37.8", max: "39.2" },
+    unit: "°C",
   },
-  { 
-    vitalName: "Skin Turgor", 
-    type: "select", 
-    options: ["< 2s (정상)", "2-5s (중등도)", "> 5s (심함)"] 
+  {
+    vitalName: "심박수(HR)", type: "range",
+    canine: { min: "60", max: "160" },
+    feline: { min: "120", max: "200" },
+    unit: "bpm",
   },
-  { vitalName: "CRT", type: "range", min: "0", max: "2", unit: "초" },
-  { 
-    vitalName: "Mental", 
-    type: "select", 
-    options: ["Alert", "Depressed", "Stupor", "Coma"] 
+  {
+    vitalName: "호흡수(RR)", type: "range",
+    canine: { min: "10", max: "30" },
+    feline: { min: "15", max: "40" },
+    unit: "회/분",
   },
-  { 
-    vitalName: "PLR", 
-    type: "select", 
-    options: ["Normal", "Sluggish", "Fixed"] 
+  {
+    vitalName: "혈압(BP)", type: "range",
+    canine: { min: "110", max: "160" },
+    feline: { min: "100", max: "160" },
+    unit: "mmHg",
   },
-  { vitalName: "배뇨량", type: "range", min: "1", max: "2", unit: "ml/kg/hr" },
-  { vitalName: "수액량", type: "range", min: "0", max: "500", unit: "ml/hr" },
-  { vitalName: "체중", type: "range", min: "0", max: "100", unit: "kg" },
-  { vitalName: "MAC", type: "range", min: "0.8", max: "1.5", unit: "val" },
-  { vitalName: "산소유량", type: "range", min: "0", max: "15", unit: "L/min" },
-  { vitalName: "기타", type: "text" }
+  {
+    vitalName: "MAP(평균동맥압)", type: "range",
+    canine: { min: "60", max: "100" },
+    feline: { min: "60", max: "100" },
+    unit: "mmHg",
+  },
+  {
+    vitalName: "SPO2", type: "range",
+    canine: { min: "95", max: "100" },
+    feline: { min: "95", max: "100" },
+    unit: "%",
+  },
+  {
+    vitalName: "EtCO2", type: "range",
+    canine: { min: "35", max: "45" },
+    feline: { min: "28", max: "40" },
+    unit: "mmHg",
+  },
+  {
+    vitalName: "혈당", type: "range",
+    canine: { min: "70", max: "120" },
+    feline: { min: "70", max: "150" },
+    unit: "mg/dL",
+  },
+  {
+    vitalName: "젖산(Lactate)", type: "range",
+    canine: { min: "0", max: "2" },
+    feline: { min: "0", max: "2" },
+    unit: "mmol/L",
+  },
+  {
+    vitalName: "CRT", type: "range",
+    canine: { min: "0", max: "2" },
+    feline: { min: "0", max: "2" },
+    unit: "초",
+  },
+  {
+    vitalName: "MMC", type: "select",
+    options: ["Pink", "Pale", "Icteric(황달)", "Cyanotic(청색증)", "Congested"],
+  },
+  {
+    vitalName: "Skin Turgor", type: "select",
+    options: ["< 2s (정상)", "2-5s (중등도)", "> 5s (심함)"],
+  },
+  {
+    vitalName: "Mental", type: "select",
+    options: ["Alert", "Depressed", "Stupor", "Coma"],
+  },
+  {
+    vitalName: "PLR", type: "select",
+    options: ["Normal", "Sluggish", "Fixed"],
+  },
+  {
+    vitalName: "통증점수(NRS)", type: "range",
+    canine: { min: "0", max: "3" },
+    feline: { min: "0", max: "3" },
+    unit: "/10",
+  },
+  {
+    vitalName: "MAC", type: "range",
+    canine: { min: "0.8", max: "1.5" },
+    feline: { min: "1.0", max: "1.5" },
+    unit: "val",
+  },
+  {
+    vitalName: "배뇨량", type: "range",
+    canine: { min: "1", max: "2" },
+    feline: { min: "1", max: "2" },
+    unit: "ml/kg/hr",
+  },
+  {
+    vitalName: "수액량", type: "range",
+    canine: { min: "0", max: "500" },
+    feline: { min: "0", max: "500" },
+    unit: "ml/hr",
+  },
+  {
+    vitalName: "체중", type: "range",
+    canine: { min: "0", max: "100" },
+    feline: { min: "0", max: "15" },
+    unit: "kg",
+  },
+  {
+    vitalName: "산소유량", type: "range",
+    canine: { min: "0.5", max: "3" },
+    feline: { min: "0.5", max: "3" },
+    unit: "L/min",
+  },
+  { vitalName: "기타", type: "text" },
 ];
 
 // const monitoringData = [

@@ -33,7 +33,6 @@ export const fetchMonitoringSidebarData = async (
     console.error(error)
     throw new Error(error.message)
   }
-  console.log('fetch sidebar data', data)
   return (data ?? []) as MonitoringSidebarData[]
 }
 
@@ -89,7 +88,6 @@ export const fetchMsWithPatientWithWeight = async (
     console.error(error)
     redirect(`/error?message=${error.message}`)
   }
-  console.log('fetch ms with patient with weight', data)
 
   return data as MsWithPatientWithWeight
 }

@@ -1,7 +1,7 @@
 import MsFooter from '@/components/hospital/monitoring/footer/ms-footer'
 import MsSidebar from '@/components/hospital/monitoring/sidebar/ms-sidebar';
 import { fetchMsLayoutData } from '@/lib/services/monitoring/monitoring-layout';
-// import ChecklistSidebar from '@/components/hospital/checklist/sidebar/checklist-sidebar'
+import { fetchDeviceProfiles } from '@/lib/actions/monitoring/device-profile-actions';
 import { MonitoringHosDataProvider } from '@/providers/monitoring-hos-data-context-provider'
 
 export default async function MonitoringPageLayout(props: {
@@ -10,21 +10,27 @@ export default async function MonitoringPageLayout(props: {
 }) {
   const { hos_id, target_date } = await props.params
 
-  const {
-    basicHosSettings: {
-      group_list,
-      icu_memo_names,
-      is_in_charge_system,
-      order_color,
-      order_font_size,
-      plan,
-      show_orderer,
-      show_tx_user,
-      time_guidelines,
-      vital_ref_range,
+  const [
+    {
+      basicHosSettings: {
+        group_list,
+        icu_memo_names,
+        is_in_charge_system,
+        order_color,
+        order_font_size,
+        plan,
+        show_orderer,
+        show_tx_user,
+        time_guidelines,
+        vital_ref_range,
+      },
+      vetList,
     },
-    vetList,
-  } = await fetchMsLayoutData(hos_id, target_date)
+    deviceProfiles,
+  ] = await Promise.all([
+    fetchMsLayoutData(hos_id, target_date),
+    fetchDeviceProfiles(hos_id),
+  ])
 
   const postGroupList = group_list.filter((group) => group !== '응급') ? ['응급', ...group_list] : group_list
 
@@ -49,6 +55,7 @@ export default async function MonitoringPageLayout(props: {
         plan: plan,
         vetsListData: vetList,
         vitalRefRange: vital_ref_range,
+        deviceProfiles,
       }}
     >
       <div className="flex h-desktop">

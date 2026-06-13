@@ -5,15 +5,20 @@ import { TableBody } from '@/components/ui/table'
 import { VITAL_REFERENCE_DATA, VitalResults } from "@/types/monitoring/monitoring-type"
 import MsClTableCreateRow from "./ms-cl-table-create-row"
 import MsClTableResultRow from "./ms-cl-table-result-row"
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react"
 import { updateMsVitalResults } from "@/lib/services/monitoring/update-ms"
 import { toast } from "sonner"
+import type { VitalTimeSlot } from "@/types/monitoring/monitoring-type"
+
+export type MsClTableBodyHandle = {
+  insertRow: (slot: VitalTimeSlot) => void
+}
 
 type Props = {
     msData: MsWithPatientWithWeight
 }
 
-export default function MsClTableBody({ msData }: Props) {
+const MsClTableBody = forwardRef<MsClTableBodyHandle, Props>(function MsClTableBody({ msData }, ref) {
     const clNames: string[] = VITAL_REFERENCE_DATA.map((db) => db.vitalName)
 
     const [vitalResults, setVitalResults] = useState<VitalResults>(msData.vital_results ?? [])
@@ -82,6 +87,18 @@ export default function MsClTableBody({ msData }: Props) {
         scheduleSave()
     }, [scheduleSave])
 
+    // 스캔 결과 행 삽입 — 외부에서 호출 (useImperativeHandle)
+    const insertRow = useCallback((slot: VitalTimeSlot) => {
+        setVitalResults(prev => {
+            const updated = [slot, ...prev]
+            vitalResultsRef.current = updated
+            return updated
+        })
+        scheduleSave()
+    }, [scheduleSave])
+
+    useImperativeHandle(ref, () => ({ insertRow }), [insertRow])
+
     // 삭제 콜백 — 즉시 DB 반영
     const handleDeleteSlot = useCallback(async (slotIndex: number) => {
         if (!confirm('정말 삭제하시겠습니까?')) return
@@ -109,6 +126,7 @@ export default function MsClTableBody({ msData }: Props) {
                     clNames={clNames}
                     startTime={msData.start_time}
                     isUpdating={isSaving}
+                    species={msData.patient?.species as 'canine' | 'feline' | null ?? null}
                     onVitalChange={(vitalName, value) => handleVitalChange(index, vitalName, value)}
                     onMinTimeChange={(newMinTime) => handleMinTimeChange(index, newMinTime)}
                     onDeleteRow={() => handleDeleteSlot(index)}
@@ -124,4 +142,6 @@ export default function MsClTableBody({ msData }: Props) {
             />
         </TableBody>
     )
-}
+})
+
+export default MsClTableBody

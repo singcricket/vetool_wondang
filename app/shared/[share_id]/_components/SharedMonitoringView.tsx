@@ -52,6 +52,7 @@ export default async function SharedMonitoringView({ resourceId, restrictedData 
       groupListData: layoutRes.basicHosSettings.group_list || [],
       plan: layoutRes.basicHosSettings.plan,
       vitalRefRange: layoutRes.basicHosSettings.vital_ref_range || [],
+      deviceProfiles: [],
     }
 
     return (

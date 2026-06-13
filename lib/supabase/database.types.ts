@@ -2355,6 +2355,50 @@ export type Database = {
         }
         Relationships: []
       }
+      monitoring_device_profiles: {
+        Row: {
+          created_at: string
+          device_memo: string | null
+          device_name: string
+          field_mappings: Json
+          hos_id: string
+          id: string
+          layout_hint: string | null
+          updated_at: string
+          verified_samples: Json
+        }
+        Insert: {
+          created_at?: string
+          device_memo?: string | null
+          device_name: string
+          field_mappings?: Json
+          hos_id: string
+          id?: string
+          layout_hint?: string | null
+          updated_at?: string
+          verified_samples?: Json
+        }
+        Update: {
+          created_at?: string
+          device_memo?: string | null
+          device_name?: string
+          field_mappings?: Json
+          hos_id?: string
+          id?: string
+          layout_hint?: string | null
+          updated_at?: string
+          verified_samples?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitoring_device_profiles_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+        ]
+      }
       monitoring_sessions: {
         Row: {
           age_in_days: number | null

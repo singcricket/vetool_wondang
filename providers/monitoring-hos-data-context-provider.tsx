@@ -3,6 +3,7 @@
 import type { Plan } from '@/constants/company/plans'
 import type { Vet } from '@/types'
 import { VitalRefRange } from '@/types/adimin'
+import type { DeviceProfile } from '@/types/monitoring/device-profile-type'
 import { createContext, useContext } from 'react'
 
 export type OrderColorDisplay = 'dot' | 'full'
@@ -16,7 +17,7 @@ type MsContextData = {
   groupListData: string[]
   plan: Plan
   vitalRefRange: VitalRefRange[]
-  // sidebarData: IcuSidebarIoData[]
+  deviceProfiles: DeviceProfile[]
 }
 
 const MonitoringHosDataContext = createContext<MsContextDataType | undefined>(
