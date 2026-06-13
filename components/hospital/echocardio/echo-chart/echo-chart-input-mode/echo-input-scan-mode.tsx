@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useTransition } from 'react'
+import { useState, useRef, useCallback, useTransition, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
@@ -17,6 +17,8 @@ import {
   ScanText,
   Pencil,
   Trash2,
+  Plus,
+  ChevronDown,
 } from 'lucide-react'
 import {
   uploadAndProcessEchoScanImage,
@@ -26,7 +28,7 @@ import {
   type EchoScanImage,
   type MatchedField,
 } from '@/lib/actions/echocardio/echo-scan-actions'
-import type { Species } from '@/types/echocardio/echocardio-type'
+import type { Species, EchoTestUIMeta } from '@/types/echocardio/echocardio-type'
 import { ECHO_SECTION_LIST } from '@/types/echocardio/echocardio-type'
 import { useEchoContext } from '@/providers/echo-context-provider'
 
@@ -65,6 +67,132 @@ function compressImage(file: File): Promise<string> {
   })
 }
 
+// 검색 가능한 키워드 선택 컴포넌트
+function SearchableKeywordSelect({
+  value,
+  filteredMeta,
+  onChange,
+}: {
+  value: string
+  filteredMeta: EchoTestUIMeta[]
+  onChange: (id: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const selectedMeta = filteredMeta.find((m) => m.keywordID === value)
+
+  const searchResults = query.trim()
+    ? filteredMeta
+        .filter(
+          (m) =>
+            m.keywordName.toLowerCase().includes(query.toLowerCase()) ||
+            m.keywordID.toLowerCase().includes(query.toLowerCase()),
+        )
+        .slice(0, 40)
+    : null
+
+  const grouped = !searchResults
+    ? ECHO_SECTION_LIST.map((section) => ({
+        section,
+        items: filteredMeta.filter((m) => m.sections.includes(section)),
+      })).filter((g) => g.items.length > 0)
+    : []
+
+  function selectItem(id: string) {
+    onChange(id)
+    setQuery('')
+    setOpen(false)
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setQuery(e.target.value)
+    setOpen(true)
+  }
+
+  function handleFocus() {
+    setQuery('')
+    setOpen(true)
+  }
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="flex items-center rounded border border-slate-200 bg-white overflow-hidden focus-within:ring-1 focus-within:ring-teal-400">
+        <input
+          ref={inputRef}
+          type="text"
+          value={open ? query : (selectedMeta?.keywordName ?? '')}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          placeholder="항목 검색..."
+          className="flex-1 px-2 py-1 text-[11px] text-slate-800 focus:outline-none"
+        />
+        <ChevronDown size={12} className="mr-1.5 text-slate-400 shrink-0" />
+      </div>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-52 overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
+          {searchResults ? (
+            searchResults.length === 0 ? (
+              <p className="px-3 py-2 text-[11px] text-slate-400">검색 결과 없음</p>
+            ) : (
+              searchResults.map((m) => (
+                <button
+                  key={m.keywordID}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); selectItem(m.keywordID) }}
+                  className={cn(
+                    'flex w-full items-center justify-between px-3 py-1.5 text-left text-[11px] hover:bg-teal-50 transition-colors',
+                    m.keywordID === value && 'bg-teal-50 text-teal-700 font-semibold',
+                  )}
+                >
+                  <span>{m.keywordName}</span>
+                  <span className="text-[10px] text-slate-400">{m.keywordID}</span>
+                </button>
+              ))
+            )
+          ) : (
+            grouped.map((g) => (
+              <div key={g.section}>
+                <p className="sticky top-0 bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-400 border-b border-slate-100">
+                  {g.section}
+                </p>
+                {g.items.map((m) => (
+                  <button
+                    key={m.keywordID}
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); selectItem(m.keywordID) }}
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-1.5 text-left text-[11px] hover:bg-teal-50 transition-colors',
+                      m.keywordID === value && 'bg-teal-50 text-teal-700 font-semibold',
+                    )}
+                  >
+                    <span>{m.keywordName}</span>
+                    {m.unit && <span className="text-[10px] text-slate-400">{m.unit}</span>}
+                  </button>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function EchoInputScanMode({
   echoId,
   hosId,
@@ -89,7 +217,6 @@ export default function EchoInputScanMode({
   const selectedImage = images.find((img) => img.id === selectedId) ?? null
 
   // 단계별 메시지 + 진행 바 시뮬레이션
-  // 실제 AI 분석 구간(9~22s)은 interval로 서서히 채움
   const startStatusSequence = () => {
     timersRef.current.forEach(clearTimeout)
     if (intervalRef.current) clearInterval(intervalRef.current)
@@ -114,7 +241,6 @@ export default function EchoInputScanMode({
       timersRef.current.push(t)
     })
 
-    // AI 분석 구간: 9s~22s 동안 55→91%까지 서서히 증가
     const aiStart = setTimeout(() => {
       intervalRef.current = setInterval(() => {
         setUploadProgress((prev) => {
@@ -189,21 +315,15 @@ export default function EchoInputScanMode({
       const updated = img.matched_fields.map((f) =>
         f.keyword_id === field.keyword_id ? { ...f, applied: !f.applied } : f,
       )
-
-      // 낙관적 업데이트
       setImages((prev) =>
         prev.map((i) => (i.id === img.id ? { ...i, matched_fields: updated } : i)),
       )
-
-      // 적용 체크 시 부모 onApplyField 호출
       if (!field.applied) {
         onApplyField(field.keyword_id, field.value)
       }
-
       try {
         await updateScanImageMatchedFields(img.id, updated)
       } catch {
-        // 롤백
         setImages((prev) =>
           prev.map((i) => (i.id === img.id ? { ...i, matched_fields: img.matched_fields } : i)),
         )
@@ -270,6 +390,24 @@ export default function EchoInputScanMode({
     [],
   )
 
+  const handleAddField = useCallback(
+    async (img: EchoScanImage, newField: MatchedField) => {
+      const updated = [...img.matched_fields, newField]
+      setImages((prev) =>
+        prev.map((i) => (i.id === img.id ? { ...i, matched_fields: updated } : i)),
+      )
+      try {
+        await updateScanImageMatchedFields(img.id, updated)
+      } catch {
+        setImages((prev) =>
+          prev.map((i) => (i.id === img.id ? { ...i, matched_fields: img.matched_fields } : i)),
+        )
+        toast.error('저장 실패')
+      }
+    },
+    [],
+  )
+
   const handleGenerateFinding = () => {
     startGeneratingFinding(async () => {
       try {
@@ -312,14 +450,12 @@ export default function EchoInputScanMode({
               <Loader2 size={11} className="shrink-0 animate-spin text-teal-500" />
               <span className="text-[11px] text-teal-700">{uploadStatus}</span>
             </div>
-            {/* 진행 바 */}
             <div className="h-1 w-full rounded-full bg-teal-100 overflow-hidden">
               <div
                 className="h-full rounded-full bg-teal-500 transition-all duration-700 ease-out"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
-            {/* 화면 이탈 경고 (OCR 이후 단계부터) */}
             {uploadProgress >= 42 && (
               <p className="text-[10px] text-amber-600 font-medium">
                 ⚠ 분석이 완료될 때까지 이 화면을 유지해 주세요
@@ -355,7 +491,6 @@ export default function EchoInputScanMode({
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
 
-              {/* 삭제 버튼 */}
               <button
                 onClick={(e) => { e.stopPropagation(); handleDelete(img) }}
                 disabled={deletingId === img.id}
@@ -366,7 +501,6 @@ export default function EchoInputScanMode({
                   : <X size={10} />}
               </button>
 
-              {/* 적용 현황 배지 */}
               {img.matched_fields.length > 0 && (
                 <div className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[9px] text-white">
                   {img.matched_fields.filter((f) => f.applied).length}/{img.matched_fields.length}
@@ -453,33 +587,14 @@ export default function EchoInputScanMode({
               </div>
 
               <div className="flex-1 overflow-y-auto p-3">
-                {selectedImage.matched_fields.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-                    <p className="text-xs text-slate-400">
-                      {selectedImage.ocr_raw_text
-                        ? 'AI가 매칭 가능한 항목을 찾지 못했습니다.'
-                        : 'OCR 텍스트를 추출할 수 없었습니다.'}
-                    </p>
-                    {selectedImage.ocr_raw_text && (
-                      <details className="w-full text-left">
-                        <summary className="cursor-pointer text-[11px] text-slate-400 hover:text-slate-600">
-                          OCR 원문 보기
-                        </summary>
-                        <pre className="mt-2 whitespace-pre-wrap rounded bg-slate-50 p-2 text-[10px] text-slate-600">
-                          {selectedImage.ocr_raw_text}
-                        </pre>
-                      </details>
-                    )}
-                  </div>
-                ) : (
-                  <MatchedFieldList
-                    image={selectedImage}
-                    species={species}
-                    onToggle={(field) => handleToggleApply(selectedImage, field)}
-                    onEdit={(oldId, updated) => handleEditField(selectedImage, oldId, updated)}
-                    onDelete={(keywordId) => handleDeleteField(selectedImage, keywordId)}
-                  />
-                )}
+                <MatchedFieldList
+                  image={selectedImage}
+                  species={species}
+                  onToggle={(field) => handleToggleApply(selectedImage, field)}
+                  onEdit={(oldId, updated) => handleEditField(selectedImage, oldId, updated)}
+                  onDelete={(keywordId) => handleDeleteField(selectedImage, keywordId)}
+                  onAdd={(newField) => handleAddField(selectedImage, newField)}
+                />
               </div>
 
               {/* OCR 원문 */}
@@ -522,25 +637,52 @@ export default function EchoInputScanMode({
   )
 }
 
-// OCR(수치)와 Vision(주관적 소견)을 섹션으로 나눠 표시
+// OCR(수치), Vision(소견), Manual(직접 추가) 섹션으로 나눠 표시
 function MatchedFieldList({
   image,
   species,
   onToggle,
   onEdit,
   onDelete,
+  onAdd,
 }: {
   image: EchoScanImage
   species: Species
   onToggle: (field: MatchedField) => void
   onEdit: (oldKeywordId: string, updated: MatchedField) => void
   onDelete: (keywordId: string) => void
+  onAdd: (newField: MatchedField) => void
 }) {
+  const [showAddForm, setShowAddForm] = useState(false)
+
   const ocrFields = image.matched_fields.filter((f) => f.source === 'ocr')
   const visionFields = image.matched_fields.filter((f) => f.source === 'vision')
+  const manualFields = image.matched_fields.filter((f) => f.source === 'manual')
+
+  const isEmpty = image.matched_fields.length === 0
 
   return (
     <div className="flex flex-col gap-4">
+      {isEmpty && !showAddForm && (
+        <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+          <p className="text-xs text-slate-400">
+            {image.ocr_raw_text
+              ? 'AI가 매칭 가능한 항목을 찾지 못했습니다.'
+              : 'OCR 텍스트를 추출할 수 없었습니다.'}
+          </p>
+          {image.ocr_raw_text && (
+            <details className="w-full text-left">
+              <summary className="cursor-pointer text-[11px] text-slate-400 hover:text-slate-600">
+                OCR 원문 보기
+              </summary>
+              <pre className="mt-2 whitespace-pre-wrap rounded bg-slate-50 p-2 text-[10px] text-slate-600">
+                {image.ocr_raw_text}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
+
       {visionFields.length > 0 && (
         <div>
           <div className="mb-2 flex items-center gap-1.5">
@@ -584,6 +726,158 @@ function MatchedFieldList({
           </div>
         </div>
       )}
+
+      {manualFields.length > 0 && (
+        <div>
+          <div className="mb-2 flex items-center gap-1.5">
+            <Plus size={12} className="text-blue-500" />
+            <span className="text-[11px] font-semibold text-blue-600">직접 추가</span>
+            <span className="text-[10px] text-slate-400">({manualFields.length}개)</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {manualFields.map((field) => (
+              <MatchedFieldRow
+                key={field.keyword_id}
+                field={field}
+                species={species}
+                onToggle={() => onToggle(field)}
+                onEdit={(updated) => onEdit(field.keyword_id, updated)}
+                onDelete={() => onDelete(field.keyword_id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 항목 추가 폼 / 버튼 */}
+      {showAddForm ? (
+        <AddFieldRow
+          species={species}
+          existingIds={image.matched_fields.map((f) => f.keyword_id)}
+          onSave={(newField) => {
+            onAdd(newField)
+            setShowAddForm(false)
+          }}
+          onCancel={() => setShowAddForm(false)}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowAddForm(true)}
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 py-2 text-[11px] text-slate-400 hover:border-blue-300 hover:text-blue-500 transition-colors"
+        >
+          <Plus size={12} />
+          항목 추가
+        </button>
+      )}
+    </div>
+  )
+}
+
+// 새 항목 추가 폼
+function AddFieldRow({
+  species,
+  existingIds,
+  onSave,
+  onCancel,
+}: {
+  species: Species
+  existingIds: string[]
+  onSave: (field: MatchedField) => void
+  onCancel: () => void
+}) {
+  const { echoContextData } = useEchoContext()
+  const { testUIMeta } = echoContextData
+
+  const [draftKeywordId, setDraftKeywordId] = useState('')
+  const [draftValue, setDraftValue] = useState('')
+
+  const filteredMeta = testUIMeta.filter(
+    (m) => m.species.includes(species) && m.testType !== 'textcomment',
+  )
+  const selectedMeta = filteredMeta.find((m) => m.keywordID === draftKeywordId)
+  const isSelectType = selectedMeta?.testType === 'select'
+
+  function handleKeywordChange(id: string) {
+    setDraftKeywordId(id)
+    setDraftValue('')
+  }
+
+  function handleSave() {
+    if (!draftKeywordId || !draftValue.trim()) return
+    onSave({
+      keyword_id: draftKeywordId,
+      keyword_name: selectedMeta?.keywordName ?? draftKeywordId,
+      unit: selectedMeta?.unit ?? '',
+      raw_text: '',
+      value: draftValue,
+      confidence: 1.0,
+      applied: false,
+      source: 'manual',
+    })
+  }
+
+  const isDuplicate = existingIds.includes(draftKeywordId)
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+      <span className="text-[10px] font-semibold text-blue-600 flex items-center gap-1">
+        <Plus size={10} /> 새 항목 추가
+      </span>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] text-slate-500">검사 항목</span>
+        <SearchableKeywordSelect
+          value={draftKeywordId}
+          filteredMeta={filteredMeta}
+          onChange={handleKeywordChange}
+        />
+        {isDuplicate && (
+          <p className="text-[10px] text-amber-600">이미 추가된 항목입니다.</p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] text-slate-500">
+          결과값{selectedMeta?.unit ? ` (${selectedMeta.unit})` : ''}
+        </span>
+        {isSelectType ? (
+          <select
+            value={draftValue}
+            onChange={(e) => setDraftValue(e.target.value)}
+            className="rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          >
+            <option value="">선택...</option>
+            {selectedMeta?.options?.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={draftValue}
+            onChange={(e) => setDraftValue(e.target.value)}
+            className="rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            placeholder="값 입력"
+          />
+        )}
+      </div>
+
+      <div className="flex justify-end gap-1.5">
+        <button
+          onClick={onCancel}
+          className="rounded px-2 py-0.5 text-[11px] text-slate-500 hover:bg-slate-200"
+        >
+          취소
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!draftKeywordId || !draftValue.trim() || isDuplicate}
+          className="rounded bg-blue-600 px-2 py-0.5 text-[11px] text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          추가
+        </button>
+      </div>
     </div>
   )
 }
@@ -638,38 +932,31 @@ function MatchedFieldRow({
   }
 
   const isVision = field.source === 'vision'
-  const activeClass = isVision ? 'border-violet-200 bg-violet-50' : 'border-teal-200 bg-teal-50'
+  const isManual = field.source === 'manual'
+  const activeClass = isVision
+    ? 'border-violet-200 bg-violet-50'
+    : isManual
+    ? 'border-blue-200 bg-blue-50'
+    : 'border-teal-200 bg-teal-50'
   const hoverClass = isVision
     ? 'border-slate-200 bg-white hover:border-violet-200 hover:bg-violet-50/40'
+    : isManual
+    ? 'border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40'
     : 'border-slate-200 bg-white hover:border-teal-200 hover:bg-teal-50/40'
-  const checkColor = isVision ? 'text-violet-500' : 'text-teal-500'
-  const valueColor = isVision ? 'text-violet-700' : 'text-teal-700'
+  const checkColor = isVision ? 'text-violet-500' : isManual ? 'text-blue-500' : 'text-teal-500'
+  const valueColor = isVision ? 'text-violet-700' : isManual ? 'text-blue-700' : 'text-teal-700'
 
   if (editing) {
     return (
       <div className="flex flex-col gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2">
-        {/* 검사 항목 선택 */}
+        {/* 검사 항목 선택 (검색 가능) */}
         <div className="flex flex-col gap-1">
           <span className="text-[10px] text-slate-500">검사 항목</span>
-          <select
+          <SearchableKeywordSelect
             value={draftKeywordId}
-            onChange={(e) => handleKeywordChange(e.target.value)}
-            className="rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-400"
-          >
-            {ECHO_SECTION_LIST.map((section) => {
-              const sectionFields = filteredMeta.filter((m) => m.sections.includes(section))
-              if (!sectionFields.length) return null
-              return (
-                <optgroup key={section} label={section}>
-                  {sectionFields.map((m) => (
-                    <option key={m.keywordID} value={m.keywordID}>
-                      {m.keywordName}
-                    </option>
-                  ))}
-                </optgroup>
-              )
-            })}
-          </select>
+            filteredMeta={filteredMeta}
+            onChange={handleKeywordChange}
+          />
         </div>
 
         {/* 결과값 입력 */}
@@ -685,9 +972,7 @@ function MatchedFieldRow({
             >
               <option value="">선택...</option>
               {selectedMeta?.options?.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
+                <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
           ) : (
@@ -751,16 +1036,18 @@ function MatchedFieldRow({
 
       {/* 신뢰도 + 편집/삭제 버튼 */}
       <div className="flex shrink-0 items-center gap-1 self-center">
-        <span className={cn(
-          'rounded px-1.5 py-0.5 text-[10px] font-medium',
-          field.confidence >= 0.9
-            ? 'bg-emerald-100 text-emerald-700'
-            : field.confidence >= 0.7
-            ? 'bg-amber-100 text-amber-700'
-            : 'bg-slate-100 text-slate-500',
-        )}>
-          {Math.round(field.confidence * 100)}%
-        </span>
+        {field.source !== 'manual' && (
+          <span className={cn(
+            'rounded px-1.5 py-0.5 text-[10px] font-medium',
+            field.confidence >= 0.9
+              ? 'bg-emerald-100 text-emerald-700'
+              : field.confidence >= 0.7
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-slate-100 text-slate-500',
+          )}>
+            {Math.round(field.confidence * 100)}%
+          </span>
+        )}
         <button
           type="button"
           onClick={() => setEditing(true)}

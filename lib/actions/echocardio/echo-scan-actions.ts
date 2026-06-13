@@ -17,7 +17,7 @@ export type MatchedField = {
   value: string
   confidence: number
   applied: boolean
-  source: 'ocr' | 'vision'  // OCR 수치 vs Claude 이미지 직접 분석
+  source: 'ocr' | 'vision' | 'manual'  // OCR 수치 vs Claude 이미지 직접 분석 vs 직접 추가
 }
 
 export type EchoScanImage = {
