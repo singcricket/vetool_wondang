@@ -86,20 +86,20 @@ export default function AddLabResultDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex flex-col sm:max-w-[580px]"
+        className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-[580px]"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle>검사결과 추가</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as 'ocr' | 'manual')}>
-          <TabsList className="w-full">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as 'ocr' | 'manual')} className="flex min-h-0 flex-1 flex-col">
+          <TabsList className="w-full shrink-0">
             <TabsTrigger value="ocr" className="w-full text-xs">이미지 / PDF 분석</TabsTrigger>
             <TabsTrigger value="manual" className="w-full text-xs">직접 입력</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="ocr" className="mt-3">
+          <TabsContent value="ocr" className="mt-3 flex min-h-0 flex-1 flex-col">
             <OcrTab
               hosId={hosId}
               icuIoId={icuIoId}
@@ -109,7 +109,7 @@ export default function AddLabResultDialog({
             />
           </TabsContent>
 
-          <TabsContent value="manual" className="mt-3">
+          <TabsContent value="manual" className="mt-3 flex min-h-0 flex-1 flex-col">
             <ManualTab
               hosId={hosId}
               icuIoId={icuIoId}
@@ -342,145 +342,148 @@ function OcrTab({
   const isPdf = fileState?.mediaType === 'application/pdf'
 
   return (
-    <ScrollArea className="max-h-[70vh]">
-      <div className="flex flex-col gap-3 pr-1">
-        {/* 파일 표시 */}
-        <div className="relative">
-          {isPdf ? (
-            <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
-              <span className="rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-semibold text-red-600">PDF</span>
-              <span className="flex-1 truncate text-xs text-muted-foreground">{fileState?.name}</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={reset}>
-                <X size={12} />
-              </Button>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="flex flex-col gap-3 pr-1">
+          {/* 파일 표시 */}
+          <div className="relative">
+            {isPdf ? (
+              <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                <span className="rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-semibold text-red-600">PDF</span>
+                <span className="flex-1 truncate text-xs text-muted-foreground">{fileState?.name}</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={reset}>
+                  <X size={12} />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`data:${fileState?.mediaType};base64,${fileState?.base64}`}
+                  alt="업로드 이미지"
+                  className="max-h-28 w-full rounded-md border object-contain"
+                />
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-6 w-6" onClick={reset}>
+                  <X size={12} />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* 임상 요약 */}
+          <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2.5">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-blue-700">
+              <FileTextIcon size={11} />
+              임상 요약
+              <span className="font-normal text-blue-500">(문진·신체검사·이력 등)</span>
+            </div>
+            <Textarea
+              value={clinicalSummary}
+              onChange={(e) => setClinicalSummary(e.target.value)}
+              placeholder="AI가 추출한 임상 정보가 없습니다. 직접 입력할 수 있습니다."
+              className="min-h-[72px] resize-none bg-white text-xs"
+              rows={3}
+            />
+          </div>
+
+          {/* 혈액검사 패널 목록 */}
+          {panels.length > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] font-medium text-muted-foreground">검사 패널 ({panels.length}개)</p>
+                {panels.some((p) => p.isDuplicate) && (
+                  <span className="text-[10px] text-amber-600">
+                    ⚠ 이미 등록된 날짜 포함 — 기본적으로 건너뜁니다
+                  </span>
+                )}
+              </div>
+              {panels.map((panel, idx) => (
+                <div
+                  key={idx}
+                  className={`rounded-md border bg-white ${panel.isDuplicate && !panel.overwrite ? 'opacity-60' : ''}`}
+                >
+                  <div
+                    className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted/30"
+                    onClick={() => updatePanel(idx, { expanded: !panel.expanded })}
+                  >
+                    <Select
+                      value={panel.panel_type}
+                      onValueChange={(v) => updatePanel(idx, { panel_type: v })}
+                    >
+                      <SelectTrigger
+                        className="h-6 w-28 shrink-0 text-[11px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PANEL_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="datetime-local"
+                      value={panel.tested_at}
+                      onChange={(e) => updatePanel(idx, { tested_at: e.target.value })}
+                      className="h-6 flex-1 text-[11px]"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    {panel.isDuplicate ? (
+                      <button
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                          panel.overwrite
+                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          updatePanel(idx, { overwrite: !panel.overwrite })
+                        }}
+                        title={panel.overwrite ? '클릭하면 건너뜀으로 변경' : '클릭하면 덮어쓰기로 변경'}
+                      >
+                        {panel.overwrite ? '덮어쓰기' : '이미 등록됨'}
+                      </button>
+                    ) : (
+                      <span className="shrink-0 text-[11px] text-muted-foreground">{panel.rows.filter(r => r.key.trim()).length}항목</span>
+                    )}
+                    <ChevronDownIcon
+                      size={13}
+                      className={`shrink-0 text-muted-foreground transition-transform ${panel.expanded ? 'rotate-180' : ''}`}
+                    />
+                  </div>
+                  {panel.expanded && (
+                    <div className="border-t px-3 pb-2 pt-2">
+                      <ItemEditor
+                        rows={panel.rows}
+                        onChange={(rows) => updatePanel(idx, { rows })}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`data:${fileState?.mediaType};base64,${fileState?.base64}`}
-                alt="업로드 이미지"
-                className="max-h-28 w-full rounded-md border object-contain"
-              />
-              <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-6 w-6" onClick={reset}>
-                <X size={12} />
-              </Button>
+            <div className="rounded-md border border-dashed bg-muted/20 px-3 py-3 text-center">
+              <p className="text-xs text-muted-foreground">추출된 혈액검사 수치가 없습니다</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground/70">임상 요약만 저장되거나, 직접 패널을 추가할 수 있습니다</p>
             </div>
           )}
         </div>
+      </ScrollArea>
 
-        {/* 임상 요약 */}
-        <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2.5">
-          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-blue-700">
-            <FileTextIcon size={11} />
-            임상 요약
-            <span className="font-normal text-blue-500">(문진·신체검사·이력 등)</span>
-          </div>
-          <Textarea
-            value={clinicalSummary}
-            onChange={(e) => setClinicalSummary(e.target.value)}
-            placeholder="AI가 추출한 임상 정보가 없습니다. 직접 입력할 수 있습니다."
-            className="min-h-[72px] resize-none bg-white text-xs"
-            rows={3}
-          />
-        </div>
-
-        {/* 혈액검사 패널 목록 */}
-        {panels.length > 0 ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <p className="text-[11px] font-medium text-muted-foreground">검사 패널 ({panels.length}개)</p>
-              {panels.some((p) => p.isDuplicate) && (
-                <span className="text-[10px] text-amber-600">
-                  ⚠ 이미 등록된 날짜 포함 — 기본적으로 건너뜁니다
-                </span>
-              )}
-            </div>
-            {panels.map((panel, idx) => (
-              <div
-                key={idx}
-                className={`rounded-md border bg-white ${panel.isDuplicate && !panel.overwrite ? 'opacity-60' : ''}`}
-              >
-                <div
-                  className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted/30"
-                  onClick={() => updatePanel(idx, { expanded: !panel.expanded })}
-                >
-                  <Select
-                    value={panel.panel_type}
-                    onValueChange={(v) => updatePanel(idx, { panel_type: v })}
-                  >
-                    <SelectTrigger
-                      className="h-6 w-28 shrink-0 text-[11px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PANEL_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="datetime-local"
-                    value={panel.tested_at}
-                    onChange={(e) => updatePanel(idx, { tested_at: e.target.value })}
-                    className="h-6 flex-1 text-[11px]"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  {panel.isDuplicate ? (
-                    <button
-                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
-                        panel.overwrite
-                          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        updatePanel(idx, { overwrite: !panel.overwrite })
-                      }}
-                      title={panel.overwrite ? '클릭하면 건너뜀으로 변경' : '클릭하면 덮어쓰기로 변경'}
-                    >
-                      {panel.overwrite ? '덮어쓰기' : '이미 등록됨'}
-                    </button>
-                  ) : (
-                    <span className="shrink-0 text-[11px] text-muted-foreground">{panel.rows.filter(r => r.key.trim()).length}항목</span>
-                  )}
-                  <ChevronDownIcon
-                    size={13}
-                    className={`shrink-0 text-muted-foreground transition-transform ${panel.expanded ? 'rotate-180' : ''}`}
-                  />
-                </div>
-                {panel.expanded && (
-                  <div className="border-t px-3 pb-2 pt-2">
-                    <ItemEditor
-                      rows={panel.rows}
-                      onChange={(rows) => updatePanel(idx, { rows })}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-md border border-dashed bg-muted/20 px-3 py-3 text-center">
-            <p className="text-xs text-muted-foreground">추출된 혈액검사 수치가 없습니다</p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground/70">임상 요약만 저장되거나, 직접 패널을 추가할 수 있습니다</p>
-          </div>
-        )}
-
-        <div className="flex justify-end gap-2 pt-1">
-          <Button variant="outline" size="sm" onClick={reset} disabled={saving}>다시 선택</Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving || (panels.every(p => !p.rows.some(r => r.key.trim())) && !clinicalSummary.trim())}
-          >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : '저장'}
-          </Button>
-        </div>
+      {/* 저장 버튼 — 스크롤 영역 밖, 항상 하단 고정 */}
+      <div className="flex shrink-0 justify-end gap-2 border-t pt-3">
+        <Button variant="outline" size="sm" onClick={reset} disabled={saving}>다시 선택</Button>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={saving || (panels.every(p => !p.rows.some(r => r.key.trim())) && !clinicalSummary.trim())}
+        >
+          {saving ? <Loader2 size={14} className="animate-spin" /> : '저장'}
+        </Button>
       </div>
-    </ScrollArea>
+    </div>
   )
 }
 
@@ -549,59 +552,64 @@ function ManualTab({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* 임상 소견 */}
-      <div>
-        <Label className="text-xs">
-          임상 소견
-          <span className="ml-1 font-normal text-muted-foreground">(주관적·객관적 소견, 경과 등 자유롭게 작성)</span>
-        </Label>
-        <Textarea
-          value={clinicalNote}
-          onChange={(e) => setClinicalNote(e.target.value)}
-          placeholder="예) 오늘 컨디션은 계속 좋지 않고, 초음파상 복수가 더 늘고 있음. 식욕 없음, BCS 3/9..."
-          className="mt-1 min-h-[80px] resize-none text-xs"
-          rows={3}
-        />
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="flex flex-col gap-3 pr-1">
+          {/* 임상 소견 */}
+          <div>
+            <Label className="text-xs">
+              임상 소견
+              <span className="ml-1 font-normal text-muted-foreground">(주관적·객관적 소견, 경과 등 자유롭게 작성)</span>
+            </Label>
+            <Textarea
+              value={clinicalNote}
+              onChange={(e) => setClinicalNote(e.target.value)}
+              placeholder="예) 오늘 컨디션은 계속 좋지 않고, 초음파상 복수가 더 늘고 있음. 식욕 없음, BCS 3/9..."
+              className="mt-1 min-h-[80px] resize-none text-xs"
+              rows={3}
+            />
+          </div>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-background px-2 text-[11px] text-muted-foreground">검사 수치 입력 (선택)</span>
-        </div>
-      </div>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-background px-2 text-[11px] text-muted-foreground">검사 수치 입력 (선택)</span>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs">검사 종류</Label>
-          <Select value={panelType} onValueChange={setPanelType}>
-            <SelectTrigger className="mt-1 h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PANEL_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-xs">검사 일시</Label>
-          <Input
-            type="datetime-local"
-            value={testedAt}
-            onChange={(e) => setTestedAt(e.target.value)}
-            className="mt-1 h-8 text-xs"
-          />
-        </div>
-      </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">검사 종류</Label>
+              <Select value={panelType} onValueChange={setPanelType}>
+                <SelectTrigger className="mt-1 h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PANEL_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">검사 일시</Label>
+              <Input
+                type="datetime-local"
+                value={testedAt}
+                onChange={(e) => setTestedAt(e.target.value)}
+                className="mt-1 h-8 text-xs"
+              />
+            </div>
+          </div>
 
-      <ItemEditor rows={rows} onChange={setRows} />
+          <ItemEditor rows={rows} onChange={setRows} />
+        </div>
+      </ScrollArea>
 
-      <div className="flex justify-end gap-2 pt-1">
+      {/* 저장 버튼 — 스크롤 영역 밖, 항상 하단 고정 */}
+      <div className="flex shrink-0 justify-end gap-2 border-t pt-3">
         <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>취소</Button>
         <Button
           size="sm"
