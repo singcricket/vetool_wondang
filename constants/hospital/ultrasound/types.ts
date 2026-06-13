@@ -112,6 +112,7 @@ interface BaseTestItem {
   required: boolean;
   displayLevel: DisplayLevel;
   dependsOn?: DependsOn | DependsOn[];
+  dependsOnAny?: DependsOn[];
   relatedTests?: string[];
   note?: string;
 }
@@ -134,6 +135,8 @@ export interface RangeTestItem extends BaseTestItem {
   unit: string;
   normalRange: NormalRange;
   ranges: RangeSegment[];
+  dogRanges?: RangeSegment[];
+  catRanges?: RangeSegment[];
 }
 
 export interface BooleanTestItem extends BaseTestItem {

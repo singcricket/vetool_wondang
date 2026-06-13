@@ -169,11 +169,12 @@ export const buildChartSummary = (
   results: Record<string, string | number>,
   lang: 'en' | 'ko' = 'ko',
   targetOrgan?: Organ,
-  audience: 'vet' | 'owner' = 'vet'
-) => utils.buildChartSummary(results, organSections, lang, targetOrgan, audience);
+  audience: 'vet' | 'owner' = 'vet',
+  species?: string
+) => utils.buildChartSummary(results, organSections, lang, targetOrgan, audience, species);
 
 export const evaluateImpressionRules = (
-  results: Record<string, string>
+  results: Record<string, any>
 ) => utils.evaluateImpressionRules(results, impressionRules);
 
 export * from './types';

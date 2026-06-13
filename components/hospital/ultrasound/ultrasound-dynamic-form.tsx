@@ -129,12 +129,22 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
 
       case 'range': {
         let rangeText = ''
-        if (species && test.normalRange) {
-          const ref = species === 'canine' ? test.normalRange.dog : species === 'feline' ? test.normalRange.cat : null
-          if (ref) {
-            const minStr = ref.min !== undefined ? ref.min : 0
-            const maxStr = ref.max !== undefined ? ref.max : '∞'
-            rangeText = `참고범위: ${minStr} ~ ${maxStr} ${test.unit || ''}`
+        if (test.normalRange) {
+          const dogRef = test.normalRange.dog
+          const catRef = test.normalRange.cat
+          if (species === 'canine' && dogRef) {
+            const minStr = dogRef.min !== undefined ? dogRef.min : 0
+            const maxStr = dogRef.max !== undefined ? dogRef.max : '∞'
+            rangeText = `참고범위 (개): ${minStr} ~ ${maxStr} ${test.unit || ''}`
+          } else if (species === 'feline' && catRef) {
+            const minStr = catRef.min !== undefined ? catRef.min : 0
+            const maxStr = catRef.max !== undefined ? catRef.max : '∞'
+            rangeText = `참고범위 (고양이): ${minStr} ~ ${maxStr} ${test.unit || ''}`
+          } else if (dogRef || catRef) {
+            const parts = []
+            if (dogRef) parts.push(`개: ≤${dogRef.max ?? '∞'}`)
+            if (catRef) parts.push(`고양이: ≤${catRef.max ?? '∞'}`)
+            rangeText = `참고범위 — ${parts.join(', ')} ${test.unit || ''}`
           }
         }
         return (
@@ -248,15 +258,20 @@ export default function UltrasoundDynamicForm({ organ, organData, species, onUpd
         </RadioGroup>
       </div>
 
-      {/* Level 1~3: Dynamic Test Items (Only shown if abnormal or absent) */}
-      {(organData.status === 'abnormal' || organData.status === 'absent') && (
+      {/* Level 1~3: Dynamic Test Items */}
+      {(organData.status === 'abnormal' || organData.status === 'absent' || organData.status === 'normal') && (
         <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+          {organData.status === 'normal' && (
+            <p className="text-xs text-slate-400 -mb-2">
+              정상 소견이나 참고치 기록이 필요한 항목을 선택적으로 입력할 수 있습니다.
+            </p>
+          )}
           {tests.filter(test => isTestVisible(test, { ...findings, [statusGate.testID]: organData.status })).map(test => {
             const isSubLevel = test.displayLevel > 1
-            
+
             return (
-              <div 
-                key={test.testID} 
+              <div
+                key={test.testID}
                 className={`bg-white p-5 rounded-lg border shadow-sm flex flex-col sm:flex-row sm:items-start gap-4 transition-all ${isSubLevel ? 'ml-8 sm:ml-12 border-l-4 border-l-blue-400' : ''}`}
               >
                 <div className="sm:w-1/3 shrink-0">

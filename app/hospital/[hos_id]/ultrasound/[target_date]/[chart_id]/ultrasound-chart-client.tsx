@@ -195,8 +195,8 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
 
         {/* Right Side: DDx & Summary Panel (Desktop) */}
         <div className="hidden lg:block w-80 border-l bg-slate-50 h-full overflow-y-auto p-4 space-y-4">
-          <UltrasoundImpressionPanel organsData={organsData} lang="ko" />
-          <UltrasoundImpressionPanel organsData={organsData} lang="en" />
+          <UltrasoundImpressionPanel organsData={organsData} lang="ko" species={chartDetail.patient?.species} />
+          <UltrasoundImpressionPanel organsData={organsData} lang="en" species={chartDetail.patient?.species} />
         </div>
       </div>
 
@@ -213,8 +213,8 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
               <SheetTitle>초음파 소견 및 진단 (DDx)</SheetTitle>
             </SheetHeader>
             <div className="space-y-4 pb-8">
-              <UltrasoundImpressionPanel organsData={organsData} lang="ko" />
-              <UltrasoundImpressionPanel organsData={organsData} lang="en" />
+              <UltrasoundImpressionPanel organsData={organsData} lang="ko" species={chartDetail.patient?.species} />
+              <UltrasoundImpressionPanel organsData={organsData} lang="en" species={chartDetail.patient?.species} />
             </div>
           </SheetContent>
         </Sheet>

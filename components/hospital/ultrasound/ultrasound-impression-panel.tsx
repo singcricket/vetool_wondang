@@ -15,9 +15,10 @@ import { Button } from '@/components/ui/button'
 interface Props {
   organsData: Record<string, UltrasoundChartOrgan>
   lang?: 'ko' | 'en'
+  species?: string
 }
 
-export default function UltrasoundImpressionPanel({ organsData, lang = 'ko' }: Props) {
+export default function UltrasoundImpressionPanel({ organsData, lang = 'ko', species }: Props) {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text)
     toast.success(lang === 'ko' ? '클립보드에 복사되었습니다.' : 'Copied to clipboard')
@@ -31,16 +32,18 @@ export default function UltrasoundImpressionPanel({ organsData, lang = 'ko' }: P
     const organ = organsData[section.organ]
     if (!organ) return
 
-    // 1. 표준 소견 추출
-    const organSummaries = (organ.status === 'abnormal' || organ.status === 'absent') && organ.findings_data
+    // 1. 표준 소견 추출 (normal 포함 — 참고치 기록이 있을 수 있음)
+    const organSummaries = (organ.status === 'abnormal' || organ.status === 'absent' || organ.status === 'normal') && organ.findings_data
       ? buildChartSummary(
           organ.findings_data as Record<string, string | number>,
           lang,
-          section.organ
+          section.organ,
+          'vet',
+          species,
         )
       : []
 
-    if ((organ.status === 'abnormal' || organ.status === 'absent') && organ.findings_data) {
+    if ((organ.status === 'abnormal' || organ.status === 'absent' || organ.status === 'normal') && organ.findings_data) {
       Object.assign(allFindings, organ.findings_data)
     }
 

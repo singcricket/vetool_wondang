@@ -39,6 +39,16 @@ export function isOrganVisible(
 /**
  * 개별 검사 항목이 화면에 표시되어야 하는지 여부.
  */
+function matchesDep(dep: { testID: string; triggerValues: string[] }, results: Record<string, any>, organStatus: string): boolean {
+  let currentValue = results[dep.testID];
+  if (dep.testID === 'organ_status') currentValue = organStatus;
+  if (currentValue === undefined || currentValue === null || currentValue === '') return false;
+  // 빈 triggerValues = 값이 존재하기만 하면 트리거 (any non-empty value)
+  if (dep.triggerValues.length === 0) return true;
+  if (Array.isArray(currentValue)) return dep.triggerValues.some(v => currentValue.includes(v));
+  return dep.triggerValues.includes(String(currentValue));
+}
+
 export function isTestVisible(
   test: UltrasoundTestItem,
   results: Record<string, any>
@@ -46,22 +56,25 @@ export function isTestVisible(
   const organStatusID = test.organ + '_status';
   const organStatus = results[organStatusID];
 
-  if (!test.dependsOn) {
-    return organStatus === 'abnormal';
+  const hasDependsOn = !!test.dependsOn;
+  const hasDependsOnAny = !!(test.dependsOnAny && test.dependsOnAny.length > 0);
+
+  if (!hasDependsOn && !hasDependsOnAny) {
+    return organStatus === 'abnormal' || organStatus === 'normal';
   }
 
-  const deps = Array.isArray(test.dependsOn) ? test.dependsOn : [test.dependsOn];
+  // dependsOn (AND): 모든 조건을 만족해야 함
+  const andMet = hasDependsOn
+    ? (Array.isArray(test.dependsOn) ? test.dependsOn : [test.dependsOn!])
+        .every(dep => matchesDep(dep, results, organStatus))
+    : false;
 
-  return deps.every((dep) => {
-    let currentValue = results[dep.testID];
-    
-    if (dep.testID === 'organ_status') {
-      currentValue = organStatus;
-    }
+  // dependsOnAny (OR): 하나라도 만족하면 됨
+  const anyMet = hasDependsOnAny
+    ? test.dependsOnAny!.some(dep => matchesDep(dep, results, organStatus))
+    : false;
 
-    if (!currentValue) return false;
-    return dep.triggerValues.includes(String(currentValue));
-  });
+  return andMet || anyMet;
 }
 
 /**
@@ -76,7 +89,8 @@ export function buildChartSummary(
   organSections: OrganSection[],
   lang: 'en' | 'ko' = 'ko',
   targetOrgan?: Organ,
-  audience: 'vet' | 'owner' = 'vet'
+  audience: 'vet' | 'owner' = 'vet',
+  species?: string
 ): string[] {
   const lines: string[] = [];
   const processedTestIDs = new Set<string>();
@@ -109,7 +123,11 @@ export function buildChartSummary(
           }
         }
       } else if (test.testType === 'range' && typeof val === 'number') {
-        const seg = test.ranges.find(
+        const activeRanges =
+          species === 'feline' && test.catRanges ? test.catRanges :
+          species === 'canine' && test.dogRanges ? test.dogRanges :
+          test.ranges;
+        const seg = activeRanges.find(
           (r) =>
             (r.min === null || val >= r.min) &&
             (r.max === null || val < r.max)
@@ -169,15 +187,22 @@ export function buildChartSummary(
 
 /**
  * 임프레션 룰 평가
+ * multiselect 값(array)도 지원: actual이 배열이면 expected가 배열에 포함되는지 확인
  */
 export function evaluateImpressionRules(
-  results: Record<string, string>,
+  results: Record<string, any>,
   impressionRules: ImpressionRule[]
 ): ImpressionRule[] {
   return impressionRules.filter((rule) => {
     return Object.entries(rule.conditions).every(([testID, expected]) => {
       const actual = results[testID];
-      if (!actual) return false;
+      if (actual === undefined || actual === null) return false;
+      // multiselect: actual is an array
+      if (Array.isArray(actual)) {
+        if (Array.isArray(expected)) return expected.some(e => actual.includes(e));
+        return actual.includes(expected);
+      }
+      // select / boolean / range: scalar value
       if (Array.isArray(expected)) return expected.includes(actual);
       return actual === expected;
     });
