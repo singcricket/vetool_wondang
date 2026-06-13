@@ -5,17 +5,23 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { RefreshCw, Radiation, ScanLine, Heart, Scan } from 'lucide-react'
+import { RefreshCw, Radiation, ScanLine, Heart, Scan, Sparkles, ExternalLink } from 'lucide-react'
 import { SectionBlock } from './tab-ui'
 import { toast } from 'sonner'
 import { upsertCheckupSection } from '@/lib/actions/checkup/checkup-actions'
 import {
   fetchPatientUltrasoundCharts,
   fetchUltrasoundOrganData,
+  fetchPatientEchoCharts,
+  fetchEchoChartResults,
   createLinkedSubChart,
+  linkSubChartToCheckup,
+  importEchoScanImagesToCheckup,
   type UltrasoundChartListItem,
   type UltrasoundOrganData,
+  type EchoChartListItem,
 } from '@/lib/actions/checkup/linked-chart-actions'
+import { fillCheckupEchoFromChart } from '@/lib/actions/checkup/echo-chart-fill-action'
 import type { CheckupSection, CheckupPatient } from '@/types/hospital/checkup-type'
 import type { ExtractedImaging } from '@/lib/actions/checkup/pdf-extraction'
 import {
@@ -94,15 +100,17 @@ const XRAY_CAT_TAG: Record<XrayCategoryId, string> = {
 }
 
 const ECHO_CAT_TAG: Record<EchoCategoryId, string> = {
-  lv_systolic:  'echo_lv',
-  lv_size:      'echo_lv',
-  mitral_valve: 'echo_mv',
-  left_atrium:  'echo_la',
-  aortic_valve: 'echo_av',
-  right_heart:  'echo_rv_ra',
-  pulmonary_ht: 'echo_rv_ra',
-  pericardium:  'echo_pericardium',
-  overall:      'echo_overview',
+  lv_systolic:   'echo_lv',
+  lv_size:       'echo_lv',
+  lv_myocardial: 'echo_lv',
+  lv_diastolic:  'echo_lv',
+  mitral_valve:  'echo_mv',
+  left_atrium:   'echo_la',
+  aortic_valve:  'echo_av',
+  right_heart:   'echo_rv_ra',
+  pulmonary_ht:  'echo_rv_ra',
+  pericardium:   'echo_pericardium',
+  overall:       'echo_overview',
 }
 
 // ── 심각도 배지 ──────────────────────────────────────────────
@@ -218,11 +226,14 @@ export default function Tab4Imaging({
   const [ctMri, setCtMri] = useState<CtMriData>(() => initCtMriData(ctMriSection))
 
   const [usList, setUsList] = useState<UltrasoundChartListItem[]>([])
+  const [echoList, setEchoList] = useState<EchoChartListItem[]>([])
   const [loadingOrgan, setLoadingOrgan] = useState(false)
+  const [loadingEcho, setLoadingEcho] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     fetchPatientUltrasoundCharts(patientId).then(setUsList)
+    fetchPatientEchoCharts(patientId).then(setEchoList)
   }, [patientId])
 
   // PDF 추출 결과 → 방사선 소견 반영
@@ -279,6 +290,55 @@ export default function Tab4Imaging({
     const updated = await fetchPatientUltrasoundCharts(patientId)
     setUsList(updated)
     window.open(`/hospital/${hosId}/ultrasound/${checkupDate}/${chartId}`, '_blank')
+  }
+
+  const handleEchoLinkChange = async (chartId: string | null) => {
+    onSubChartChange('echo', chartId)
+    if (chartId) await linkSubChartToCheckup(checkupId, 'echo', chartId)
+  }
+
+  const handleImportEchoImages = async (chartId: string) => {
+    const toastId = toast.loading('심장초음파 이미지를 가져오는 중...')
+    try {
+      const { imported, skipped } = await importEchoScanImagesToCheckup({
+        echoChartId: chartId,
+        checkupId,
+        hosId,
+      })
+      if (imported === 0 && skipped > 0) {
+        toast.info('이미 모든 이미지가 추가되어 있습니다.', { id: toastId })
+      } else if (imported === 0) {
+        toast.info('가져올 이미지가 없습니다.', { id: toastId })
+      } else {
+        toast.success(`${imported}장 추가됨${skipped > 0 ? ` (${skipped}장 중복 제외)` : ''}`, { id: toastId })
+      }
+    } catch {
+      toast.error('이미지 가져오기 실패', { id: toastId })
+    }
+  }
+
+  const handleFillEchoFromChart = async (chartId: string) => {
+    setLoadingEcho(true)
+    const toastId = toast.loading('심장초음파 결과를 불러오는 중...')
+    try {
+      const echoData = await fetchEchoChartResults(chartId)
+      toast.loading('AI가 소견을 분석하는 중...', { id: toastId })
+      const { data, error } = await fillCheckupEchoFromChart(echoData, speciesKey)
+      if (error || !data) {
+        toast.error(error ?? '분석 실패', { id: toastId })
+        return
+      }
+      setEcho((prev) => ({
+        checked: { ...prev.checked, ...data.checked },
+        notes: { ...prev.notes, ...data.notes },
+        measurements: { ...prev.measurements, ...data.measurements },
+      }))
+      toast.success('심장초음파 결과가 자동 입력되었습니다.', { id: toastId })
+    } catch {
+      toast.error('불러오기 실패', { id: toastId })
+    } finally {
+      setLoadingEcho(false)
+    }
   }
 
   const toggleFinding = (findingId: string, checked: boolean, categoryId?: XrayCategoryId) => {
@@ -373,7 +433,14 @@ export default function Tab4Imaging({
     previewText: c.impressionSummary,
   }))
 
+  const echoChartItems: ChartListItem[] = echoList.map((c) => ({
+    id: c.id,
+    chartDate: c.chartDate,
+    previewText: c.memo,
+  }))
+
   const linkedUsId = subCharts['ultrasound'] ?? null
+  const linkedEchoId = subCharts['echo'] ?? null
 
   // species 정규화 ('dog' | 'cat')
   const speciesKey: 'dog' | 'cat' = /^(cat|feline)$/i.test(patient.species) ? 'cat' : 'dog'
@@ -604,7 +671,72 @@ export default function Tab4Imaging({
       </SectionBlock>
 
       {/* ── 심장초음파 ────────────────────────────────── */}
-      <SectionBlock icon={Heart} title="심장초음파 (Echocardiography)" color="rose">
+      <SectionBlock
+        icon={Heart}
+        title="심장초음파 (Echocardiography)"
+        color="rose"
+        action={
+          <div className="flex items-center gap-2">
+            {linkedEchoId && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs text-white/80 hover:bg-white/20 hover:text-white gap-1"
+                  onClick={() => handleFillEchoFromChart(linkedEchoId)}
+                  disabled={loadingEcho}
+                >
+                  {loadingEcho
+                    ? <RefreshCw size={11} className="animate-spin" />
+                    : <Sparkles size={11} />}
+                  AI 자동 입력
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs text-white/80 hover:bg-white/20 hover:text-white gap-1"
+                  onClick={() => handleImportEchoImages(linkedEchoId)}
+                >
+                  <ScanLine size={11} />
+                  이미지 가져오기
+                </Button>
+                <a
+                  href={`/hospital/${hosId}/echocardio/${echoList.find(c => c.id === linkedEchoId)?.chartDate ?? ''}/${linkedEchoId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 rounded px-2 py-0.5 text-xs text-white/80 hover:bg-white/20 hover:text-white"
+                >
+                  <ExternalLink size={11} />
+                  차트 열기
+                </a>
+              </>
+            )}
+            <LinkedChartPanel
+              label="심장초음파 차트"
+              chartType="echo"
+              checkupId={checkupId}
+              charts={echoChartItems}
+              linkedChartId={linkedEchoId}
+              buildChartUrl={(id, date) => `/hospital/${hosId}/echocardio/${date}/${id}`}
+              onLinkChange={handleEchoLinkChange}
+              onCreateNew={async () => {
+                const chartId = await createLinkedSubChart({
+                  checkupId,
+                  chartType: 'echo',
+                  hosId,
+                  patientId,
+                  patient,
+                  chartDate: checkupDate,
+                })
+                onSubChartChange('echo', chartId)
+                const updated = await fetchPatientEchoCharts(patientId)
+                setEchoList(updated)
+                window.open(`/hospital/${hosId}/echocardio/${checkupDate}/${chartId}`, '_blank')
+              }}
+            />
+          </div>
+        }
+      >
         {/* 소견 체크박스 */}
         <div className="flex flex-col gap-5">
           {echoCategories.map((cat) => {

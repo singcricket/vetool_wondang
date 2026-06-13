@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useTransition, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Circle,
   ImageIcon,
-  Sparkles,
   X,
   ZoomIn,
   Eye,
@@ -24,7 +23,6 @@ import {
   uploadAndProcessEchoScanImage,
   updateScanImageMatchedFields,
   deleteEchoScanImage,
-  generateEchoFinding,
   type EchoScanImage,
   type MatchedField,
 } from '@/lib/actions/echocardio/echo-scan-actions'
@@ -39,7 +37,6 @@ interface Props {
   initialImages: EchoScanImage[]
   resultMap: Record<string, string>
   onApplyField: (keywordId: string, value: string) => void
-  onFindingGenerated: (memo: string) => void
 }
 
 // Canvas 압축 (1600px, JPEG 82%)
@@ -200,7 +197,6 @@ export default function EchoInputScanMode({
   initialImages,
   resultMap,
   onApplyField,
-  onFindingGenerated,
 }: Props) {
   const [images, setImages] = useState<EchoScanImage[]>(initialImages)
   const [selectedId, setSelectedId] = useState<string | null>(initialImages[0]?.id ?? null)
@@ -209,7 +205,6 @@ export default function EchoInputScanMode({
   const [uploadProgress, setUploadProgress] = useState(0)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [fullscreenUrl, setFullscreenUrl] = useState<string | null>(null)
-  const [generatingFinding, startGeneratingFinding] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -296,7 +291,7 @@ export default function EchoInputScanMode({
   const handleDelete = async (img: EchoScanImage) => {
     setDeletingId(img.id)
     try {
-      await deleteEchoScanImage(img.id, img.file_path)
+      await deleteEchoScanImage(img.id, img.file_path, img.public_url)
       setImages((prev) => {
         const next = prev.filter((i) => i.id !== img.id)
         if (selectedId === img.id) setSelectedId(next[0]?.id ?? null)
@@ -408,18 +403,6 @@ export default function EchoInputScanMode({
     [],
   )
 
-  const handleGenerateFinding = () => {
-    startGeneratingFinding(async () => {
-      try {
-        const memo = await generateEchoFinding(hosId, echoId, resultMap, species)
-        onFindingGenerated(memo)
-        toast.success('AI 소견서가 생성되어 메모란에 저장되었습니다.')
-      } catch (err: any) {
-        toast.error(err?.message ?? 'AI 소견서 생성 실패')
-      }
-    })
-  }
-
   return (
     <div className="flex flex-1 overflow-hidden min-h-0">
       {/* ── 왼쪽 패널: 이미지 썸네일 목록 ── */}
@@ -510,21 +493,6 @@ export default function EchoInputScanMode({
           ))}
         </div>
 
-        {/* AI 소견서 생성 버튼 */}
-        <div className="border-t p-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full text-[11px] gap-1 border-violet-300 text-violet-700 hover:bg-violet-50"
-            onClick={handleGenerateFinding}
-            disabled={generatingFinding}
-          >
-            {generatingFinding
-              ? <Loader2 size={12} className="animate-spin" />
-              : <Sparkles size={12} />}
-            AI 소견서
-          </Button>
-        </div>
       </div>
 
       {/* ── 오른쪽 패널: 선택된 이미지 + 매칭 항목 ── */}

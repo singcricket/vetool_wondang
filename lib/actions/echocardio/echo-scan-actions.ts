@@ -330,12 +330,18 @@ export async function updateScanImageMatchedFields(
 
 // ── 이미지 삭제 ─────────────────────────────────────────────────
 
-export async function deleteEchoScanImage(imageId: string, filePath: string): Promise<void> {
+export async function deleteEchoScanImage(
+  imageId: string,
+  filePath: string,
+  publicUrl: string,
+): Promise<void> {
   const supabase = await createClient()
   const adminClient = createAdminClient()
   await adminClient.storage.from('echo-scan-images').remove([filePath])
   const { error } = await supabase.from('echo_scan_images').delete().eq('id', imageId)
   if (error) throw new Error(error.message)
+  // checkup_images에서 동일 URL 참조하는 행 정리 (연동 삭제)
+  await (supabase as any).from('checkup_images').delete().eq('img_url', publicUrl)
 }
 
 // ── AI 소견서 생성 → echo_charts.memo 업데이트 ──────────────────

@@ -22,6 +22,7 @@ import type { CheckupImageTagGroup } from '@/constants/hospital/checkup/checkup-
 import ShareResourceDialog from '@/components/hospital/share/share-resource-dialog'
 import CheckupDeleteDialog from './checkup-delete-dialog'
 import CheckupTxtDialog from './checkup-txt-dialog'
+import CheckupVetSelector from './checkup-vet-selector'
 
 const STATUS_LABEL: Record<CheckupStatus, string> = {
   draft: '작성중',
@@ -195,12 +196,11 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               <CalendarDays size={13} />
               {record.checkup_date}
             </div>
-            {record.vet_name && (
-              <div className="flex items-center gap-1 text-xs text-slate-500">
-                <User size={13} />
-                {record.vet_name}
-              </div>
-            )}
+            <CheckupVetSelector
+              checkupId={record.id}
+              vetId={record.vet_id}
+              vetName={record.vet_name}
+            />
             <span
               className={cn(
                 'rounded px-2 py-0.5 text-xs font-semibold',

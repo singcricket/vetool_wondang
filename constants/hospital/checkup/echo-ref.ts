@@ -10,6 +10,8 @@ import type { XrayMeasurementRange } from './xray-ref'
 export type EchoCategoryId =
   | 'lv_systolic'
   | 'lv_size'
+  | 'lv_myocardial'
+  | 'lv_diastolic'
   | 'mitral_valve'
   | 'left_atrium'
   | 'aortic_valve'
@@ -113,7 +115,130 @@ const lvSizeFindings: EchoFinding[] = [
   },
 ]
 
-// 3. 이첨판 (승모판)
+// 3. 심근질환 / HCM 관련
+const lvMyocardialFindings: EchoFinding[] = [
+  {
+    id: 'ivs_hypertrophy_borderline',
+    label: '실간격 경계성 비후 (IVSd 5.5–6.0 mm)',
+    severity: 'mild',
+    ownerMessage: '심장 내부를 나누는 벽(실간격)이 정상보다 약간 두꺼워진 경계 수치입니다. 6개월 후 재검사로 변화를 확인하는 것을 권장드립니다.',
+  },
+  {
+    id: 'ivs_hypertrophy_significant',
+    label: '실간격 유의미한 비후 (IVSd ≥ 6.0 mm)',
+    severity: 'moderate',
+    ownerMessage: '심장 내 실간격 두께가 비대성 심근병증(HCM) 진단 기준 이상으로 두꺼워져 있습니다. 전문 심장 수의사의 정밀 평가가 필요합니다.',
+  },
+  {
+    id: 'lvfw_hypertrophy_significant',
+    label: 'LV 자유벽 유의미한 비후 (LVFWd ≥ 6.0 mm)',
+    severity: 'moderate',
+    ownerMessage: '심장 좌심실 외벽이 기준 이상으로 두꺼워져 있습니다. 비대성 심근병증(HCM)의 진단 기준에 해당하므로 전문 평가가 필요합니다.',
+  },
+  {
+    id: 'asymmetric_hypertrophy',
+    label: '비대칭성 비후 (IVS > LVFWd)',
+    severity: 'moderate',
+    ownerMessage: '심장 근육이 한쪽 벽만 더 두꺼워지는 비대칭 비후 소견이 관찰됩니다. 비대성 심근병증(HCM)의 특징적 형태로 주의 깊은 추적이 필요합니다.',
+  },
+  {
+    id: 'dynamic_lvoto',
+    label: '동적 LVOTO (좌심실 유출로 동적 폐쇄)',
+    severity: 'moderate',
+    ownerMessage: '심장이 수축할 때 좌심실 출구가 역동적으로 좁아지는 소견(동적 LVOTO)이 관찰됩니다. HCM에서 흔히 나타나며 혈류 방해와 증상 악화의 원인이 됩니다.',
+  },
+  {
+    id: 'sam_mv',
+    label: 'SAM (승모판 수축기 전방 운동)',
+    severity: 'moderate',
+    ownerMessage: '심장이 수축할 때 승모판의 일부가 앞쪽으로 밀려 나가는 현상(SAM)이 관찰됩니다. 좌심실 출구를 막아 혈류를 방해할 수 있으며 HCM과 밀접하게 연관됩니다.',
+  },
+  {
+    id: 'hcm_suspected',
+    label: 'HCM 의심 (경계 소견 — 추적 요망)',
+    severity: 'mild',
+    ownerMessage: '비대성 심근병증(HCM) 초기 또는 경계 소견이 관찰됩니다. 현재 확진하기에는 이른 단계이나, 6개월 이내 재검사를 통해 변화를 확인하는 것이 중요합니다.',
+  },
+  {
+    id: 'hcm_confirmed',
+    label: 'HCM 진단 기준 충족',
+    severity: 'severe',
+    ownerMessage: '비대성 심근병증(HCM)의 진단 기준을 충족하는 심장 근육 비후 소견이 확인되었습니다. 전문 심장 수의사의 종합 평가와 치료 계획 수립이 필요합니다.',
+  },
+  {
+    id: 'dcm_pattern',
+    label: 'DCM 패턴 (얇은 벽 + 심실 확장)',
+    severity: 'severe',
+    ownerMessage: '심장 근육이 얇아지면서 좌심실이 크게 확장된 확장성 심근병증(DCM) 패턴이 관찰됩니다. 수축 기능 저하를 동반하는 경우가 많아 즉각적인 전문 치료가 필요합니다.',
+  },
+  // ── RCM (제한성 심근병증) 관련 ──
+  {
+    id: 'endocardial_fibrosis',
+    label: '심내막 섬유화 / 심실 내벽 이상 에코',
+    severity: 'moderate',
+    ownerMessage: '심장 내벽에 섬유화(딱딱하게 굳는 변화)가 관찰됩니다. 제한성 심근병증(RCM)의 특징적 소견으로, 심장이 충분히 늘어나지 못해 혈액을 제대로 채우지 못하는 상태입니다.',
+  },
+  {
+    id: 'intracavitary_bands',
+    label: '심실강 내 섬유화 줄기 / 격벽',
+    severity: 'moderate',
+    ownerMessage: '심장 내부 공간을 가로지르는 섬유화 줄기(모데레이터 밴드 또는 비정상 격막)가 관찰됩니다. 제한성 심근병증에서 볼 수 있는 소견으로 정밀 평가가 필요합니다.',
+  },
+  {
+    id: 'rcm_suspected',
+    label: 'RCM 의심 (정상 벽 두께 + 심한 좌심방 확장 + 이완기능 장애)',
+    severity: 'severe',
+    ownerMessage: '심장 근육 두께는 정상이지만 좌심방이 심하게 확장되고 이완기능이 크게 저하된 제한성 심근병증(RCM) 양상이 의심됩니다. 고양이에서 HCM 다음으로 흔한 심근병증으로, 혈전 형성 위험이 높아 전문적인 평가와 치료가 필요합니다.',
+  },
+  {
+    id: 'rcm_thrombus_risk',
+    label: 'RCM 동반 혈전 위험 — 좌심방 혈전/자연 에코 음영 의심',
+    severity: 'severe',
+    ownerMessage: '심하게 확장된 좌심방 내에 혈전(혈액 덩어리)이나 혈류 정체 소견이 관찰됩니다. 대동맥 혈전 색전증 발생 위험이 매우 높은 상태로 즉각적인 항혈전 치료 여부를 전문 수의사와 상담하세요.',
+  },
+  {
+    id: 'ucm_unclassified',
+    label: '미분류 심근병증 (UCM — HCM/RCM 중간형)',
+    severity: 'moderate',
+    ownerMessage: 'HCM과 RCM의 특징이 혼재되어 명확히 분류하기 어려운 심근병증(UCM) 소견입니다. 정기적인 추적 검사와 전문 수의사의 임상적 판단이 중요합니다.',
+  },
+]
+
+// 4. 이완기능 (Diastolic Function)
+const lvDiastolicFindings: EchoFinding[] = [
+  {
+    id: 'impaired_relaxation',
+    label: '이완 지연 패턴 (Grade I — E/A < 1, e\' 감소)',
+    severity: 'mild',
+    ownerMessage: '심장이 이완하며 혈액을 채우는 속도가 느려진 경미한 이완기능 장애(Grade I)가 관찰됩니다. HCM이나 고령 동물에서 흔하며 정기적인 모니터링이 필요합니다.',
+  },
+  {
+    id: 'diastolic_dysfunction_grade2',
+    label: '이완기능 장애 Grade II (유사정상 패턴)',
+    severity: 'moderate',
+    ownerMessage: '이완기능 장애 중등도 단계(Grade II)로, 겉으로는 혈류 패턴이 정상처럼 보이지만 충만압이 상승되어 있습니다. 심장에 부담이 가중된 상태로 전문의 평가가 필요합니다.',
+  },
+  {
+    id: 'diastolic_dysfunction_grade3',
+    label: '이완기능 장애 Grade III (제한형 — 충만압 심한 상승)',
+    severity: 'severe',
+    ownerMessage: '심한 이완기능 장애(Grade III, 제한형)로 심장 충만압이 크게 상승해 있습니다. 울혈성 심부전으로 진행될 위험이 높으며 즉각적인 전문 치료가 필요합니다.',
+  },
+  {
+    id: 'elevated_filling_pressure',
+    label: '충만압 상승 소견 (E/e\' 상승)',
+    severity: 'moderate',
+    ownerMessage: '심장에 혈액이 채워질 때의 압력(충만압)이 높아진 소견이 관찰됩니다. 이완기능 장애나 심부전의 지표로, 증상 유무와 관계없이 주의 깊은 평가가 필요합니다.',
+  },
+  {
+    id: 'lv_diastolic_normal_with_risk',
+    label: '이완기능 정상 — 단, 위험 인자 존재',
+    severity: 'mild',
+    ownerMessage: '현재 이완기능은 정상 범위이지만 HCM이나 고혈압 등 이완기능 장애를 유발할 수 있는 위험 인자가 확인됩니다. 정기적인 추적 검사를 권장드립니다.',
+  },
+]
+
+// 5. 이첨판 (승모판)
 const mitralValveFindings: EchoFinding[] = [
   {
     id: 'mv_thickening',
@@ -330,15 +455,17 @@ const overallFindings: EchoFinding[] = [
 // ── 카테고리 배열 ──────────────────────────────────────────────
 
 export const echoCategories: EchoCategory[] = [
-  { id: 'lv_systolic',   label: '좌심실 수축기능',      findings: lvSystolicFindings },
-  { id: 'lv_size',       label: '좌심실 크기/형태',     findings: lvSizeFindings },
-  { id: 'mitral_valve',  label: '이첨판 (승모판)',       findings: mitralValveFindings },
-  { id: 'left_atrium',   label: '좌심방',               findings: leftAtriumFindings },
-  { id: 'aortic_valve',  label: '대동맥판',             findings: aorticValveFindings },
-  { id: 'right_heart',   label: '우심 / 삼첨판',        findings: rightHeartFindings },
-  { id: 'pulmonary_ht',  label: '폐고혈압',             findings: pulmonaryHtFindings },
-  { id: 'pericardium',   label: '심낭',                 findings: pericardiumFindings },
-  { id: 'overall',       label: '종합 평가',            findings: overallFindings },
+  { id: 'lv_systolic',    label: '좌심실 수축기능',          findings: lvSystolicFindings },
+  { id: 'lv_size',        label: '좌심실 크기/형태',         findings: lvSizeFindings },
+  { id: 'lv_myocardial',  label: '심근질환 / HCM',           findings: lvMyocardialFindings },
+  { id: 'lv_diastolic',   label: '이완기능 (Diastolic Fn)', findings: lvDiastolicFindings },
+  { id: 'mitral_valve',   label: '이첨판 (승모판)',           findings: mitralValveFindings },
+  { id: 'left_atrium',    label: '좌심방',                   findings: leftAtriumFindings },
+  { id: 'aortic_valve',   label: '대동맥판',                 findings: aorticValveFindings },
+  { id: 'right_heart',    label: '우심 / 삼첨판',            findings: rightHeartFindings },
+  { id: 'pulmonary_ht',   label: '폐고혈압',                 findings: pulmonaryHtFindings },
+  { id: 'pericardium',    label: '심낭',                     findings: pericardiumFindings },
+  { id: 'overall',        label: '종합 평가',                findings: overallFindings },
 ]
 
 export const echoFindingMap: Record<string, EchoFinding> = Object.fromEntries(
@@ -538,7 +665,70 @@ export const echoMeasurements: EchoMeasurement[] = [
     },
   },
 
-  // 7. AoV Vmax (대동맥판 최고 혈류 속도 — 대동맥 협착 스크리닝)
+  // 7. EPSS (E-point Septal Separation — 수축기능 보조 지표)
+  {
+    id: 'epss',
+    nameKo: 'E점-실간격 거리',
+    nameEn: 'EPSS',
+    unit: 'mm',
+    categoryId: 'lv_systolic',
+    speciesNote: '개·고양이 공용 (≥ 8 mm → 수축기능 저하 의심)',
+    defaultRefRange: { dog: '< 8', cat: '< 8' },
+    ranges: {
+      dog: [
+        { min: null, max: 8,   resultText: 'Normal FS likely',           resultTextKo: '정상 (수축기능 양호)',     isAbnormal: false                        },
+        { min: 8,    max: 12,  resultText: 'Mild systolic dysfunction',  resultTextKo: '경도 수축기능 저하 의심', isAbnormal: true,  severity: 'mild'     },
+        { min: 12,   max: null,resultText: 'Significant dysfunction',   resultTextKo: '유의미한 수축기능 저하',  isAbnormal: true,  severity: 'moderate' },
+      ],
+      cat: [
+        { min: null, max: 8,   resultText: 'Normal',                     resultTextKo: '정상',                    isAbnormal: false                        },
+        { min: 8,    max: null,resultText: 'Systolic dysfunction likely',resultTextKo: '수축기능 저하 의심',      isAbnormal: true,  severity: 'moderate' },
+      ],
+    },
+    comment: {
+      increase: 'EPSS ≥ 8 mm → FS 감소를 간접 반영. 승모판 열림 폭이 실간격으로부터 멀수록 수축 기능 저하. DCM 스크리닝 보조 지표로 활용',
+      normal: '승모판 E점이 실간격에 충분히 근접 → 수축 기능 정상 범위 시사',
+    },
+    ownerMessage: {
+      increase: '승모판이 열릴 때 심장 내벽과의 거리(EPSS)가 넓어져 있습니다. 심장 수축 기능이 저하되어 있을 가능성을 의미하며, 추가 평가가 필요합니다.',
+      decrease: '임상적으로 큰 의미가 없습니다.',
+      normal: '심장 수축 기능 정상 범위 시사.',
+    },
+  },
+
+  // 8. E/e' 비율 (이완기능 — 충만압 추정)
+  {
+    id: 'e_e_prime_ratio',
+    nameKo: 'E/e\' 비율',
+    nameEn: "E/e'",
+    unit: '',
+    categoryId: 'lv_diastolic',
+    speciesNote: '조직 도플러(TDI) 측정값. 고양이 기준 적용 권장',
+    defaultRefRange: { dog: '< 13', cat: '< 11' },
+    ranges: {
+      dog: [
+        { min: null, max: 8,   resultText: 'Normal filling pressure',       resultTextKo: '충만압 정상',          isAbnormal: false                        },
+        { min: 8,    max: 13,  resultText: 'Indeterminate',                 resultTextKo: '불확정 구간',          isAbnormal: false                        },
+        { min: 13,   max: null,resultText: 'Elevated filling pressure',     resultTextKo: '충만압 상승',          isAbnormal: true,  severity: 'moderate' },
+      ],
+      cat: [
+        { min: null, max: 7,   resultText: 'Normal',                        resultTextKo: '정상',                 isAbnormal: false                        },
+        { min: 7,    max: 11,  resultText: 'Indeterminate / borderline',    resultTextKo: '불확정 / 경계',        isAbnormal: true,  severity: 'mild'     },
+        { min: 11,   max: null,resultText: 'Elevated — diastolic dysfn',   resultTextKo: '충만압 상승 — 이완기능 장애', isAbnormal: true, severity: 'moderate' },
+      ],
+    },
+    comment: {
+      increase: 'E/e\' ≥ 13(개) / ≥ 11(고양이) → 좌심실 충만압 상승 강력 시사. HCM·심부전에서 핵심 이완기능 지표. TDI e\' 측정 필요',
+      normal: '충만압 정상 — 이완기능 양호',
+    },
+    ownerMessage: {
+      increase: '심장에 혈액이 채워지는 압력(충만압)이 높아진 소견입니다. 이완기능 장애나 심부전의 중요 지표이며 치료 방향 결정에 활용됩니다.',
+      decrease: '임상적 의미가 없습니다.',
+      normal: '심장 충만압이 정상 범위 내에 있습니다.',
+    },
+  },
+
+  // 9. AoV Vmax (대동맥판 최고 혈류 속도 — 대동맥 협착 스크리닝)
   {
     id: 'aov_vmax',
     nameKo: '대동맥판 최고 혈류 속도',

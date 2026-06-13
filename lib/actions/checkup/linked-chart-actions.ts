@@ -182,6 +182,127 @@ export async function fetchPatientNeuroCharts(
   }))
 }
 
+export type EchoChartListItem = {
+  id: string
+  chartDate: string
+  memo: string | null
+}
+
+export type EchoResultRow = {
+  keyword_id: string
+  value: string
+  result: string
+  comment: string
+}
+
+export type EchoChartResultData = {
+  memo: string | null
+  results: EchoResultRow[]
+}
+
+/** 환자의 심장초음파 차트 목록 조회 */
+export async function fetchPatientEchoCharts(
+  patientId: string,
+): Promise<EchoChartListItem[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('echo_charts')
+    .select('id, exam_date, memo')
+    .eq('patient_id', patientId)
+    .order('exam_date', { ascending: false })
+    .limit(20)
+  if (error) return []
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    chartDate: (row as any).exam_date as string,
+    memo: (row as any).memo ?? null,
+  }))
+}
+
+/** 심장초음파 차트의 측정값 전체 조회 */
+export async function fetchEchoChartResults(
+  chartId: string,
+): Promise<EchoChartResultData> {
+  const supabase = await createClient()
+  const [chartRes, resultsRes] = await Promise.all([
+    supabase.from('echo_charts').select('memo').eq('id', chartId).single(),
+    supabase
+      .from('echo_results')
+      .select('keyword_id, value, result, comment')
+      .eq('echo_chart_id', chartId),
+  ])
+  return {
+    memo: (chartRes.data as any)?.memo ?? null,
+    results: (resultsRes.data ?? []).map((r: any) => ({
+      keyword_id: r.keyword_id ?? '',
+      value: r.value ?? '',
+      result: r.result ?? '',
+      comment: r.comment ?? '',
+    })),
+  }
+}
+
+// ── echo_scan_images → checkup_images 임포트 ────────────────────
+
+const MODE_LABEL_TO_TAGS: Record<string, string[]> = {
+  'M-mode':  ['echo_mmode'],
+  'M모드':   ['echo_mmode'],
+  'Doppler': ['echo_doppler'],
+  '도플러':  ['echo_doppler'],
+  '2D':      ['echo_overview'],
+}
+
+function modeToTags(modeLabel: string | null): string[] {
+  if (!modeLabel) return ['echo_overview']
+  for (const [key, tags] of Object.entries(MODE_LABEL_TO_TAGS)) {
+    if (modeLabel.toLowerCase().includes(key.toLowerCase())) return tags
+  }
+  return ['echo_overview']
+}
+
+export async function importEchoScanImagesToCheckup(params: {
+  echoChartId: string
+  checkupId: string
+  hosId: string
+}): Promise<{ imported: number; skipped: number }> {
+  const supabase = await createClient()
+
+  // 1. echo 스캔 이미지 목록 조회
+  const { data: scanImages, error: scanErr } = await (supabase as any)
+    .from('echo_scan_images')
+    .select('id, public_url, mode_label')
+    .eq('echo_id', params.echoChartId)
+
+  if (scanErr || !scanImages?.length) return { imported: 0, skipped: 0 }
+
+  // 2. 이미 checkup에 들어온 URL 조회 (중복 방지)
+  const { data: existing } = await (supabase as any)
+    .from('checkup_images')
+    .select('img_url')
+    .eq('checkup_id', params.checkupId)
+
+  const existingUrls = new Set<string>((existing ?? []).map((r: any) => r.img_url as string))
+
+  // 3. 신규만 필터 후 INSERT
+  const toInsert = (scanImages as { id: string; public_url: string; mode_label: string | null }[])
+    .filter((img) => !existingUrls.has(img.public_url))
+    .map((img) => ({
+      checkup_id: params.checkupId,
+      hos_id: params.hosId,
+      img_url: img.public_url,
+      tags: ['echo_linked', ...modeToTags(img.mode_label)],
+      img_memo: img.mode_label ?? null,
+      is_cover: false,
+    }))
+
+  if (toInsert.length === 0) return { imported: 0, skipped: scanImages.length }
+
+  const { error: insertErr } = await (supabase as any).from('checkup_images').insert(toInsert)
+  if (insertErr) throw new Error(`이미지 임포트 실패: ${insertErr.message}`)
+
+  return { imported: toInsert.length, skipped: scanImages.length - toInsert.length }
+}
+
 export type UltrasoundChartListItem = {
   id: string
   chartDate: string

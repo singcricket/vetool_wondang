@@ -20,14 +20,15 @@ import EchoCompareTable from '../echo-compare/echo-compare-table'
 import EchoReport from '../echo-report/echo-report'
 import EchoInfoContainer from '../echo-info/echo-info-container'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils/utils'
 import Image from 'next/image'
-import { LayoutGridIcon, ListIcon, ImageIcon } from 'lucide-react'
+import { LayoutGridIcon, ListIcon, ImageIcon, Sparkles, Loader2 } from 'lucide-react'
 import EchoInputSectionMode from './echo-chart-input-mode/echo-input-section-mode'
 import EchoInputFlatMode from './echo-chart-input-mode/echo-input-flat-mode'
 import EchoInputGuideMode from './echo-chart-input-mode/echo-input-guide-mode'
 import EchoInputScanMode from './echo-chart-input-mode/echo-input-scan-mode'
-import type { EchoScanImage } from '@/lib/actions/echocardio/echo-scan-actions'
+import { generateEchoFinding, type EchoScanImage } from '@/lib/actions/echocardio/echo-scan-actions'
 
 interface EchoChartBodyProps {
   chartDetail: EchoChartDetail
@@ -76,6 +77,7 @@ export default function EchoChartBody({
     guideImages.length > 0 ? 'guide' : 'section',
   )
   const [isSaving, startSaving] = useTransition()
+  const [generatingFinding, startGeneratingFinding] = useTransition()
   const [pendingSave, setPendingSave] = useState<Set<string>>(new Set())
 
   const pendingSaveRef = useRef<Set<string>>(new Set())
@@ -158,6 +160,18 @@ export default function EchoChartBody({
 
   function handleSave() {
     startSaving(doSave)
+  }
+
+  function handleGenerateFinding() {
+    startGeneratingFinding(async () => {
+      try {
+        await generateEchoFinding(hosId, chartDetail.id, resultMap, species)
+        toast.success('AI 소견서가 생성되어 메모란에 저장되었습니다.')
+        startTransition(() => refresh())
+      } catch (err: any) {
+        toast.error(err?.message ?? 'AI 소견서 생성 실패')
+      }
+    })
   }
 
   // 5초 입력 없으면 자동저장
@@ -305,6 +319,20 @@ export default function EchoChartBody({
                 체중을 먼저 입력해주세요 *
               </span>
             )}
+            {activeTab === 'input' && inputMode === 'scan' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleGenerateFinding}
+                disabled={generatingFinding}
+                className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50"
+              >
+                {generatingFinding
+                  ? <Loader2 size={12} className="animate-spin" />
+                  : <Sparkles size={12} />}
+                AI 소견서
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={handleSave}
@@ -388,7 +416,6 @@ export default function EchoChartBody({
                   initialImages={initialScanImages}
                   resultMap={resultMap}
                   onApplyField={handleItemChange}
-                  onFindingGenerated={() => startTransition(() => refresh())}
                 />
               )}
             </div>
