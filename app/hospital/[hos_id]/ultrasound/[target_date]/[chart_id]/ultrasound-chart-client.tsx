@@ -14,8 +14,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import UltrasoundImpressionPanel from '@/components/hospital/ultrasound/ultrasound-impression-panel'
+import UltrasoundAiImpression from '@/components/hospital/ultrasound/ultrasound-ai-impression'
 import { updateUltrasoundChart, upsertUltrasoundOrgan, deleteUltrasoundChart, getPatientUltrasoundCharts } from '@/lib/services/ultrasound/ultrasound-charts'
 import UltrasoundPreviousComparison from '@/components/hospital/ultrasound/ultrasound-previous-comparison'
+import { generateUltrasoundImpression, type AiUltrasoundImpressionResult } from '@/lib/actions/ultrasound/ai-ultrasound-impression'
 
 interface Props {
   hosId: string
@@ -36,10 +38,14 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
   const [prevOrgansData, setPrevOrgansData] = useState<Record<string, UltrasoundChartOrgan>>({})
   const [hasPrevData, setHasPrevData] = useState(false)
 
+  // AI 종합 소견 상태
+  const [aiResult, setAiResult] = useState<AiUltrasoundImpressionResult | null>(null)
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false)
+
   useEffect(() => {
     const fetchOrgans = async () => {
       setIsLoading(true)
-      
+
       // 1. 현재 차트 데이터 가져오기
       const data = await getUltrasoundChartOrgans(chartId)
       const dataMap = data.reduce((acc, curr) => {
@@ -48,15 +54,24 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
       }, {} as Record<string, UltrasoundChartOrgan>)
       setOrgansData(dataMap)
 
-      // 2. 환자의 전체 차트 히스토리 가져오기
+      // 2. impression_summary에 저장된 AI 소견 복원
+      if (chartDetail.impression_summary) {
+        try {
+          const parsed = JSON.parse(chartDetail.impression_summary)
+          if (parsed?.comprehensive_impression_ko) {
+            setAiResult(parsed as AiUltrasoundImpressionResult)
+          }
+        } catch {
+          // impression_summary가 JSON이 아닌 경우 무시
+        }
+      }
+
+      // 3. 환자의 전체 차트 히스토리 가져오기
       if (chartDetail.patient_id) {
         const history = await getPatientUltrasoundCharts(chartDetail.patient_id)
         setPrevCharts(history as any)
 
-        // 3. 현재 차트보다 이전의 가장 최신 차트 찾기
         const currentChartIndex = history.findIndex(h => h.id === chartId)
-        // history는 최신순(DESC)으로 정렬되어 있음. 
-        // 현재 차트 인덱스 다음(index + 1)이 바로 이전 차트임.
         const prevChart = history[currentChartIndex + 1]
 
         if (prevChart) {
@@ -73,28 +88,47 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
       setIsLoading(false)
     }
     fetchOrgans()
-  }, [chartId, chartDetail.patient_id])
+  }, [chartId, chartDetail.patient_id, chartDetail.impression_summary])
+
+  const handleGenerateAi = async () => {
+    setIsGeneratingAi(true)
+    const toastId = toast.loading('AI가 초음파 소견을 분석하는 중...')
+    try {
+      const { data, error } = await generateUltrasoundImpression(organsData, chartDetail.patient?.species)
+      if (error) {
+        toast.error(error, { id: toastId })
+        return
+      }
+      setAiResult(data)
+      toast.success('AI 종합 소견이 생성되었습니다. 저장 버튼으로 차트에 저장하세요.', { id: toastId })
+    } finally {
+      setIsGeneratingAi(false)
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
     const toastId = toast.loading('차트를 저장하는 중...')
-    
+
     try {
       // 1. 장기 데이터 개별 저장 (병렬 처리)
-      const organPromises = Object.values(organsData).map(organ => {
-        return upsertUltrasoundOrgan({
+      const organPromises = Object.values(organsData).map(organ =>
+        upsertUltrasoundOrgan({
           chart_id: chartId,
           organ_name: organ.organ_name,
           status: organ.status,
           findings_data: organ.findings_data,
           organ_memo: organ.organ_memo,
         })
+      )
+
+      // 2. AI 종합 소견 저장 (생성된 경우)
+      const metaPromise = updateUltrasoundChart(chartId, {
+        impression_summary: aiResult ? JSON.stringify(aiResult) : null,
       })
-      
-      await Promise.all(organPromises)
-      
-      // 2. 차트 메타데이터 (impression_summary 등) 저장 로직은 나중에 확장 가능
-      
+
+      await Promise.all([...organPromises, metaPromise])
+
       toast.success('저장되었습니다.', { id: toastId })
     } catch (err) {
       toast.error('저장 중 오류가 발생했습니다.', { id: toastId })
@@ -133,12 +167,15 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
   }
 
   return (
-    <UltrasoundChartLayout 
-      chartDetail={chartDetail} 
-      onSave={handleSave} 
+    <UltrasoundChartLayout
+      chartDetail={chartDetail}
+      onSave={handleSave}
       isSaving={isSaving}
       onDelete={handleDelete}
       isDeleting={isDeleting}
+      onGenerateAi={handleGenerateAi}
+      isGeneratingAi={isGeneratingAi}
+      hasAiResult={!!aiResult}
       vetList={vetList}
       prevCharts={prevCharts}
       currentChartId={chartId}
@@ -168,13 +205,13 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
               onUpdate={(updatedData) => {
                 setOrgansData(prev => ({
                   ...prev,
-                  [activeOrgan]: updatedData
+                  [activeOrgan]: updatedData,
                 }))
               }}
             />
           </div>
 
-          {/* Previous Chart Comparison (Visible if previous data exists) */}
+          {/* Previous Chart Comparison */}
           {hasPrevData && (
             <div className="w-full lg:w-80 xl:w-96 border rounded-xl bg-white shadow-sm flex flex-col overflow-hidden">
               <div className="bg-slate-50 px-4 py-3 border-b flex items-center justify-between">
@@ -197,10 +234,11 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
         <div className="hidden lg:block w-80 border-l bg-slate-50 h-full overflow-y-auto p-4 space-y-4">
           <UltrasoundImpressionPanel organsData={organsData} lang="ko" species={chartDetail.patient?.species} />
           <UltrasoundImpressionPanel organsData={organsData} lang="en" species={chartDetail.patient?.species} />
+          <UltrasoundAiImpression result={aiResult} isLoading={isGeneratingAi} />
         </div>
       </div>
 
-      {/* Mobile Floating Action Button for DDx & Summary */}
+      {/* Mobile Floating Action Button */}
       <div className="lg:hidden fixed bottom-6 right-6 z-50">
         <Sheet>
           <SheetTrigger asChild>
@@ -215,6 +253,7 @@ export default function UltrasoundChartClient({ hosId, chartId, chartDate, chart
             <div className="space-y-4 pb-8">
               <UltrasoundImpressionPanel organsData={organsData} lang="ko" species={chartDetail.patient?.species} />
               <UltrasoundImpressionPanel organsData={organsData} lang="en" species={chartDetail.patient?.species} />
+              <UltrasoundAiImpression result={aiResult} isLoading={isGeneratingAi} />
             </div>
           </SheetContent>
         </Sheet>

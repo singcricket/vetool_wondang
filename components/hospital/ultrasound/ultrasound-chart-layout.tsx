@@ -3,7 +3,7 @@
 import React from 'react'
 import { UltrasoundChartDetail } from '@/types/hospital/ultrasound-type'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Save, Trash2, Calendar } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Calendar, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -34,18 +34,24 @@ interface Props {
   isSaving?: boolean
   onDelete?: () => void
   isDeleting?: boolean
+  onGenerateAi?: () => void
+  isGeneratingAi?: boolean
+  hasAiResult?: boolean
   prevCharts?: UltrasoundChartDetail[]
   currentChartId?: string
 }
 
-export default function UltrasoundChartLayout({ 
-  chartDetail, 
-  children, 
+export default function UltrasoundChartLayout({
+  chartDetail,
+  children,
   vetList,
-  onSave, 
+  onSave,
   isSaving,
   onDelete,
   isDeleting,
+  onGenerateAi,
+  isGeneratingAi,
+  hasAiResult,
   prevCharts = [],
   currentChartId,
 }: Props) {
@@ -105,6 +111,21 @@ export default function UltrasoundChartLayout({
         </div>
 
         <div className="flex items-center gap-2">
+          {onGenerateAi && (
+            <Button
+              variant="outline"
+              className={`gap-2 h-9 text-sm border-indigo-200 ${hasAiResult ? 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100' : 'text-indigo-600 hover:bg-indigo-50'}`}
+              onClick={onGenerateAi}
+              disabled={isGeneratingAi || isSaving}
+            >
+              {isGeneratingAi ? (
+                <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">{isGeneratingAi ? '분석 중...' : hasAiResult ? 'AI 소견 재생성' : 'AI 종합 소견'}</span>
+            </Button>
+          )}
           {onDelete && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
