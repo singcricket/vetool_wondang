@@ -197,8 +197,8 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, onI
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-7 gap-1 text-xs">
-          <Mic size={13} />
+        <Button variant="default" size="default" className="h-10 gap-2 bg-violet-500 hover:bg-violet-600 text-white font-semibold px-4">
+          <Mic size={16} />
           음성 입력
         </Button>
       </DialogTrigger>

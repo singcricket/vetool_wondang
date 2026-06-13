@@ -142,8 +142,8 @@ export default function MonitorScanDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-7 gap-1 text-xs">
-          <Camera size={13} />
+        <Button variant="default" size="default" className="h-10 gap-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold px-4">
+          <Camera size={16} />
           사진으로 입력
         </Button>
       </DialogTrigger>

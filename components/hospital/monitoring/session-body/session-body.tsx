@@ -60,7 +60,7 @@ export default function SessionBody({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tx" className="mt-4 flex flex-col gap-4 outline-none">
+        <TabsContent value="tx" className="mt-0 flex flex-col gap-4 outline-none">
           <MsInfoContainer msData={msData} />
           <MsTxMemoGroup
             memo={memos}
@@ -71,11 +71,11 @@ export default function SessionBody({
           />
         </TabsContent>
 
-        <TabsContent value="cl" className="mt-4 outline-none">
+        <TabsContent value="cl" className="mt-0 outline-none">
           <MsClContainer msData={msData} />
         </TabsContent>
 
-        <TabsContent value="live" className="mt-4 outline-none">
+        <TabsContent value="live" className="mt-0 outline-none">
           <MsLiveMemoGroup
             memo={memos}
             sessionId={msData.session_id}
