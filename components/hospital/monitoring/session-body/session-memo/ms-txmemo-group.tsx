@@ -15,6 +15,7 @@ import { ReactSortable, type Sortable } from 'react-sortablejs'
 import { toast } from 'sonner'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
 import SingleMsTxMemo from '@/components/hospital/monitoring/session-body/session-memo/single-ms-tx-memo'
+import AiTreatmentPlanDialog from '@/components/hospital/monitoring/session-body/session-memo/ai-treatment-plan-dialog'
 import { updateMsMemo } from '@/lib/services/monitoring/update-ms'
 import { MsWithPatientWithWeight } from '@/lib/services/monitoring/fetch-ms-data'
 import { ClipboardListIcon, PlusIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
@@ -120,6 +121,12 @@ export default function MsTxMemoGroup({
     toast.success('메모를 수정하였습니다')
   }
 
+  const handleAiApply = async (newMemos: MsMemo[]) => {
+    const updated = [...sortedMemos, ...newMemos]
+    setSortedMemos(updated)
+    await handleUpdateDbMemo(updated)
+  }
+
   const handleDeleteMemo = async (memoId: string) => {
     const memoToDelete = sortedMemos.find((memo) => memo.id === memoId)
     if (memoToDelete && memoToDelete.has_imgs && memoToDelete.img_url) {
@@ -156,6 +163,13 @@ export default function MsTxMemoGroup({
           >
             완료 {doneCount}
           </Badge>
+          {isVet && (
+            <AiTreatmentPlanDialog
+              hosId={msData.hos_id}
+              species={msData.patient?.species as 'canine' | 'feline' | null ?? null}
+              onApply={handleAiApply}
+            />
+          )}
          
           {/* <Button
             variant="ghost"

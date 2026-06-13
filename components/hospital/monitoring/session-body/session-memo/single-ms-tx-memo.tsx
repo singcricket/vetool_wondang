@@ -314,6 +314,11 @@ const SingleMsTxMemo = React.forwardRef<HTMLLIElement, Props>(
                     {memo.memo}
                   </p>
                 )}
+                {memo.check && !isDone && (
+                  <p className="mr-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-500">
+                    {memo.check}
+                  </p>
+                )}
               </div>
 
               {/* 첨부된 이미지 썸네일 렌더링 */}
