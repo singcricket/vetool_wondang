@@ -17,6 +17,8 @@ export async function registerNeuroChart({
 }: RegisterNeuroChartProps) {
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data, error } = await supabase
     .from('neuro_charts')
     .insert([
@@ -24,7 +26,7 @@ export async function registerNeuroChart({
         hos_id: hosId,
         patient_id: patientId,
         chart_date: targetDate,
-        evaluator_id: evaluatorId,
+        evaluator_id: evaluatorId ?? user?.id ?? null,
       },
     ])
     .select('id')
