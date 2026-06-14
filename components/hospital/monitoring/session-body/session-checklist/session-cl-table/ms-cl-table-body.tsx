@@ -8,10 +8,26 @@ import MsClTableResultRow from "./ms-cl-table-result-row"
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react"
 import { updateMsVitalResults } from "@/lib/services/monitoring/update-ms"
 import { toast } from "sonner"
-import type { VitalTimeSlot } from "@/types/monitoring/monitoring-type"
+import type { VitalTimeSlot, VitalEntry } from "@/types/monitoring/monitoring-type"
 
 export type MsClTableBodyHandle = {
   insertRow: (slot: VitalTimeSlot) => void
+  findSlotByMinTime: (minTime: string) => { index: number; slot: VitalTimeSlot } | null
+  findBestTemplateSlot: (elapsedMin: number) => { index: number; slot: VitalTimeSlot } | null
+  mergeIntoSlot: (index: number, newVitals: VitalEntry[], strategy: 'overwrite' | 'keep') => void
+}
+
+// 모듈 레벨 — handle과 render 양쪽에서 공유
+function parseMinTime(m: string): number {
+    if (m.includes(':')) {
+        const [h, min] = m.split(':').map(Number)
+        return (h || 0) * 60 + (min || 0)
+    }
+    return parseInt(m, 10) || 0
+}
+
+function isTemplateSlot(slot: VitalTimeSlot): boolean {
+    return slot.vitals.length === 0 || slot.vitals.every(v => !v.value?.trim())
 }
 
 type Props = {
@@ -97,7 +113,50 @@ const MsClTableBody = forwardRef<MsClTableBodyHandle, Props>(function MsClTableB
         scheduleSave()
     }, [scheduleSave])
 
-    useImperativeHandle(ref, () => ({ insertRow }), [insertRow])
+    // 기존 슬롯에 수치 병합 — overwrite: 충돌 항목 덮어쓰기, keep: 충돌 항목 유지(신규 항목만 추가)
+    const mergeIntoSlot = useCallback((index: number, newVitals: VitalEntry[], strategy: 'overwrite' | 'keep') => {
+        setVitalResults(prev => {
+            const updated = prev.map((slot, idx) => {
+                if (idx !== index) return slot
+                const merged = [...slot.vitals]
+                for (const nv of newVitals) {
+                    const existingIdx = merged.findIndex(v => v.vitalName === nv.vitalName)
+                    if (existingIdx >= 0) {
+                        if (strategy === 'overwrite') merged[existingIdx] = nv
+                    } else {
+                        merged.push(nv)
+                    }
+                }
+                return { ...slot, vitals: merged }
+            })
+            vitalResultsRef.current = updated
+            return updated
+        })
+        scheduleSave()
+    }, [scheduleSave])
+
+    useImperativeHandle(ref, () => ({
+        insertRow,
+        findSlotByMinTime: (minTime: string) => {
+            const idx = vitalResultsRef.current.findIndex(s => s.minTime === minTime)
+            if (idx === -1) return null
+            return { index: idx, slot: vitalResultsRef.current[idx] }
+        },
+        findBestTemplateSlot: (elapsedMin: number) => {
+            // 값이 없는 템플릿 슬롯 중 현재 경과 시간 이하인 것 중 가장 가까운 슬롯
+            let best: { index: number; slot: VitalTimeSlot } | null = null
+            vitalResultsRef.current.forEach((slot, index) => {
+                if (!isTemplateSlot(slot)) return
+                const slotMin = parseMinTime(slot.minTime)
+                if (slotMin > elapsedMin) return
+                if (!best || slotMin > parseMinTime(best.slot.minTime)) {
+                    best = { index, slot }
+                }
+            })
+            return best
+        },
+        mergeIntoSlot,
+    }), [insertRow, mergeIntoSlot])
 
     // 삭제 콜백 — 즉시 DB 반영
     const handleDeleteSlot = useCallback(async (slotIndex: number) => {
@@ -116,20 +175,24 @@ const MsClTableBody = forwardRef<MsClTableBodyHandle, Props>(function MsClTableB
         setIsSaving(false)
     }, [msData.session_id])
 
+    const sortedSlots = vitalResults
+        .map((slot, originalIndex) => ({ slot, originalIndex }))
+        .sort((a, b) => parseMinTime(a.slot.minTime) - parseMinTime(b.slot.minTime))
+
     return (
         <TableBody>
-            {vitalResults.map((timeSlot, index) => (
+            {sortedSlots.map(({ slot, originalIndex }) => (
                 <MsClTableResultRow
-                    key={timeSlot.create_timestamp + index}
-                    timeSlot={timeSlot}
+                    key={slot.create_timestamp + originalIndex}
+                    timeSlot={slot}
                     selectedVital={msData.planned_vitals}
                     clNames={clNames}
                     startTime={msData.start_time}
                     isUpdating={isSaving}
                     species={msData.patient?.species as 'canine' | 'feline' | null ?? null}
-                    onVitalChange={(vitalName, value) => handleVitalChange(index, vitalName, value)}
-                    onMinTimeChange={(newMinTime) => handleMinTimeChange(index, newMinTime)}
-                    onDeleteRow={() => handleDeleteSlot(index)}
+                    onVitalChange={(vitalName, value) => handleVitalChange(originalIndex, vitalName, value)}
+                    onMinTimeChange={(newMinTime) => handleMinTimeChange(originalIndex, newMinTime)}
+                    onDeleteRow={() => handleDeleteSlot(originalIndex)}
                 />
             ))}
             <MsClTableCreateRow

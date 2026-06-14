@@ -37,10 +37,79 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
   const [correctedTranscript, setCorrectedTranscript] = useState<string | null>(null)
 
   const recognitionRef = useRef<SpeechRecognition | null>(null)
-  const transcriptRef = useRef('')
-  const processedFinalIndices = useRef<Set<number>>(new Set())
-  const startTimeRef = useRef(0)
+  const transcriptRef = useRef('')      // 세션 간 누적 텍스트
+  const sessionFinalRef = useRef('')    // 현재 세션의 확정 텍스트
+  const holdStartRef = useRef(0)        // 버튼 누른 시각
   const isHoldingRef = useRef(false)
+
+  const analyzeAndShow = useCallback(async (text: string) => {
+    if (!text.trim()) {
+      toast.error('인식된 내용이 없습니다. 다시 시도해보세요.')
+      return
+    }
+    setAnalyzing(true)
+    try {
+      const { data, error } = await extractVitalsFromSpeech({ transcript: text.trim(), species, sessionTitle })
+      if (error || !data) { toast.error(error ?? '분석 실패'); return }
+      setVitals(data.vitals)
+      setMemo(data.memo)
+      setCorrectedTranscript(data.corrected_transcript ?? null)
+    } catch {
+      toast.error('분석 중 오류가 발생했습니다.')
+    } finally {
+      setAnalyzing(false)
+    }
+  }, [species, sessionTitle])
+
+  const launchSession = useCallback((SpeechRecognitionClass: typeof SpeechRecognition) => {
+    const recognition = new SpeechRecognitionClass()
+    recognition.lang = 'ko-KR'
+    recognition.continuous = false   // 단발 세션 — 버퍼 재처리 없음
+    recognition.interimResults = true
+    recognitionRef.current = recognition
+    sessionFinalRef.current = ''
+
+    recognition.onresult = (event) => {
+      let finalInSession = ''
+      let interim = ''
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalInSession += event.results[i][0].transcript + ' '
+        } else {
+          interim += event.results[i][0].transcript
+        }
+      }
+      sessionFinalRef.current = finalInSession
+      setFinalText(transcriptRef.current + finalInSession)
+      setInterimText(interim)
+    }
+
+    recognition.onerror = (event) => {
+      if (event.error === 'aborted') return
+      // no-speech는 조용히 재시작 (버튼 누르는 중)
+      if (event.error === 'no-speech') return
+      toast.error(`음성 인식 오류: ${event.error}`)
+    }
+
+    recognition.onend = () => {
+      // 이 세션의 최종 텍스트를 누적
+      transcriptRef.current += sessionFinalRef.current
+      sessionFinalRef.current = ''
+
+      if (isHoldingRef.current) {
+        // 아직 버튼을 누르고 있음 → 새 세션으로 이어서 녹음
+        launchSession(SpeechRecognitionClass)
+      } else {
+        // 버튼 뗌 → 분석
+        recognitionRef.current = null
+        const elapsed = Date.now() - holdStartRef.current
+        if (elapsed < 800) return
+        analyzeAndShow(transcriptRef.current)
+      }
+    }
+
+    recognition.start()
+  }, [analyzeAndShow])
 
   const startRecording = useCallback(() => {
     const SpeechRecognitionClass =
@@ -53,53 +122,18 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
     }
 
     transcriptRef.current = ''
-    processedFinalIndices.current = new Set()
+    sessionFinalRef.current = ''
     setFinalText('')
     setInterimText('')
     setVitals(null)
     setMemo(null)
     setCorrectedTranscript(null)
     isHoldingRef.current = true
-    startTimeRef.current = Date.now()
+    holdStartRef.current = Date.now()
 
-    const recognition = new SpeechRecognitionClass()
-    recognition.lang = 'ko-KR'
-    recognition.continuous = true
-    recognition.interimResults = true
-    recognitionRef.current = recognition
-
-    recognition.onresult = (event) => {
-      let interim = ''
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          // 이미 처리한 index는 건너뜀 → 동일 결과 중복 누적 방지
-          if (!processedFinalIndices.current.has(i)) {
-            processedFinalIndices.current.add(i)
-            transcriptRef.current += event.results[i][0].transcript + ' '
-          }
-        } else {
-          interim += event.results[i][0].transcript
-        }
-      }
-      setFinalText(transcriptRef.current)
-      setInterimText(interim)
-    }
-
-    recognition.onerror = (event) => {
-      if (event.error !== 'aborted') {
-        toast.error(`음성 인식 오류: ${event.error}`)
-        setRecording(false)
-        isHoldingRef.current = false
-      }
-    }
-
-    // 재시작하지 않음 — 재시작 시 오디오 버퍼를 처음부터 재처리해 중복 발생
-    // stopRecording에서 onend를 덮어써 분석을 시작
-    recognition.onend = () => {}
-
-    recognition.start()
+    launchSession(SpeechRecognitionClass)
     setRecording(true)
-  }, [])
+  }, [launchSession])
 
   const stopRecording = useCallback(() => {
     if (!isHoldingRef.current) return
@@ -108,41 +142,13 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
     setInterimText('')
 
     const recognition = recognitionRef.current
-    if (!recognition) return
-
-    const elapsed = Date.now() - startTimeRef.current
-
-    // onend는 마지막 onresult가 끝난 뒤 호출되므로 여기서 분석 시작
-    recognition.onend = async () => {
-      recognitionRef.current = null
-
-      if (elapsed < 800) return
-
-      const text = transcriptRef.current.trim()
-      if (!text) {
-        toast.error('인식된 내용이 없습니다. 다시 시도해보세요.')
-        return
-      }
-
-      setAnalyzing(true)
-      try {
-        const { data, error } = await extractVitalsFromSpeech({ transcript: text, species, sessionTitle })
-        if (error || !data) {
-          toast.error(error ?? '분석 실패')
-          return
-        }
-        setVitals(data.vitals)
-        setMemo(data.memo)
-        setCorrectedTranscript(data.corrected_transcript ?? null)
-      } catch {
-        toast.error('분석 중 오류가 발생했습니다.')
-      } finally {
-        setAnalyzing(false)
-      }
+    if (recognition) {
+      recognition.stop()  // onend에서 분석 시작
+    } else {
+      // 세션 재시작 사이 틈에 뗀 경우 직접 분석
+      analyzeAndShow(transcriptRef.current)
     }
-
-    recognition.stop()
-  }, [species, sessionTitle])
+  }, [analyzeAndShow])
 
   const updateVital = (idx: number, value: string) => {
     if (!vitals) return
@@ -167,7 +173,6 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
       vitals: entries,
     }
     onInsertRow(slot)
-    toast.success(`${entries.length}개 항목이 체크리스트에 추가되었습니다.`)
     if (!memo) handleClose()
     else setVitals(null)
   }
@@ -195,6 +200,7 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
     setFinalText('')
     setInterimText('')
     transcriptRef.current = ''
+    sessionFinalRef.current = ''
   }
 
   const handleClose = () => {
