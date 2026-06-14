@@ -27,6 +27,8 @@ export async function registerOncologyCase({
 }: RegisterOncologyCaseProps): Promise<string> {
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data, error } = await supabase
     .from('onco_cases')
     .insert({
@@ -36,6 +38,7 @@ export async function registerOncologyCase({
       diagnosis_name: diagnosisName,
       diagnosis_key: normalizeDiagnosisKey(diagnosisName),
       vet_id: vetId,
+      created_by: user?.id ?? null,
       diagnosis_category: [],
       diagnosis_method: [],
       status: 'active',
@@ -84,6 +87,8 @@ export async function registerPatientAndOncologyCase(params: {
 
   if (patientError) throw new Error(`환자 등록 실패: ${patientError.message}`)
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data: caseData, error: caseError } = await supabase
     .from('onco_cases')
     .insert({
@@ -93,6 +98,7 @@ export async function registerPatientAndOncologyCase(params: {
       diagnosis_name: params.diagnosisName,
       diagnosis_key: normalizeDiagnosisKey(params.diagnosisName),
       vet_id: params.vetId ?? null,
+      created_by: user?.id ?? null,
       diagnosis_category: [],
       diagnosis_method: [],
       status: 'active',

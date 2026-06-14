@@ -12,6 +12,8 @@ export async function createCheckupRecord(params: {
 }): Promise<string> {
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data, error } = await supabase
     .from('checkup_records')
     .insert({
@@ -19,6 +21,7 @@ export async function createCheckupRecord(params: {
       patient_id: params.patientId,
       checkup_date: params.targetDate,
       vet_id: params.vetId ?? null,
+      created_by: user?.id ?? null,
       status: 'draft',
     })
     .select('id')
@@ -65,6 +68,8 @@ export async function registerPatientAndCheckupRecord(params: {
 
   if (patientError) throw new Error(`환자 등록 실패: ${patientError.message}`)
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data: checkupData, error: checkupError } = await supabase
     .from('checkup_records')
     .insert({
@@ -72,6 +77,7 @@ export async function registerPatientAndCheckupRecord(params: {
       patient_id: patientId,
       checkup_date: params.targetDate,
       vet_id: params.vetId ?? null,
+      created_by: user?.id ?? null,
       status: 'draft',
     })
     .select('id')

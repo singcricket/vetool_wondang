@@ -71,12 +71,15 @@ export async function registerPatientAndCytologyChart(params: {
 
   if (patientError) throw new Error(`환자 등록 실패: ${patientError.message}`)
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data: chartData, error: chartError } = await (supabase as any)
     .from('cytology_charts')
     .insert({
       hos_id: params.hosId,
       patient_id: patientData.patient_id,
       chart_date: params.chartDate,
+      evaluator_id: user?.id ?? null,
       sample_type: 'otic',
       mode: 'specialist',
     })

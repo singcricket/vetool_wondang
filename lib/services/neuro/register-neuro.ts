@@ -77,12 +77,15 @@ export async function registerPatientAndNeuroChart(params: {
   }
 
   // 2. 신경계 차트 생성
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data: chartData, error: chartError } = await supabase
     .from('neuro_charts')
     .insert({
       hos_id: params.hosId,
       patient_id: patientData.patient_id,
       chart_date: params.chartDate,
+      evaluator_id: user?.id ?? null,
     })
     .select('id')
     .single()

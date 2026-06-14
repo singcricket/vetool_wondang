@@ -41,6 +41,7 @@ export async function registerEchoChart(params: {
 }): Promise<string> {
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
   const tags = buildTags(params.patient)
 
   const { data, error } = await supabase
@@ -49,6 +50,7 @@ export async function registerEchoChart(params: {
       hos_id: params.hosId,
       patient_id: params.patientId,
       exam_date: params.examDate,
+      examiner_id: user?.id ?? null,
       tags,
     })
     .select('id')
@@ -109,12 +111,15 @@ export async function registerPatientAndEchoChart(params: {
     hos_owner_id: patientData.hos_owner_id ?? null,
   })
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data: chartData, error: chartError } = await supabase
     .from('echo_charts')
     .insert({
       hos_id: params.hosId,
       patient_id: patientData.patient_id,
       exam_date: params.examDate,
+      examiner_id: user?.id ?? null,
       tags,
     })
     .select('id')
