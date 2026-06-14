@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Mic, MicOff, LoaderCircle, CheckCircle2, Trash2, RotateCcw, NotebookPen } from 'lucide-react'
 import { toast } from 'sonner'
 import { extractVitalsFromSpeech, appendVoiceMemoToSession } from '@/lib/actions/monitoring/voice-scan-action'
@@ -30,11 +31,13 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
   const [open, setOpen] = useState(false)
   const [recording, setRecording] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
+  const [hasAnalyzed, setHasAnalyzed] = useState(false)
   const [interimText, setInterimText] = useState('')
   const [finalText, setFinalText] = useState('')
   const [vitals, setVitals] = useState<VitalEntry[] | null>(null)
   const [memo, setMemo] = useState<string | null>(null)
   const [correctedTranscript, setCorrectedTranscript] = useState<string | null>(null)
+  const [savingMemo, setSavingMemo] = useState(false)
 
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const transcriptRef = useRef('')      // 세션 간 누적 텍스트
@@ -54,6 +57,7 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
       setVitals(data.vitals)
       setMemo(data.memo)
       setCorrectedTranscript(data.corrected_transcript ?? null)
+      setHasAnalyzed(true)
     } catch {
       toast.error('분석 중 오류가 발생했습니다.')
     } finally {
@@ -160,42 +164,50 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
     setVitals(vitals.filter((_, i) => i !== idx))
   }
 
-  const handleConfirm = () => {
+  const handleAddToChecklist = () => {
     const entries = (vitals ?? []).filter((v) => v.value.trim())
-    if (entries.length === 0) {
-      toast.error('입력할 수치가 없습니다.')
-      return
-    }
+    if (entries.length === 0) { toast.error('입력할 수치가 없습니다.'); return }
     const now = Date.now()
-    const slot: VitalTimeSlot = {
-      create_timestamp: String(now),
-      minTime: calcMinTime(now, startTime, intervalSetting),
-      vitals: entries,
-    }
-    onInsertRow(slot)
-    if (!memo) handleClose()
-    else setVitals(null)
+    onInsertRow({ create_timestamp: String(now), minTime: calcMinTime(now, startTime, intervalSetting), vitals: entries })
+    toast.success(`${entries.length}개 항목이 체크리스트에 추가되었습니다.`)
+    setVitals(null)
   }
-
-  const [savingMemo, setSavingMemo] = useState(false)
 
   const handleSaveMemo = async () => {
     if (!memo?.trim()) return
     setSavingMemo(true)
     const { error } = await appendVoiceMemoToSession(sessionId, memo.trim())
     setSavingMemo(false)
-    if (error) {
-      toast.error('실시간 기록 저장 실패')
-      return
-    }
+    if (error) { toast.error('실시간 기록 저장 실패'); return }
     toast.success('실시간 기록에 저장되었습니다.')
-    if (!vitals || vitals.length === 0) handleClose()
-    else setMemo(null)
+    setMemo(null)
+  }
+
+  const handleSaveAll = async () => {
+    const entries = (vitals ?? []).filter((v) => v.value.trim())
+    const hasMemo = !!memo?.trim()
+    if (!entries.length && !hasMemo) { handleClose(); return }
+
+    if (entries.length) {
+      const now = Date.now()
+      onInsertRow({ create_timestamp: String(now), minTime: calcMinTime(now, startTime, intervalSetting), vitals: entries })
+    }
+    if (hasMemo) {
+      setSavingMemo(true)
+      const { error } = await appendVoiceMemoToSession(sessionId, memo!.trim())
+      setSavingMemo(false)
+      if (error) { toast.error('실시간 기록 저장 실패'); return }
+    }
+    if (entries.length && hasMemo) toast.success('체크리스트와 실시간 기록에 모두 저장되었습니다.')
+    else if (entries.length) toast.success(`${entries.length}개 항목이 체크리스트에 추가되었습니다.`)
+    else toast.success('실시간 기록에 저장되었습니다.')
+    handleClose()
   }
 
   const handleReset = () => {
     setVitals(null)
     setMemo(null)
+    setHasAnalyzed(false)
     setCorrectedTranscript(null)
     setFinalText('')
     setInterimText('')
@@ -213,7 +225,7 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
     handleReset()
   }
 
-  const hasResult = vitals !== null
+  const hasResult = hasAnalyzed
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
@@ -301,7 +313,7 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
 
           {/* ── 결과 ── */}
           {hasResult && !analyzing && (
-            <div className="w-full flex flex-col gap-3">
+            <div className="w-full flex flex-col gap-4">
               {/* 인식/교정 텍스트 */}
               <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-xs text-slate-500 leading-relaxed flex flex-col gap-1">
                 {correctedTranscript && correctedTranscript !== finalText.trim() ? (
@@ -314,66 +326,81 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
                 )}
               </div>
 
-              {/* 추출 수치 */}
-              {vitals && vitals.length > 0 ? (
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-xs text-slate-500 font-medium">추출된 수치 ({vitals.length}개)</p>
-                  <div className="flex flex-col gap-1 max-h-52 overflow-y-auto">
-                    {vitals.map((v, idx) => (
-                      <div key={idx} className="grid grid-cols-[1fr_80px_28px] gap-1 items-center rounded px-2 py-1.5 bg-slate-50 border border-slate-100 text-xs">
-                        <span className="text-slate-600 truncate">{v.vitalName}</span>
-                        <Input
-                          className="h-6 text-xs px-1 text-right"
-                          value={v.value}
-                          onChange={(e) => updateVital(idx, e.target.value)}
-                        />
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-300 hover:text-red-400" onClick={() => removeVital(idx)}>
-                          <Trash2 size={11} />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 text-center py-2">
-                  수치가 인식되지 않았습니다.
-                </p>
-              )}
+              {/* 체크리스트 수치 섹션 */}
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-semibold text-slate-500">체크리스트 수치</p>
+                {vitals && vitals.length > 0 ? (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      {vitals.map((v, idx) => (
+                        <div key={idx} className="grid grid-cols-[1fr_80px_28px] gap-1 items-center rounded px-2 py-1.5 bg-slate-50 border border-slate-100 text-xs">
+                          <span className="text-slate-600 truncate">{v.vitalName}</span>
+                          <Input
+                            className="h-6 text-xs px-1 text-right"
+                            value={v.value}
+                            onChange={(e) => updateVital(idx, e.target.value)}
+                          />
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-300 hover:text-red-400" onClick={() => removeVital(idx)}>
+                            <Trash2 size={11} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1.5 text-xs self-end"
+                      onClick={handleAddToChecklist}
+                    >
+                      <CheckCircle2 size={13} />
+                      체크리스트에 추가
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-400 text-center py-1">수치가 인식되지 않았습니다.</p>
+                )}
+              </div>
 
-              {/* 메모성 내용 → 실시간 기록 저장 */}
-              {memo && (
-                <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2.5 flex flex-col gap-2">
-                  <p className="text-xs text-yellow-800 leading-relaxed">
-                    <span className="font-medium">실시간 기록: </span>{memo}
-                  </p>
+              {/* 실시간 기록 섹션 */}
+              {memo !== null && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold text-slate-500">실시간 기록</p>
+                  <Textarea
+                    className="text-xs min-h-[64px] resize-none border-yellow-200 bg-yellow-50 text-yellow-900 placeholder:text-yellow-400 focus-visible:ring-yellow-300"
+                    value={memo}
+                    onChange={(e) => setMemo(e.target.value)}
+                    placeholder="내용을 입력하세요"
+                  />
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 gap-1 text-xs self-end border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                    className="h-8 gap-1.5 text-xs self-end border-yellow-300 text-yellow-700 hover:bg-yellow-100"
                     onClick={handleSaveMemo}
-                    disabled={savingMemo}
+                    disabled={savingMemo || !memo?.trim()}
                   >
-                    {savingMemo
-                      ? <LoaderCircle size={11} className="animate-spin" />
-                      : <NotebookPen size={11} />
-                    }
+                    {savingMemo ? <LoaderCircle size={13} className="animate-spin" /> : <NotebookPen size={13} />}
                     실시간 기록에 저장
                   </Button>
                 </div>
               )}
 
+              {/* 하단 버튼 */}
               <div className="flex justify-end gap-2 pt-1">
                 <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={handleReset}>
                   <RotateCcw size={12} />
-                  다시 입력
+                  다시입력
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleClose}>
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleReset}>
                   취소
                 </Button>
-                <Button size="sm" className="h-8 gap-1 text-xs" onClick={handleConfirm}
-                  disabled={!vitals || vitals.filter(v => v.value.trim()).length === 0}>
-                  <CheckCircle2 size={13} />
-                  체크리스트에 추가
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs bg-teal-500 hover:bg-teal-600 text-white"
+                  onClick={handleSaveAll}
+                  disabled={savingMemo}
+                >
+                  {savingMemo ? <LoaderCircle size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                  모두저장
                 </Button>
               </div>
             </div>
