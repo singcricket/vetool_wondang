@@ -46,6 +46,8 @@ export default function MsClContainer({ msData }: Props) {
                     sessionId={msData.session_id}
                     species={msData.patient?.species as 'canine' | 'feline' | null ?? null}
                     sessionTitle={msData.session_title}
+                    startTime={msData.start_time ?? null}
+                    intervalSetting={msData.interval_setting ?? null}
                     onInsertRow={handleInsertRow}
                 />
                 <DeviceProfileManageSheet

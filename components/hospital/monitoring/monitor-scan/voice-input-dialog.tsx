@@ -13,10 +13,20 @@ interface Props {
   sessionId: string
   species: 'canine' | 'feline' | null
   sessionTitle: string | null
+  startTime: string | null
+  intervalSetting: number | null
   onInsertRow: (slot: VitalTimeSlot) => void
 }
 
-export default function VoiceInputDialog({ sessionId, species, sessionTitle, onInsertRow }: Props) {
+function calcMinTime(nowMs: number, startTime: string | null, intervalSetting: number | null): string {
+  if (!startTime) return '0'
+  const elapsedMin = Math.floor((nowMs - new Date(startTime).getTime()) / 60000)
+  const clamped = Math.max(0, elapsedMin)
+  if (!intervalSetting || intervalSetting <= 1) return String(clamped)
+  return String(Math.floor(clamped / intervalSetting) * intervalSetting)
+}
+
+export default function VoiceInputDialog({ sessionId, species, sessionTitle, startTime, intervalSetting, onInsertRow }: Props) {
   const [open, setOpen] = useState(false)
   const [recording, setRecording] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
@@ -28,6 +38,7 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, onI
 
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const transcriptRef = useRef('')
+  const processedFinalIndices = useRef<Set<number>>(new Set())
   const startTimeRef = useRef(0)
   const isHoldingRef = useRef(false)
 
@@ -42,6 +53,7 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, onI
     }
 
     transcriptRef.current = ''
+    processedFinalIndices.current = new Set()
     setFinalText('')
     setInterimText('')
     setVitals(null)
@@ -58,10 +70,13 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, onI
 
     recognition.onresult = (event) => {
       let interim = ''
-      // event.resultIndex 부터만 처리 → 이미 처리한 결과 중복 누적 방지
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
-          transcriptRef.current += event.results[i][0].transcript + ' '
+          // 이미 처리한 index는 건너뜀 → 동일 결과 중복 누적 방지
+          if (!processedFinalIndices.current.has(i)) {
+            processedFinalIndices.current.add(i)
+            transcriptRef.current += event.results[i][0].transcript + ' '
+          }
         } else {
           interim += event.results[i][0].transcript
         }
@@ -148,7 +163,7 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, onI
     const now = Date.now()
     const slot: VitalTimeSlot = {
       create_timestamp: String(now),
-      minTime: new Date(now).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      minTime: calcMinTime(now, startTime, intervalSetting),
       vitals: entries,
     }
     onInsertRow(slot)
