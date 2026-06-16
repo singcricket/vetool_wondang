@@ -1,8 +1,8 @@
 import type React from 'react'
-import { AlertCircle, CheckCircle2, Microscope, Activity, FileText, FlaskConical, ExternalLink, Bone } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Microscope, Activity, FileText, FlaskConical, ExternalLink, Bone, Heart } from 'lucide-react'
 import { SkinMapThumbnail, type SkinMapMarker } from '@/components/hospital/checkup/checkup-case/skin-map-panel'
 import type { LabResultItem } from '@/constants/hospital/checkup/lab-types'
-import type { ResolvedOrganSection, DxEvaluation } from '@/lib/config/checkup-report-modules'
+import type { ResolvedOrganSection, DxEvaluation, EchoOrganFinding } from '@/lib/config/checkup-report-modules'
 import { isDxEvaluation, SEVERITY_BADGE } from './report-utils'
 import { SectionTitle } from './report-ui'
 import CheckupImgCard from './checkup-img-card'
@@ -676,23 +676,98 @@ function OrganCard({ section, subCharts, dentalBasicFindings, ophthalmicBasicFin
               {section.xrayFindings.length > 0 && (
                 <div>
                   <SubHeading>방사선 소견</SubHeading>
-                  <div className="flex flex-wrap gap-2">
-                    {section.xrayFindings.map((f) => {
-                      const color = f.isNormal
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                        : f.severity === 'severe'   ? 'border-red-200 bg-red-50 text-red-700'
-                        : f.severity === 'moderate' ? 'border-orange-200 bg-orange-50 text-orange-700'
-                        : 'border-amber-200 bg-amber-50 text-amber-700'
+                  <div className="flex flex-col gap-2">
+                    {/* 정상 소견 → 컴팩트 배지 */}
+                    {section.xrayFindings.some((f) => f.isNormal) && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {section.xrayFindings.filter((f) => f.isNormal).map((f) => (
+                          <div key={f.id} className="flex items-center gap-1.5 rounded-[10px] border border-emerald-200 bg-emerald-50 px-3 py-1.5">
+                            <CheckCircle2 size={11} className="shrink-0 text-emerald-500" strokeWidth={2} />
+                            <span className="text-xs font-semibold text-emerald-700">{f.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* 이상 소견 → 메시지 카드 */}
+                    {section.xrayFindings.filter((f) => !f.isNormal).map((f) => {
+                      const borderBg = f.severity === 'severe'   ? 'border-red-200 bg-red-50'
+                        : f.severity === 'moderate' ? 'border-orange-200 bg-orange-50'
+                        : 'border-amber-200 bg-amber-50'
+                      const textCls = f.severity === 'severe'   ? 'text-red-600'
+                        : f.severity === 'moderate' ? 'text-orange-600'
+                        : 'text-amber-600'
                       return (
-                        <div key={f.id} className={`rounded-[10px] border px-3 py-1.5 ${color}`}>
-                          <span className="text-xs font-semibold">{f.label}</span>
-                          {f.valueLabel && <span className="ml-1.5 font-mono text-xs">{f.valueLabel}</span>}
+                        <div key={f.id} className={`rounded-[10px] border p-3 ${borderBg}`}>
+                          <div className="flex items-start gap-1.5">
+                            <AlertCircle size={12} className={`mt-0.5 shrink-0 ${textCls}`} strokeWidth={2} />
+                            <div className="min-w-0">
+                              <p className={`text-xs font-semibold leading-snug ${textCls}`}>
+                                {f.label}
+                                {f.valueLabel && (
+                                  <span className="ml-1.5 font-mono font-normal">{f.valueLabel}</span>
+                                )}
+                              </p>
+                              {f.ownerMessage && (
+                                <p className="mt-1 text-[11px] leading-relaxed text-slate-600">{f.ownerMessage}</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )
                     })}
                   </div>
                 </div>
               )}
+            </div>
+          )
+        })()}
+
+        {/* 심장초음파 소견 */}
+        {section.echoFindings.length > 0 && (() => {
+          const checkAndMeasureFindings = section.echoFindings.filter((f) => f.type !== 'note')
+          const noteFindings = section.echoFindings.filter((f) => f.type === 'note')
+          return (
+            <div>
+              <div className="mb-2.5 flex items-center gap-1.5">
+                <Heart size={13} className="text-rose-400" strokeWidth={2} />
+                <SubHeading>심장초음파 소견</SubHeading>
+              </div>
+              <div className="flex flex-col gap-2">
+                {checkAndMeasureFindings.map((f) => {
+                  const borderBg = f.severity === 'severe'   ? 'border-red-200 bg-red-50'
+                    : f.severity === 'moderate' ? 'border-orange-200 bg-orange-50'
+                    : 'border-amber-200 bg-amber-50'
+                  const textCls = f.severity === 'severe'   ? 'text-red-600'
+                    : f.severity === 'moderate' ? 'text-orange-600'
+                    : 'text-amber-600'
+                  return (
+                    <div key={f.id} className={`rounded-[10px] border p-3 ${borderBg}`}>
+                      <div className="flex items-start gap-1.5">
+                        <AlertCircle size={12} className={`mt-0.5 shrink-0 ${textCls}`} strokeWidth={2} />
+                        <div className="min-w-0">
+                          <p className={`text-xs font-semibold leading-snug ${textCls}`}>
+                            {f.label}
+                            {f.valueLabel && (
+                              <span className="ml-1.5 font-mono font-normal">{f.valueLabel}</span>
+                            )}
+                          </p>
+                          {f.ownerMessage && (
+                            <p className="mt-1 text-[11px] leading-relaxed text-slate-600">{f.ownerMessage}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                {noteFindings.map((f) => (
+                  <div key={f.id} className="rounded-[10px] border border-rose-100 bg-rose-50 px-3 py-2">
+                    {f.categoryLabel && (
+                      <p className="mb-0.5 text-[11px] font-semibold text-rose-500">{f.categoryLabel}</p>
+                    )}
+                    <p className="text-xs leading-relaxed text-slate-700">{f.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           )
         })()}

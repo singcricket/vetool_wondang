@@ -12,6 +12,7 @@ import type { LabSection, LabResultItem } from '@/constants/hospital/checkup/lab
 import type { DxEvaluation } from '@/lib/actions/checkup/plan-analysis'
 import { physicalRefMap } from '@/constants/hospital/checkup/physical-ref'
 import { xrayFindingMap, xrayMeasurementMap, interpretXrayMeasurement } from '@/constants/hospital/checkup/xray-ref'
+import { echoFindingMap, echoMeasurementMap, echoCategories, interpretEchoMeasurement } from '@/constants/hospital/checkup/echo-ref'
 import { labRefMap } from '@/constants/hospital/checkup/lab-ref'
 
 export type OrganRichness = 'full' | 'partial' | 'absent'
@@ -66,10 +67,21 @@ export interface UsOrganNote {
   note: string
 }
 
+export interface EchoOrganFinding {
+  id: string
+  label: string
+  type: 'finding' | 'measurement' | 'note'
+  valueLabel?: string
+  severity: 'mild' | 'moderate' | 'severe'
+  ownerMessage?: string
+  categoryLabel?: string
+}
+
 export interface ResolvedOrganSection extends OrganModuleConfig {
   labItems: LabResultItem[]
   physicalFindings: PhysicalFinding[]
   xrayFindings: XrayOrganFinding[]
+  echoFindings: EchoOrganFinding[]
   /** 구조화 DxEvaluation 또는 구버전 string */
   aiEval: DxEvaluation | string
   images: { id: string; img_url: string; tags: string[]; img_memo?: string | null; mark?: Record<string, unknown> | null; is_cover?: boolean }[]
@@ -462,6 +474,72 @@ export function resolveOrganSections(
       }
     }
 
+    // 심장초음파 소견 추출
+    const echoFindings: EchoOrganFinding[] = []
+    for (const sectionKey of config.imagingSectionKeys) {
+      if (sectionKey !== 'echo_basic') continue
+      const echoData = imagingSections[sectionKey]
+      if (!echoData) continue
+
+      const echoChecked = (echoData.checked ?? {}) as Record<string, boolean>
+      const echoNotes = (echoData.notes ?? {}) as Record<string, string>
+      const echoMeasurementsData = (echoData.measurements ?? {}) as Record<string, string>
+      const echoCatLabelMap: Record<string, string> = Object.fromEntries(
+        echoCategories.map((c) => [c.id, c.label]),
+      )
+
+      // 체크박스 소견
+      for (const [fid, isChecked] of Object.entries(echoChecked)) {
+        if (!isChecked) continue
+        const ref = echoFindingMap[fid]
+        if (!ref) continue
+        echoFindings.push({
+          id: fid,
+          label: ref.label,
+          type: 'finding',
+          severity: ref.severity,
+          ownerMessage: ref.ownerMessage,
+        })
+      }
+
+      // 계측 수치
+      for (const [mid, rawVal] of Object.entries(echoMeasurementsData)) {
+        if (!rawVal) continue
+        const numVal = parseFloat(rawVal)
+        if (isNaN(numVal)) continue
+        const mRef = echoMeasurementMap[mid]
+        if (!mRef) continue
+        const interp = interpretEchoMeasurement(mRef, numVal, species)
+        if (!interp) continue
+        const normalMax = typeof mRef.ranges[species][0]?.max === 'number' ? mRef.ranges[species][0].max : null
+        const ownerMsg = !interp.isAbnormal
+          ? mRef.ownerMessage.normal
+          : normalMax !== null && numVal > normalMax
+            ? mRef.ownerMessage.increase
+            : mRef.ownerMessage.decrease
+        echoFindings.push({
+          id: mid,
+          label: mRef.nameKo,
+          type: 'measurement',
+          valueLabel: `${numVal}${mRef.unit ? ` ${mRef.unit}` : ''} · ${interp.resultTextKo}`,
+          severity: interp.severity ?? 'mild',
+          ownerMessage: ownerMsg,
+        })
+      }
+
+      // 카테고리별 메모 텍스트
+      for (const [catId, note] of Object.entries(echoNotes)) {
+        if (!note?.trim()) continue
+        echoFindings.push({
+          id: `note_${catId}`,
+          label: note.trim(),
+          type: 'note',
+          severity: 'mild',
+          categoryLabel: echoCatLabelMap[catId] ?? catId,
+        })
+      }
+    }
+
     const rawEval = planData[config.planKey]
     const aiEval: DxEvaluation | string =
       rawEval && typeof rawEval === 'object' && 'status' in rawEval
@@ -479,12 +557,12 @@ export function resolveOrganSections(
     const hasAiOrDx = typeof aiEval === 'object' || !!aiEval
     // derma: extraData(physical 병합 데이터)에 기록이 있으면 이미지·AI 없어도 표시
     const hasExtraData = !!extraSectionData[config.key] && Object.values(extraSectionData[config.key]).some((v) => v)
-    if (labItems.length === 0 && physicalFindings.length === 0 && xrayFindings.length === 0 && !hasAiOrDx && images.length === 0 && usNotes.length === 0 && !hasExtraData) return acc
+    if (labItems.length === 0 && physicalFindings.length === 0 && xrayFindings.length === 0 && echoFindings.length === 0 && !hasAiOrDx && images.length === 0 && usNotes.length === 0 && !hasExtraData) return acc
 
     const richness: Exclude<OrganRichness, 'absent'> = hasAi ? 'full' : 'partial'
     const extraData = extraSectionData[config.key]
 
-    acc.push({ ...config, labItems, physicalFindings, xrayFindings, aiEval, images, richness, usNotes, ...(extraData ? { extraData } : {}) })
+    acc.push({ ...config, labItems, physicalFindings, xrayFindings, echoFindings, aiEval, images, richness, usNotes, ...(extraData ? { extraData } : {}) })
     return acc
   }, [])
 }
