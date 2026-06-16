@@ -7,19 +7,45 @@ import { VITAL_REFERENCE_DATA } from '@/types/monitoring/monitoring-type'
 
 const VITAL_NAMES = VITAL_REFERENCE_DATA.map((v) => v.vitalName)
 
+export type TreatmentStepHint = { id: string; memo: string }
+
+export type ExtractedVoiceData = {
+  corrected_transcript: string
+  vitals: VitalEntry[]
+  memo: string | null
+  matched_plan_ids: string[]
+}
+
 export async function extractVitalsFromSpeech(params: {
   transcript: string
   species: 'canine' | 'feline' | null
   sessionTitle: string | null
-}): Promise<{ data: { vitals: VitalEntry[]; memo: string | null } | null; error: string | null }> {
-  const { transcript, species, sessionTitle } = params
+  treatmentSteps?: TreatmentStepHint[] | null
+}): Promise<{ data: ExtractedVoiceData | null; error: string | null }> {
+  const { transcript, species, sessionTitle, treatmentSteps } = params
   const sp = species ?? 'canine'
+
+  const hasTreatmentSteps = treatmentSteps && treatmentSteps.length > 0
+  const treatmentStepSection = hasTreatmentSteps
+    ? `
+=== STEP 3: 처치계획 완료 매칭 ===
+아래 처치계획 항목 중 음성에서 이미 완료했다고 언급된 항목을 찾아 ID 목록으로 반환하세요.
+완료 판단 기준: "완료", "했습니다", "됐습니다", "드렸습니다", "투여했습니다", "주사했습니다", "실시했습니다", "진행했습니다" 등 처치 이행을 나타내는 표현이 해당 항목과 의미적으로 연관되어야 합니다.
+확실하지 않으면 포함하지 마세요. 없으면 빈 배열 []
+
+처치계획 목록:
+${treatmentSteps!.map((s) => `- ID:${s.id} | ${s.memo}`).join('\n')}`
+    : ''
+
+  const treatmentExample = hasTreatmentSteps
+    ? `\n\n처치계획 포함 예시:\n입력: "암피실린 투여했습니다 심박수 120"\n처치계획: [ID:abc123 | 암피실린 투여]\n출력: {"corrected_transcript":"암피실린 투여했습니다 심박수 120","vitals":[{"vitalName":"심박수(HR)","value":"120"}],"memo":"암피실린 투여했습니다","matched_plan_ids":["abc123"]}`
+    : ''
 
   try {
     const client = getAnthropicClient()
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
+      max_tokens: 768,
       messages: [
         {
           role: 'user',
@@ -66,18 +92,20 @@ ${sessionTitle ? `세션: ${sessionTitle}` : ''}
 - 수치 없으면 vitals=[]
 
 사용 가능한 항목명: ${VITAL_NAMES.join(', ')}
+${treatmentStepSection}
 
 예시1:
 입력: "안삐실린 추가했습니다 심박수 120 체온36도"
-출력: {"corrected_transcript":"암피실린 추가했습니다 심박수 120 체온36도","vitals":[{"vitalName":"심박수(HR)","value":"120"},{"vitalName":"체온(°C)","value":"36"}],"memo":"암피실린 추가했습니다"}
+출력: {"corrected_transcript":"암피실린 추가했습니다 심박수 120 체온36도","vitals":[{"vitalName":"심박수(HR)","value":"120"},{"vitalName":"체온(°C)","value":"36"}],"memo":"암피실린 추가했습니다","matched_plan_ids":[]}
 
 예시2:
 입력: "심박수 130 배뇨 확인됐고 수액 속도 늘렸습니다"
-출력: {"corrected_transcript":"심박수 130 배뇨 확인됐고 수액 속도 늘렸습니다","vitals":[{"vitalName":"심박수(HR)","value":"130"}],"memo":"배뇨 확인됐고 수액 속도 늘렸습니다"}
+출력: {"corrected_transcript":"심박수 130 배뇨 확인됐고 수액 속도 늘렸습니다","vitals":[{"vitalName":"심박수(HR)","value":"130"}],"memo":"배뇨 확인됐고 수액 속도 늘렸습니다","matched_plan_ids":[]}
 
 예시3:
 입력: "심박수 120 산소포화도 98"
-출력: {"corrected_transcript":"심박수 120 산소포화도 98","vitals":[{"vitalName":"심박수(HR)","value":"120"},{"vitalName":"SPO2","value":"98"}],"memo":null}
+출력: {"corrected_transcript":"심박수 120 산소포화도 98","vitals":[{"vitalName":"심박수(HR)","value":"120"},{"vitalName":"SPO2","value":"98"}],"memo":null,"matched_plan_ids":[]}
+${treatmentExample}
 
 JSON만 반환:`,
         },
@@ -86,12 +114,44 @@ JSON만 반환:`,
 
     const raw = message.content[0].type === 'text' ? message.content[0].text : ''
     const stripped = raw.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
-    const parsed = JSON.parse(stripped) as { corrected_transcript: string; vitals: VitalEntry[]; memo: string | null }
+    const parsed = JSON.parse(stripped) as ExtractedVoiceData
+    if (!Array.isArray(parsed.matched_plan_ids)) parsed.matched_plan_ids = []
     return { data: parsed, error: null }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     return { data: null, error: `음성 분석 실패: ${msg}` }
   }
+}
+
+export async function markPlanStepsDone(
+  sessionId: string,
+  stepIds: string[],
+): Promise<{ error: string | null }> {
+  if (stepIds.length === 0) return { error: null }
+  const supabase = await createClient()
+
+  const { data, error: fetchError } = await supabase
+    .from('monitoring_sessions')
+    .select('memo_tx')
+    .eq('session_id', sessionId)
+    .single()
+
+  if (fetchError) return { error: fetchError.message }
+
+  const now = new Date().toISOString()
+  const idSet = new Set(stepIds)
+  const updated = ((data?.memo_tx as MsMemo[]) ?? []).map((m) =>
+    idSet.has(m.id) && !m.is_done
+      ? { ...m, is_done: true, done_timestamp: now }
+      : m,
+  )
+
+  const { error: updateError } = await supabase
+    .from('monitoring_sessions')
+    .update({ memo_tx: updated })
+    .eq('session_id', sessionId)
+
+  return { error: updateError?.message ?? null }
 }
 
 export async function appendVoiceMemoToSession(

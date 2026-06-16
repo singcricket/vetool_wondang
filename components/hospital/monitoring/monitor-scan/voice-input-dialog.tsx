@@ -5,9 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Mic, MicOff, LoaderCircle, CheckCircle2, Trash2, RotateCcw, NotebookPen } from 'lucide-react'
+import { Mic, MicOff, LoaderCircle, CheckCircle2, Trash2, RotateCcw, NotebookPen, ClipboardCheck } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { extractVitalsFromSpeech, appendVoiceMemoToSession } from '@/lib/actions/monitoring/voice-scan-action'
+import { extractVitalsFromSpeech, appendVoiceMemoToSession, markPlanStepsDone } from '@/lib/actions/monitoring/voice-scan-action'
+import type { TreatmentStepHint } from '@/lib/actions/monitoring/voice-scan-action'
 import type { VitalEntry, VitalTimeSlot } from '@/types/monitoring/monitoring-type'
 
 interface Props {
@@ -16,6 +18,7 @@ interface Props {
   sessionTitle: string | null
   startTime: string | null
   intervalSetting: number | null
+  treatmentMemos: TreatmentStepHint[]
   onInsertRow: (slot: VitalTimeSlot) => void
 }
 
@@ -27,7 +30,9 @@ function calcMinTime(nowMs: number, startTime: string | null, intervalSetting: n
   return String(Math.floor(clamped / intervalSetting) * intervalSetting)
 }
 
-export default function VoiceInputDialog({ sessionId, species, sessionTitle, startTime, intervalSetting, onInsertRow }: Props) {
+type MatchedStep = TreatmentStepHint & { selected: boolean }
+
+export default function VoiceInputDialog({ sessionId, species, sessionTitle, startTime, intervalSetting, treatmentMemos, onInsertRow }: Props) {
   const [open, setOpen] = useState(false)
   const [recording, setRecording] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
@@ -38,6 +43,8 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
   const [memo, setMemo] = useState<string | null>(null)
   const [correctedTranscript, setCorrectedTranscript] = useState<string | null>(null)
   const [savingMemo, setSavingMemo] = useState(false)
+  const [matchedSteps, setMatchedSteps] = useState<MatchedStep[] | null>(null)
+  const [markingDone, setMarkingDone] = useState(false)
 
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const transcriptRef = useRef('')      // 세션 간 누적 텍스트
@@ -52,18 +59,31 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
     }
     setAnalyzing(true)
     try {
-      const { data, error } = await extractVitalsFromSpeech({ transcript: text.trim(), species, sessionTitle })
+      const { data, error } = await extractVitalsFromSpeech({
+        transcript: text.trim(),
+        species,
+        sessionTitle,
+        treatmentSteps: treatmentMemos.length > 0 ? treatmentMemos : null,
+      })
       if (error || !data) { toast.error(error ?? '분석 실패'); return }
       setVitals(data.vitals)
       setMemo(data.memo)
       setCorrectedTranscript(data.corrected_transcript ?? null)
+      if (data.matched_plan_ids.length > 0) {
+        const matched = treatmentMemos
+          .filter((m) => data.matched_plan_ids.includes(m.id))
+          .map((m) => ({ ...m, selected: true }))
+        setMatchedSteps(matched.length > 0 ? matched : null)
+      } else {
+        setMatchedSteps(null)
+      }
       setHasAnalyzed(true)
     } catch {
       toast.error('분석 중 오류가 발생했습니다.')
     } finally {
       setAnalyzing(false)
     }
-  }, [species, sessionTitle])
+  }, [species, sessionTitle, treatmentMemos])
 
   const launchSession = useCallback((SpeechRecognitionClass: typeof SpeechRecognition) => {
     const recognition = new SpeechRecognitionClass()
@@ -204,6 +224,17 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
     handleClose()
   }
 
+  const handleMarkStepsDone = async () => {
+    const toMark = (matchedSteps ?? []).filter((s) => s.selected).map((s) => s.id)
+    if (toMark.length === 0) return
+    setMarkingDone(true)
+    const { error } = await markPlanStepsDone(sessionId, toMark)
+    setMarkingDone(false)
+    if (error) { toast.error('처치 완료 처리 실패'); return }
+    toast.success(`${toMark.length}개 처치 항목이 완료 처리되었습니다.`)
+    setMatchedSteps(null)
+  }
+
   const handleReset = () => {
     setVitals(null)
     setMemo(null)
@@ -211,6 +242,7 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
     setCorrectedTranscript(null)
     setFinalText('')
     setInterimText('')
+    setMatchedSteps(null)
     transcriptRef.current = ''
     sessionFinalRef.current = ''
   }
@@ -380,6 +412,42 @@ export default function VoiceInputDialog({ sessionId, species, sessionTitle, sta
                   >
                     {savingMemo ? <LoaderCircle size={13} className="animate-spin" /> : <NotebookPen size={13} />}
                     실시간 기록에 저장
+                  </Button>
+                </div>
+              )}
+
+              {/* 처치계획 완료 확인 섹션 */}
+              {matchedSteps && matchedSteps.length > 0 && (
+                <div className="flex flex-col gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <ClipboardCheck size={13} className="text-teal-600" />
+                    <p className="text-xs font-semibold text-teal-700">처치계획 완료 확인</p>
+                  </div>
+                  <p className="text-[11px] text-teal-600">음성에서 완료된 것으로 인식된 처치 항목입니다. 완료 처리할 항목을 선택하세요.</p>
+                  <div className="flex flex-col gap-1.5">
+                    {matchedSteps.map((step, idx) => (
+                      <label key={step.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 bg-white border border-teal-100 hover:bg-teal-50/50 transition-colors">
+                        <Checkbox
+                          checked={step.selected}
+                          onCheckedChange={(checked) => {
+                            setMatchedSteps((prev) =>
+                              prev ? prev.map((s, i) => i === idx ? { ...s, selected: !!checked } : s) : prev
+                            )
+                          }}
+                          className="h-3.5 w-3.5 shrink-0 border-teal-400"
+                        />
+                        <span className="text-xs text-slate-700 leading-snug">{step.memo}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs self-end bg-teal-500 hover:bg-teal-600 text-white"
+                    onClick={handleMarkStepsDone}
+                    disabled={markingDone || matchedSteps.every((s) => !s.selected)}
+                  >
+                    {markingDone ? <LoaderCircle size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                    완료 처리
                   </Button>
                 </div>
               )}

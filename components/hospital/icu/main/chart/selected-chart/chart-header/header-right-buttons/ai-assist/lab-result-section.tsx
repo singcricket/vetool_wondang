@@ -40,6 +40,22 @@ const PANEL_COLORS: Record<string, string> = {
   other: 'bg-gray-100 text-gray-600',
 }
 
+function groupResultsByDate(results: LabResult[]) {
+  const groups = new Map<string, LabResult[]>()
+  for (const r of results) {
+    const dateKey = (r.tested_at ?? r.created_at).slice(0, 10)
+    if (!groups.has(dateKey)) groups.set(dateKey, [])
+    groups.get(dateKey)!.push(r)
+  }
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([dateKey, items]) => ({
+      dateKey,
+      dateLabel: format(new Date(dateKey), 'yyyy년 M월 d일 (EEE)', { locale: ko }),
+      items,
+    }))
+}
+
 interface Props {
   hosId: string
   icuIoId: string
@@ -105,9 +121,19 @@ export default function LabResultSection({ hosId, icuIoId, icuChartId }: Props) 
             </Button>
           </div>
         ) : (
-          <div className="space-y-2 pr-1">
-            {results.map((r) => (
-              <LabResultCard key={r.id} result={r} onDelete={handleDelete} />
+          <div className="space-y-4 pr-1">
+            {groupResultsByDate(results).map(({ dateKey, dateLabel, items }) => (
+              <div key={dateKey}>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span className="text-[11px] font-semibold text-muted-foreground">{dateLabel}</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <div className="space-y-2">
+                  {items.map((r) => (
+                    <LabResultCard key={r.id} result={r} onDelete={handleDelete} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}

@@ -11,7 +11,7 @@ import DeviceProfileManageSheet from "@/components/hospital/monitoring/device-pr
 import { useMonitoringContextData } from "@/providers/monitoring-hos-data-context-provider"
 import type { MsClTableBodyHandle } from "./session-cl-table/ms-cl-table-body"
 import type { DeviceProfile } from "@/types/monitoring/device-profile-type"
-import type { VitalTimeSlot } from "@/types/monitoring/monitoring-type"
+import type { MsMemo, VitalTimeSlot } from "@/types/monitoring/monitoring-type"
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
@@ -33,6 +33,10 @@ export default function MsClContainer({ msData }: Props) {
     const [deviceProfiles, setDeviceProfiles] = useState<DeviceProfile[]>(msContextData.deviceProfiles)
     const tableRef = useRef<MsClTableBodyHandle>(null)
     const [conflict, setConflict] = useState<ConflictState | null>(null)
+
+    const pendingTreatmentMemos = ((msData.memo_tx as MsMemo[]) ?? [])
+        .filter((m) => !m.is_realtime_memo && !m.is_done)
+        .map((m) => ({ id: m.id, memo: m.memo }))
 
     const handleInsertRow = (slot: VitalTimeSlot) => {
         // 경과 시간(분) 계산 — create_timestamp가 밀리초 문자열인 경우 처리
@@ -114,6 +118,7 @@ export default function MsClContainer({ msData }: Props) {
                     sessionTitle={msData.session_title}
                     startTime={msData.start_time ?? null}
                     intervalSetting={msData.interval_setting ?? null}
+                    treatmentMemos={pendingTreatmentMemos}
                     onInsertRow={handleInsertRow}
                 />
                 <DeviceProfileManageSheet

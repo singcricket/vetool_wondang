@@ -61,10 +61,30 @@ export type AiOrderSuggestion = {
   drug_in_hos_drugs: boolean
 }
 
+export type DrugInteraction = {
+  drugs: string[]
+  severity: 'low' | 'moderate' | 'high'
+  description: string
+}
+
+export type SideEffectConcern = {
+  drug: string
+  concern: string
+  monitoring: string
+}
+
+export type TreatmentReview = {
+  overall_assessment: string
+  drug_interactions: DrugInteraction[]
+  side_effects: SideEffectConcern[]
+  risks: string[]
+}
+
 export type AiSessionResult = {
   sessionId: string
   summary: string
   orders: AiOrderSuggestion[]
+  treatment_review?: TreatmentReview
 }
 
 export type StoredAiOrder = {
@@ -447,13 +467,18 @@ ${ctx.additional_context ? `━━ 추가 임상 정보 / 피드백 ━━\n${ct
     - "latest": 최근 수의학 문헌/가이드라인에 근거하며 임상 채택이 확산 중인 최신 프로토콜
     - "experimental": 사례보고·전임상 연구 등 근거가 제한적이거나 아직 표준화되지 않은 치료
 11. evidence_level이 "latest" 또는 "experimental"인 오더의 ai_reasoning에는 반드시 근거 출처(저자·저널명·연도 또는 가이드라인명)를 포함하세요.
+12. treatment_review: 현재 처방 오더 전체를 검토하여 다음을 작성하세요:
+    - overall_assessment: 현재 치료의 전반적 평가 (1~3문장)
+    - drug_interactions: 현재 오더 약물 간 상호작용. severity는 "low"(주의 수준), "moderate"(임상적으로 유의), "high"(심각한 위험) 중 하나. 상호작용이 없으면 빈 배열 []
+    - side_effects: 현재 약물별 주요 부작용 우려 및 모니터링 항목. 중요한 것만 포함, 없으면 []
+    - risks: 현재 환자 상태에서 특별히 주의해야 할 위험 요소 (문자열 배열). 없으면 []
 
 JSON만 반환 (설명, 마크다운 없이):
-{"summary":"치료 방향 요약","orders":[{"order_type":"fluid","order_name":"0.9% NaCl","order_comment":"27 mL/hr IV CRI, 첨가제: KCl 20mEq/L + 비타민B 1mL","order_times":[],"ai_reasoning":"저칼륨·고나트륨 교정 목적. 24시간당 Na 10mEq/L 이하로 서서히 교정. 2~4시간 후 전해질 재검사 필요.","evidence_level":"standard","drug_in_hos_drugs":true}]}`
+{"summary":"치료 방향 요약","orders":[{"order_type":"fluid","order_name":"0.9% NaCl","order_comment":"27 mL/hr IV CRI, 첨가제: KCl 20mEq/L + 비타민B 1mL","order_times":[],"ai_reasoning":"저칼륨·고나트륨 교정 목적. 24시간당 Na 10mEq/L 이하로 서서히 교정. 2~4시간 후 전해질 재검사 필요.","evidence_level":"standard","drug_in_hos_drugs":true}],"treatment_review":{"overall_assessment":"현재 치료 평가 요약","drug_interactions":[{"drugs":["약물A","약물B"],"severity":"moderate","description":"상호작용 설명"}],"side_effects":[{"drug":"약물명","concern":"부작용 우려","monitoring":"모니터링 항목"}],"risks":["위험 요소 1"]}}`
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
+    max_tokens: 16000,
     messages: [{ role: 'user', content: prompt }],
   })
 

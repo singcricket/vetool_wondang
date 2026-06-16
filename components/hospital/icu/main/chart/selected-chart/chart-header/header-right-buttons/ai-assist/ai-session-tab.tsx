@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { BotIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react'
+import { AlertTriangleIcon, BotIcon, ChevronDownIcon, RefreshCwIcon, ShieldAlertIcon, SparklesIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getAiSessions, type StoredAiSession, type VitalRecord } from '@/lib/actions/icu/ai-session-actions'
+import { getAiSessions, type StoredAiSession, type TreatmentReview, type VitalRecord } from '@/lib/actions/icu/ai-session-actions'
 import AiRequestDialog from './ai-request-dialog'
 import AiOrderCard from './ai-order-card'
 import type { SelectedIcuChart } from '@/types/icu/chart'
@@ -80,6 +80,8 @@ export default function AiSessionTab({ hosId, chartData }: Props) {
 
   const pendingCount = selectedSession?.orders.filter((o) => o.approval_status === 'pending').length ?? 0
   const summary = (selectedSession?.ai_response as any)?.summary as string | undefined
+  const treatmentReview = (selectedSession?.ai_response as any)?.treatment_review as TreatmentReview | undefined
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   return (
     <div className="flex h-full flex-col pt-3">
@@ -138,6 +140,92 @@ export default function AiSessionTab({ hosId, chartData }: Props) {
             <Badge className="mt-2 h-4 bg-amber-500 px-1.5 text-[10px] hover:bg-amber-500">
               {pendingCount}건 승인 대기
             </Badge>
+          )}
+        </div>
+      )}
+
+      {/* 현재 치료 검토 */}
+      {selectedSession && treatmentReview && (
+        <div className="mb-3 rounded-md border border-amber-100 bg-amber-50">
+          <button
+            className="flex w-full items-center gap-1.5 px-3 py-2 text-left"
+            onClick={() => setReviewOpen((v) => !v)}
+          >
+            <ShieldAlertIcon size={11} className="text-amber-600" />
+            <span className="flex-1 text-[11px] font-semibold text-amber-700">현재 치료 검토</span>
+            {(treatmentReview.drug_interactions?.length > 0 || treatmentReview.risks?.length > 0) && (
+              <AlertTriangleIcon size={11} className="text-amber-500" />
+            )}
+            <ChevronDownIcon
+              size={13}
+              className={`text-amber-500 transition-transform ${reviewOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {reviewOpen && (
+            <div className="border-t border-amber-100 px-3 pb-3 pt-2 space-y-2.5">
+              {treatmentReview.overall_assessment && (
+                <p className="text-[11px] leading-relaxed text-slate-700">{treatmentReview.overall_assessment}</p>
+              )}
+
+              {treatmentReview.drug_interactions?.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-600">약물 상호작용</p>
+                  <div className="space-y-1.5">
+                    {treatmentReview.drug_interactions.map((interaction, i) => (
+                      <div key={i} className="rounded bg-white px-2 py-1.5 border border-amber-100">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span
+                            className={`rounded px-1 py-0.5 text-[9px] font-bold ${
+                              interaction.severity === 'high'
+                                ? 'bg-red-100 text-red-700'
+                                : interaction.severity === 'moderate'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {interaction.severity === 'high' ? '심각' : interaction.severity === 'moderate' ? '주의' : '경미'}
+                          </span>
+                          <span className="text-[11px] font-medium text-slate-700">{interaction.drugs.join(' + ')}</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-slate-600">{interaction.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {treatmentReview.side_effects?.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-600">부작용 모니터링</p>
+                  <div className="space-y-1.5">
+                    {treatmentReview.side_effects.map((se, i) => (
+                      <div key={i} className="rounded bg-white px-2 py-1.5 border border-amber-100">
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <span className="text-[11px] font-semibold text-slate-700">{se.drug}</span>
+                          <span className="text-[11px] text-slate-500">— {se.concern}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">모니터링: {se.monitoring}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {treatmentReview.risks?.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-600">위험 요소</p>
+                  <ul className="space-y-0.5">
+                    {treatmentReview.risks.map((risk, i) => (
+                      <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-700">
+                        <span className="mt-0.5 text-amber-500">•</span>
+                        {risk}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
