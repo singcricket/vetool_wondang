@@ -107,6 +107,44 @@ export async function saveBulkScheduleDates(updates: { id: string; newDate: stri
   revalidatePath('/', 'layout')
 }
 
+export async function deleteSchedules(ids: string[]) {
+  if (ids.length === 0) return
+
+  const supabase = await createClient()
+
+  // Get case_protocol_ids before deletion (for counter update)
+  const { data: schedules } = await supabase
+    .from('onco_schedules')
+    .select('id, case_protocol_id')
+    .in('id', ids)
+
+  const { error } = await supabase.from('onco_schedules').delete().in('id', ids)
+  if (error) throw new Error(`스케줄 삭제 실패: ${error.message}`)
+
+  // Update case_protocol counters for affected protocols
+  const affectedProtocolIds = [...new Set((schedules ?? []).map((s) => s.case_protocol_id))]
+  await Promise.all(
+    affectedProtocolIds.map(async (protocolId) => {
+      const { data: remaining } = await supabase
+        .from('onco_schedules')
+        .select('status')
+        .eq('case_protocol_id', protocolId)
+
+      const completed = (remaining ?? []).filter((s) => s.status === 'completed').length
+      const delayed = (remaining ?? []).filter((s) => s.status === 'delayed').length
+      const reduced = (remaining ?? []).filter((s) => s.status === 'reduced').length
+      const total = (remaining ?? []).length
+
+      await supabase
+        .from('onco_case_protocols')
+        .update({ total_doses: total, completed_doses: completed, delayed_doses: delayed, reduced_doses: reduced })
+        .eq('id', protocolId)
+    }),
+  )
+
+  revalidatePath('/', 'layout')
+}
+
 export async function bulkShiftScheduleDates(ids: string[], offsetDays: number) {
   const supabase = await createClient()
 

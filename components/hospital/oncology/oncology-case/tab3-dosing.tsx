@@ -9,10 +9,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils/utils'
-import { updateScheduleStatus, updateScheduleDate, saveBulkScheduleDates, updateScheduleDoseRate } from '@/lib/actions/oncology/schedule-actions'
+import { updateScheduleStatus, updateScheduleDate, saveBulkScheduleDates, updateScheduleDoseRate, deleteSchedules } from '@/lib/actions/oncology/schedule-actions'
 import type { OncologyCaseProtocolRow, OncologyScheduleRow } from '@/lib/services/oncology/fetch-oncology-case'
 import type { DrugItem, AdverseEffectItem } from '@/lib/actions/oncology/ai-oncology-guide'
-import { CalendarDays, CheckCircle, ChevronDown, ChevronUp, ClipboardList, FlaskConical, AlertTriangle, Loader2, Pencil, ShieldAlert, TriangleAlert, X } from 'lucide-react'
+import { CalendarDays, CheckCircle, ChevronDown, ChevronUp, ClipboardList, FlaskConical, AlertTriangle, Loader2, Pencil, ShieldAlert, Trash2, TriangleAlert, X } from 'lucide-react'
 import AdverseEventDialog from './adverse-event-dialog'
 
 // ── Route helpers ─────────────────────────────────────────────────────────────
@@ -687,6 +687,8 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
   const [localDates, setLocalDates] = useState<Record<string, string>>({})
   const [customOffset, setCustomOffset] = useState('')
   const [pendingSaving, setPendingSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const allSchedules = caseProtocols.flatMap((cp) => cp.schedules)
   const allIds = allSchedules.map((s) => s.id)
@@ -747,9 +749,45 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
     setCustomOffset('')
   }
 
+  const handleDeleteSelected = async () => {
+    if (selected.size === 0) return
+    setDeleting(true)
+    try {
+      await deleteSchedules(Array.from(selected))
+      toast.success(`${selected.size}개 일정이 삭제되었습니다.`)
+      setSelected(new Set())
+      setLocalDates({})
+      setConfirmDelete(false)
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '삭제 실패')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const completed = allSchedules.filter((s) => s.status === 'completed').length
   const total = allSchedules.length
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
+
+  const CP_STATUS_CONFIG: Record<string, { label: string; badge: string; bar: string }> = {
+    active:       { label: '진행 중', badge: 'bg-emerald-100 text-emerald-800', bar: 'bg-emerald-500' },
+    completed:    { label: '완료',    badge: 'bg-blue-100 text-blue-800',       bar: 'bg-blue-500'   },
+    discontinued: { label: '중단',    badge: 'bg-red-100 text-red-800',         bar: 'bg-red-400'    },
+  }
+
+  const perProtocolStats = caseProtocols.map((cp) => {
+    const protCompleted = cp.schedules.filter((s) => s.status === 'completed').length
+    const protTotal = cp.schedules.length
+    return {
+      id: cp.id,
+      name: cp.protocol.protocol_name,
+      status: cp.status,
+      completed: protCompleted,
+      total: protTotal,
+      rate: protTotal > 0 ? Math.round((protCompleted / protTotal) * 100) : 0,
+    }
+  })
 
   const toggleProtocol = (id: string) => {
     setExpandedProtocols((prev) => {
@@ -772,30 +810,48 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
 
   return (
     <div className="space-y-4">
-      {/* Completion rate banner */}
-      <div className="flex items-center gap-4 bg-slate-50 rounded-lg p-3 border">
-
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-slate-600">전체 투약 완료율</span>
-            <span className="text-sm font-semibold text-rose-700">{completionRate}%</span>
-          </div>
-          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-rose-500 rounded-full transition-all"
-              style={{ width: `${completionRate}%` }}
-            />
+      {/* 프로토콜별 완료율 배너 */}
+      <div className="bg-slate-50 rounded-lg p-3 border space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-500">프로토콜별 완료율</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} id="select-all" />
+              <label htmlFor="select-all" className="text-xs text-slate-500 cursor-pointer">전체 선택</label>
+            </div>
+            <span className="text-xs text-slate-400">{completed}/{total}회</span>
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Select all checkbox */}
-          <div className="flex items-center gap-1.5">
-            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} id="select-all" />
-            <label htmlFor="select-all" className="text-xs text-slate-500 cursor-pointer">전체 선택</label>
-          </div>
-          <div className="text-xs text-slate-500 text-right">
-            <div>{completed} / {total} 회</div>
-          </div>
+        <div className="space-y-1.5">
+          {perProtocolStats.map((stat) => {
+            const cfg = CP_STATUS_CONFIG[stat.status] ?? { label: stat.status, badge: 'bg-slate-100 text-slate-600', bar: 'bg-slate-400' }
+            return (
+              <div key={stat.id} className="flex items-center gap-2">
+                <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold', cfg.badge)}>
+                  {cfg.label}
+                </span>
+                <span
+                  className="text-[11px] text-slate-600 shrink-0 truncate"
+                  style={{ width: '7rem' }}
+                  title={stat.name}
+                >
+                  {stat.name}
+                </span>
+                <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={cn('h-full rounded-full transition-all', cfg.bar)}
+                    style={{ width: `${stat.rate}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-semibold text-slate-700 shrink-0 w-8 text-right">
+                  {stat.rate}%
+                </span>
+                <span className="text-[11px] text-slate-400 shrink-0">
+                  {stat.completed}/{stat.total}회
+                </span>
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -833,12 +889,64 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
         </div>
       )}
 
-      {/* Bulk date shift toolbar */}
+      {/* Bulk action toolbar */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-2 flex-wrap bg-rose-50 border border-rose-200 rounded-lg px-4 py-2.5">
-          <CalendarDays size={14} className="text-rose-500 shrink-0" />
-          <span className="text-xs font-semibold text-rose-700 shrink-0">{selected.size}개 선택됨 — 날짜 미리보기 조정</span>
-          <div className="flex items-center gap-1.5 flex-wrap ml-1">
+        <div className="flex flex-col gap-2 bg-rose-50 border border-rose-200 rounded-lg px-4 py-2.5">
+          {/* Top row: label + delete + deselect */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <CalendarDays size={14} className="text-rose-500 shrink-0" />
+            <span className="text-xs font-semibold text-rose-700 shrink-0">{selected.size}개 선택됨</span>
+
+            {/* Delete section */}
+            <div className="flex items-center gap-1.5 ml-auto">
+              {confirmDelete ? (
+                <>
+                  <span className="text-xs text-red-700 font-semibold">정말 삭제하시겠습니까?</span>
+                  <Button
+                    size="sm"
+                    onClick={handleDeleteSelected}
+                    disabled={deleting}
+                    className="h-6 text-xs px-2.5 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {deleting
+                      ? <Loader2 size={11} className="animate-spin" />
+                      : <><Trash2 size={11} className="mr-1" />삭제</>
+                    }
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="h-6 text-xs px-2 border-slate-300 text-slate-600 hover:bg-slate-50"
+                  >
+                    취소
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirmDelete(true)}
+                  className="h-6 text-xs px-2.5 border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 size={11} className="mr-1" />
+                  선택 삭제
+                </Button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setSelected(new Set()); setConfirmDelete(false) }}
+                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 ml-1"
+              >
+                <X size={12} /> 선택 해제
+              </button>
+            </div>
+          </div>
+
+          {/* Date shift row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-rose-600 shrink-0">날짜 조정:</span>
             {[-14, -7, -2, +2, +7, +14].map((d) => (
               <Button
                 key={d}
@@ -874,13 +982,6 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
               </Button>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setSelected(new Set())}
-            className="ml-auto text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
-          >
-            <X size={12} /> 선택 해제
-          </button>
         </div>
       )}
 
@@ -906,6 +1007,14 @@ export default function Tab3Dosing({ caseId, caseProtocols, species }: Tab3Dosin
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-rose-50">
               <div className="flex items-center gap-2 min-w-0">
+                {(() => {
+                  const cfg = CP_STATUS_CONFIG[cp.status]
+                  return cfg ? (
+                    <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold', cfg.badge)}>
+                      {cfg.label}
+                    </span>
+                  ) : null
+                })()}
                 <button
                   type="button"
                   onClick={() => toggleProtocol(cp.id)}
