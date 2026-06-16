@@ -36,14 +36,59 @@ export async function searchTreatmentTemplates(
   return { data: (data ?? []) as MsTemplateChart[], error: null }
 }
 
+export type PatientInfoForPlan = {
+  name: string
+  species: string
+  breed: string
+  gender: string
+  birth: string
+  weight: string | null
+  additionalInfo?: string | null
+}
+
+function calcPatientAge(birth: string): string {
+  const now = new Date()
+  const b = new Date(birth)
+  const totalMonths = (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth())
+  const years = Math.floor(totalMonths / 12)
+  const months = totalMonths % 12
+  if (years >= 1) return months > 0 ? `${years}세 ${months}개월` : `${years}세`
+  return `${totalMonths}개월`
+}
+
+function buildPatientSection(info: PatientInfoForPlan): string {
+  const speciesLabel = info.species === 'feline' ? '고양이(Feline)' : '개(Canine)'
+  const age = calcPatientAge(info.birth)
+  const weightStr = info.weight ? `${info.weight} kg` : '미기록'
+  const additionalSection = info.additionalInfo?.trim()
+    ? `\n━━ 추가 임상 정보 ━━\n${info.additionalInfo.trim()}\n위 추가 임상 정보를 처치 계획에 반드시 반영하세요. (예: PCV 수치가 있으면 수혈량 계산, 기저질환이 있으면 금기/주의 약물 언급 등)`
+    : ''
+
+  return `
+━━ 환자 정보 (맞춤형 계획 기준) ━━
+이름: ${info.name}
+종/품종: ${speciesLabel} / ${info.breed}
+나이: ${age}
+성별: ${info.gender}
+체중: ${weightStr}
+${additionalSection}
+이 환자에 맞춘 처치 계획을 제공하세요:
+${info.weight ? `- 약물 투여 시 체중(${info.weight} kg) 기반 실제 투여량을 계산해 description에 명시 (예: "X mg/kg × ${info.weight} kg = Y mg")` : '- 체중이 미기록이므로 용량은 mg/kg 범위로만 제시'}
+- ${info.breed} 품종의 특이사항이나 해당 처치와 관련된 품종 특성이 있다면 포함
+- ${age} 나이대에서 주의할 사항이 있다면 description 또는 caution에 포함
+- 성별(${info.gender})과 관련된 고려사항이 있다면 포함`
+}
+
 // AI로 처치 단계 생성
 export async function generateTreatmentPlan(params: {
   procedureName: string
   species: 'canine' | 'feline' | null
   detailLevel: 'detailed' | 'brief'
+  patientInfo?: PatientInfoForPlan | null
 }): Promise<{ data: TreatmentStep[] | null; error: string | null }> {
-  const { procedureName, species, detailLevel } = params
+  const { procedureName, species, detailLevel, patientInfo } = params
   const sp = species ?? 'canine'
+  const isCustom = !!patientInfo
 
   try {
     const client = getAnthropicClient()
@@ -56,14 +101,15 @@ export async function generateTreatmentPlan(params: {
           content: `당신은 수의학 전문가입니다. 동물병원에서 사용하는 처치/시술 프로토콜을 단계별로 안내합니다.
 
 처치명: ${procedureName}
-환자 종: ${sp === 'feline' ? '고양이(Feline)' : '개(Canine)'}
+${isCustom ? '' : `환자 종: ${sp === 'feline' ? '고양이(Feline)' : '개(Canine)'}`}
 상세도: ${detailLevel === 'detailed' ? '상세 (각 단계별 구체적인 설명, 팁, 주의사항 포함)' : '간략 (핵심 단계만)'}
+${isCustom ? buildPatientSection(patientInfo!) : ''}
 
 위 처치에 대한 단계별 프로토콜을 JSON 배열로 반환하세요.
 
 각 단계 필드:
 - memo: 단계명 (간결하게, 예: "혈액검사 (CBC, Chemistry)")
-- description: ${detailLevel === 'detailed' ? '상세 설명, 팁, 검사 항목 등 (2-4문장)' : '핵심 내용 1문장'}
+- description: ${detailLevel === 'detailed' ? '상세 설명, 팁, 검사 항목 등 (2-4문장)' : '핵심 내용 1문장'}${isCustom ? '. 환자 맞춤 정보(실제 투여량, 품종 특이사항 등)도 여기에 포함' : ''}
 - caution: 주의사항 또는 위험요소 (없으면 null)
 - schedule: 시간 정보는 의학적으로 타이밍이 매우 중요한 경우에만 설정, 그 외에는 반드시 null
   * 시간 설정이 필요한 경우: ACTH 자극시험·인슐린 자극시험 등 호르몬 검사의 채혈 시점, 조영제 투여 후 촬영 시점, 항암제·독소루비신 등 투여 속도·간격이 중요한 경우, 수액 속도 변경 시점 등 타이밍 오차가 검사 결과나 환자 안전에 직접 영향을 주는 단계
@@ -80,7 +126,6 @@ export async function generateTreatmentPlan(params: {
 
 규칙:
 - 수의학적으로 정확한 내용만 포함
-- 약물 용량은 범위로 제시하고 체중 기반 계산 안내
 - 단계 수: ${detailLevel === 'detailed' ? '6-12개' : '3-6개'}
 - schedule이 null인 단계가 대부분이어야 함 (타이밍이 중요한 단계에만 예외적으로 설정)
 

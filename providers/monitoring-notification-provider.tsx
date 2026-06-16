@@ -1,5 +1,17 @@
 'use client'
 
+// 알림 기능 비활성화 — 다시 켜려면 아래 주석 해제 후 이 줄 삭제
+export function MonitoringNotificationProvider({
+  hosId: _hosId,
+  children,
+}: {
+  hosId: string
+  children: React.ReactNode
+}) {
+  return <>{children}</>
+}
+
+/* ── 비활성화된 원본 코드 ──────────────────────────────────────
 import { useLocalNotification } from '@/hooks/use-local-notification'
 import { createClient } from '@/lib/supabase/client'
 import { MsMemo } from '@/types/monitoring/monitoring-type'
@@ -7,7 +19,7 @@ import { RealtimeChannel } from '@supabase/supabase-js'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
-export function MonitoringNotificationProvider({
+export function MonitoringNotificationProvider_DISABLED({
   hosId,
   children,
 }: {
@@ -175,3 +187,4 @@ export function MonitoringNotificationProvider({
 
   return <>{children}</>
 }
+── ──────────────────────────────────────────────────────── */

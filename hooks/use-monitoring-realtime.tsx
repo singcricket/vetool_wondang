@@ -1,15 +1,19 @@
 import { useZustandMonitoringRealtimeStore } from '@/lib/store/monitoring/monitoring-realtime-state'
 import { createClient } from '@/lib/supabase/client'
+import { REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useTransition } from 'react'
 import { useDebouncedCallback } from 'use-debounce'
+
+const RECONNECT_DELAY_MS = 5000
 
 export function useMonitoringRealtime(hosId: string) {
   const { isRealtimeReadyZustand, setIsRealtimeReadyZustand } = useZustandMonitoringRealtimeStore()
   const [isPending, startTransition] = useTransition()
   const supabase = createClient()
   const subscriptionRef = useRef<RealtimeChannel | null>(null)
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { refresh } = useRouter()
 
   const debouncedRefresh = useDebouncedCallback(() => {
@@ -23,20 +27,33 @@ export function useMonitoringRealtime(hosId: string) {
   }, 1000)
 
   const handleChange = useCallback(
-    (payload: any) => {
-      if (!payload?.table || !payload?.eventType) return
+    (payload: unknown) => {
+      const p = payload as { table?: string; eventType?: string } | null
+      if (!p?.table || !p?.eventType) return
       debouncedRefresh()
     },
     [debouncedRefresh],
   )
 
-  const subscribeToChannel = useCallback(() => {
-    if (subscriptionRef.current) {
-      console.log('Subscription already exists. Skipping...')
-      return
+  const clearReconnectTimer = useCallback(() => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current)
+      reconnectTimerRef.current = null
     }
+  }, [])
 
-    console.log('Creating new subscription...')
+  const unsubscribe = useCallback(async () => {
+    clearReconnectTimer()
+    if (subscriptionRef.current) {
+      await supabase.removeChannel(subscriptionRef.current)
+      subscriptionRef.current = null
+      setIsRealtimeReadyZustand(false)
+    }
+  }, [clearReconnectTimer, setIsRealtimeReadyZustand, supabase])
+
+  const subscribeToChannel = useCallback(() => {
+    if (subscriptionRef.current) return
+
     const channel = supabase.channel(`monitoring_realtime_${hosId}`)
 
     channel
@@ -67,56 +84,43 @@ export function useMonitoringRealtime(hosId: string) {
       )
 
     subscriptionRef.current = channel.subscribe((status, err) => {
-      if (status === 'SUBSCRIBED') {
-        console.log(
-          `%cSUBSCRIBED: monitoring_realtime_${hosId}`,
-          'color: green; font-weight: bold',
-        )
+      if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
         setIsRealtimeReadyZustand(true)
-      } else if (status === 'CLOSED' || status === 'UNSUBSCRIBED') {
-        console.log(
-          `%c${status}: monitoring_realtime_${hosId}`,
-          'color: gray; font-weight: bold',
-        )
+      } else if (status === REALTIME_SUBSCRIBE_STATES.CLOSED) {
         setIsRealtimeReadyZustand(false)
-      } else {
-        console.error(
-          `%cSUBSCRIPTION ERROR: monitoring_realtime_${hosId}`,
-          'color: red; font-weight: bold',
-          status,
-          err,
-        )
+      } else if (
+        status === REALTIME_SUBSCRIBE_STATES.CHANNEL_ERROR ||
+        status === REALTIME_SUBSCRIBE_STATES.TIMED_OUT
+      ) {
         setIsRealtimeReadyZustand(false)
+        if (err) console.warn(`[monitoring-realtime] ${status}:`, err.message)
+
+        // 기존 채널 정리 후 재연결
+        clearReconnectTimer()
+        reconnectTimerRef.current = setTimeout(async () => {
+          if (subscriptionRef.current) {
+            await supabase.removeChannel(subscriptionRef.current)
+            subscriptionRef.current = null
+          }
+          subscribeToChannel()
+        }, RECONNECT_DELAY_MS)
       }
     })
-  }, [hosId, handleChange, setIsRealtimeReadyZustand, supabase])
-
-  const unsubscribe = useCallback(async () => {
-    if (subscriptionRef.current) {
-      console.log('Unsubscribing from channel...')
-      await supabase.removeChannel(subscriptionRef.current)
-      subscriptionRef.current = null
-      setIsRealtimeReadyZustand(false)
-    }
-  }, [setIsRealtimeReadyZustand, supabase])
+  }, [hosId, handleChange, setIsRealtimeReadyZustand, supabase, clearReconnectTimer])
 
   const handleVisibilityChange = useCallback(() => {
     if (document.hidden) {
-      console.log('Page is hidden, unsubscribing...')
       unsubscribe()
     } else {
-      console.log('Page is visible, resubscribing...')
       subscribeToChannel()
     }
   }, [subscribeToChannel, unsubscribe])
 
   useEffect(() => {
-    console.log('initial subscription')
     document.addEventListener('visibilitychange', handleVisibilityChange)
     subscribeToChannel()
 
     return () => {
-      console.log('Cleanup: unsubscribing and removing event listener...')
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       unsubscribe()
     }
@@ -124,4 +128,3 @@ export function useMonitoringRealtime(hosId: string) {
 
   return isRealtimeReadyZustand
 }
-

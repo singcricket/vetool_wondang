@@ -167,6 +167,14 @@ export default function MsTxMemoGroup({
             <AiTreatmentPlanDialog
               hosId={msData.hos_id}
               species={msData.patient?.species as 'canine' | 'feline' | null ?? null}
+              patientInfo={msData.patient ? {
+                name: msData.patient.name,
+                species: msData.patient.species,
+                breed: msData.patient.breed,
+                gender: msData.patient.gender ?? '',
+                birth: msData.patient.birth,
+                weight: msData.patient.body_weight,
+              } : null}
               onApply={handleAiApply}
             />
           )}

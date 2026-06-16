@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import {
   Sparkles, LoaderCircle, CheckCircle2, ChevronRight,
-  Clock, AlertTriangle, Trash2, BookTemplate,
+  Clock, AlertTriangle, Trash2, BookTemplate, UserX,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -24,6 +24,7 @@ import {
   generateTreatmentPlan,
   saveTreatmentAsTemplate,
   type TreatmentStep,
+  type PatientInfoForPlan,
 } from '@/lib/actions/monitoring/treatment-plan-action'
 import { stepsToMemos } from '@/lib/utils/treatment-plan-utils'
 import type { MsTemplateChart } from '@/lib/services/monitoring/fetch-ms-data'
@@ -32,11 +33,22 @@ import type { MsMemo } from '@/types/monitoring/monitoring-type'
 interface Props {
   hosId: string
   species: 'canine' | 'feline' | null
+  patientInfo: PatientInfoForPlan | null
   onApply: (memos: MsMemo[]) => void
 }
 
 type DetailLevel = 'detailed' | 'brief'
 type Step = 'input' | 'preview'
+
+function calcAgeLabel(birth: string): string {
+  const totalMonths =
+    (new Date().getFullYear() - new Date(birth).getFullYear()) * 12 +
+    (new Date().getMonth() - new Date(birth).getMonth())
+  const years = Math.floor(totalMonths / 12)
+  const months = totalMonths % 12
+  if (years >= 1) return months > 0 ? `${years}세 ${months}개월` : `${years}세`
+  return `${totalMonths}개월`
+}
 
 const SCHEDULE_LABEL = (s: TreatmentStep['schedule']) => {
   if (!s) return null
@@ -46,13 +58,14 @@ const SCHEDULE_LABEL = (s: TreatmentStep['schedule']) => {
   return null
 }
 
-export default function AiTreatmentPlanDialog({ hosId, species, onApply }: Props) {
+export default function AiTreatmentPlanDialog({ hosId, species, patientInfo, onApply }: Props) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>('input')
 
   // 입력
   const [procedureName, setProcedureName] = useState('')
   const [detailLevel, setDetailLevel] = useState<DetailLevel>('detailed')
+  const [includePatient, setIncludePatient] = useState(!!patientInfo)
 
   // 템플릿 검색
   const [templates, setTemplates] = useState<MsTemplateChart[]>([])
@@ -63,6 +76,9 @@ export default function AiTreatmentPlanDialog({ hosId, species, onApply }: Props
   const [generating, setGenerating] = useState(false)
   const [steps, setSteps] = useState<TreatmentStep[]>([])
   const [sourceLabel, setSourceLabel] = useState<string>('')
+
+  // 추가 임상 정보
+  const [additionalInfo, setAdditionalInfo] = useState('')
 
   // 템플릿 저장
   const [saveAsTemplate, setSaveAsTemplate] = useState(false)
@@ -111,6 +127,9 @@ export default function AiTreatmentPlanDialog({ hosId, species, onApply }: Props
       procedureName,
       species,
       detailLevel,
+      patientInfo: includePatient && patientInfo
+        ? { ...patientInfo, additionalInfo: additionalInfo.trim() || null }
+        : null,
     })
     setGenerating(false)
     if (error || !data) {
@@ -164,6 +183,8 @@ export default function AiTreatmentPlanDialog({ hosId, species, onApply }: Props
     setSourceLabel('')
     setSaveAsTemplate(false)
     setTemplateName('')
+    setIncludePatient(!!patientInfo)
+    setAdditionalInfo('')
   }
 
   return (
@@ -242,6 +263,98 @@ export default function AiTreatmentPlanDialog({ hosId, species, onApply }: Props
                   <SelectItem value="brief">간략 — 핵심 단계만</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* 환자 맞춤형 옵션 */}
+            <div
+              className={[
+                'flex flex-col gap-2 rounded-lg border px-3 py-2.5 transition-colors',
+                !patientInfo
+                  ? 'border-slate-200 bg-slate-50 opacity-60'
+                  : includePatient
+                  ? 'border-violet-300 bg-violet-50 cursor-pointer'
+                  : 'border-slate-200 bg-slate-50 cursor-pointer',
+              ].join(' ')}
+              onClick={() => {
+                if (!patientInfo) return
+                setIncludePatient((v) => !v)
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="include-patient"
+                  checked={includePatient}
+                  disabled={!patientInfo}
+                  onCheckedChange={(v) => {
+                    if (!patientInfo) return
+                    setIncludePatient(!!v)
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-3.5 w-3.5 border-violet-400"
+                />
+                <Label
+                  htmlFor="include-patient"
+                  className={[
+                    'text-xs font-semibold',
+                    !patientInfo
+                      ? 'cursor-not-allowed text-slate-400'
+                      : includePatient
+                      ? 'cursor-pointer text-violet-700'
+                      : 'cursor-pointer text-slate-500',
+                  ].join(' ')}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  환자 맞춤형
+                </Label>
+                {includePatient && (
+                  <span className="ml-auto rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-600">
+                    ON
+                  </span>
+                )}
+              </div>
+
+              {/* 환자 미연결 안내 */}
+              {!patientInfo && (
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                  <UserX size={12} />
+                  환자가 연결되지 않았습니다. 사이드바에서 환자를 먼저 연결해주세요.
+                </div>
+              )}
+
+              {/* 환자 연결됨 + OFF */}
+              {patientInfo && !includePatient && (
+                <p className="text-[11px] text-slate-400">
+                  체크 시 환자 체중·품종·나이 기반 투여량 및 맞춤 팁을 포함합니다
+                </p>
+              )}
+
+              {/* 환자 연결됨 + ON */}
+              {patientInfo && includePatient && (
+                <div className="flex flex-col gap-2.5">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] text-violet-700">
+                    <span><span className="text-violet-400">종/품종</span> {patientInfo.species === 'feline' ? '고양이' : '개'} / {patientInfo.breed}</span>
+                    <span><span className="text-violet-400">체중</span> {patientInfo.weight ? `${patientInfo.weight} kg` : '미기록'}</span>
+                    <span><span className="text-violet-400">성별</span> {patientInfo.gender}</span>
+                    <span><span className="text-violet-400">나이</span> {calcAgeLabel(patientInfo.birth)}</span>
+                  </div>
+
+                  {/* 추가 임상 정보 */}
+                  <div
+                    className="flex flex-col gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Label className="text-[11px] font-medium text-violet-600">
+                      추가 임상 정보 <span className="font-normal text-violet-400">(선택)</span>
+                    </Label>
+                    <Textarea
+                      className="min-h-[72px] resize-none text-xs border-violet-200 bg-white placeholder:text-slate-300 focus-visible:ring-violet-300"
+                      placeholder={`현재 상태나 검사 수치를 입력하면 AI가 반영합니다.\n예) 현재 PCV 15%, 공혈견 PCV 45% → 수혈량 계산\n예) 기저질환: 당뇨, CKD stage 3 → 금기 약물 주의`}
+                      value={additionalInfo}
+                      onChange={(e) => setAdditionalInfo(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <Button
