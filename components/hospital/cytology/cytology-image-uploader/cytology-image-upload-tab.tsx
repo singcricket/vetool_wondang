@@ -29,6 +29,33 @@ export default function CytologyImageUploadTab({ chartId, hosId, onSuccess }: Pr
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // BMP → JPEG 변환 (canvas 이용, quality 0.85)
+  function convertBmpToJpeg(file: File): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0)
+        URL.revokeObjectURL(url)
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { reject(new Error('BMP 변환 실패')); return }
+            const newName = file.name.replace(/\.bmp$/i, '.jpg')
+            resolve(new File([blob], newName, { type: 'image/jpeg' }))
+          },
+          'image/jpeg',
+          0.85,
+        )
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 로드 실패')) }
+      img.src = url
+    })
+  }
+
   // Clipboard Paste Support
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -41,25 +68,32 @@ export default function CytologyImageUploadTab({ chartId, hosId, onSuccess }: Pr
           if (file) pastedFiles.push(file)
         }
       }
-      if (pastedFiles.length > 0) addFiles(pastedFiles)
+      if (pastedFiles.length > 0) void addFiles(pastedFiles)
     }
     window.addEventListener('paste', handlePaste)
     return () => window.removeEventListener('paste', handlePaste)
   }, [])
 
-  const addFiles = (files: File[] | FileList) => {
+  const addFiles = async (files: File[] | FileList) => {
     const fileArray = Array.from(files)
-    const newImages: StagedCytologyImage[] = fileArray.map((file) => ({
+    const converted = await Promise.all(
+      fileArray.map((file) =>
+        file.type === 'image/bmp' || file.name.toLowerCase().endsWith('.bmp')
+          ? convertBmpToJpeg(file)
+          : Promise.resolve(file),
+      ),
+    )
+    const newImages: StagedCytologyImage[] = converted.map((file) => ({
       id: Math.random().toString(36).substring(2, 9),
       file,
       previewUrl: URL.createObjectURL(file),
       selected: false,
       tags: [],
     }))
-    
-    setStagedImages((prev) => 
-      prev.map(img => ({ ...img, selected: false }))
-          .concat(newImages.map(img => ({ ...img, selected: true })))
+
+    setStagedImages((prev) =>
+      prev.map((img) => ({ ...img, selected: false }))
+          .concat(newImages.map((img) => ({ ...img, selected: true })))
     )
   }
 
@@ -68,7 +102,7 @@ export default function CytologyImageUploadTab({ chartId, hosId, onSuccess }: Pr
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files)
+    if (e.dataTransfer.files?.length) void addFiles(e.dataTransfer.files)
   }
 
   const removeImage = (id: string, e: React.MouseEvent) => {
@@ -138,7 +172,7 @@ export default function CytologyImageUploadTab({ chartId, hosId, onSuccess }: Pr
             isDragging ? "border-violet-500 bg-violet-50" : "border-slate-200 hover:border-slate-300 shadow-sm"
           )}
         >
-          <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files && addFiles(e.target.files)} />
+          <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={(e) => e.target.files && void addFiles(e.target.files)} />
           <UploadCloud className="w-12 h-12 text-slate-300 mb-3" />
           <p className="text-sm font-bold text-slate-600">클릭하거나 파일을 드래그하여 추가하세요</p>
           <p className="text-xs text-slate-400 mt-1">스크린샷 붙여넣기(Ctrl+V) 지원</p>
