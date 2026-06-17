@@ -993,6 +993,251 @@ export type Database = {
           },
         ]
       }
+      derm_charts: {
+        Row: {
+          ai_summary: string | null
+          chart_date: string
+          chief_complaint: string | null
+          created_at: string | null
+          evaluator_id: string | null
+          hos_id: string
+          id: string
+          notes: string | null
+          overall_severity: number | null
+          overview_image_url: string | null
+          patient_id: string
+          updated_at: string | null
+          user_tags: string | null
+          vet_id: string | null
+          visit_type: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          chart_date?: string
+          chief_complaint?: string | null
+          created_at?: string | null
+          evaluator_id?: string | null
+          hos_id: string
+          id?: string
+          notes?: string | null
+          overall_severity?: number | null
+          overview_image_url?: string | null
+          patient_id: string
+          updated_at?: string | null
+          user_tags?: string | null
+          vet_id?: string | null
+          visit_type?: string
+        }
+        Update: {
+          ai_summary?: string | null
+          chart_date?: string
+          chief_complaint?: string | null
+          created_at?: string | null
+          evaluator_id?: string | null
+          hos_id?: string
+          id?: string
+          notes?: string | null
+          overall_severity?: number | null
+          overview_image_url?: string | null
+          patient_id?: string
+          updated_at?: string | null
+          user_tags?: string | null
+          vet_id?: string | null
+          visit_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "derm_charts_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "derm_charts_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "derm_charts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+          {
+            foreignKeyName: "derm_charts_vet_id_fkey"
+            columns: ["vet_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      derm_images: {
+        Row: {
+          chart_id: string
+          created_at: string | null
+          hos_id: string
+          id: string
+          image_type: string
+          image_url: string
+          lesion_group_id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          chart_id: string
+          created_at?: string | null
+          hos_id: string
+          id?: string
+          image_type?: string
+          image_url: string
+          lesion_group_id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          chart_id?: string
+          created_at?: string | null
+          hos_id?: string
+          id?: string
+          image_type?: string
+          image_url?: string
+          lesion_group_id?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "derm_images_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "derm_charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "derm_images_lesion_group_id_fkey"
+            columns: ["lesion_group_id"]
+            isOneToOne: false
+            referencedRelation: "derm_lesion_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      derm_lesion_groups: {
+        Row: {
+          created_at: string | null
+          group_color: string | null
+          group_label: string
+          hos_id: string
+          id: string
+          initial_chart_id: string
+          marker_data: Json | null
+          patient_id: string
+          status: string
+          suspected_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          group_color?: string | null
+          group_label: string
+          hos_id: string
+          id?: string
+          initial_chart_id: string
+          marker_data?: Json | null
+          patient_id: string
+          status?: string
+          suspected_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          group_color?: string | null
+          group_label?: string
+          hos_id?: string
+          id?: string
+          initial_chart_id?: string
+          marker_data?: Json | null
+          patient_id?: string
+          status?: string
+          suspected_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "derm_lesion_groups_initial_chart_id_fkey"
+            columns: ["initial_chart_id"]
+            isOneToOne: false
+            referencedRelation: "derm_charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "derm_lesion_groups_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+        ]
+      }
+      derm_lesion_visits: {
+        Row: {
+          ai_analysis: Json | null
+          ai_comparison_notes: string | null
+          chart_id: string
+          created_at: string | null
+          formal_findings: string | null
+          hos_id: string
+          id: string
+          improvement: string | null
+          lesion_group_id: string
+          lesion_types: Json | null
+          raw_input: string | null
+          severity: number | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_comparison_notes?: string | null
+          chart_id: string
+          created_at?: string | null
+          formal_findings?: string | null
+          hos_id: string
+          id?: string
+          improvement?: string | null
+          lesion_group_id: string
+          lesion_types?: Json | null
+          raw_input?: string | null
+          severity?: number | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_comparison_notes?: string | null
+          chart_id?: string
+          created_at?: string | null
+          formal_findings?: string | null
+          hos_id?: string
+          id?: string
+          improvement?: string | null
+          lesion_group_id?: string
+          lesion_types?: Json | null
+          raw_input?: string | null
+          severity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "derm_lesion_visits_chart_id_fkey"
+            columns: ["chart_id"]
+            isOneToOne: false
+            referencedRelation: "derm_charts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "derm_lesion_visits_lesion_group_id_fkey"
+            columns: ["lesion_group_id"]
+            isOneToOne: false
+            referencedRelation: "derm_lesion_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diets: {
         Row: {
           active: boolean
