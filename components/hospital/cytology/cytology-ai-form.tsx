@@ -191,15 +191,24 @@ function AiField({ test, value, onChange, hasAiValue }: FieldProps) {
   )
 }
 
+// ── Clinical info fields used for AI context ──────────────────
+
+const CLINICAL_INFO_FIELDS = [
+  { key: 'ai_location',       label: '검체 채취 부위 / 병변 위치', placeholder: '예: 우측 외이도, 경추부 림프절, 복강 내 종괴', type: 'input' },
+  { key: 'ai_size',           label: '크기 / 범위',                placeholder: '예: 약 2×3 cm, 전체적으로 발적',              type: 'input' },
+  { key: 'ai_clinical_signs', label: '임상 증상 및 경과',          placeholder: '예: 3주 전부터 귀 소양감, 진행성 체중감소',    type: 'textarea' },
+  { key: 'ai_notes',          label: '기타 참고사항',              placeholder: '예: 당뇨 기저질환, 스테로이드 투여 중',        type: 'textarea' },
+] as const
+
+type ClinicalInfoKey = typeof CLINICAL_INFO_FIELDS[number]['key']
+
 // ── Main component ────────────────────────────────────────────
 
 interface Props {
   sampleType: CytologySampleType
   findings: Record<string, string | string[]>
-  aiSummary: string | null
   existingImages: ExistingCytologyImage[]
-  hasClinicalInfo: boolean
-  onAnalyze: (images: CytologyImageData[], stain: string) => Promise<void>
+  onAnalyze: (images: CytologyImageData[], stain: string, clinicalContext: string) => Promise<void>
   isAnalyzing: boolean
   onChange: (testId: string, value: string | string[]) => void
 }
@@ -207,9 +216,7 @@ interface Props {
 export default function CytologyAiForm({
   sampleType,
   findings,
-  aiSummary,
   existingImages,
-  hasClinicalInfo,
   onAnalyze,
   isAnalyzing,
   onChange,
@@ -218,6 +225,31 @@ export default function CytologyAiForm({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isFetching, setIsFetching] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [clinicalOpen, setClinicalOpen] = useState(true)
+
+  // Clinical info — initialized from existing specialist findings if present
+  const [clinicalValues, setClinicalValues] = useState<Record<ClinicalInfoKey, string>>({
+    ai_location:       (findings['mass_location'] as string) ?? '',
+    ai_size:           (findings['mass_size'] as string) ?? '',
+    ai_clinical_signs: (findings['clinical_context'] as string) ?? '',
+    ai_notes:          (findings['evaluator_comment'] as string) ?? '',
+  })
+
+  function updateClinical(key: ClinicalInfoKey, value: string) {
+    setClinicalValues((prev) => ({ ...prev, [key]: value }))
+    onChange(key, value)
+  }
+
+  function buildClinicalContext(): string {
+    const parts: string[] = []
+    if (clinicalValues.ai_location)       parts.push(`검체 부위/병변 위치: ${clinicalValues.ai_location}`)
+    if (clinicalValues.ai_size)           parts.push(`크기/범위: ${clinicalValues.ai_size}`)
+    if (clinicalValues.ai_clinical_signs) parts.push(`임상 증상 및 경과: ${clinicalValues.ai_clinical_signs}`)
+    if (clinicalValues.ai_notes)          parts.push(`기타 참고사항: ${clinicalValues.ai_notes}`)
+    return parts.join('\n')
+  }
+
+  const hasClinicalInfo = Object.values(clinicalValues).some((v) => v.trim().length > 0)
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -255,19 +287,77 @@ export default function CytologyAiForm({
         return
       }
 
-      await onAnalyze(imageDataList, selectedStain)
+      await onAnalyze(imageDataList, selectedStain, buildClinicalContext())
     } finally {
       setIsFetching(false)
     }
   }
 
-  const sampleDef = cytologyReference.routineMap[sampleType]
-  const hasAnyFindings = Object.keys(findings).length > 0
   const selectedCount = selectedIds.size
   const busy = isAnalyzing || isFetching
 
   return (
     <div className="space-y-4">
+
+      {/* ── 임상 정보 입력 ───────────────────────────────────────── */}
+      <div className="rounded-xl border border-violet-200 bg-violet-50/50 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setClinicalOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-violet-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-sm font-semibold text-violet-900">임상 정보 입력</span>
+            <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-medium">
+              판독 정확도 향상
+            </span>
+            {hasClinicalInfo && (
+              <span className="flex h-2 w-2 rounded-full bg-emerald-500" title="임상 정보 입력됨" />
+            )}
+          </div>
+          <svg
+            className={`h-4 w-4 text-violet-400 transition-transform ${clinicalOpen ? 'rotate-180' : ''}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {clinicalOpen && (
+          <div className="px-4 pb-4 space-y-3 border-t border-violet-100 pt-3">
+            <p className="text-xs text-violet-700 leading-relaxed">
+              임상 정보를 함께 전달하면 AI가 더 정확하게 판독합니다.
+              <strong> 병변 위치, 크기, 증상 경과</strong>를 입력할수록 판독 품질이 높아집니다.
+            </p>
+            {CLINICAL_INFO_FIELDS.map((field) => (
+              <div key={field.key} className="space-y-1">
+                <label className="text-xs font-medium text-slate-700">{field.label}</label>
+                {field.type === 'input' ? (
+                  <input
+                    type="text"
+                    value={clinicalValues[field.key]}
+                    onChange={(e) => updateClinical(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-slate-300"
+                  />
+                ) : (
+                  <textarea
+                    value={clinicalValues[field.key]}
+                    onChange={(e) => updateClinical(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    rows={2}
+                    className="w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-slate-300"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* 염색 방법 */}
       <div className="space-y-1">
         <label className="text-sm font-medium text-gray-800">염색 방법 선택</label>
@@ -347,19 +437,6 @@ export default function CytologyAiForm({
             })}
           </div>
 
-          {/* 임상소견 누락 안내 */}
-          {!hasClinicalInfo && (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-              <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                <span className="font-semibold">임상소견을 먼저 입력하면 더 정확한 판독이 가능합니다.</span>
-                {' '}전문가 모드 1단계(임상 소견)에 병변 위치·크기·임상 상황을 기입 후 판독을 의뢰해 주세요.
-              </p>
-            </div>
-          )}
-
           {/* 에러 */}
           {fetchError && (
             <p className="rounded bg-rose-50 px-3 py-2 text-xs text-rose-700 border border-rose-200">{fetchError}</p>
@@ -390,6 +467,8 @@ export default function CytologyAiForm({
               </span>
             ) : selectedCount === 0 ? (
               '이미지를 선택하세요'
+            ) : hasClinicalInfo ? (
+              `AI 판독 시작 — ${selectedCount}장 분석 + 임상 정보 포함`
             ) : (
               `AI 판독 시작 — ${selectedCount}장 분석`
             )}
@@ -397,41 +476,6 @@ export default function CytologyAiForm({
         </div>
       )}
 
-      {/* AI 판독 결과 */}
-      {aiSummary && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 space-y-1">
-          <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">AI 판독 결과</span>
-          <p className="text-sm text-amber-900 leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
-        </div>
-      )}
-
-      {/* 소견 검토 */}
-      {(hasAnyFindings || aiSummary) && sampleDef && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold text-gray-800">소견 검토 및 수정</h4>
-            {aiSummary && (
-              <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-                AI 제안값 수정 가능
-              </span>
-            )}
-          </div>
-          {sampleDef.sections.map((section) => (
-            <div key={section.sectionId} className="rounded-lg border bg-white p-3 space-y-3">
-              <div className="flex items-baseline gap-1.5 border-b pb-1.5">
-                <span className="text-xs font-semibold text-violet-700">{section.label}</span>
-                <span className="text-xs text-gray-400 italic">{section.labelEn}</span>
-              </div>
-              {section.tests.map((test) => (
-                <AiField key={test.testId} test={test}
-                  value={findings[test.testId] ?? ''}
-                  onChange={onChange}
-                  hasAiValue={test.testId in findings && aiSummary !== null} />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
 
       {/*
         ── 아래는 이전 업로드 UI (주석 처리) ───────────────────────────────

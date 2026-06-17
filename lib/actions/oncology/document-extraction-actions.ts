@@ -42,6 +42,9 @@ export type UploadedFileInfo = {
 }
 
 export type ExtractedDiagnosisFields = {
+  diagnosis_name: string
+  stage: string | null
+  diagnosis_methods: string[]
   clinical_signs: string
   clinical_course: string
   raw_text: string
@@ -61,6 +64,9 @@ Synthesize ALL provided documents and extract the following information.
 
 Return ONLY valid JSON with this exact structure:
 {
+  "diagnosis_name": "진단명 (영문 정식 의학명 + 한국어 병기, 예: 'Canine B-cell Lymphoma (개 B세포 림프종)'). 확실하지 않으면 문서에서 가장 가능성 높은 진단명을 기입하고 '(추정)' 표시.",
+  "stage": "병기 (로마 숫자 또는 TNM 표기법, 예: 'III', 'IIIa', 'T2N1M0'). 문서에 병기 정보가 없으면 null.",
+  "diagnosis_methods": ["사용된 진단 방법 코드 배열. 다음 값만 사용: biopsy, cytology, histopathology, imaging, bloodwork, clinical"],
   "clinical_signs": "관찰된 임상 증상들 (한국어로 정리)",
   "clinical_course": "질환의 경과 및 진행 과정 (한국어로 정리)",
   "raw_text": "검사 결과, 수치, 소견 등 추가 중요 정보 (한국어로 정리)",
@@ -69,7 +75,8 @@ Return ONLY valid JSON with this exact structure:
 
 Rules:
 - Synthesize information from ALL documents, not just the first one
-- If a section has no relevant content, return an empty string ""
+- If a section has no relevant content, return an empty string "" (or null for stage)
+- diagnosis_methods must only contain values from: biopsy, cytology, histopathology, imaging, bloodwork, clinical
 - Summarize and organize the content clearly in Korean
 - Include specific values (measurements, lab results, dates, pathology findings) in the appropriate field
 - The owner_note must be written in plain Korean without medical jargon, suitable for pet owners
@@ -165,7 +172,15 @@ export async function uploadAndExtractDiagnosis(
 
   const text = response.content[0].type === 'text' ? response.content[0].text : ''
 
-  let parsed: { clinical_signs: string; clinical_course: string; raw_text: string; owner_note: string }
+  let parsed: {
+    diagnosis_name: string
+    stage: string | null
+    diagnosis_methods: string[]
+    clinical_signs: string
+    clinical_course: string
+    raw_text: string
+    owner_note: string
+  }
   try {
     parsed = extractJson(text)
   } catch {
@@ -203,6 +218,9 @@ export async function uploadAndExtractDiagnosis(
   }
 
   return {
+    diagnosis_name: parsed.diagnosis_name ?? '',
+    stage: parsed.stage ?? null,
+    diagnosis_methods: Array.isArray(parsed.diagnosis_methods) ? parsed.diagnosis_methods : [],
     clinical_signs: parsed.clinical_signs ?? '',
     clinical_course: parsed.clinical_course ?? '',
     raw_text: parsed.raw_text ?? '',

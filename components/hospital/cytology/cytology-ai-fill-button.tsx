@@ -72,8 +72,7 @@ export default function CytologyAiFillButton({ sampleType, onFill }: Props) {
       }
 
       const result = await analyzeToFormFields(
-        base64,
-        mediaType as 'image/jpeg' | 'image/png' | 'image/webp',
+        [{ base64, mediaType: mediaType as 'image/jpeg' | 'image/png' | 'image/webp' }],
         sampleType,
       )
 

@@ -14,7 +14,8 @@ import Tab5Response from './tab5-response'
 import Tab6Qol from './tab6-qol'
 import OncologyCaseHeaderButtons from './oncology-case-header-buttons'
 import OwnerCaseDialog from '../oncology_owner/owner-case-dialog'
-import { CalendarDays, Cat, Dog, PawPrint, User, Users } from 'lucide-react'
+import { CalendarDays, Cat, Dog, PawPrint, Stethoscope, User, Users } from 'lucide-react'
+import { useOncologyContext } from '@/providers/oncology-context-provider'
 
 const STATUS_LABEL: Record<string, string> = {
   active: '진행 중',
@@ -62,6 +63,8 @@ export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClient
   const { case: c, diagnosisInputs, caseProtocols, adverseEvents, responseEvals, qolRecords } = detail
   const p = c.patient
   const [ownerOpen, setOwnerOpen] = useState(false)
+  const { vetsList } = useOncologyContext()
+  const vetName = vetsList.find((v) => v.user_id === c.vet_id)?.name ?? null
 
   const diagnosisInput = diagnosisInputs.find((d) => d.input_type === 'text') ?? null
   const documentInput = diagnosisInputs.find((d) => d.input_type === 'document') ?? null
@@ -133,6 +136,12 @@ export default function OncologyCaseClient({ detail, hosId }: OncologyCaseClient
               {c.body_weight && <span>{c.body_weight} kg</span>}
               {c.diagnosis_method && c.diagnosis_method.length > 0 && (
                 <span>{c.diagnosis_method.join(', ')}</span>
+              )}
+              {vetName && (
+                <span className="flex items-center gap-1">
+                  <Stethoscope size={11} />
+                  {vetName}
+                </span>
               )}
             </div>
           </div>

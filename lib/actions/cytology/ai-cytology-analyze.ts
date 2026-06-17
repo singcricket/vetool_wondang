@@ -20,8 +20,7 @@ const SAMPLE_TYPE_LABELS: Record<CytologySampleType, string> = {
   skin_impression: '피부 인상도말 (Skin Impression Smear)',
   skin_exudate: '피부 삼출물 도말 (Skin Exudate Smear)',
   fecal: '분변염색 (Fecal Cytology)',
-  vaginal: '질 세포진 (Vaginal Cytology)',
-  conjunctival: '결막/각막 도말 (Conjunctival/Corneal Scraping)',
+  blood_smear: '혈액도말 (Blood Smear)',
   fna_skin: 'FNA - 피부/피하 (FNA Skin/Subcutis)',
   fna_lymph: 'FNA - 림프절 (FNA Lymph Node)',
   fna_organ: 'FNA - 내부 장기 (FNA Internal Organ)',
@@ -37,14 +36,42 @@ Respond exclusively in valid JSON — no prose, no markdown fences.
 Be specific about cell types, microorganisms, and abundance using veterinary cytology terminology.
 Use semi-quantitative grading: none, rare (1-2/HPF), few (3-5/HPF), moderate (6-20/HPF), many (>20/HPF).`
 
+interface PatientInfo {
+  name?: string | null
+  species?: string | null
+  breed?: string | null
+  gender?: string | null
+  birth?: string | null
+}
+
+function buildPatientBlock(patient?: PatientInfo | null): string {
+  if (!patient) return ''
+  const lines: string[] = []
+  if (patient.name) lines.push(`- Patient name: ${patient.name}`)
+  if (patient.species) lines.push(`- Species: ${patient.species === 'cat' ? 'Cat (Feline)' : 'Dog (Canine)'}`)
+  if (patient.breed) lines.push(`- Breed: ${patient.breed}`)
+  if (patient.gender) lines.push(`- Gender: ${patient.gender}`)
+  if (patient.birth) {
+    const today = new Date()
+    const b = new Date(patient.birth)
+    const years = today.getFullYear() - b.getFullYear()
+    const months = today.getMonth() - b.getMonth()
+    const age = years === 0 ? `${Math.max(0, months + (months < 0 ? 12 : 0))} months` : `${years} years`
+    lines.push(`- Age: ${age}`)
+  }
+  if (lines.length === 0) return ''
+  return `\nPatient information:\n${lines.join('\n')}\n`
+}
+
 function buildClinicalBlock(clinicalInfo?: string): string {
   if (!clinicalInfo?.trim()) return ''
   return `\nClinical context provided by the clinician:\n${clinicalInfo.trim()}\n`
 }
 
-function buildUserPrompt(sampleType: CytologySampleType, stain: string, clinicalInfo?: string): string {
+function buildUserPrompt(sampleType: CytologySampleType, stain: string, clinicalInfo?: string, patient?: PatientInfo | null): string {
+  const patientBlock = buildPatientBlock(patient)
   const clinicalBlock = buildClinicalBlock(clinicalInfo)
-  return `Analyze this ${SAMPLE_TYPE_LABELS[sampleType]} cytology image (stain: ${stain}).${clinicalBlock}
+  return `Analyze this ${SAMPLE_TYPE_LABELS[sampleType]} cytology image (stain: ${stain}).${patientBlock}${clinicalBlock}
 
 Return a JSON object with these fields based on what you observe:
 {
@@ -79,10 +106,12 @@ export async function analyzeCytologyImage(
   sampleType: CytologySampleType,
   stain: string = 'Diff-Quik',
   clinicalInfo?: string,
+  patient?: PatientInfo | null,
 ): Promise<AIAnalysisResult> {
   const client = getAnthropicClient()
 
-  const imageBlocks = images.map((img) => ({
+  const capped = images.slice(0, 20)
+  const imageBlocks = capped.map((img) => ({
     type: 'image' as const,
     source: {
       type: 'base64' as const,
@@ -92,15 +121,15 @@ export async function analyzeCytologyImage(
   }))
 
   const countNote =
-    images.length > 1
-      ? `You are given ${images.length} images of the same sample site. Integrate findings across all images.`
+    capped.length > 1
+      ? `You are given ${capped.length} images of the same sample site. Integrate findings across all images.`
       : ''
 
   let response
   try {
     response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -110,8 +139,8 @@ export async function analyzeCytologyImage(
             {
               type: 'text',
               text: countNote
-                ? `${countNote}\n\n${buildUserPrompt(sampleType, stain, clinicalInfo)}`
-                : buildUserPrompt(sampleType, stain, clinicalInfo),
+                ? `${countNote}\n\n${buildUserPrompt(sampleType, stain, clinicalInfo, patient)}`
+                : buildUserPrompt(sampleType, stain, clinicalInfo, patient),
             },
           ],
         },
@@ -198,12 +227,16 @@ function buildRoutineSchema(sampleType: CytologySampleType): string {
   return `{\n${lines.join('\n')}\n}`
 }
 
-function buildFormFillPrompt(sampleType: CytologySampleType, stain: string): string {
+function buildFormFillPrompt(sampleType: CytologySampleType, stain: string, clinicalInfo?: string, patient?: PatientInfo | null): string {
   const isRoutine = sampleType in cytologyRoutineMap
   const schema = isRoutine ? buildRoutineSchema(sampleType) : SPECIALIST_SCHEMA
+  const patientBlock = buildPatientBlock(patient)
+  const clinicalBlock = clinicalInfo?.trim()
+    ? `\nClinical context provided by the clinician:\n${clinicalInfo.trim()}\n`
+    : ''
 
   return `You are an expert veterinary clinical cytologist.
-Analyze this ${SAMPLE_TYPE_LABELS[sampleType]} cytology image (stain: ${stain}).
+Analyze this ${SAMPLE_TYPE_LABELS[sampleType]} cytology image (stain: ${stain}).${patientBlock}${clinicalBlock}
 
 Return ONLY valid JSON using EXACTLY the field names and allowed values below.
 Omit any field you cannot clearly assess. Use normal/absent/none for negative findings.
@@ -212,28 +245,37 @@ ${schema}`
 }
 
 export async function analyzeToFormFields(
-  imageBase64: string,
-  mediaType: 'image/jpeg' | 'image/png' | 'image/webp',
+  images: Array<{ base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }>,
   sampleType: CytologySampleType,
   stain: string = 'Diff-Quik',
+  clinicalInfo?: string,
+  patient?: PatientInfo | null,
 ): Promise<FormFillResult> {
   const client = getAnthropicClient()
+
+  const capped = images.slice(0, 20)
+  const imageBlocks = capped.map((img) => ({
+    type: 'image' as const,
+    source: { type: 'base64' as const, media_type: img.mediaType, data: img.base64 },
+  }))
+
+  const countNote =
+    capped.length > 1
+      ? `You are given ${capped.length} images of the same sample site. Integrate findings across all images.\n\n`
+      : ''
 
   let response
   try {
     response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
+      max_tokens: 4096,
       system: 'You are an expert veterinary cytologist. Respond exclusively in valid JSON — no prose, no markdown fences.',
       messages: [
         {
           role: 'user',
           content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: imageBase64 },
-            },
-            { type: 'text', text: buildFormFillPrompt(sampleType, stain) },
+            ...imageBlocks,
+            { type: 'text', text: `${countNote}${buildFormFillPrompt(sampleType, stain, clinicalInfo, patient)}` },
           ],
         },
       ],

@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Save, Trash2, Microscope, Info, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Microscope, X, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -17,20 +17,14 @@ import {
 } from '@/components/ui/alert-dialog'
 import CytologyImageUploadDialog from './cytology-image-uploader/cytology-image-upload-dialog'
 import type { CytologyChartDetail } from '@/types/hospital/cytology-type'
-import type {
-  CytologySampleType,
-  CytologyMode,
-  CytologyEngineOutput,
-} from '@/constants/hospital/cytology/cytology-types'
-import { cytologyReference } from '@/constants/hospital/cytology/cytology_ref'
+import type { CytologySampleType, CytologyMode } from '@/constants/hospital/cytology/cytology-types'
 
 const SAMPLE_LABELS: Record<CytologySampleType, string> = {
   otic: '귀도말',
   skin_impression: '피부인상도말',
   skin_exudate: '피부삼출물',
   fecal: '분변염색',
-  vaginal: '질세포진',
-  conjunctival: '결막도말',
+  blood_smear: '혈액도말',
   fna_skin: 'FNA-피부',
   fna_lymph: 'FNA-림프절',
   fna_organ: 'FNA-장기',
@@ -40,20 +34,9 @@ const SAMPLE_LABELS: Record<CytologySampleType, string> = {
   bal: 'BAL',
 }
 
-const SAMPLE_TYPES: CytologySampleType[] = [
-  'otic',
-  'skin_impression',
-  'skin_exudate',
-  'fecal',
-  'vaginal',
-  'conjunctival',
-  'fna_skin',
-  'fna_lymph',
-  'fna_organ',
-  'effusion',
-  'synovial',
-  'csf',
-  'bal',
+const ALL_SAMPLE_TYPES: CytologySampleType[] = [
+  'otic', 'skin_impression', 'skin_exudate', 'fecal', 'blood_smear',
+  'fna_skin', 'fna_lymph', 'fna_organ', 'effusion', 'synovial', 'csf', 'bal',
 ]
 
 interface Props {
@@ -64,11 +47,11 @@ interface Props {
   onDelete?: () => void
   isDeleting?: boolean
   guestMode?: boolean
-  currentSampleType: CytologySampleType
+  activeSamples: CytologySampleType[]
+  currentSample: CytologySampleType
   currentMode: CytologyMode
-  currentFindings: Record<string, string | string[]>
-  engineOutput: CytologyEngineOutput | null
-  onSampleTypeChange: (t: CytologySampleType) => void
+  onSampleClick: (t: CytologySampleType) => void   // add if not active, switch if active
+  onRemoveSample: (t: CytologySampleType) => void
   onModeChange: (m: CytologyMode) => void
 }
 
@@ -80,9 +63,11 @@ export default function CytologyChartLayout({
   onDelete,
   isDeleting,
   guestMode = false,
-  currentSampleType,
+  activeSamples,
+  currentSample,
   currentMode,
-  onSampleTypeChange,
+  onSampleClick,
+  onRemoveSample,
   onModeChange,
 }: Props) {
   const router = useRouter()
@@ -142,8 +127,7 @@ export default function CytologyChartLayout({
                 <AlertDialogHeader>
                   <AlertDialogTitle>차트 삭제</AlertDialogTitle>
                   <AlertDialogDescription>
-                    정말로 이 차트를 삭제하시겠습니까? 삭제된 차트는 복구할 수
-                    없습니다.
+                    정말로 이 차트를 삭제하시겠습니까? 삭제된 차트는 복구할 수 없습니다.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -163,9 +147,7 @@ export default function CytologyChartLayout({
           <Button
             onClick={onSave}
             disabled={isSaving || guestMode}
-            title={
-              guestMode ? '미등록 모드에서는 저장할 수 없습니다' : undefined
-            }
+            title={guestMode ? '미등록 모드에서는 저장할 수 없습니다' : undefined}
             className="gap-2 bg-violet-600 hover:bg-violet-700 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Save className="h-4 w-4" />
@@ -175,68 +157,64 @@ export default function CytologyChartLayout({
       </header>
 
       {/* Sample Type Tabs */}
-      {(() => {
-        // findings/summary/diagnosis 중 하나라도 있으면 "검체 확정" 상태
-        const isCommitted = !!(
-          (chartDetail.findings && Object.keys(chartDetail.findings as object).length > 0) ||
-          (chartDetail.ai_findings && Object.keys(chartDetail.ai_findings as object).length > 0) ||
-          chartDetail.summary ||
-          chartDetail.diagnosis
-        )
-        const committedType: CytologySampleType | null = isCommitted
-          ? (chartDetail.sample_type ?? null)
-          : null
+      <div className="flex shrink-0 overflow-x-auto bg-white border-b px-2 no-scrollbar shadow-sm z-10">
+        <div className="flex items-center gap-0.5 py-2 min-w-max">
+          {ALL_SAMPLE_TYPES.map((type) => {
+            const isActive = activeSamples.includes(type)
+            const isCurrent = currentSample === type
 
-        return (
-          <>
-            <div className="flex shrink-0 overflow-x-auto bg-white border-b px-4 no-scrollbar shadow-sm z-10">
-              <div className="flex space-x-1 py-2">
-                {SAMPLE_TYPES.map((type) => {
-                  const isActive = currentSampleType === type
-                  const isThisCommitted = committedType === type
-                  const isDimmed = committedType !== null && !isThisCommitted
+            if (isActive) {
+              return (
+                <div
+                  key={type}
+                  className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-all ${
+                    isCurrent
+                      ? 'bg-violet-600 text-white shadow-sm'
+                      : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSampleClick(type)}
+                    className="whitespace-nowrap"
+                  >
+                    {SAMPLE_LABELS[type]}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRemoveSample(type)
+                    }}
+                    disabled={activeSamples.length === 1}
+                    className={`rounded-full p-0.5 transition-colors disabled:opacity-30 ${
+                      isCurrent
+                        ? 'hover:bg-white/20 text-white'
+                        : 'hover:bg-violet-300 text-violet-600'
+                    }`}
+                    title="이 검체 제거"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )
+            }
 
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => onSampleTypeChange(type)}
-                      className={`
-                        flex items-center gap-1.5 rounded-full transition-all whitespace-nowrap font-semibold
-                        ${isThisCommitted && isActive
-                          ? 'px-4 py-2 text-sm bg-violet-600 text-white shadow-sm ring-2 ring-violet-300'
-                          : isThisCommitted
-                          ? 'px-4 py-2 text-sm bg-violet-100 text-violet-700 ring-1 ring-violet-300'
-                          : isActive && isDimmed
-                          ? 'px-3 py-1.5 text-xs bg-slate-100 text-slate-600 ring-1 ring-slate-300'
-                          : isActive
-                          ? 'px-4 py-2 text-sm bg-slate-100 text-slate-700 ring-1 ring-slate-300'
-                          : isDimmed
-                          ? 'px-3 py-1.5 text-xs text-slate-300 hover:text-slate-400 hover:bg-slate-50'
-                          : 'px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
-                      `}
-                    >
-                      {isThisCommitted && (
-                        <CheckCircle2 className="h-3 w-3 shrink-0" />
-                      )}
-                      {SAMPLE_LABELS[type]}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Single-sample notice: 미확정일 때만 표시 */}
-            {!committedType && (
-              <div className="flex shrink-0 items-center gap-1.5 bg-blue-50 border-b border-blue-100 px-4 py-1.5">
-                <Info className="h-3 w-3 shrink-0 text-blue-500" />
-                <p className="text-[11px] text-blue-600 font-medium">
-                  1개의 차트에는 1종의 검체만 기록할 수 있습니다. 저장하면 검체 종류가 확정됩니다.
-                </p>
-              </div>
-            )}
-          </>
-        )
-      })()}
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => onSampleClick(type)}
+                className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap"
+                title={`${SAMPLE_LABELS[type]} 추가`}
+              >
+                <Plus className="h-3 w-3 opacity-60" />
+                {SAMPLE_LABELS[type]}
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
       {/* Mode Tabs */}
       <div className="flex shrink-0 overflow-x-auto bg-white border-b px-4 no-scrollbar z-10">
@@ -272,11 +250,12 @@ export default function CytologyChartLayout({
 
       {/* Content Area */}
       <main className="flex-1 overflow-auto">{children}</main>
-      {/* Image Hub Button (Ophthalmic Style) */}
+
+      {/* Image Hub Button */}
       {chartDetail && (
-        <CytologyImageUploadDialog 
-          chartId={chartDetail.id} 
-          hosId={params.hos_id as string} 
+        <CytologyImageUploadDialog
+          chartId={chartDetail.id}
+          hosId={params.hos_id as string}
         />
       )}
     </div>

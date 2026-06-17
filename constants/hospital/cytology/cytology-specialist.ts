@@ -842,35 +842,18 @@ const mesSpindle: CytologyCellType = {
         },
       ],
     },
-    {
-      testId: 'sp_nc_ratio_mes',
-      label: '핵:세포질 비',
-      labelEn: 'N:C Ratio',
-      testType: 'select',
-      options: [
-        {
-          value: 'low',
-          label: '낮음 (<0.5)',
-          labelEn: 'Low (<0.5)',
-          isAbnormal: false,
-        },
-        {
-          value: 'medium',
-          label: '중간 (0.5–0.7)',
-          labelEn: 'Medium (0.5–0.7)',
-          isAbnormal: false,
-        },
-        {
-          value: 'high',
-          label: '높음 (>0.7)',
-          labelEn: 'High (>0.7)',
-          isAbnormal: true,
-          severity: 'moderate',
-          signs: ['mes_high_nc_ratio', 'malig_criteria_2'],
-        },
-      ],
-    },
-    ...commonMorphTests('sp'),
+    ...commonMorphTests('sp').map((t) =>
+      t.testId === 'sp_nc_ratio'
+        ? {
+            ...t,
+            options: t.options?.map((o) =>
+              o.value === 'high'
+                ? { ...o, signs: ['mes_high_nc_ratio', 'malig_criteria_2'] as CytologySign[] }
+                : o,
+            ),
+          }
+        : t,
+    ),
   ],
 }
 

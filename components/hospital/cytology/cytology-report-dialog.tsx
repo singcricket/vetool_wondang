@@ -11,16 +11,23 @@ import {
 } from '@/components/ui/dialog'
 import { FileText, Image as ImageIcon, FileDown, Loader2, Microscope } from 'lucide-react'
 import type { CytologyChartDetail } from '@/types/hospital/cytology-type'
-import type { CytologyEngineOutput, CytologySampleType } from '@/constants/hospital/cytology/cytology-types'
+import type { CytologyEngineOutput, CytologySampleType, CytologyMode } from '@/constants/hospital/cytology/cytology-types'
 import { cytologyReference } from '@/constants/hospital/cytology/cytology_ref'
+import {
+  computeFluidHints,
+  computeWbcHints,
+  computeRbcHints,
+  computePltHints,
+  computeReticulocyte,
+  DC_FIELDS,
+} from '@/constants/hospital/cytology/cytology-hints'
 
 export const SAMPLE_LABELS: Record<CytologySampleType, string> = {
   otic: '귀도말 (Otic Swab)',
   skin_impression: '피부 인상도말 (Skin Impression)',
   skin_exudate: '피부 삼출물 도말 (Skin Exudate)',
   fecal: '분변염색 (Fecal Cytology)',
-  vaginal: '질 세포진 (Vaginal Cytology)',
-  conjunctival: '결막/각막 도말 (Conjunctival)',
+  blood_smear: '혈액도말 (Blood Smear)',
   fna_skin: 'FNA - 피부/피하 (FNA Skin)',
   fna_lymph: 'FNA - 림프절 (FNA Lymph Node)',
   fna_organ: 'FNA - 내부 장기 (FNA Organ)',
@@ -32,10 +39,9 @@ export const SAMPLE_LABELS: Record<CytologySampleType, string> = {
 
 interface Props {
   chartDetail: CytologyChartDetail
-  sampleType: CytologySampleType
-  findings: Record<string, string | string[]>
-  engineOutput: CytologyEngineOutput | null
-  aiSummary?: string | null
+  activeSamples: CytologySampleType[]
+  samplesData: Record<string, { findings: Record<string, string | string[]>; impression: string; mode: CytologyMode; impressionAiFilled: boolean }>
+  engineOutputs: Record<string, CytologyEngineOutput>
 }
 
 // ── Shared helpers ────────────────────────────────────────────
@@ -49,10 +55,10 @@ function calcAge(birth: string): string {
   return `${years}세`
 }
 
-function buildFilename(chartDetail: CytologyChartDetail, sampleType: CytologySampleType, ext: string): string {
+function buildFilename(chartDetail: CytologyChartDetail, sampleTypes: CytologySampleType[], ext: string): string {
   const name = chartDetail.patient?.name ?? 'report'
   const date = chartDetail.chart_date ?? new Date().toISOString().slice(0, 10)
-  const sample = sampleType.replace('_', '-')
+  const sample = sampleTypes.length === 1 ? sampleTypes[0].replace('_', '-') : `${sampleTypes.length}samples`
   return `cytology_${name}_${date}_${sample}.${ext}`
 }
 
@@ -185,6 +191,89 @@ export function generateReportText(
     if (clinicalLines.length) { lines.push('\n▸ 임상 소견'); clinicalLines.forEach((l) => lines.push(l)) }
   }
 
+  // Blood smear section
+  if (sampleType === 'blood_smear') {
+    const sv = (id: string) => (Array.isArray(findings[id]) ? (findings[id] as string[])[0] : (findings[id] as string)) ?? ''
+    const nv = (id: string) => { const v = findings[id]; const n = parseFloat(Array.isArray(v) ? v[0] : (v ?? '')); return isNaN(n) ? null : n }
+    const dcRows = DC_FIELDS.map((f) => ({ ...f, val: nv(f.id) })).filter((f) => f.val !== null && f.val! > 0).sort((a, b) => (b.val ?? 0) - (a.val ?? 0))
+    if (dcRows.length > 0) {
+      lines.push('\n▸ 감별 백혈구 계수 (DC)')
+      dcRows.forEach((f) => lines.push(`  ${f.label}: ${f.val}%`))
+    }
+    const TOXIC_LABELS: Record<string, string> = { none: '없음', rare: '소수', few: '적음', moderate: '중등도', many: '다수' }
+    const toxicLines: string[] = []
+    const dohle = sv('wbc_dohle'); const tgran = sv('wbc_toxic_gran'); const vacuol = sv('wbc_vacuolation')
+    if (dohle && dohle !== 'none') toxicLines.push(`  Döhle bodies: ${TOXIC_LABELS[dohle] ?? dohle}`)
+    if (tgran && tgran !== 'none') toxicLines.push(`  독성 과립: ${TOXIC_LABELS[tgran] ?? tgran}`)
+    if (vacuol && vacuol !== 'none') toxicLines.push(`  세포질 공포화: ${TOXIC_LABELS[vacuol] ?? vacuol}`)
+    if (sv('wbc_giant_bands') === 'present') toxicLines.push('  거대 Band: 있음')
+    if (sv('wbc_hyperseg') === 'present') toxicLines.push('  과분엽: 있음')
+    if (toxicLines.length) { lines.push('\n▸ 독성변화 (Toxic Changes)'); toxicLines.forEach((l) => lines.push(l)) }
+    const GRADE_L: Record<string, string> = { none: '없음', mild: '경도', moderate: '중등도', marked: '현저' }
+    const rbcLines: string[] = []
+    const aniso = sv('rbc_anisocytosis'); const poly = sv('rbc_polychromasia'); const hypo = sv('rbc_hypochromia')
+    if (aniso && aniso !== 'none') rbcLines.push(`  다양크기증: ${GRADE_L[aniso] ?? aniso}`)
+    if (poly && poly !== 'none') rbcLines.push(`  다색성: ${GRADE_L[poly] ?? poly}`)
+    if (hypo && hypo !== 'none') rbcLines.push(`  저색소증: ${GRADE_L[hypo] ?? hypo}`)
+    if (sv('rbc_microcytosis') === 'present') rbcLines.push('  소구성: 있음')
+    if (sv('rbc_macrocytosis') === 'present') rbcLines.push('  대구성: 있음')
+    if (sv('rbc_autoagglutination') === 'present') rbcLines.push('  자가응집: 있음')
+    if (sv('rbc_nucleated_rbc') === 'present') rbcLines.push('  유핵 적혈구: 있음')
+    const poiki = Array.isArray(findings['rbc_poikilocytes']) ? findings['rbc_poikilocytes'] as string[] : []
+    if (poiki.length > 0) rbcLines.push(`  형태 이상: ${poiki.join(', ')}`)
+    const parasites = sv('rbc_parasites')
+    if (parasites && parasites !== 'none') rbcLines.push(`  RBC 기생충: ${parasites}`)
+    if (rbcLines.length) { lines.push('\n▸ 적혈구 평가'); rbcLines.forEach((l) => lines.push(l)) }
+    const PLT_EST: Record<string, string> = { adequate: '정상', decreased: '감소', increased: '증가', cannot_estimate: '평가 불가' }
+    const pltLines: string[] = []
+    const pltEst = sv('plt_estimate')
+    if (pltEst) pltLines.push(`  추정 개수: ${PLT_EST[pltEst] ?? pltEst}`)
+    const perHpf = nv('plt_per_hpf')
+    if (perHpf !== null) pltLines.push(`  HPF당: ${perHpf}개 → 추정 ${Math.round(perHpf * 15000).toLocaleString()}/μL`)
+    if (sv('plt_large') !== 'absent' && sv('plt_large')) pltLines.push(`  거대혈소판: ${sv('plt_large')}`)
+    if (sv('plt_clumps') === 'present') pltLines.push('  혈소판 응집: 있음')
+    if (pltLines.length) { lines.push('\n▸ 혈소판 평가'); pltLines.forEach((l) => lines.push(l)) }
+    const reticResult = computeReticulocyte(findings)
+    if (reticResult) {
+      lines.push('\n▸ 세망적혈구 (Reticulocyte)')
+      if (reticResult.species === 'dog') {
+        lines.push(`  ${reticResult.regenLabel}`)
+        lines.push(`  Retic %: ${reticResult.reticPct}%, 교정 Retic: ${reticResult.corrected}%, RPI: ${reticResult.rpi}`)
+      } else {
+        lines.push(`  ${reticResult.regen ? '재생성 빈혈' : '비재생성 빈혈'}`)
+        lines.push(`  응집형 Retic %: ${reticResult.aggPct}% (기준: >0.4%)`)
+      }
+    }
+    const allHints = [...computeWbcHints(findings), ...computeRbcHints(findings), ...computePltHints(findings)]
+    if (allHints.length > 0) {
+      lines.push('\n▸ 해석 소견')
+      allHints.forEach((h) => lines.push(`  [${h.severity === 'critical' ? '⚠ 중요' : h.severity === 'warning' ? '주의' : '참고'}] ${h.label}: ${h.detail}`))
+    }
+  }
+
+  // Effusion fluid analysis section
+  if (sampleType === 'effusion') {
+    const sv = (id: string) => (Array.isArray(findings[id]) ? (findings[id] as string[])[0] : (findings[id] as string)) ?? ''
+    const COLOR_L: Record<string, string> = { colorless: '무색', pale_yellow: '담황색', yellow: '황색', red: '혈성(적색)', pink: '혈성(분홍)', milky: '유백색(Chylous)', brown: '갈색/담즙성', green: '녹색' }
+    const TURB_L: Record<string, string> = { clear: '맑음', slightly_turbid: '약간 혼탁', turbid: '혼탁', opaque: '불투명' }
+    const fluidLines: string[] = []
+    if (sv('fluid_color')) fluidLines.push(`  색깔: ${COLOR_L[sv('fluid_color')] ?? sv('fluid_color')}`)
+    if (sv('fluid_turbidity')) fluidLines.push(`  혼탁도: ${TURB_L[sv('fluid_turbidity')] ?? sv('fluid_turbidity')}`)
+    if (sv('fluid_protein')) fluidLines.push(`  총단백: ${sv('fluid_protein')} g/dL`)
+    if (sv('fluid_tncc')) fluidLines.push(`  TNCC: ${sv('fluid_tncc')} /μL`)
+    if (sv('fluid_specific_gravity')) fluidLines.push(`  비중: ${sv('fluid_specific_gravity')}`)
+    if (sv('fluid_bun') && sv('serum_bun')) fluidLines.push(`  BUN: 체강액 ${sv('fluid_bun')} / 혈청 ${sv('serum_bun')} mg/dL`)
+    if (sv('fluid_tbil') && sv('serum_tbil')) fluidLines.push(`  TBIL: 체강액 ${sv('fluid_tbil')} / 혈청 ${sv('serum_tbil')} mg/dL`)
+    if (sv('fluid_triglyceride') && sv('serum_triglyceride')) fluidLines.push(`  TG: 체강액 ${sv('fluid_triglyceride')} / 혈청 ${sv('serum_triglyceride')} mg/dL`)
+    if (sv('fluid_albumin') && sv('serum_albumin')) fluidLines.push(`  Albumin: 체강액 ${sv('fluid_albumin')} / 혈청 ${sv('serum_albumin')} g/dL`)
+    if (fluidLines.length) { lines.push('\n▸ 체강액 분석'); fluidLines.forEach((l) => lines.push(l)) }
+    const fluidHints = computeFluidHints(findings)
+    if (fluidHints.length > 0) {
+      lines.push('\n▸ 체강액 해석 소견')
+      fluidHints.forEach((h) => lines.push(`  [${h.severity === 'critical' ? '⚠ 중요' : h.severity === 'warning' ? '주의' : '참고'}] ${h.label}: ${h.detail}`))
+    }
+  }
+
   if (engineOutput) {
     lines.push('')
     lines.push('[판독 결론]')
@@ -215,7 +304,7 @@ export function generateReportText(
 
   if (aiSummary) {
     lines.push('')
-    lines.push('[AI 보조 판독]')
+    lines.push('[최종 임상 소견]')
     lines.push(aiSummary)
   }
 
@@ -281,9 +370,8 @@ function VisualReportBody({ chartDetail, sampleType, findings, engineOutput, aiS
   const massLocation = findings['mass_location'] as string | undefined
   const massSize = findings['mass_size'] as string | undefined
   const clinicalContext = findings['clinical_context'] as string | undefined
-  const evaluatorComment = findings['evaluator_comment'] as string | undefined
   const stainMethod = findings['stain_method'] as string | undefined
-  const hasClinical = massLocation || massSize || clinicalContext || evaluatorComment
+  const hasClinical = massLocation || massSize || clinicalContext
 
   // Routine findings
   const routineFindings: { sectionLabel: string; items: { label: string; value: string; isAbnormal: boolean }[] }[] = []
@@ -376,14 +464,177 @@ function VisualReportBody({ chartDetail, sampleType, findings, engineOutput, aiS
                 <InfoRow label="상황" value={clinicalContext} />
               </div>
             )}
-            {evaluatorComment && (
-              <div className="col-span-2">
-                <InfoRow label="소견" value={evaluatorComment} />
-              </div>
-            )}
           </div>
         </div>
       )}
+
+      {/* ── 체강액 분석 (effusion only) ─────────────────────────── */}
+      {sampleType === 'effusion' && (() => {
+        const fv = (id: string) => (Array.isArray(findings[id]) ? (findings[id] as string[])[0] : (findings[id] as string)) ?? ''
+        const colorLabel: Record<string, string> = { colorless: '무색', pale_yellow: '담황색', yellow: '황색', red: '혈성(적색)', pink: '혈성(분홍)', milky: '유백색(Chylous)', brown: '갈색/담즙성', green: '녹색' }
+        const turbLabel: Record<string, string> = { clear: '맑음', slightly_turbid: '약간 혼탁', turbid: '혼탁', opaque: '불투명' }
+        const HINT_COLOR: Record<string, string> = { info: 'border-blue-200 bg-blue-50 text-blue-800', warning: 'border-amber-300 bg-amber-50 text-amber-800', critical: 'border-rose-300 bg-rose-50 text-rose-800' }
+        const HINT_DOT_C: Record<string, string> = { info: 'bg-blue-400', warning: 'bg-amber-400', critical: 'bg-rose-500' }
+        const rows: { label: string; value: string }[] = []
+        if (fv('fluid_color')) rows.push({ label: '색깔', value: colorLabel[fv('fluid_color')] ?? fv('fluid_color') })
+        if (fv('fluid_turbidity')) rows.push({ label: '혼탁도', value: turbLabel[fv('fluid_turbidity')] ?? fv('fluid_turbidity') })
+        if (fv('fluid_protein')) rows.push({ label: '총단백', value: `${fv('fluid_protein')} g/dL` })
+        if (fv('fluid_tncc')) rows.push({ label: 'TNCC', value: `${fv('fluid_tncc')} /μL` })
+        if (fv('fluid_specific_gravity')) rows.push({ label: '비중', value: fv('fluid_specific_gravity') })
+        if (fv('fluid_bun') && fv('serum_bun')) rows.push({ label: 'BUN (체강/혈청)', value: `${fv('fluid_bun')} / ${fv('serum_bun')} mg/dL` })
+        if (fv('fluid_tbil') && fv('serum_tbil')) rows.push({ label: 'TBIL (체강/혈청)', value: `${fv('fluid_tbil')} / ${fv('serum_tbil')} mg/dL` })
+        if (fv('fluid_triglyceride') && fv('serum_triglyceride')) rows.push({ label: 'TG (체강/혈청)', value: `${fv('fluid_triglyceride')} / ${fv('serum_triglyceride')} mg/dL` })
+        if (fv('fluid_albumin') && fv('serum_albumin')) rows.push({ label: 'Albumin (체강/혈청)', value: `${fv('fluid_albumin')} / ${fv('serum_albumin')} g/dL` })
+        const hints = computeFluidHints(findings)
+        if (rows.length === 0 && hints.length === 0) return null
+        return (
+          <div className="mb-4 rounded-lg border border-cyan-100 bg-cyan-50 p-3">
+            <SectionHeader title="체강액 분석" sub="Fluid Analysis" />
+            {rows.length > 0 && (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1 mb-3">
+                {rows.map((r) => <InfoRow key={r.label} label={r.label} value={r.value} />)}
+              </div>
+            )}
+            {hints.length > 0 && (
+              <div className="space-y-1.5 mt-2">
+                <p className="text-[9px] font-black text-cyan-700 uppercase tracking-widest">해석 소견</p>
+                {hints.map((h, i) => (
+                  <div key={i} className={`rounded border px-2 py-1.5 ${HINT_COLOR[h.severity]}`}>
+                    <div className="flex items-center gap-1 mb-0.5">
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${HINT_DOT_C[h.severity]}`} />
+                      <span className="text-[9px] font-bold">{h.label}</span>
+                    </div>
+                    <p className="text-[9px] leading-snug pl-2.5 opacity-90">{h.detail}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* ── 혈액도말 분석 (blood_smear only) ──────────────────────── */}
+      {sampleType === 'blood_smear' && (() => {
+        const fv = (id: string) => (Array.isArray(findings[id]) ? (findings[id] as string[])[0] : (findings[id] as string)) ?? ''
+        const nv = (id: string) => { const v = findings[id]; const n = parseFloat(Array.isArray(v) ? v[0] : (v ?? '')); return isNaN(n) ? null : n }
+        const HINT_COLOR: Record<string, string> = { info: 'border-blue-200 bg-blue-50 text-blue-800', warning: 'border-amber-300 bg-amber-50 text-amber-800', critical: 'border-rose-300 bg-rose-50 text-rose-800' }
+        const HINT_DOT_C: Record<string, string> = { info: 'bg-blue-400', warning: 'bg-amber-400', critical: 'bg-rose-500' }
+
+        const dcRows = DC_FIELDS.map((f) => ({ ...f, val: nv(f.id) })).filter((f) => f.val !== null && f.val! > 0).sort((a, b) => (b.val ?? 0) - (a.val ?? 0))
+        const wbcHints = computeWbcHints(findings)
+        const rbcHints = computeRbcHints(findings)
+        const pltHints = computePltHints(findings)
+        const allHints = [...wbcHints, ...rbcHints, ...pltHints]
+        const reticResult = computeReticulocyte(findings)
+        const TOXIC_LABELS: Record<string, string> = { none: '없음', rare: '소수', few: '적음', moderate: '중등도', many: '다수' }
+        const GRADE_L: Record<string, string> = { none: '없음', mild: '경도', moderate: '중등도', marked: '현저' }
+        const PLT_EST: Record<string, string> = { adequate: '정상', decreased: '감소', increased: '증가', cannot_estimate: '평가 불가' }
+        const pltEst = fv('plt_estimate')
+        const pltHpf = nv('plt_per_hpf')
+        const poikiArr = Array.isArray(findings['rbc_poikilocytes']) ? findings['rbc_poikilocytes'] as string[] : []
+        const hasBs = dcRows.length > 0 || allHints.length > 0 || reticResult || pltEst
+        if (!hasBs) return null
+        return (
+          <div className="mb-4 space-y-3">
+            {/* DC */}
+            {dcRows.length > 0 && (
+              <div className="rounded-lg border border-violet-100 bg-violet-50 p-3">
+                <SectionHeader title="감별 백혈구 계수 (DC)" sub="Differential Count" />
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1">
+                  {dcRows.map((f) => (
+                    <div key={f.id} className="flex gap-1 items-baseline">
+                      <span className="text-[10px] text-slate-500 shrink-0">{f.label}:</span>
+                      <span className={`text-[10px] font-semibold ${f.id === 'dc_blast' || f.id === 'dc_atyp_lymph' ? 'text-rose-700' : f.id === 'dc_band' || f.id === 'dc_meta' ? 'text-amber-700' : 'text-slate-800'}`}>{f.val}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Toxic changes + RBC morphology */}
+            {(() => {
+              const toxicItems: string[] = []
+              if (fv('wbc_dohle') && fv('wbc_dohle') !== 'none') toxicItems.push(`Döhle bodies: ${TOXIC_LABELS[fv('wbc_dohle')] ?? fv('wbc_dohle')}`)
+              if (fv('wbc_toxic_gran') && fv('wbc_toxic_gran') !== 'none') toxicItems.push(`독성 과립: ${TOXIC_LABELS[fv('wbc_toxic_gran')] ?? fv('wbc_toxic_gran')}`)
+              if (fv('wbc_vacuolation') && fv('wbc_vacuolation') !== 'none') toxicItems.push(`세포질 공포화: ${TOXIC_LABELS[fv('wbc_vacuolation')] ?? fv('wbc_vacuolation')}`)
+              const rbcItems: string[] = []
+              if (fv('rbc_anisocytosis') && fv('rbc_anisocytosis') !== 'none') rbcItems.push(`다양크기증: ${GRADE_L[fv('rbc_anisocytosis')] ?? fv('rbc_anisocytosis')}`)
+              if (fv('rbc_polychromasia') && fv('rbc_polychromasia') !== 'none') rbcItems.push(`다색성: ${GRADE_L[fv('rbc_polychromasia')] ?? fv('rbc_polychromasia')}`)
+              if (fv('rbc_hypochromia') && fv('rbc_hypochromia') !== 'none') rbcItems.push(`저색소증: ${GRADE_L[fv('rbc_hypochromia')] ?? fv('rbc_hypochromia')}`)
+              if (fv('rbc_autoagglutination') === 'present') rbcItems.push('자가응집: 있음')
+              if (poikiArr.length > 0) rbcItems.push(`형태 이상: ${poikiArr.join(', ')}`)
+              const parasites = fv('rbc_parasites')
+              if (parasites && parasites !== 'none') rbcItems.push(`RBC 기생충: ${parasites}`)
+              if (toxicItems.length === 0 && rbcItems.length === 0) return null
+              return (
+                <div className="rounded-lg border border-slate-200 bg-white p-3">
+                  <SectionHeader title="형태학적 소견" sub="Morphology" />
+                  {toxicItems.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">독성변화</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                        {toxicItems.map((t) => <span key={t} className="text-[10px] text-slate-700">{t}</span>)}
+                      </div>
+                    </div>
+                  )}
+                  {rbcItems.length > 0 && (
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">적혈구 형태</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                        {rbcItems.map((r) => <span key={r} className="text-[10px] text-slate-700">{r}</span>)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* PLT */}
+            {(pltEst || pltHpf !== null) && (
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <SectionHeader title="혈소판 평가" sub="Platelet" />
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                  {pltEst && <span className="text-[10px] text-slate-700">추정: <span className={`font-semibold ${pltEst === 'decreased' ? 'text-rose-700' : pltEst === 'increased' ? 'text-amber-700' : ''}`}>{PLT_EST[pltEst] ?? pltEst}</span></span>}
+                  {pltHpf !== null && <span className="text-[10px] text-slate-700">추정 수: <span className="font-semibold">{Math.round(pltHpf * 15000).toLocaleString()}/μL</span></span>}
+                </div>
+              </div>
+            )}
+
+            {/* Reticulocyte */}
+            {reticResult && (
+              <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
+                <SectionHeader title="세망적혈구" sub="Reticulocyte" />
+                <p className="text-[11px] font-bold text-violet-800 mb-0.5">
+                  {reticResult.species === 'dog' ? reticResult.regenLabel : (reticResult.regen ? '재생성 빈혈' : '비재생성 빈혈')}
+                </p>
+                {reticResult.species === 'dog' ? (
+                  <p className="text-[10px] text-violet-700">Retic {reticResult.reticPct}% → 교정 {reticResult.corrected}% → RPI {reticResult.rpi}</p>
+                ) : (
+                  <p className="text-[10px] text-violet-700">응집형 Retic {reticResult.aggPct}% (기준: &gt;0.4%)</p>
+                )}
+              </div>
+            )}
+
+            {/* Hints */}
+            {allHints.length > 0 && (
+              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <SectionHeader title="해석 소견" sub="Interpretation" />
+                <div className="space-y-1.5">
+                  {allHints.map((h, i) => (
+                    <div key={i} className={`rounded border px-2 py-1.5 ${HINT_COLOR[h.severity]}`}>
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${HINT_DOT_C[h.severity]}`} />
+                        <span className="text-[9px] font-bold">{h.label}</span>
+                      </div>
+                      <p className="text-[9px] leading-snug pl-2.5 opacity-90">{h.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* ── Cytological Findings ────────────────────────────── */}
       <div className="mb-4">
@@ -565,11 +816,11 @@ function VisualReportBody({ chartDetail, sampleType, findings, engineOutput, aiS
         </div>
       )}
 
-      {/* ── AI Summary ─────────────────────────────────────── */}
+      {/* ── 최종 임상 소견 ─────────────────────────────────── */}
       {aiSummary && (
-        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <SectionHeader title="AI 보조 판독" sub="AI-Assisted Interpretation" />
-          <p className="text-[10px] text-amber-900 leading-relaxed">{aiSummary}</p>
+        <div className="mb-3 rounded-lg border border-violet-200 bg-violet-50 p-3">
+          <SectionHeader title="최종 임상 소견" sub="Clinical Impression" />
+          <p className="text-[10px] text-slate-800 leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
         </div>
       )}
 
@@ -588,10 +839,9 @@ function VisualReportBody({ chartDetail, sampleType, findings, engineOutput, aiS
 
 export default function CytologyReportDialog({
   chartDetail,
-  sampleType,
-  findings,
-  engineOutput,
-  aiSummary,
+  activeSamples,
+  samplesData,
+  engineOutputs,
 }: Props) {
   const printRef = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState<'png' | 'pdf' | null>(null)
@@ -602,7 +852,7 @@ export default function CytologyReportDialog({
     try {
       const canvas = await captureElement(printRef.current)
       const link = document.createElement('a')
-      link.download = buildFilename(chartDetail, sampleType, 'png')
+      link.download = buildFilename(chartDetail, activeSamples, 'png')
       link.href = canvas.toDataURL('image/png')
       link.click()
     } finally {
@@ -616,7 +866,6 @@ export default function CytologyReportDialog({
     try {
       const canvas = await captureElement(printRef.current)
       const { jsPDF } = await import('jspdf')
-      const imgData = canvas.toDataURL('image/png')
       const imgW = canvas.width
       const imgH = canvas.height
       const pageW = 210
@@ -643,7 +892,7 @@ export default function CytologyReportDialog({
         yOffset += pageContentH
       }
 
-      pdf.save(buildFilename(chartDetail, sampleType, 'pdf'))
+      pdf.save(buildFilename(chartDetail, activeSamples, 'pdf'))
     } finally {
       setExporting(null)
     }
@@ -662,19 +911,33 @@ export default function CytologyReportDialog({
           <DialogTitle className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4 text-violet-600" />
             세포학 판독 보고서
+            {activeSamples.length > 1 && (
+              <span className="text-xs font-normal text-slate-500">({activeSamples.length}개 검체)</span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
         {/* Report preview */}
         <div className="flex-1 overflow-auto bg-slate-100 p-4">
           <div ref={printRef} className="bg-white rounded-lg shadow-sm p-6 mx-auto" style={{ maxWidth: 680 }}>
-            <VisualReportBody
-              chartDetail={chartDetail}
-              sampleType={sampleType}
-              findings={findings}
-              engineOutput={engineOutput}
-              aiSummary={aiSummary}
-            />
+            {activeSamples.map((sampleType, i) => (
+              <div key={sampleType}>
+                {i > 0 && (
+                  <div className="my-6 relative border-t-2 border-dashed border-slate-300">
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      다음 검체
+                    </span>
+                  </div>
+                )}
+                <VisualReportBody
+                  chartDetail={chartDetail}
+                  sampleType={sampleType}
+                  findings={samplesData[sampleType]?.findings ?? {}}
+                  engineOutput={engineOutputs[sampleType] ?? null}
+                  aiSummary={samplesData[sampleType]?.impression || null}
+                />
+              </div>
+            ))}
           </div>
         </div>
 

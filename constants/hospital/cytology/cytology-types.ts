@@ -8,8 +8,7 @@ export type CytologySampleType =
   | 'skin_impression'  // 피부 인상도말
   | 'skin_exudate'     // 피부 삼출물 도말
   | 'fecal'            // 분변염색
-  | 'vaginal'          // 질 세포진
-  | 'conjunctival'     // 결막/각막 도말
+  | 'blood_smear'      // 혈액도말
   | 'fna_skin'         // FNA - 피부/피하
   | 'fna_lymph'        // FNA - 림프절
   | 'fna_organ'        // FNA - 내부 장기
@@ -162,14 +161,6 @@ export type CytologySign =
   | 'fecal_spiral_bacteria' | 'fecal_spores_clostridium' | 'fecal_yeast_present'
   | 'fecal_giardia' | 'fecal_isospora' | 'fecal_toxocara' | 'fecal_trichuris' | 'fecal_strongyle'
   | 'fecal_neutrophils_present' | 'fecal_rbc_present'
-  // Vaginal
-  | 'vag_superficial_dominant' | 'vag_intermediate_dominant' | 'vag_parabasal_dominant'
-  | 'vag_cornified_cells' | 'vag_neutrophils_few' | 'vag_neutrophils_many'
-  | 'vag_bacteria_few' | 'vag_bacteria_many' | 'vag_rbc_present'
-  // Conjunctival
-  | 'conj_cocci_present' | 'conj_rods_present' | 'conj_neutrophils_present'
-  | 'conj_eosinophils_present' | 'conj_mast_cells_present' | 'conj_inclusion_bodies'
-  | 'conj_goblet_cells_increased' | 'conj_lymphocytes_present'
   // Specialist — Inflammation
   | 'infl_neutrophilic_pure' | 'infl_neutrophilic_septic' | 'infl_neutrophilic_nonseptic'
   | 'infl_macrophagic' | 'infl_eosinophilic' | 'infl_lymphocytic' | 'infl_mixed'

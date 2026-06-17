@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { CytologyChartDetail } from '@/types/hospital/cytology-type'
+import type { CytologyChartDetail, SamplePayload } from '@/types/hospital/cytology-type'
+import { parseSampleTypes } from '@/types/hospital/cytology-type'
 import type { CytologySampleType, CytologyMode, CytologyEngineOutput } from '@/constants/hospital/cytology/cytology-types'
 import { cytologyReference } from '@/constants/hospital/cytology/cytology_ref'
 import { updateCytologyChart, deleteCytologyChart } from '@/lib/services/cytology/cytology-charts'
-import { analyzeCytologyImage } from '@/lib/actions/cytology/ai-cytology-analyze'
+import { analyzeToFormFields } from '@/lib/actions/cytology/ai-cytology-analyze'
 import { getCytologyImages } from '@/lib/actions/cytology/cytology-image-actions'
 import { Microscope, Maximize2, Copy, Check, X as XIcon, Tag, UserRound } from 'lucide-react'
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle as UIDialogTitle } from '@/components/ui/dialog'
@@ -23,7 +24,24 @@ import CytologySpecialistForm from '@/components/hospital/cytology/cytology-spec
 import CytologyAiForm from '@/components/hospital/cytology/cytology-ai-form'
 import CytologyDiagnosisPanel from '@/components/hospital/cytology/cytology-diagnosis-panel'
 import CytologyReportDialog, { generateReportText } from '@/components/hospital/cytology/cytology-report-dialog'
-import CytologyAiFillButton from '@/components/hospital/cytology/cytology-ai-fill-button'
+
+// ── Per-sample state ──────────────────────────────────────────
+
+interface SampleState {
+  findings: Record<string, string | string[]>
+  impression: string
+  impressionAiFilled: boolean
+  mode: CytologyMode
+}
+
+function buildInitialSampleState(payload?: SamplePayload): SampleState {
+  return {
+    findings: payload?.findings ?? {},
+    impression: payload?.summary ?? '',
+    impressionAiFilled: false,
+    mode: payload?.mode ?? 'specialist',
+  }
+}
 
 // ── TXT 보고서 다이얼로그 ─────────────────────────────────────
 
@@ -101,22 +119,37 @@ export default function CytologyChartClient({
 }: Props) {
   const router = useRouter()
 
-  const [sampleType, setSampleType] = useState<CytologySampleType>(
-    chartDetail.sample_type ?? 'otic',
+  // ── Multi-sample state ──────────────────────────────────────
+
+  const [activeSamples, setActiveSamples] = useState<CytologySampleType[]>(() =>
+    parseSampleTypes(chartDetail.sample_type),
   )
-  const [mode, setMode] = useState<CytologyMode>(chartDetail.mode ?? 'specialist')
-  const [findings, setFindings] = useState<Record<string, string | string[]>>(
-    chartDetail.findings ?? {},
+  const [currentSample, setCurrentSample] = useState<CytologySampleType>(() =>
+    parseSampleTypes(chartDetail.sample_type)[0],
   )
-  const [aiFindings, setAiFindings] = useState<Record<string, string | string[]>>(
-    chartDetail.ai_findings ?? {},
-  )
-  const [aiSummary, setAiSummary] = useState<string | null>(chartDetail.summary ?? null)
-  const [imageUrls, setImageUrls] = useState<string[]>(
-    (chartDetail.sample_info as any)?.imageUrls ?? [],
-  )
-  const [allImages, setAllImages] = useState<any[]>([])
+  const [samplesData, setSamplesData] = useState<Record<string, SampleState>>(() => {
+    const initial: Record<string, SampleState> = {}
+    const types = parseSampleTypes(chartDetail.sample_type)
+    for (const t of types) {
+      const payload = (chartDetail.findings as Record<string, SamplePayload> | null)?.[t]
+      initial[t] = buildInitialSampleState(payload)
+    }
+    return initial
+  })
+
+  // ── Engine output for current sample ───────────────────────
+
   const [engineOutput, setEngineOutput] = useState<CytologyEngineOutput | null>(null)
+
+  useEffect(() => {
+    const findings = samplesData[currentSample]?.findings ?? {}
+    const output = cytologyReference.runFullAnalysis(findings, currentSample)
+    setEngineOutput(output)
+  }, [samplesData, currentSample])
+
+  // ── Misc state ──────────────────────────────────────────────
+
+  const [allImages, setAllImages] = useState<any[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -132,74 +165,86 @@ export default function CytologyChartClient({
     setAllImages(data || [])
   }, [chartId])
 
-  useEffect(() => {
-    fetchImages()
-  }, [fetchImages])
+  useEffect(() => { fetchImages() }, [fetchImages])
 
-  // Re-run diagnosis engine whenever findings or sampleType change
-  useEffect(() => {
-    const activeFindings = mode === 'ai' ? { ...aiFindings, ...findings } : findings
-    const output = cytologyReference.runFullAnalysis(activeFindings, sampleType)
-    setEngineOutput(output)
-  }, [findings, aiFindings, sampleType, mode])
+  // ── Sample helpers ──────────────────────────────────────────
+
+  const getCurrentState = () => samplesData[currentSample] ?? buildInitialSampleState()
+
+  const updateCurrentSample = useCallback((updater: (prev: SampleState) => SampleState) => {
+    setSamplesData((prev) => ({
+      ...prev,
+      [currentSample]: updater(prev[currentSample] ?? buildInitialSampleState()),
+    }))
+  }, [currentSample])
 
   const handleFindingChange = useCallback((testId: string, value: string | string[]) => {
-    setFindings((prev) => ({ ...prev, [testId]: value }))
-  }, [])
+    updateCurrentSample((prev) => ({
+      ...prev,
+      findings: { ...prev.findings, [testId]: value },
+    }))
+  }, [updateCurrentSample])
 
-  const handleSampleTypeChange = (newType: CytologySampleType) => {
-    setSampleType(newType)
-    // Reset findings when sample type changes (keep user confirmation pattern)
-    setFindings({})
-    setAiFindings({})
-    setAiSummary(null)
-    setEngineOutput(null)
+  // ── Tab handlers ────────────────────────────────────────────
+
+  const handleSampleClick = (type: CytologySampleType) => {
+    if (!activeSamples.includes(type)) {
+      // Add new sample
+      setActiveSamples((prev) => [...prev, type])
+      setSamplesData((prev) => ({
+        ...prev,
+        [type]: prev[type] ?? buildInitialSampleState(),
+      }))
+    }
+    setCurrentSample(type)
+  }
+
+  const handleRemoveSample = (type: CytologySampleType) => {
+    if (activeSamples.length <= 1) return
+    const newActive = activeSamples.filter((t) => t !== type)
+    setActiveSamples(newActive)
+    if (currentSample === type) setCurrentSample(newActive[0])
   }
 
   const handleModeChange = (newMode: CytologyMode) => {
-    setMode(newMode)
+    updateCurrentSample((prev) => ({ ...prev, mode: newMode }))
   }
+
+  // ── AI handlers ─────────────────────────────────────────────
 
   const handleAiAutoFill = useCallback(
     (aiFill: Record<string, string | string[]>, summary: string) => {
-      setFindings((prev) => ({ ...prev, ...aiFill }))
-      if (summary) setAiSummary(summary)
+      updateCurrentSample((prev) => ({
+        ...prev,
+        findings: { ...prev.findings, ...aiFill },
+        impression: summary || prev.impression,
+        impressionAiFilled: !!summary,
+      }))
     },
-    [],
+    [updateCurrentSample],
   )
 
-  const handleAiAnalyze = async (images: CytologyImageData[], stain: string) => {
+  const handleAiAnalyze = async (images: CytologyImageData[], stain: string, clinicalContext: string) => {
     setIsAnalyzing(true)
     try {
-      // 임상소견(전문가 모드 Step 1 필드)을 텍스트로 조합해서 Claude에 함께 전달
-      const clinicalParts: string[] = []
-      const loc = findings['mass_location'] as string | undefined
-      const sz = findings['mass_size'] as string | undefined
-      const ctx = findings['clinical_context'] as string | undefined
-      const cmt = findings['evaluator_comment'] as string | undefined
-      if (loc) clinicalParts.push(`병변 위치: ${loc}`)
-      if (sz) clinicalParts.push(`종괴 크기: ${sz}`)
-      if (ctx) clinicalParts.push(`임상 상황: ${ctx}`)
-      if (cmt) clinicalParts.push(`판독자 소견: ${cmt}`)
-      const clinicalInfo = clinicalParts.length > 0 ? clinicalParts.join('\n') : undefined
-
-      // Claude에 이미지 전송하여 판독 (업로드는 카메라 버튼 패널에서 별도 처리)
-      const result = await analyzeCytologyImage(
+      const result = await analyzeToFormFields(
         images.map((img) => ({
           base64: img.base64,
           mediaType: img.mediaType as 'image/jpeg' | 'image/png' | 'image/webp',
         })),
-        sampleType,
+        currentSample,
         stain,
-        clinicalInfo,
+        clinicalContext || undefined,
+        chartDetail.patient,
       )
-      const normalized: Record<string, string | string[]> = {}
-      for (const [k, v] of Object.entries(result.findings)) {
-        normalized[k] = Array.isArray(v) ? v : String(v)
-      }
-      setAiFindings(normalized)
-      setAiSummary(result.interpretation)
-      toast.success(`AI 판독 완료 (${images.length}장 분석)`)
+      updateCurrentSample((prev) => ({
+        ...prev,
+        findings: { ...prev.findings, ...result.findings },
+        impression: result.summary || prev.impression,
+        impressionAiFilled: !!result.summary,
+        mode: 'specialist',
+      }))
+      toast.success('AI 판독 완료 — 소견을 검토한 후 저장해주세요.')
     } catch (err) {
       console.error(err)
       toast.error('AI 판독에 실패했습니다. 수동으로 입력해주세요.')
@@ -208,35 +253,51 @@ export default function CytologyChartClient({
     }
   }
 
+  // ── Save ────────────────────────────────────────────────────
+
   const handleSave = async () => {
     if (guestMode) return
     setIsSaving(true)
     try {
-      const activeFindings = mode === 'ai' ? { ...aiFindings, ...findings } : findings
-      const output = cytologyReference.runFullAnalysis(activeFindings, sampleType)
-      const diagnosisSummary = cytologyReference.buildSummary(activeFindings, sampleType, output)
+      const findingsPayload: Record<string, SamplePayload> = {}
+      for (const sType of activeSamples) {
+        const state = samplesData[sType] ?? buildInitialSampleState()
+        const output = cytologyReference.runFullAnalysis(state.findings, sType)
+        findingsPayload[sType] = {
+          findings: state.findings,
+          summary: state.impression || null,
+          mode: state.mode,
+          diagnosis: {
+            activeSigns: output.activeSigns,
+            inflammationType: output.inflammationType,
+            malignancySuspicion: output.malignancySuspicion,
+            criticalFindings: output.criticalFindings,
+            topDiagnoses: output.diagnoses.slice(0, 5).map((d) => ({
+              id: d.rule.diagnosisId,
+              nameKo: d.rule.nameKo,
+              confidence: d.confidenceScore,
+              category: d.rule.category,
+            })),
+          },
+        }
+      }
 
       await updateCytologyChart(chartId, {
-        sample_type: sampleType,
-        mode,
-        findings: activeFindings,
-        ai_findings: mode === 'ai' ? aiFindings : null,
-        summary: diagnosisSummary,
-        diagnosis: {
-          activeSigns: output.activeSigns,
-          inflammationType: output.inflammationType,
-          malignancySuspicion: output.malignancySuspicion,
-          criticalFindings: output.criticalFindings,
-          topDiagnoses: output.diagnoses.slice(0, 5).map((d) => ({
-            id: d.rule.diagnosisId,
-            nameKo: d.rule.nameKo,
-            confidence: d.confidenceScore,
-            category: d.rule.category,
-          })),
-        },
-        sample_info: imageUrls.length > 0 ? { imageUrls } : null,
+        sample_type: activeSamples.join(','),
+        findings: findingsPayload,
+        ai_findings: null,
+        sample_info: null,
         vet_id: vetId,
         user_tags: userTags.length > 0 ? userTags.join(', ') : null,
+      })
+
+      // Clear impressionAiFilled for all samples
+      setSamplesData((prev) => {
+        const next = { ...prev }
+        for (const t of activeSamples) {
+          if (next[t]?.impressionAiFilled) next[t] = { ...next[t], impressionAiFilled: false }
+        }
+        return next
       })
 
       toast.success('세포학 차트가 저장되었습니다.')
@@ -262,7 +323,29 @@ export default function CytologyChartClient({
     }
   }
 
-  const activeFindings = mode === 'ai' ? { ...aiFindings, ...findings } : findings
+  // ── Build combined report text (all samples) ────────────────
+
+  const buildFullReportText = () => {
+    if (activeSamples.length === 1) {
+      const s = getCurrentState()
+      return generateReportText(chartDetail, currentSample, s.findings, engineOutput, s.impression || null)
+    }
+    return activeSamples.map((t) => {
+      const s = samplesData[t] ?? buildInitialSampleState()
+      const out = cytologyReference.runFullAnalysis(s.findings, t)
+      return generateReportText(chartDetail, t, s.findings, out, s.impression || null)
+    }).join('\n\n' + '─'.repeat(40) + '\n\n')
+  }
+
+  // ── Current sample derived values ───────────────────────────
+
+  const curState = getCurrentState()
+  const curFindings = curState.findings
+  const curMode = curState.mode
+  const curImpression = curState.impression
+  const curImpressionAiFilled = curState.impressionAiFilled
+
+  const ROUTINE_TYPES: CytologySampleType[] = ['otic', 'skin_impression', 'skin_exudate', 'fecal']
 
   return (
     <CytologyChartLayout
@@ -272,11 +355,11 @@ export default function CytologyChartClient({
       onDelete={handleDelete}
       isDeleting={isDeleting}
       guestMode={guestMode}
-      currentSampleType={sampleType}
-      currentMode={mode}
-      currentFindings={activeFindings}
-      engineOutput={engineOutput}
-      onSampleTypeChange={handleSampleTypeChange}
+      activeSamples={activeSamples}
+      currentSample={currentSample}
+      currentMode={curMode}
+      onSampleClick={handleSampleClick}
+      onRemoveSample={handleRemoveSample}
       onModeChange={handleModeChange}
     >
       <div className="flex h-full gap-0">
@@ -288,28 +371,25 @@ export default function CytologyChartClient({
               검사일: <span className="font-medium text-slate-700">{chartDate}</span>
             </div>
             <div className="flex items-center gap-2">
-              {/* {mode === 'specialist' && !guestMode && (
-                <CytologyAiFillButton
-                  sampleType={sampleType}
-                  onFill={handleAiAutoFill}
-                />
-              )} */}
-              <TxtReportDialog
-                reportText={generateReportText(chartDetail, sampleType, activeFindings, engineOutput, aiSummary)}
-              />
+              <TxtReportDialog reportText={buildFullReportText()} />
               <CytologyReportDialog
                 chartDetail={chartDetail}
-                sampleType={sampleType}
-                findings={activeFindings}
-                engineOutput={engineOutput}
-                aiSummary={aiSummary}
+                activeSamples={activeSamples}
+                samplesData={Object.fromEntries(
+                  activeSamples.map((t) => [t, samplesData[t] ?? buildInitialSampleState()])
+                )}
+                engineOutputs={Object.fromEntries(
+                  activeSamples.map((t) => {
+                    const s = samplesData[t] ?? buildInitialSampleState()
+                    return [t, cytologyReference.runFullAnalysis(s.findings, t)]
+                  })
+                )}
               />
             </div>
           </div>
 
           {/* Cytologist + User Tags strip */}
           <div className="mb-4 flex flex-wrap items-start gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-            {/* Cytologist */}
             <div className="flex items-center gap-2 min-w-[180px]">
               <UserRound className="h-3.5 w-3.5 shrink-0 text-violet-500" />
               <span className="text-[11px] font-semibold text-slate-500 shrink-0">세포검사자</span>
@@ -321,17 +401,13 @@ export default function CytologyChartClient({
               >
                 <option value="">미선택</option>
                 {vetList.map((v) => (
-                  <option key={v.user_id} value={v.user_id}>
-                    {v.name}
-                  </option>
+                  <option key={v.user_id} value={v.user_id}>{v.name}</option>
                 ))}
               </select>
             </div>
 
-            {/* Divider */}
             <div className="hidden sm:block h-6 w-px bg-slate-200 self-center" />
 
-            {/* User Tags */}
             <div className="flex flex-1 flex-wrap items-center gap-2 min-w-[200px]">
               <Tag className="h-3.5 w-3.5 shrink-0 text-violet-500" />
               <span className="text-[11px] font-semibold text-slate-500 shrink-0">태그</span>
@@ -342,11 +418,7 @@ export default function CytologyChartClient({
                 >
                   {tag}
                   {!guestMode && (
-                    <button
-                      type="button"
-                      onClick={() => setUserTags((prev) => prev.filter((t) => t !== tag))}
-                      className="hover:text-violet-900 transition-colors"
-                    >
+                    <button type="button" onClick={() => setUserTags((prev) => prev.filter((t) => t !== tag))}>
                       <XIcon className="h-2.5 w-2.5" />
                     </button>
                   )}
@@ -361,9 +433,7 @@ export default function CytologyChartClient({
                     if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
                       e.preventDefault()
                       const newTag = tagInput.trim().replace(/,$/, '')
-                      if (newTag && !userTags.includes(newTag)) {
-                        setUserTags((prev) => [...prev, newTag])
-                      }
+                      if (newTag && !userTags.includes(newTag)) setUserTags((prev) => [...prev, newTag])
                       setTagInput('')
                     }
                   }}
@@ -375,7 +445,7 @@ export default function CytologyChartClient({
           </div>
 
           {/* Filtered Image Strip */}
-          {allImages.some(img => img.tags?.split(', ').includes(sampleType)) && (
+          {allImages.some((img) => img.tags?.split(', ').includes(currentSample)) && (
             <div className="mb-6 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -385,23 +455,19 @@ export default function CytologyChartClient({
                   <h3 className="text-xs font-black text-slate-700 uppercase tracking-tight">현미경 사진 (Microscopic View)</h3>
                 </div>
                 <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
-                  {allImages.filter(img => img.tags?.split(', ').includes(sampleType)).length} images
+                  {allImages.filter((img) => img.tags?.split(', ').includes(currentSample)).length} images
                 </span>
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200">
                 {allImages
-                  .filter(img => img.tags?.split(', ').includes(sampleType))
+                  .filter((img) => img.tags?.split(', ').includes(currentSample))
                   .map((img) => (
-                    <div 
+                    <div
                       key={img.id}
                       className="group relative min-w-[140px] aspect-square rounded-xl overflow-hidden border border-slate-100 cursor-pointer transition-all hover:border-violet-300 hover:ring-4 hover:ring-violet-50"
                       onClick={() => setEditingImageId(img.id)}
                     >
-                      <CytologyImageWithMark 
-                        imageUrl={img.image_url} 
-                        marks={img.marks} 
-                        aspectRatio="aspect-square"
-                      />
+                      <CytologyImageWithMark imageUrl={img.image_url} marks={img.marks} aspectRatio="aspect-square" />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Maximize2 className="w-6 h-6 text-white drop-shadow-md" />
                       </div>
@@ -419,50 +485,77 @@ export default function CytologyChartClient({
                 <DialogDescription>현미경 이미지를 편집하고 마킹합니다.</DialogDescription>
               </VisuallyHidden>
               {editingImageId && (
-                <CytologyImageEditor 
+                <CytologyImageEditor
                   imageId={editingImageId}
-                  imageUrl={allImages.find(img => img.id === editingImageId)?.image_url || ''}
-                  initialMarks={allImages.find(img => img.id === editingImageId)?.marks}
-                  onClose={() => {
-                    setEditingImageId(null)
-                    fetchImages()
-                  }}
+                  imageUrl={allImages.find((img) => img.id === editingImageId)?.image_url || ''}
+                  initialMarks={allImages.find((img) => img.id === editingImageId)?.marks}
+                  onClose={() => { setEditingImageId(null); fetchImages() }}
                 />
               )}
             </DialogContent>
           </Dialog>
 
           {/* Form by mode */}
-          {mode === 'specialist' ? (
-            (['otic', 'skin_impression', 'skin_exudate', 'fecal', 'vaginal', 'conjunctival'] as CytologySampleType[]).includes(sampleType) ? (
-              <CytologyRoutineForm
-                sampleType={sampleType}
-                findings={findings}
-                onChange={handleFindingChange}
-              />
-            ) : (
-              <CytologySpecialistForm
-                sampleType={sampleType}
-                findings={findings}
-                onChange={handleFindingChange}
-              />
-            )
+          {curMode === 'specialist' ? (
+            <>
+              {ROUTINE_TYPES.includes(currentSample) ? (
+                <CytologyRoutineForm
+                  sampleType={currentSample}
+                  findings={curFindings}
+                  onChange={handleFindingChange}
+                />
+              ) : (
+                <CytologySpecialistForm
+                  sampleType={currentSample}
+                  findings={curFindings}
+                  onChange={handleFindingChange}
+                  onAddToImpression={(text) => {
+                    updateCurrentSample((prev) => ({
+                      ...prev,
+                      impression: prev.impression ? `${prev.impression}\n\n${text}` : text,
+                      impressionAiFilled: false,
+                    }))
+                  }}
+                />
+              )}
+
+              {/* 최종 임상 소견 */}
+              <div className="mt-4 rounded-xl border-2 border-violet-200 bg-white p-4 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="text-sm font-semibold text-slate-800">최종 임상 소견</label>
+                  <span className="text-xs text-slate-400">보고서에 포함됩니다</span>
+                  {curImpressionAiFilled && (
+                    <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                      ✦ AI 제안 — 검토 후 수정하세요
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  className={`w-full rounded-lg border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-400 leading-relaxed ${
+                    curImpressionAiFilled ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
+                  }`}
+                  rows={5}
+                  placeholder={`세포학적 소견 요약 및 임상 해석을 입력하세요\n예: 다수의 중성구와 세균이 확인되어 세균성 외이염 소견에 합당합니다.`}
+                  value={curImpression}
+                  onChange={(e) => {
+                    updateCurrentSample((prev) => ({
+                      ...prev,
+                      impression: e.target.value,
+                      impressionAiFilled: false,
+                    }))
+                  }}
+                />
+              </div>
+            </>
           ) : (
             <CytologyAiForm
-              sampleType={sampleType}
-              findings={findings}
-              aiSummary={aiSummary}
+              sampleType={currentSample}
+              findings={curFindings}
               existingImages={
                 allImages.filter((img) =>
-                  img.tags?.split(', ').includes(sampleType),
+                  img.tags?.split(', ').includes(currentSample),
                 ) as ExistingCytologyImage[]
               }
-              hasClinicalInfo={!!(
-                findings['mass_location'] ||
-                findings['mass_size'] ||
-                findings['clinical_context'] ||
-                findings['evaluator_comment']
-              )}
               onAnalyze={handleAiAnalyze}
               isAnalyzing={isAnalyzing}
               onChange={handleFindingChange}
@@ -474,7 +567,8 @@ export default function CytologyChartClient({
         <div className="hidden lg:flex lg:w-72 xl:w-80 shrink-0 border-l bg-slate-50 overflow-auto">
           <CytologyDiagnosisPanel
             engineOutput={engineOutput}
-            sampleType={sampleType}
+            sampleType={currentSample}
+            findings={curFindings}
           />
         </div>
       </div>
