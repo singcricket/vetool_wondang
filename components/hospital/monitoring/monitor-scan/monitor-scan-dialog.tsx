@@ -20,7 +20,17 @@ interface Props {
   recentSlots: VitalTimeSlot[]
   species: 'canine' | 'feline' | null
   sessionTitle: string | null
+  startTime: string | null
+  intervalSetting: number | null
   onInsertRow: (slot: VitalTimeSlot) => void
+}
+
+function calcMinTime(nowMs: number, startTime: string | null, intervalSetting: number | null): string {
+  if (!startTime) return '0'
+  const elapsedMin = Math.floor((nowMs - new Date(startTime).getTime()) / 60000)
+  const clamped = Math.max(0, elapsedMin)
+  if (!intervalSetting || intervalSetting <= 1) return String(clamped)
+  return String(Math.floor(clamped / intervalSetting) * intervalSetting)
 }
 
 const NO_PROFILE = '__no_profile__'
@@ -34,6 +44,8 @@ export default function MonitorScanDialog({
   recentSlots,
   species,
   sessionTitle,
+  startTime,
+  intervalSetting,
   onInsertRow,
 }: Props) {
   const [open, setOpen] = useState(false)
@@ -120,7 +132,7 @@ export default function MonitorScanDialog({
     const now = Date.now()
     const slot: VitalTimeSlot = {
       create_timestamp: String(now),
-      minTime: new Date(now).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      minTime: calcMinTime(now, startTime, intervalSetting),
       vitals: entries,
     }
 

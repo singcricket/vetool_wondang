@@ -110,6 +110,8 @@ export default function MsClContainer({ msData }: Props) {
                     recentSlots={msData.vital_results ?? []}
                     species={msData.patient?.species as 'canine' | 'feline' | null ?? null}
                     sessionTitle={msData.session_title}
+                    startTime={msData.start_time ?? null}
+                    intervalSetting={msData.interval_setting ?? null}
                     onInsertRow={handleInsertRow}
                 />
                 <VoiceInputDialog
