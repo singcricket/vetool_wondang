@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Loader2, Wand2, Brain, Trash2, ChevronDown, ChevronUp, X, Plus, MapPin } from 'lucide-react'
+import { Loader2, Wand2, Brain, Trash2, ChevronDown, ChevronUp, X, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import type { DermLesionGroup, DermLesionVisit, DermImage, ImprovementType } from '@/types/hospital/derm-type'
@@ -30,8 +30,7 @@ interface Props {
   hosId: string
   chartId: string
   patient: { name?: string | null; species?: string | null; breed?: string | null; gender?: string | null; birth?: string | null } | null
-  isMarkingActive: boolean
-  onToggleMarking: () => void
+  anatomicalLocation?: string
   onVisitChange: (groupId: string, update: Partial<VisitState>) => void
   onImageAdded: (img: DermImage) => void
   onImageDeleted: (imgId: string) => void
@@ -40,7 +39,7 @@ interface Props {
 
 export default function DermLesionGroupCard({
   group, visit, images, isFollowup, hosId, chartId, patient,
-  isMarkingActive, onToggleMarking, onVisitChange, onImageAdded, onImageDeleted, onDelete,
+  anatomicalLocation, onVisitChange, onImageAdded, onImageDeleted, onDelete,
 }: Props) {
   const [expanded, setExpanded] = useState(true)
   const [isConverting, setIsConverting] = useState(false)
@@ -102,7 +101,7 @@ export default function DermLesionGroupCard({
         }),
       )
 
-      const aiAnalysis = await analyzeLesionGroup(imageDataList, visit.rawInput, patient)
+      const aiAnalysis = await analyzeLesionGroup(imageDataList, visit.rawInput, patient, anatomicalLocation)
       onVisitChange(group.id, {
         aiAnalysis,
         severity: aiAnalysis.severity,
@@ -165,51 +164,43 @@ export default function DermLesionGroupCard({
         className="flex items-center justify-between px-4 py-3"
         style={{ background: `${group.group_color}15` }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span
-            className="flex h-7 w-7 items-center justify-center rounded-full text-sm font-black text-white shadow"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-black text-white shadow"
             style={{ background: group.group_color ?? '#6b7280' }}
           >
             {group.group_label}
           </span>
-          <div>
-            <span className="font-bold text-slate-800 text-sm">{group.group_label}그룹</span>
-            {visit.lesionTypes.length > 0 && (
-              <span className="ml-2 text-xs text-slate-500">
-                {visit.lesionTypes.slice(0, 2).map((t) => {
-                  const found = LESION_TYPES.find((lt) => lt.value === t)
-                  return found ? `${found.label}` : t
-                }).join(', ')}
-                {visit.lesionTypes.length > 2 && ` +${visit.lesionTypes.length - 2}`}
-              </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-slate-800 text-sm">{group.group_label}그룹</span>
+              {visit.lesionTypes.length > 0 && (
+                <span className="text-xs text-slate-500">
+                  {visit.lesionTypes.slice(0, 2).map((t) => {
+                    const found = LESION_TYPES.find((lt) => lt.value === t)
+                    return found ? found.label : t
+                  }).join(', ')}
+                  {visit.lesionTypes.length > 2 && ` +${visit.lesionTypes.length - 2}`}
+                </span>
+              )}
+              {visit.severity && (
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${SEVERITY_CONFIG[visit.severity]?.badge}`}>
+                  {SEVERITY_CONFIG[visit.severity]?.label}
+                </span>
+              )}
+              {isFollowup && visit.improvement && (
+                <span className={`text-sm ${IMPROVEMENT_CONFIG[visit.improvement]?.color}`}>
+                  {IMPROVEMENT_CONFIG[visit.improvement]?.icon} {IMPROVEMENT_CONFIG[visit.improvement]?.label}
+                </span>
+              )}
+            </div>
+            {anatomicalLocation && (
+              <p className="text-[10px] text-slate-400 truncate mt-0.5">{anatomicalLocation}</p>
             )}
           </div>
-          {visit.severity && (
-            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${SEVERITY_CONFIG[visit.severity]?.badge}`}>
-              {SEVERITY_CONFIG[visit.severity]?.label}
-            </span>
-          )}
-          {isFollowup && visit.improvement && (
-            <span className={`text-sm ${IMPROVEMENT_CONFIG[visit.improvement]?.color}`}>
-              {IMPROVEMENT_CONFIG[visit.improvement]?.icon} {IMPROVEMENT_CONFIG[visit.improvement]?.label}
-            </span>
-          )}
         </div>
 
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            title="전체사진에 마커 추가"
-            onClick={onToggleMarking}
-            className={`rounded-full p-1.5 transition-colors ${
-              isMarkingActive
-                ? 'text-white shadow'
-                : 'text-slate-500 hover:bg-slate-100'
-            }`}
-            style={isMarkingActive ? { background: group.group_color ?? '#6b7280' } : undefined}
-          >
-            <MapPin className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={() => onDelete(group.id)}

@@ -29,6 +29,8 @@ export type InLogEntry = {
   base_unit: string
   memo: string | null
   expiry_date: string | null
+  lot_number: string | null
+  unit_price: number | null
   created_at: string
 }
 
@@ -180,6 +182,8 @@ export async function getItemDetailLogs(
       base_unit,
       memo,
       expiry_date,
+      lot_number,
+      unit_price,
       created_at,
       item_products:item_product_id (
         id,
@@ -225,6 +229,8 @@ export async function getItemDetailLogs(
         base_unit: log.base_unit,
         memo: log.memo,
         expiry_date: (log as any).expiry_date ?? null,
+        lot_number: (log as any).lot_number ?? null,
+        unit_price: (log as any).unit_price != null ? Number((log as any).unit_price) : null,
         created_at: log.created_at,
       })
     } else if (log.transaction_type === 'OUT') {

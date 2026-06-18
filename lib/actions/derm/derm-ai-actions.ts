@@ -80,6 +80,7 @@ export async function analyzeLesionGroup(
   images: Array<{ base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }>,
   rawInput: string,
   patient?: PatientInfo | null,
+  anatomicalLocation?: string | null,
 ): Promise<DermAiAnalysis> {
   const client = getAnthropicClient()
   const patientBlock = buildPatientBlock(patient)
@@ -98,6 +99,10 @@ export async function analyzeLesionGroup(
     ? `\nClinician's observation: "${rawInput.trim()}"\n`
     : ''
 
+  const locationNote = anatomicalLocation?.trim()
+    ? `\nLesion location on body diagram: ${anatomicalLocation.trim()}\n`
+    : ''
+
   try {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
@@ -109,12 +114,12 @@ export async function analyzeLesionGroup(
           ...imageBlocks,
           {
             type: 'text',
-            text: `${countNote}Analyze this veterinary dermatology lesion.${patientBlock}${clinicianNote}
+            text: `${countNote}Analyze this veterinary dermatology lesion.${patientBlock}${locationNote}${clinicianNote}
 
 Return JSON matching this exact schema:
 {
   "lesion_type": ["array of: macule, papule, plaque, pustule, vesicle, nodule, tumor, erythema, alopecia, scale, crust, erosion, ulcer, lichenification, hyperpigmentation, hypopigmentation, comedone, excoriation, fistula, wheal"],
-  "anatomical_location": "location in Korean (e.g. 좌측 액와부)",
+  "anatomical_location": "location in Korean — use the provided location if given, or infer from images",
   "description": "formal Korean description 2-3 sentences",
   "confidence": 0.0-1.0,
   "severity": 1-4,

@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import type { DermChartDetail, DermLesionGroup, DermLesionVisit, DermImage } from '@/types/hospital/derm-type'
 import { SEVERITY_CONFIG, IMPROVEMENT_CONFIG, LESION_TYPES } from '@/types/hospital/derm-type'
+import { getAnatomicalText } from '@/lib/utils/derm-anatomy'
 
 interface VisitState {
   rawInput: string
@@ -121,7 +122,13 @@ function ReportBody({ chartDetail, lesionGroups, visitsData, images, chiefCompla
               >
                 {group.group_label}
               </span>
-              <span className="text-xs font-black text-slate-800">{group.group_label}그룹</span>
+              <div>
+                <span className="text-xs font-black text-slate-800">{group.group_label}그룹</span>
+                {(() => {
+                  const loc = getAnatomicalText(group.marker_data ?? [])
+                  return loc ? <span className="ml-1.5 text-[10px] text-slate-500">{loc}</span> : null
+                })()}
+              </div>
               {visit.severity && (
                 <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${SEVERITY_CONFIG[visit.severity]?.badge}`}>
                   {SEVERITY_CONFIG[visit.severity]?.label}

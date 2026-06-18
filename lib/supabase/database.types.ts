@@ -2303,11 +2303,13 @@ export type Database = {
           id: string
           item_master_id: string
           item_product_id: string | null
+          lot_number: string | null
           memo: string | null
           quantity: number
           reference_id: string | null
           reference_type: string | null
           transaction_type: string
+          unit_price: number | null
           vendor_id: string | null
         }
         Insert: {
@@ -2319,11 +2321,13 @@ export type Database = {
           id?: string
           item_master_id: string
           item_product_id?: string | null
+          lot_number?: string | null
           memo?: string | null
           quantity: number
           reference_id?: string | null
           reference_type?: string | null
           transaction_type: string
+          unit_price?: number | null
           vendor_id?: string | null
         }
         Update: {
@@ -2335,11 +2339,13 @@ export type Database = {
           id?: string
           item_master_id?: string
           item_product_id?: string | null
+          lot_number?: string | null
           memo?: string | null
           quantity?: number
           reference_id?: string | null
           reference_type?: string | null
           transaction_type?: string
+          unit_price?: number | null
           vendor_id?: string | null
         }
         Relationships: [

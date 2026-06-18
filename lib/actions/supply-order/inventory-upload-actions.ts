@@ -10,23 +10,51 @@ import {
 import type {
   ExtractedDeliveryItem,
   ItemProduct,
+  InventoryItem,
   ReviewInventoryItem,
 } from '@/types/hospital/supply-order-type'
 
 export { extractFromInvoicePhoto, parseDeliveryExcel }
 
+function fuzzyMatchMaster(rawName: string, masters: InventoryItem[]): InventoryItem | null {
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/[\s\-_·]/g, '').replace(/[^가-힣a-z0-9]/g, '')
+  const rawNorm = normalize(rawName)
+  for (const master of masters) {
+    const masterNorm = normalize(master.generic_name)
+    if (masterNorm.length < 2) continue
+    if (rawNorm.includes(masterNorm)) return master
+  }
+  return null
+}
+
 export async function matchItemsForInventory(
   items: ExtractedDeliveryItem[],
   itemProducts: ItemProduct[],
+  inventoryItems: InventoryItem[],
   vendorId?: string,
 ): Promise<ReviewInventoryItem[]> {
   const reviewItems = await matchItemsWithAI(items, itemProducts, vendorId)
 
   return reviewItems.map((item) => {
     const product = itemProducts.find((p) => p.id === item.matched_product_id)
+    const itemMasterId = product?.item_master_id ?? null
+
+    let suggestedMasterId: string | null = null
+    let suggestedMasterName: string | null = null
+    if (!item.matched_product_id) {
+      const suggested = fuzzyMatchMaster(item.raw_name, inventoryItems)
+      if (suggested) {
+        suggestedMasterId = suggested.item_master_id
+        suggestedMasterName = suggested.generic_name
+      }
+    }
+
     return {
       ...item,
-      item_master_id: product?.item_master_id ?? null,
+      item_master_id: itemMasterId,
+      suggested_master_id: suggestedMasterId,
+      suggested_master_name: suggestedMasterName,
       decision: (item.matched_product_id ? 'confirm' : 'new_product') as ReviewInventoryItem['decision'],
     }
   })
@@ -42,7 +70,9 @@ type SaveRow = {
   masterIsNew: boolean
   newMasterName: string
   newMasterBaseUnit: string
-  pendingMasterId: string
+  newMasterCategory: string[]
+  newMasterAliases: string[]
+  newMasterLoc: string[]
   quantity: number
   unit: string
   unitPrice: string
@@ -92,7 +122,7 @@ export async function saveInventoryUploadItems(
           package_type: '낱개',
           units_per_package: 1,
           is_active: true,
-          item_master_id: null,
+          item_master_id: masterId || null,
           vendor_ids: vendorId ? [vendorId] : [],
           category: [],
           tag: [],
@@ -111,8 +141,10 @@ export async function saveInventoryUploadItems(
           hos_id: hosId,
           generic_name: row.newMasterName.trim(),
           base_unit: row.newMasterBaseUnit.trim() || row.unit || '개',
-          category: [],
-          loc: [],
+          category: row.newMasterCategory,
+          aliases: row.newMasterAliases,
+          loc: row.newMasterLoc,
+          default_vendor: vendorId || null,
           is_active: true,
         })
         .select('id')
@@ -121,16 +153,6 @@ export async function saveInventoryUploadItems(
       masterId = newMaster.id
 
       // 제품에 마스터 연결
-      await supabase
-        .from('item_products')
-        .update({ item_master_id: masterId })
-        .eq('id', productId!)
-        .eq('hos_id', hosId)
-    }
-
-    // 기존 마스터 연결
-    if (!masterId && row.pendingMasterId) {
-      masterId = row.pendingMasterId
       await supabase
         .from('item_products')
         .update({ item_master_id: masterId })
@@ -151,7 +173,7 @@ export async function saveInventoryUploadItems(
       lot_number: row.lotNumber.trim() || null,
       unit_price: row.unitPrice ? Number(row.unitPrice) : null,
       vendor_id: vendorId ?? null,
-      reference_type: 'invoice_upload',
+      reference_type: 'manual_in',
       created_by: user?.id ?? null,
     })
     saved++

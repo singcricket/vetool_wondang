@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, ChevronDown, ChevronRight, Pencil, Trash2, Check, X, PackageX, CalendarClock } from 'lucide-react'
+import { Loader2, ChevronDown, ChevronRight, Pencil, Trash2, Check, X, PackageX, CalendarClock, Hash, Banknote } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -247,7 +247,8 @@ export default function InventoryDetailDialog({ hosId, item, open, onOpenChange 
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-2">
                                   <span className="shrink-0 text-[11px] text-slate-400">
                                     {log.created_at.slice(0, 10)}
                                   </span>
@@ -292,6 +293,23 @@ export default function InventoryDetailDialog({ hosId, item, open, onOpenChange 
                                       <Trash2 size={11} />
                                     </Button>
                                   </div>
+                                </div>
+                                  {(log.lot_number || log.unit_price != null) && (
+                                    <div className="flex flex-wrap items-center gap-3 pl-1">
+                                      {log.lot_number && (
+                                        <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                                          <Hash size={9} className="shrink-0" />
+                                          {log.lot_number}
+                                        </span>
+                                      )}
+                                      {log.unit_price != null && (
+                                        <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                                          <Banknote size={9} className="shrink-0" />
+                                          {log.unit_price.toLocaleString()}원
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>

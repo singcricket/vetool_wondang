@@ -350,16 +350,10 @@ export type ReviewInventoryItem = ExtractedDeliveryItem & {
   match_status: ReviewItemMatchStatus
   match_confidence: number | null
   matched_product_id: string | null
-  item_master_id: string | null          // resolved via matched product
+  item_master_id: string | null           // resolved via matched product
+  suggested_master_id: string | null      // secondary fuzzy match (Case 2)
+  suggested_master_name: string | null
   decision: 'confirm' | 'skip' | 'new_product'
-  // inline new product fields
-  new_brand_name?: string
-  new_spec?: string
-  new_manufacturer?: string
-  // master linkage
-  pending_master_id?: string             // pick existing master
-  new_master_name?: string               // create new master
-  new_master_base_unit?: string
 }
 
 // ── Bulk Upload — item_products ───────────────────────────────
