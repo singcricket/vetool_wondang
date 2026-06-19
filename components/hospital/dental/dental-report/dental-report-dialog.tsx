@@ -292,24 +292,27 @@ export default function DentalReportDialog({ chartDetail, teeth, hosId }: Props)
               </TabsList>
             </div>
 
-            <div className="flex-1 overflow-auto bg-slate-50 p-4" id="report-scroll-container">
-              <div 
-                ref={reportRef} 
-                className="max-w-4xl mx-auto bg-white p-8 sm:p-12 shadow-sm border border-slate-200 min-h-[A4] text-slate-800"
+            <div className="flex-1 overflow-auto bg-slate-50 p-2 sm:p-4" id="report-scroll-container">
+              <div
+                ref={reportRef}
+                className="max-w-4xl mx-auto bg-white shadow-sm border border-slate-200 min-h-[A4] text-slate-800"
               >
-                {/* 
-                  reportRef 하위에 있는 내용을 html2canvas로 캡처 
-                */}
                 <TabsContent value="general" className="m-0 border-0 outline-none p-0">
-                  <DentalReportGeneral chartDetail={chartDetail} teeth={teeth} images={images} species={species} />
+                  <div className="p-8 sm:p-12">
+                    <DentalReportGeneral chartDetail={chartDetail} teeth={teeth} images={images} species={species} />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="detailed" className="m-0 border-0 outline-none p-0">
-                  <DentalReportDetailed chartDetail={chartDetail} teeth={teeth} images={images} species={species} />
+                  <div className="p-8 sm:p-12">
+                    <DentalReportDetailed chartDetail={chartDetail} teeth={teeth} images={images} species={species} />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="owner" className="m-0 border-0 outline-none p-0">
-                  <DentalReportOwner chartDetail={chartDetail} teeth={teeth} images={images} species={species} />
+                  <div className="p-3 sm:p-8">
+                    <DentalReportOwner chartDetail={chartDetail} teeth={teeth} images={images} species={species} />
+                  </div>
                 </TabsContent>
               </div>
             </div>

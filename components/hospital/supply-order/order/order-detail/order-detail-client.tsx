@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import {
   ChevronLeft, SendHorizonal, PackageCheck,
   XCircle, Loader2, Trash2,
-  Pencil, Check, X,
+  Pencil, Check, X, RotateCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
@@ -40,8 +40,12 @@ const NEXT_ACTIONS: Partial<Record<OrderStatus, ActionDef[]>> = {
 }
 
 // 이전 단계 되돌리기
-const PREV_ACTIONS: Partial<Record<OrderStatus, ActionDef>> = {
-  ordered: { label: '작성중으로 되돌리기', next: 'draft', icon: ChevronLeft, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' },
+const PREV_ACTIONS: Partial<Record<OrderStatus, ActionDef[]>> = {
+  ordered: [{ label: '작성중으로 되돌리기', next: 'draft', icon: ChevronLeft, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' }],
+  cancelled: [
+    { label: '주문대기로 되돌리기', next: 'draft', icon: RotateCcw, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' },
+    { label: '주문완료로 되돌리기', next: 'ordered', icon: RotateCcw, color: 'bg-slate-100 hover:bg-slate-200 text-slate-500' },
+  ],
 }
 
 export default function OrderDetailClient({ hosId, order, deliveries }: Props) {
@@ -120,7 +124,7 @@ export default function OrderDetailClient({ hosId, order, deliveries }: Props) {
   }
 
   const nextActions = NEXT_ACTIONS[order.status] ?? []
-  const prevAction = PREV_ACTIONS[order.status] ?? null
+  const prevActions = PREV_ACTIONS[order.status] ?? []
   const canCreateDelivery = order.status === 'ordered' && deliveries.length === 0
   const canEditItemStatus = ['ordered', 'partial', 'delivered'].includes(order.status)
 
@@ -346,18 +350,23 @@ export default function OrderDetailClient({ hosId, order, deliveries }: Props) {
         )}
 
         {/* 이전 단계 되돌리기 */}
-        {prevAction && (
-          <Button
-            variant="ghost"
-            onClick={() => handleStatusChange(prevAction.next)}
-            disabled={!!loading}
-            className="h-7 w-full gap-1 text-xs text-slate-400 hover:text-slate-600"
-          >
-            {loading === prevAction.next
-              ? <Loader2 size={12} className="animate-spin" />
-              : <ChevronLeft size={12} />}
-            {prevAction.label}
-          </Button>
+        {prevActions.length > 0 && (
+          <div className="flex flex-col gap-1">
+            {prevActions.map(({ label, next, icon: Icon }) => (
+              <Button
+                key={next}
+                variant="ghost"
+                onClick={() => handleStatusChange(next)}
+                disabled={!!loading}
+                className="h-7 w-full gap-1 text-xs text-slate-400 hover:text-slate-600"
+              >
+                {loading === next
+                  ? <Loader2 size={12} className="animate-spin" />
+                  : <Icon size={12} />}
+                {label}
+              </Button>
+            ))}
+          </div>
         )}
       </div>
 

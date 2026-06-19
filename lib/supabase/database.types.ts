@@ -821,6 +821,7 @@ export type Database = {
         Row: {
           anesthesia: boolean | null
           anesthesia_note: string | null
+          assessment_image_order: string[] | null
           calculus_overall: string | null
           chart_date: string
           created_at: string | null
@@ -849,6 +850,7 @@ export type Database = {
           tags: string | null
           tongue_eval: string | null
           tonsil_eval: string | null
+          treatment_image_order: string[] | null
           treatment_plan: string | null
           updated_at: string | null
           user_tags: string | null
@@ -859,6 +861,7 @@ export type Database = {
         Insert: {
           anesthesia?: boolean | null
           anesthesia_note?: string | null
+          assessment_image_order?: string[] | null
           calculus_overall?: string | null
           chart_date: string
           created_at?: string | null
@@ -887,6 +890,7 @@ export type Database = {
           tags?: string | null
           tongue_eval?: string | null
           tonsil_eval?: string | null
+          treatment_image_order?: string[] | null
           treatment_plan?: string | null
           updated_at?: string | null
           user_tags?: string | null
@@ -897,6 +901,7 @@ export type Database = {
         Update: {
           anesthesia?: boolean | null
           anesthesia_note?: string | null
+          assessment_image_order?: string[] | null
           calculus_overall?: string | null
           chart_date?: string
           created_at?: string | null
@@ -925,6 +930,7 @@ export type Database = {
           tags?: string | null
           tongue_eval?: string | null
           tonsil_eval?: string | null
+          treatment_image_order?: string[] | null
           treatment_plan?: string | null
           updated_at?: string | null
           user_tags?: string | null

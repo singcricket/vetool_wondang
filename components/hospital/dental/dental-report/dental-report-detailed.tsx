@@ -5,7 +5,6 @@ import { DENTAL_TOOTH_TESTS } from '@/constants/hospital/dental/dentalToothTests
 import { DENTAL_CHART_TESTS } from '@/constants/hospital/dental/dentalChartTests'
 import ImageCard from './dental-image-card'
 import DentalToothDetailView from './dental-tooth-detail-view'
-import DentalImageWithMark from '@/components/hospital/dental/dental-image-with-mark'
 import dynamic from 'next/dynamic'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
@@ -17,6 +16,11 @@ const DentalImageEditor = dynamic(() => import('../dental-image-editor'), {
   loading: () => <div className="flex h-full items-center justify-center bg-slate-900 text-white">에디터 로딩 중...</div>
 })
 
+const DentalImageWithMark = dynamic(() => import('@/components/hospital/dental/dental-image-with-mark'), {
+  ssr: false,
+  loading: () => <div className="aspect-square bg-slate-100" />,
+})
+
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -26,19 +30,25 @@ type Props = {
   isShared?: boolean
 }
 
-// 이미지 그룹별 필터 헬퍼(태그 우선)
 function filterByTag(images: DentalImage[], tag: string) {
   return images.filter(img => img.tooth_ids?.includes(tag))
 }
 
-
+function filterAndSort(images: DentalImage[], tag: string, order: string[]): DentalImage[] {
+  const filtered = images.filter(img => img.tooth_ids?.includes(tag))
+  const inOrder = order
+    .map(id => filtered.find(img => img.dental_image_id === id))
+    .filter((img): img is DentalImage => img !== undefined)
+  const notInOrder = filtered.filter(img => !order.includes(img.dental_image_id))
+  return [...inOrder, ...notInOrder]
+}
 
 export default function DentalReportDetailed({ chartDetail, teeth, images, species, isShared }: Props) {
 
   // 이미지 그룹 분류
-  const generalImages   = filterByTag(images, 'general')
-  const assessmentImages = filterByTag(images, 'assessment')
-  const treatmentImages  = filterByTag(images, 'treatment')
+  const generalImages    = filterByTag(images, 'general')
+  const assessmentImages = filterAndSort(images, 'assessment', chartDetail.assessment_image_order ?? [])
+  const treatmentImages  = filterAndSort(images, 'treatment', chartDetail.treatment_image_order ?? [])
 
   // 4분면 이미지 추출
   const img100 = images.find(img => img.tooth_ids?.includes('100'))

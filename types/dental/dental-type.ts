@@ -84,6 +84,10 @@ export type DentalChartDetail = {
   user_tags: string | null
   tags: string | null
 
+  // 이미지 순서
+  assessment_image_order: string[] | null
+  treatment_image_order: string[] | null
+
   created_at: string
   updated_at: string
 

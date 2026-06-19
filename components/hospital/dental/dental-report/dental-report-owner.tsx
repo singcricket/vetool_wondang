@@ -270,12 +270,21 @@ function ImageCard({ img, caption, isShared }: { img: DentalImage; caption?: str
   )
 }
 
+function filterAndSort(images: DentalImage[], tag: string, order: string[]): DentalImage[] {
+  const filtered = images.filter(img => img.tooth_ids?.includes(tag))
+  const inOrder = order
+    .map(id => filtered.find(img => img.dental_image_id === id))
+    .filter((img): img is DentalImage => img !== undefined)
+  const notInOrder = filtered.filter(img => !order.includes(img.dental_image_id))
+  return [...inOrder, ...notInOrder]
+}
+
 export default function DentalReportOwner({ chartDetail, teeth, images, species, isShared }: Props) {
 
   // 이미지 그룹 분류 (글로벌 태그 기준)
   const generalImages    = filterByTag(images, 'general')
-  const assessmentImages = filterByTag(images, 'assessment')
-  const treatmentImages  = filterByTag(images, 'treatment')
+  const assessmentImages = filterAndSort(images, 'assessment', chartDetail.assessment_image_order ?? [])
+  const treatmentImages  = filterAndSort(images, 'treatment', chartDetail.treatment_image_order ?? [])
 
   // 4분면 이미지 추출
   const img100 = images.find(img => img.tooth_ids?.includes('100'))
@@ -762,10 +771,10 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-2 sm:space-y-8">
 
       {/* ── 헤더 ── */}
-      <div className="text-center border-b pb-4">
+      <div className="text-center border-b pb-2 sm:pb-4">
         <h1 className="text-2xl font-bold tracking-widest text-slate-800">
           치과 검진 리포트 (보호자용)
         </h1>
@@ -776,7 +785,7 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
       </div>
 
       {/* ── 차트 전반 정보 (dental_charts) ── */}
-      <section className="space-y-6 border border-amber-200 rounded-xl p-6 bg-amber-50/30">
+      <section className="space-y-4 sm:space-y-6 border border-amber-200 rounded-xl p-3 sm:p-6 bg-amber-50/30">
         <h2 className="text-base font-bold text-amber-800 border-b border-amber-200 pb-2">
           전체 구강 검진 결과
         </h2>

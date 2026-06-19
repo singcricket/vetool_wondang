@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useTransition, useRef, useEffect } from 'react'
+import { useState, useMemo, useTransition, useRef, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -164,6 +164,10 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
 
   const [isPending, startTransition] = useTransition()
 
+  // 체크 직후 focus (autoFocus 대신 — 검색 재렌더 시 focus 탈취 방지)
+  const justCheckedIdRef = useRef<string | null>(null)
+  const qtyInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
   // Floating search
   const searchRef = useRef<HTMLDivElement>(null)
   const [searchVisible, setSearchVisible] = useState(true)
@@ -262,7 +266,7 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
     [filtered, page],
   )
 
-  const toggleCheck = (id: string) => {
+  const toggleCheck = useCallback((id: string) => {
     setCheckedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -271,10 +275,11 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
         setSelectedProductIds((p) => { const n = { ...p }; delete n[id]; return n })
       } else {
         next.add(id)
+        justCheckedIdRef.current = id
       }
       return next
     })
-  }
+  }, [])
 
   const clearAll = () => {
     setCheckedIds(new Set())
@@ -654,7 +659,13 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
                             onChange={(e) => setQtys((prev) => ({ ...prev, [item.item_master_id]: e.target.value }))}
                             placeholder="주문수량"
                             className="h-7 w-24 text-right text-xs"
-                            autoFocus
+                            ref={(el) => {
+                              qtyInputRefs.current[item.item_master_id] = el
+                              if (el && justCheckedIdRef.current === item.item_master_id) {
+                                el.focus()
+                                justCheckedIdRef.current = null
+                              }
+                            }}
                           />
                           <span className="text-[11px] text-slate-400">{item.base_unit}</span>
                         </div>
@@ -703,7 +714,13 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
                               onChange={(e) => setQtys((prev) => ({ ...prev, [item.item_master_id]: e.target.value }))}
                               placeholder="입고수량"
                               className="h-7 w-24 text-right text-xs border-indigo-200 focus:border-indigo-400"
-                              autoFocus
+                              ref={(el) => {
+                                qtyInputRefs.current[item.item_master_id] = el
+                                if (el && justCheckedIdRef.current === item.item_master_id) {
+                                  el.focus()
+                                  justCheckedIdRef.current = null
+                                }
+                              }}
                             />
                             <span className="text-[11px] text-slate-400">{item.base_unit}</span>
                           </div>

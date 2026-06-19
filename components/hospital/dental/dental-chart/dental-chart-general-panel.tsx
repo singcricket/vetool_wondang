@@ -14,7 +14,6 @@ import DentalProcedureTab from './dental-chart-tabs/dental-procedure-tab'
 import DentalTreatmentTab from './dental-chart-tabs/dental-treatment-tab'
 import DentalNoteTab from './dental-chart-tabs/dental-note-tab'
 import DentalImageGallery from '@/components/hospital/dental/dental-image-gallery'
-import DentalImageWithMark from '@/components/hospital/dental/dental-image-with-mark'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import dynamic from 'next/dynamic'
@@ -24,6 +23,11 @@ import { cn } from '@/lib/utils/utils'
 const DentalImageEditor = dynamic(() => import('../dental-image-editor'), {
   ssr: false,
   loading: () => <div className="flex h-full items-center justify-center bg-slate-900 text-white">에디터 로딩 중...</div>
+})
+
+const DentalImageWithMark = dynamic(() => import('@/components/hospital/dental/dental-image-with-mark'), {
+  ssr: false,
+  loading: () => <div className="aspect-[4/3] bg-slate-100" />,
 })
 const upperOrder = [110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210]
 
@@ -169,6 +173,8 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId, images, on
     setTreatmentPlan(chartDetail.treatment_plan ?? '')
     setRecheckInterval(chartDetail.recheck_interval)
     setHomecareInstruction(chartDetail.homecare_instruction ?? '')
+    setAssessmentOrder(chartDetail.assessment_image_order ?? [])
+    setTreatmentOrder(chartDetail.treatment_image_order ?? [])
   }, [chartDetail, isDirty, isPending])
 
   // 2. 변경사항 여부(Dirty) 체크
@@ -255,14 +261,53 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId, images, on
     })
   }
 
+  const [assessmentOrder, setAssessmentOrder] = useState<string[]>(
+    chartDetail.assessment_image_order ?? []
+  )
+  const [treatmentOrder, setTreatmentOrder] = useState<string[]>(
+    chartDetail.treatment_image_order ?? []
+  )
+
+  function sortByOrder(imgs: DentalImage[], order: string[]): DentalImage[] {
+    const inOrder = order
+      .map(id => imgs.find(img => img.dental_image_id === id))
+      .filter((img): img is DentalImage => img !== undefined)
+    const notInOrder = imgs.filter(img => !order.includes(img.dental_image_id))
+    return [...inOrder, ...notInOrder]
+  }
+
+  const handleAssessmentOrderChange = async (ids: string[]) => {
+    setAssessmentOrder(ids)
+    try {
+      await updateDentalChart(chartDetail.id, hosId, { assessment_image_order: ids })
+    } catch {
+      toast.error('순서 저장에 실패했습니다.')
+    }
+  }
+
+  const handleTreatmentOrderChange = async (ids: string[]) => {
+    setTreatmentOrder(ids)
+    try {
+      await updateDentalChart(chartDetail.id, hosId, { treatment_image_order: ids })
+    } catch {
+      toast.error('순서 저장에 실패했습니다.')
+    }
+  }
+
   const img100 = images.find(img => img.tooth_ids?.includes('100'))
   const img200 = images.find(img => img.tooth_ids?.includes('200'))
   const img300 = images.find(img => img.tooth_ids?.includes('300'))
   const img400 = images.find(img => img.tooth_ids?.includes('400'))
 
   const generalImages = images.filter(img => (img.tooth_ids || []).includes('general'))
-  const assessmentImages = images.filter(img => (img.tooth_ids || []).includes('assessment'))
-  const treatmentImages = images.filter(img => (img.tooth_ids || []).includes('treatment'))
+  const assessmentImages = sortByOrder(
+    images.filter(img => (img.tooth_ids || []).includes('assessment')),
+    assessmentOrder
+  )
+  const treatmentImages = sortByOrder(
+    images.filter(img => (img.tooth_ids || []).includes('treatment')),
+    treatmentOrder
+  )
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-white relative">
@@ -322,7 +367,6 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId, images, on
               xrayTaken={xrayTaken} onXrayTakenChange={setXrayTaken}
               xrayFindings={xrayFindings} onXrayFindingsChange={setXrayFindings}
             />
-            <DentalImageGallery images={assessmentImages} title="진단 및 평가" />
           </section>
 
           <Separator />
@@ -350,8 +394,33 @@ export default function DentalChartGeneralPanel({ chartDetail, hosId, images, on
               recheckInterval={recheckInterval} onRecheckIntervalChange={setRecheckInterval}
               homecareInstruction={homecareInstruction} onHomecareInstructionChange={setHomecareInstruction}
             />
-            <DentalImageGallery images={treatmentImages} title="치료 및 처치" />
           </section>
+
+          <Separator />
+
+          {/* 진단 및 처치 사진 — 비교 순서 변경 */}
+          {(assessmentImages.length > 0 || treatmentImages.length > 0) && (
+            <section id="image-order">
+              <div className="bg-slate-50 px-4 py-2 border-b border-t mt-4">
+                <h3 className="text-sm font-bold text-slate-700">사진 순서 관리</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">드래그로 순서를 변경하면 자동 저장됩니다.</p>
+              </div>
+              <div className="flex flex-col divide-y">
+                <DentalImageGallery
+                  images={assessmentImages}
+                  title="진단 및 평가"
+                  onOrderChange={handleAssessmentOrderChange}
+                  className="mt-0 border-t-0"
+                />
+                <DentalImageGallery
+                  images={treatmentImages}
+                  title="치료 및 처치"
+                  onOrderChange={handleTreatmentOrderChange}
+                  className="mt-0 border-t-0"
+                />
+              </div>
+            </section>
+          )}
           <div className="h-40" />
         </div>
       </ScrollArea>
