@@ -1092,6 +1092,51 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
           </div>
         )
       })()}
+
+      {/* ── 개별 치아 상세 팝업 (SVG 클릭 시) ── */}
+      <Dialog 
+        open={!!selectedToothId} 
+        onOpenChange={(open) => { if (!open) setSelectedToothId(null) }}
+        modal={false}
+      >
+        <DialogContent className={cn("max-w-4xl max-h-[90vh] overflow-y-auto z-[200]", isShared && "z-[150]")}>
+          <VisuallyHidden>
+            <DialogTitle>치아 상세 정보</DialogTitle>
+            <DialogDescription>선택된 치아의 상세 소견을 보여줍니다.</DialogDescription>
+          </VisuallyHidden>
+          {selectedToothId && (
+            <div className="mt-4">
+              {renderToothDetail(Number(selectedToothId)) || (
+                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                  <div className="bg-slate-50 border-b border-slate-100 px-4 py-3">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-slate-400 text-white px-2 py-0.5 rounded-full text-base shrink-0">
+                          {selectedToothId}
+                        </span>
+                        <span className="text-slate-700 font-medium">
+                          {toothNames_kr[selectedToothId] || '알 수 없는 치아'}
+                        </span>
+                      </div>
+                      <div className="w-24 h-24 bg-white rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden p-2 shadow-sm ml-2">
+                        <img 
+                          src={`/dental/each/${species === 'feline' ? 'cat' : 'dog'}-${selectedToothId}.png`}
+                          alt={`Tooth ${selectedToothId}`}
+                          className="max-w-full max-h-full object-contain"
+                          onError={(e) => (e.currentTarget.style.display = 'none')}
+                        />
+                      </div>
+                    </h3>
+                  </div>
+                  <div className="p-6 text-center text-slate-500">
+                    해당 치아에 특이 소견이나 치료 내역이 없습니다.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
