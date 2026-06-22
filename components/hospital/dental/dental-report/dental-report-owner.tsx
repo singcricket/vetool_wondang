@@ -1099,13 +1099,13 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
         onOpenChange={(open) => { if (!open) setSelectedToothId(null) }}
         modal={false}
       >
-        <DialogContent className={cn("max-w-4xl max-h-[90vh] overflow-y-auto z-[200]", isShared && "z-[150]")}>
+        <DialogContent className={cn("max-w-4xl max-h-[90vh] flex flex-col overflow-hidden z-[200]", isShared && "z-[150]")}>
           <VisuallyHidden>
             <DialogTitle>치아 상세 정보</DialogTitle>
             <DialogDescription>선택된 치아의 상세 소견을 보여줍니다.</DialogDescription>
           </VisuallyHidden>
           {selectedToothId && (
-            <div className="mt-4">
+            <div className="mt-4 overflow-y-auto pr-1">
               {renderToothDetail(Number(selectedToothId)) || (
                 <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
                   <div className="bg-slate-50 border-b border-slate-100 px-4 py-3">
