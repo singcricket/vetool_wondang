@@ -41,10 +41,14 @@ type ReviewRow = {
   // existing/suggested master (matched, case2)
   masterId: string | null
   masterName: string
-  // case3: create or pick existing master
+  // case3/case1: create or pick existing master
   masterMode: 'create' | 'pick'
   masterPickerQuery: string
   pendingMasterId: string
+  // case1/case2: create or pick existing product
+  productMode: 'create' | 'pick'
+  productPickerQuery: string
+  pendingProductId: string
   // new product fields (case1, case2)
   newBrandName: string
   newSpec: string
@@ -143,6 +147,80 @@ function MasterSearchCombobox({
   )
 }
 
+// ── ProductSearchCombobox ─────────────────────────────────────
+
+function ProductSearchCombobox({
+  items, value, query, onQueryChange, onSelect,
+}: {
+  items: ItemProduct[]
+  value: string
+  query: string
+  onQueryChange: (q: string) => void
+  onSelect: (id: string, name: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const selected = items.find((i) => i.id === value)
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return items.slice(0, 20)
+    return items.filter((i) =>
+      i.brand_name.toLowerCase().includes(q) ||
+      (i.item_master?.generic_name ?? '').toLowerCase().includes(q)
+    ).slice(0, 20)
+  }, [items, query])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <div className="relative">
+        <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          value={selected && !open ? selected.brand_name : query}
+          onChange={(e) => { onQueryChange(e.target.value); setOpen(true) }}
+          onFocus={() => { setOpen(true); if (selected) onQueryChange('') }}
+          placeholder="제품 검색..."
+          className="h-7 w-full rounded-md border border-slate-200 bg-white pl-6 pr-2 text-[11px] text-slate-700 placeholder:text-slate-400 focus:border-teal-400 focus:outline-none"
+        />
+      </div>
+      {open && (
+        <div className="absolute left-0 right-0 top-8 z-50 max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+          {filtered.length === 0 ? (
+            <p className="px-3 py-3 text-center text-[11px] text-slate-400">검색 결과 없음</p>
+          ) : (
+            filtered.map((i) => (
+              <button
+                key={i.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { onSelect(i.id, i.brand_name); onQueryChange(''); setOpen(false) }}
+                className={cn(
+                  'flex w-full flex-col px-3 py-1.5 text-left text-[11px] hover:bg-teal-50',
+                  value === i.id && 'bg-teal-50',
+                )}
+              >
+                <span className="font-medium text-slate-800">{i.brand_name}</span>
+                {i.item_master?.generic_name && (
+                  <span className="text-slate-400">{i.item_master.generic_name}</span>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── isRowReady ────────────────────────────────────────────────
 
 // ── NewMasterCategoryPicker ───────────────────────────────────
@@ -185,21 +263,29 @@ function isRowReady(r: ReviewRow): boolean {
   if (Number(r.quantity) <= 0) return false
   switch (r.inventoryCase) {
     case 'matched': return true
-    case 'case2':   return r.newBrandName.trim().length > 0 && r.masterId != null
+    case 'case2':
+      if (r.productMode === 'pick') return r.pendingProductId.length > 0
+      return r.newBrandName.trim().length > 0 && r.masterId != null
     case 'case3':
       if (r.masterMode === 'create') return r.newMasterName.trim().length > 0
       return r.pendingMasterId.length > 0
-    case 'case1':   return r.newMasterName.trim().length > 0
+    case 'case1': {
+      const masterOk = r.masterMode === 'pick'
+        ? r.pendingMasterId.length > 0
+        : r.newMasterName.trim().length > 0
+      return masterOk
+    }
   }
 }
 
 // ── ReviewRowCard ─────────────────────────────────────────────
 
 function ReviewRowCard({
-  row, inventoryItems, onUpdate,
+  row, inventoryItems, itemProducts, onUpdate,
 }: {
   row: ReviewRow
   inventoryItems: InventoryItem[]
+  itemProducts: ItemProduct[]
   onUpdate: (patch: Partial<ReviewRow>) => void
 }) {
   const caseBadge = (() => {
@@ -294,7 +380,7 @@ function ReviewRowCard({
             </div>
           )}
 
-          {/* ── case2: 마스터 표시 (자동연결) + 제품 입력 ── */}
+          {/* ── case2: 마스터 표시 (자동연결) + 제품 입력 or 연결 ── */}
           {row.inventoryCase === 'case2' && (
             <>
               <div className="rounded-md bg-teal-50 border border-teal-100 px-3 py-2">
@@ -305,17 +391,42 @@ function ReviewRowCard({
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-medium text-slate-500">신규 제품 등록</p>
-                <Input
-                  value={row.newBrandName}
-                  onChange={(e) => onUpdate({ newBrandName: e.target.value })}
-                  placeholder="브랜드명 *"
-                  className="h-7 text-xs"
-                />
-                <div className="grid grid-cols-2 gap-1">
-                  <Input value={row.newSpec} onChange={(e) => onUpdate({ newSpec: e.target.value })} placeholder="규격" className="h-7 text-xs" />
-                  <Input value={row.newManufacturer} onChange={(e) => onUpdate({ newManufacturer: e.target.value })} placeholder="제조사" className="h-7 text-xs" />
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium text-slate-500">제품</p>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({
+                      productMode: row.productMode === 'create' ? 'pick' : 'create',
+                      pendingProductId: '',
+                      productPickerQuery: '',
+                    })}
+                    className="text-[10px] text-slate-400 hover:text-teal-500"
+                  >
+                    {row.productMode === 'create' ? '기존 제품 연결' : '+ 새로 만들기'}
+                  </button>
                 </div>
+                {row.productMode === 'create' ? (
+                  <div className="space-y-1">
+                    <Input
+                      value={row.newBrandName}
+                      onChange={(e) => onUpdate({ newBrandName: e.target.value })}
+                      placeholder="브랜드명 *"
+                      className="h-7 text-xs"
+                    />
+                    <div className="grid grid-cols-2 gap-1">
+                      <Input value={row.newSpec} onChange={(e) => onUpdate({ newSpec: e.target.value })} placeholder="규격" className="h-7 text-xs" />
+                      <Input value={row.newManufacturer} onChange={(e) => onUpdate({ newManufacturer: e.target.value })} placeholder="제조사" className="h-7 text-xs" />
+                    </div>
+                  </div>
+                ) : (
+                  <ProductSearchCombobox
+                    items={itemProducts}
+                    value={row.pendingProductId}
+                    query={row.productPickerQuery}
+                    onQueryChange={(q) => onUpdate({ productPickerQuery: q })}
+                    onSelect={(id, name) => onUpdate({ pendingProductId: id, productPickerQuery: name })}
+                  />
+                )}
               </div>
             </>
           )}
@@ -395,54 +506,100 @@ function ReviewRowCard({
           {row.inventoryCase === 'case1' && (
             <>
               <div className="space-y-1">
-                <p className="text-[10px] font-medium text-slate-500">품목 마스터 (일반명)</p>
-                <div className="space-y-1.5 rounded-md border border-dashed border-teal-200 bg-teal-50/50 p-2">
-                  <div className="grid grid-cols-2 gap-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium text-slate-500">품목 마스터 (일반명)</p>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({
+                      masterMode: row.masterMode === 'create' ? 'pick' : 'create',
+                      pendingMasterId: '',
+                      masterPickerQuery: '',
+                    })}
+                    className="text-[10px] text-slate-400 hover:text-teal-500"
+                  >
+                    {row.masterMode === 'create' ? '기존 마스터 연결' : '+ 새로 만들기'}
+                  </button>
+                </div>
+                {row.masterMode === 'create' ? (
+                  <div className="space-y-1.5 rounded-md border border-dashed border-teal-200 bg-teal-50/50 p-2">
+                    <div className="grid grid-cols-2 gap-1">
+                      <Input
+                        value={row.newMasterName}
+                        onChange={(e) => onUpdate({ newMasterName: e.target.value })}
+                        placeholder="일반명 * (예: 아목시실린)"
+                        className="h-7 text-xs"
+                      />
+                      <Input
+                        value={row.newMasterBaseUnit}
+                        onChange={(e) => onUpdate({ newMasterBaseUnit: e.target.value })}
+                        placeholder="기본 단위 (정, 앰플…)"
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <NewMasterCategoryPicker
+                      value={row.newMasterCategory}
+                      onChange={(v) => onUpdate({ newMasterCategory: v })}
+                    />
                     <Input
-                      value={row.newMasterName}
-                      onChange={(e) => onUpdate({ newMasterName: e.target.value })}
-                      placeholder="일반명 * (예: 아목시실린)"
+                      value={row.newMasterAliases}
+                      onChange={(e) => onUpdate({ newMasterAliases: e.target.value })}
+                      placeholder="별칭 (세미콜론; 구분)"
                       className="h-7 text-xs"
                     />
                     <Input
-                      value={row.newMasterBaseUnit}
-                      onChange={(e) => onUpdate({ newMasterBaseUnit: e.target.value })}
-                      placeholder="기본 단위 (정, 앰플…)"
+                      value={row.newMasterLoc}
+                      onChange={(e) => onUpdate({ newMasterLoc: e.target.value })}
+                      placeholder="태그 (세미콜론; 구분, 예: 냉장;주사실)"
                       className="h-7 text-xs"
                     />
                   </div>
-                  <NewMasterCategoryPicker
-                    value={row.newMasterCategory}
-                    onChange={(v) => onUpdate({ newMasterCategory: v })}
+                ) : (
+                  <MasterSearchCombobox
+                    items={inventoryItems}
+                    value={row.pendingMasterId}
+                    query={row.masterPickerQuery}
+                    onQueryChange={(q) => onUpdate({ masterPickerQuery: q })}
+                    onSelect={(id, name) => onUpdate({ pendingMasterId: id, masterPickerQuery: name })}
                   />
-                  <Input
-                    value={row.newMasterAliases}
-                    onChange={(e) => onUpdate({ newMasterAliases: e.target.value })}
-                    placeholder="별칭 (세미콜론; 구분)"
-                    className="h-7 text-xs"
-                  />
-                  <Input
-                    value={row.newMasterLoc}
-                    onChange={(e) => onUpdate({ newMasterLoc: e.target.value })}
-                    placeholder="태그 (세미콜론; 구분, 예: 냉장;주사실)"
-                    className="h-7 text-xs"
-                  />
-                </div>
+                )}
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-medium text-slate-500">제품 정보</p>
-                <div className="space-y-1 rounded-md border border-dashed border-indigo-200 bg-indigo-50/50 p-2">
-                  <Input
-                    value={row.newBrandName}
-                    onChange={(e) => onUpdate({ newBrandName: e.target.value })}
-                    placeholder="브랜드명 (비워두면 원본명 사용)"
-                    className="h-7 text-xs"
-                  />
-                  <div className="grid grid-cols-2 gap-1">
-                    <Input value={row.newSpec} onChange={(e) => onUpdate({ newSpec: e.target.value })} placeholder="규격" className="h-7 text-xs" />
-                    <Input value={row.newManufacturer} onChange={(e) => onUpdate({ newManufacturer: e.target.value })} placeholder="제조사" className="h-7 text-xs" />
-                  </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium text-slate-500">제품 정보</p>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({
+                      productMode: row.productMode === 'create' ? 'pick' : 'create',
+                      pendingProductId: '',
+                      productPickerQuery: '',
+                    })}
+                    className="text-[10px] text-slate-400 hover:text-teal-500"
+                  >
+                    {row.productMode === 'create' ? '기존 제품 연결' : '+ 새로 만들기'}
+                  </button>
                 </div>
+                {row.productMode === 'create' ? (
+                  <div className="space-y-1 rounded-md border border-dashed border-indigo-200 bg-indigo-50/50 p-2">
+                    <Input
+                      value={row.newBrandName}
+                      onChange={(e) => onUpdate({ newBrandName: e.target.value })}
+                      placeholder="브랜드명 (비워두면 원본명 사용)"
+                      className="h-7 text-xs"
+                    />
+                    <div className="grid grid-cols-2 gap-1">
+                      <Input value={row.newSpec} onChange={(e) => onUpdate({ newSpec: e.target.value })} placeholder="규격" className="h-7 text-xs" />
+                      <Input value={row.newManufacturer} onChange={(e) => onUpdate({ newManufacturer: e.target.value })} placeholder="제조사" className="h-7 text-xs" />
+                    </div>
+                  </div>
+                ) : (
+                  <ProductSearchCombobox
+                    items={itemProducts}
+                    value={row.pendingProductId}
+                    query={row.productPickerQuery}
+                    onQueryChange={(q) => onUpdate({ productPickerQuery: q })}
+                    onSelect={(id, name) => onUpdate({ pendingProductId: id, productPickerQuery: name })}
+                  />
+                )}
               </div>
             </>
           )}
@@ -508,16 +665,19 @@ function ReviewRowCard({
             switch (row.inventoryCase) {
               case 'matched':
                 return <span className="text-teal-500">{row.productBrandName} → {row.masterName}</span>
-              case 'case2':
+              case 'case2': {
+                const productLabel = row.productMode === 'pick'
+                  ? (row.pendingProductId ? '제품 선택됨' : '제품 선택 필요')
+                  : (row.newBrandName || '브랜드명 입력 필요')
+                const productOk = row.productMode === 'pick' ? !!row.pendingProductId : !!row.newBrandName
                 return (
                   <>
-                    <span className={row.newBrandName ? 'text-indigo-500' : 'text-rose-400'}>
-                      {row.newBrandName || '브랜드명 입력 필요'}
-                    </span>
+                    <span className={productOk ? 'text-indigo-500' : 'text-rose-400'}>{productLabel}</span>
                     <span>→</span>
                     <span className="text-teal-500">{row.masterName}</span>
                   </>
                 )
+              }
               case 'case3':
                 return (
                   <>
@@ -528,12 +688,21 @@ function ReviewRowCard({
                     </span>
                   </>
                 )
-              case 'case1':
+              case 'case1': {
+                const masterLabel = row.masterMode === 'pick'
+                  ? (row.pendingMasterId ? '마스터 선택됨' : '마스터 선택 필요')
+                  : (row.newMasterName || '마스터명 입력 필요')
+                const masterOk = row.masterMode === 'pick' ? !!row.pendingMasterId : !!row.newMasterName
+                const productLabel2 = row.productMode === 'pick'
+                  ? (row.pendingProductId ? '제품 선택됨' : '')
+                  : (row.newBrandName ? row.newBrandName : '')
                 return (
-                  <span className={row.newMasterName ? 'text-slate-500' : 'text-rose-400'}>
-                    {row.newMasterName || '마스터명 입력 필요'}
-                  </span>
+                  <>
+                    <span className={masterOk ? 'text-slate-500' : 'text-rose-400'}>{masterLabel}</span>
+                    {productLabel2 && <><span>·</span><span className="text-indigo-500">{productLabel2}</span></>}
+                  </>
                 )
+              }
             }
           })()}
           <span>·</span>
@@ -588,6 +757,9 @@ function buildRows(items: ReviewInventoryItem[], allProducts: ItemProduct[]): Re
       masterMode: 'create',
       masterPickerQuery: '',
       pendingMasterId: '',
+      productMode: 'create',
+      productPickerQuery: '',
+      pendingProductId: '',
       newBrandName: item.raw_name,
       newSpec: item.raw_spec ?? '',
       newManufacturer: item.raw_manufacturer ?? '',
@@ -716,24 +888,44 @@ export default function InventoryUploadSheet({ hosId, itemProducts, inventoryIte
       const saveRows = readyRows.map((r) => {
         let masterId: string | null = null
         let masterIsNew = false
+        let productId: string | null = null
+        let productIsNew = false
 
         switch (r.inventoryCase) {
           case 'matched':
+            masterId = r.masterId
+            productId = r.productId
+            break
           case 'case2':
             masterId = r.masterId
+            if (r.productMode === 'pick') {
+              productId = r.pendingProductId || null
+            } else {
+              productIsNew = true
+            }
             break
           case 'case3':
+            productId = r.productId
             if (r.masterMode === 'pick') masterId = r.pendingMasterId || null
             else masterIsNew = true
             break
           case 'case1':
-            masterIsNew = true
+            if (r.masterMode === 'pick') {
+              masterId = r.pendingMasterId || null
+            } else {
+              masterIsNew = true
+            }
+            if (r.productMode === 'pick') {
+              productId = r.pendingProductId || null
+            } else {
+              productIsNew = true
+            }
             break
         }
 
         return {
-          productId: (r.inventoryCase === 'matched' || r.inventoryCase === 'case3') ? r.productId : null,
-          productIsNew: r.inventoryCase === 'case1' || r.inventoryCase === 'case2',
+          productId,
+          productIsNew,
           newBrandName: r.newBrandName || r.rawName,
           newSpec: r.newSpec || r.rawSpec || '',
           newManufacturer: r.newManufacturer || r.rawManufacturer || '',
@@ -867,6 +1059,7 @@ export default function InventoryUploadSheet({ hosId, itemProducts, inventoryIte
                   key={row._id}
                   row={row}
                   inventoryItems={inventoryItems}
+                  itemProducts={filteredProducts}
                   onUpdate={(patch) => update(row._id, patch)}
                 />
               ))}
