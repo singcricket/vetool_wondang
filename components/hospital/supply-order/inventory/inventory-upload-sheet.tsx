@@ -96,7 +96,10 @@ function MasterSearchCombobox({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return items.slice(0, 20)
-    return items.filter((i) => i.generic_name.toLowerCase().includes(q)).slice(0, 20)
+    return items.filter((i) =>
+      i.generic_name.toLowerCase().includes(q) ||
+      i.aliases.some((a) => a.toLowerCase().includes(q))
+    ).slice(0, 20)
   }, [items, query])
 
   useEffect(() => {
@@ -167,7 +170,8 @@ function ProductSearchCombobox({
     if (!q) return items.slice(0, 20)
     return items.filter((i) =>
       i.brand_name.toLowerCase().includes(q) ||
-      (i.item_master?.generic_name ?? '').toLowerCase().includes(q)
+      (i.item_master?.generic_name ?? '').toLowerCase().includes(q) ||
+      (i.item_master?.aliases ?? []).some((a) => a.toLowerCase().includes(q))
     ).slice(0, 20)
   }, [items, query])
 

@@ -218,7 +218,7 @@ export default function InventoryClient({ hosId, items, vendors, itemProducts }:
     const today = new Date(); today.setHours(0, 0, 0, 0)
 
     return items.filter((item) => {
-      if (q && !item.generic_name.toLowerCase().includes(q)) return false
+      if (q && !item.generic_name.toLowerCase().includes(q) && !item.aliases.some((a) => a.toLowerCase().includes(q))) return false
 
       // 카테고리: item_master.category OR 연결된 제품의 category
       if (selectedCategories.length > 0) {

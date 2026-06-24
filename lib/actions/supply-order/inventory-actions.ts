@@ -57,7 +57,7 @@ export async function getInventoryStatus(hosId: string): Promise<InventoryItem[]
   ] = await Promise.all([
     supabase
       .from('item_master')
-      .select('id, generic_name, category, loc, base_unit, default_vendor, alert_min_stock, reorder_qty, is_active')
+      .select('id, generic_name, aliases, category, loc, base_unit, default_vendor, alert_min_stock, reorder_qty, is_active')
       .eq('hos_id', hosId)
       .eq('is_active', true)
       .order('generic_name'),
@@ -93,6 +93,7 @@ export async function getInventoryStatus(hosId: string): Promise<InventoryItem[]
     return {
       item_master_id: m.id,
       generic_name: m.generic_name,
+      aliases: m.aliases ?? [],
       category: m.category ?? [],
       loc: m.loc ?? [],
       base_unit: m.base_unit,

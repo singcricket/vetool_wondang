@@ -306,6 +306,7 @@ export type OrderFormInput = {
 export type InventoryItem = {
   item_master_id: string
   generic_name: string
+  aliases: string[]
   category: string[]
   loc: string[]
   base_unit: string
@@ -392,7 +393,7 @@ export type ItemProduct = {
   created_at: string
   updated_at: string
   // joined
-  item_master?: Pick<ItemMaster, 'id' | 'generic_name' | 'category' | 'base_unit'> | null
+  item_master?: Pick<ItemMaster, 'id' | 'generic_name' | 'aliases' | 'category' | 'base_unit'> | null
 }
 
 export type ItemProductFormInput = {

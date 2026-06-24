@@ -8,7 +8,7 @@ export async function getItemProducts(hosId: string): Promise<ItemProduct[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('item_products')
-    .select('*, item_master(id, generic_name, category, base_unit)')
+    .select('*, item_master(id, generic_name, aliases, category, base_unit)')
     .eq('hos_id', hosId)
     .order('brand_name')
 
