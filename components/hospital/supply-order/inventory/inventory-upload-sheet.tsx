@@ -993,34 +993,52 @@ export default function InventoryUploadSheet({ hosId, itemProducts, inventoryIte
 
               {vendors.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-slate-600">업체 선택 (선택사항)</p>
+                  <p className="text-xs font-medium text-slate-600">
+                    업체 선택 <span className="text-rose-500">*</span>
+                  </p>
                   <select
                     value={selectedVendorId}
                     onChange={(e) => setSelectedVendorId(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-1 focus:ring-teal-400"
+                    className={cn(
+                      'w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-1 focus:ring-teal-400',
+                      selectedVendorId ? 'border-teal-400 text-slate-800' : 'border-rose-300 text-slate-400',
+                    )}
                   >
-                    <option value="">업체 미지정</option>
+                    <option value="" disabled>업체를 선택해주세요</option>
                     {vendors.map((v) => (
                       <option key={v.id} value={v.id}>{v.name}</option>
                     ))}
                   </select>
-                  {selectedVendorId && (
+                  {selectedVendorId ? (
                     <p className="text-[11px] text-teal-600">
                       ✓ 해당 업체 연결 제품만 우선 매칭에 사용됩니다
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-rose-400">
+                      업체를 선택해야 업로드할 수 있습니다
                     </p>
                   )}
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-8 text-slate-400 transition hover:border-teal-400 hover:text-teal-500"
-              >
-                <Camera size={28} strokeWidth={1.2} />
-                <span className="text-sm font-medium">사진 업로드</span>
-                <span className="text-[11px]">JPG, PNG, WEBP · 여러 장 선택 가능</span>
-              </button>
+              {/* 업체 미선택 시 업로드 비활성 */}
+              {vendors.length > 0 && !selectedVendorId ? (
+                <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-100 py-8 text-slate-300 cursor-not-allowed select-none">
+                  <Camera size={28} strokeWidth={1.2} />
+                  <span className="text-sm font-medium">사진 업로드</span>
+                  <span className="text-[11px]">업체를 먼저 선택해주세요</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-8 text-slate-400 transition hover:border-teal-400 hover:text-teal-500"
+                >
+                  <Camera size={28} strokeWidth={1.2} />
+                  <span className="text-sm font-medium">사진 업로드</span>
+                  <span className="text-[11px]">JPG, PNG, WEBP · 여러 장 선택 가능</span>
+                </button>
+              )}
               <input
                 ref={fileRef}
                 type="file"
@@ -1030,15 +1048,23 @@ export default function InventoryUploadSheet({ hosId, itemProducts, inventoryIte
                 onChange={(e) => e.target.files && handleImages(e.target.files)}
               />
 
-              <button
-                type="button"
-                onClick={() => excelRef.current?.click()}
-                className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-6 text-slate-400 transition hover:border-indigo-400 hover:text-indigo-500"
-              >
-                <FileSpreadsheet size={24} strokeWidth={1.2} />
-                <span className="text-sm font-medium">엑셀 업로드</span>
-                <span className="text-[11px]">XLSX, CSV · 헤더 행 필요 (제품명, 수량, 단가 등)</span>
-              </button>
+              {vendors.length > 0 && !selectedVendorId ? (
+                <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-100 py-6 text-slate-300 cursor-not-allowed select-none">
+                  <FileSpreadsheet size={24} strokeWidth={1.2} />
+                  <span className="text-sm font-medium">엑셀 업로드</span>
+                  <span className="text-[11px]">업체를 먼저 선택해주세요</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => excelRef.current?.click()}
+                  className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-6 text-slate-400 transition hover:border-indigo-400 hover:text-indigo-500"
+                >
+                  <FileSpreadsheet size={24} strokeWidth={1.2} />
+                  <span className="text-sm font-medium">엑셀 업로드</span>
+                  <span className="text-[11px]">XLSX, CSV · 헤더 행 필요 (제품명, 수량, 단가 등)</span>
+                </button>
+              )}
               <input
                 ref={excelRef}
                 type="file"
