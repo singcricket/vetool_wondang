@@ -361,9 +361,12 @@ export async function saveBlogLabData(
   postId: string,
   labSessions: BlogLabSession[],
   pdfUrl?: string,
+  comment?: string,
 ): Promise<void> {
   const supabase = await createClient()
-  const patch: Record<string, unknown> = { blood_test_data: labSessions as any }
+  const labData: Record<string, unknown> = { sessions: labSessions }
+  if (comment !== undefined) labData.comment = comment
+  const patch: Record<string, unknown> = { blood_test_data: labData }
   if (pdfUrl) patch.pdf_url = pdfUrl
 
   const { error } = await supabase

@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { createBlogPost, updateBlogPost, updateBlogTags } from '@/lib/actions/blog/blog-actions'
 import type { BlogPost, BlogPostFormInput, BlogSection, BlogImage, BlogPatient } from '@/types/hospital/blog-type'
+import { parseLabData } from '@/types/hospital/blog-type'
 import BlogMetaForm from './blog-meta-form'
 import BlogSectionEditor from './blog-section-editor'
 import BlogImageUpload from './blog-image-upload'
@@ -215,7 +216,8 @@ export default function BlogEditorSheet({ hosId, open, onOpenChange, post }: Pro
             <BlogLabEditor
               hosId={hosId}
               postId={postId}
-              initialSessions={post?.blood_test_data ?? []}
+              initialSessions={parseLabData(post?.blood_test_data).sessions}
+              initialComment={parseLabData(post?.blood_test_data).comment}
               species={form.species || undefined}
             />
           ) : tab === 'lab' && (

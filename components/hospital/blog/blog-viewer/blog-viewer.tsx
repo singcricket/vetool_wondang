@@ -3,6 +3,7 @@ import { RefObject } from 'react'
 import { cn } from '@/lib/utils/utils'
 import {
   SPECIES_LABEL, STATUS_LABEL, STATUS_COLOR, AUDIENCE_COLOR, AUDIENCE_LABEL,
+  parseLabData,
   type BlogPost, type BlogSection, type SectionAudience, type BlogImage,
 } from '@/types/hospital/blog-type'
 import BlogLabSessions from './blog-lab-sessions'
@@ -36,7 +37,7 @@ function SectionImages({ images }: { images: BlogImage[] }) {
 
 export default function BlogViewer({ post, contentRef, viewAudience = 'all' }: Props) {
   const imageMap = new Map((post.images ?? []).map((img) => [img.id, img]))
-  const labSessions = post.blood_test_data ?? []
+  const { sessions: labSessions, comment: labComment } = parseLabData(post.blood_test_data)
   const allImages = post.images ?? []
 
   // 섹션 태그 없는 이미지를 일반 태그별로 그룹핑
@@ -97,6 +98,7 @@ export default function BlogViewer({ post, contentRef, viewAudience = 'all' }: P
       {labSessions.length > 0 && (
         <BlogLabSessions
           sessions={labSessions}
+          comment={labComment}
           patientName={post.patient?.name}
         />
       )}

@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { Plus, Trash2, Save, RotateCcw, ChevronDown, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils/utils'
 import { toast } from 'sonner'
 import { saveBlogLabData } from '@/lib/actions/blog/blog-pdf-actions'
@@ -17,6 +18,7 @@ interface Props {
   hosId: string
   postId: string
   initialSessions: BlogLabSession[]
+  initialComment?: string
   species?: string
 }
 
@@ -53,8 +55,9 @@ function groupBySection(items: LabResultItem[]) {
     .map((s) => ({ section: s, items: map.get(s)! }))
 }
 
-export default function BlogLabEditor({ hosId, postId, initialSessions, species = '' }: Props) {
+export default function BlogLabEditor({ hosId, postId, initialSessions, initialComment = '', species = '' }: Props) {
   const [sessions, setSessions] = useState<BlogLabSession[]>(initialSessions)
+  const [comment, setComment] = useState(initialComment)
   const [selectedIdx, setSelectedIdx] = useState(Math.max(0, initialSessions.length - 1))
   const [saving, setSaving] = useState(false)
 
@@ -82,7 +85,7 @@ export default function BlogLabEditor({ hosId, postId, initialSessions, species 
   const handleSave = async () => {
     setSaving(true)
     try {
-      await saveBlogLabData(hosId, postId, sessions)
+      await saveBlogLabData(hosId, postId, sessions, undefined, comment || undefined)
       toast.success('혈액검사 데이터가 저장됐습니다.')
     } catch {
       toast.error('저장에 실패했습니다.')
@@ -96,8 +99,9 @@ export default function BlogLabEditor({ hosId, postId, initialSessions, species 
     if (!confirm('모든 혈액검사 데이터를 삭제하시겠습니까?')) return
     setSaving(true)
     try {
-      await saveBlogLabData(hosId, postId, [])
+      await saveBlogLabData(hosId, postId, [], undefined, undefined)
       setSessions([])
+      setComment('')
       setSelectedIdx(0)
       toast.success('전체 초기화됐습니다.')
     } catch {
@@ -199,6 +203,18 @@ export default function BlogLabEditor({ hosId, postId, initialSessions, species 
 
   return (
     <div className="space-y-3">
+      {/* 소견 입력 */}
+      <div className="space-y-1">
+        <label className="text-[11px] font-medium text-slate-500">혈액검사 소견</label>
+        <Textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="전체 혈액검사에 대한 수의사 소견을 입력하세요. (블로그 혈액검사 표 하단에 표시됩니다)"
+          rows={3}
+          className="text-xs resize-none"
+        />
+      </div>
+
       {/* 상단 액션 */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-slate-600">

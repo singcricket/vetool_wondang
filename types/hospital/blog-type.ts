@@ -111,7 +111,19 @@ export type BlogLabSession = {
   items: LabResultItem[]
 }
 
-export type BlogLabData = BlogLabSession[]
+export type BlogLabData = {
+  sessions: BlogLabSession[]
+  comment?: string
+}
+
+// 구 형식(배열) 또는 신 형식(래퍼 객체) 모두 허용 — 하위 호환
+export function parseLabData(raw: unknown): BlogLabData {
+  if (!raw) return { sessions: [] }
+  if (Array.isArray(raw)) return { sessions: raw as BlogLabSession[] }
+  const obj = raw as { sessions?: BlogLabSession[]; comment?: string }
+  return { sessions: obj.sessions ?? [], comment: obj.comment }
+}
+
 export type BloodTestData = BlogLabData
 
 export type BlogPostFormInput = {
