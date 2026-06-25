@@ -103,6 +103,128 @@ export type Database = {
           },
         ]
       }
+      blog_post_images: {
+        Row: {
+          blog_post_id: string
+          caption: string | null
+          created_at: string
+          hos_id: string
+          id: string
+          image_url: string
+          order_index: number
+          tags: string[]
+        }
+        Insert: {
+          blog_post_id: string
+          caption?: string | null
+          created_at?: string
+          hos_id: string
+          id?: string
+          image_url: string
+          order_index?: number
+          tags?: string[]
+        }
+        Update: {
+          blog_post_id?: string
+          caption?: string | null
+          created_at?: string
+          hos_id?: string
+          id?: string
+          image_url?: string
+          order_index?: number
+          tags?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_images_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_posts: {
+        Row: {
+          blood_test_data: Json | null
+          case_category: string
+          content: Json
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          diagnosis: string | null
+          hos_id: string
+          id: string
+          patient_id: string | null
+          pdf_url: string | null
+          published_at: string | null
+          species: string | null
+          status: string
+          summary: string | null
+          tags: string | null
+          title: string
+          updated_at: string
+          user_tags: string | null
+        }
+        Insert: {
+          blood_test_data?: Json | null
+          case_category?: string
+          content?: Json
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnosis?: string | null
+          hos_id: string
+          id?: string
+          patient_id?: string | null
+          pdf_url?: string | null
+          published_at?: string | null
+          species?: string | null
+          status?: string
+          summary?: string | null
+          tags?: string | null
+          title: string
+          updated_at?: string
+          user_tags?: string | null
+        }
+        Update: {
+          blood_test_data?: Json | null
+          case_category?: string
+          content?: Json
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnosis?: string | null
+          hos_id?: string
+          id?: string
+          patient_id?: string | null
+          pdf_url?: string | null
+          published_at?: string | null
+          species?: string | null
+          status?: string
+          summary?: string | null
+          tags?: string | null
+          title?: string
+          updated_at?: string
+          user_tags?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_hos_id_fkey"
+            columns: ["hos_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["hos_id"]
+          },
+          {
+            foreignKeyName: "blog_posts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["patient_id"]
+          },
+        ]
+      }
       checkup_ai_results: {
         Row: {
           abnormal_findings: Json

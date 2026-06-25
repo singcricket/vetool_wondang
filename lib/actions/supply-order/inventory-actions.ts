@@ -292,6 +292,8 @@ export async function updateStockInLog(
   quantity: number,
   memo: string,
   expiryDate?: string | null,
+  lotNumber?: string | null,
+  vendorId?: string | null,
 ): Promise<void> {
   const supabase = await createClient()
   const { error } = await supabase
@@ -300,6 +302,8 @@ export async function updateStockInLog(
       quantity: Math.abs(quantity),
       memo: memo.trim() || null,
       expiry_date: expiryDate || null,
+      lot_number: lotNumber?.trim() || null,
+      vendor_id: vendorId || null,
     })
     .eq('id', logId)
     .eq('hos_id', hosId)
@@ -307,6 +311,7 @@ export async function updateStockInLog(
 
   if (error) throw new Error(error.message)
   revalidatePath(`/hospital/${hosId}/supply-order/inventory`)
+  revalidatePath(`/hospital/${hosId}/supply-order/stock-in-history`)
 }
 
 export async function deleteStockInLog(
@@ -323,6 +328,7 @@ export async function deleteStockInLog(
 
   if (error) throw new Error(error.message)
   revalidatePath(`/hospital/${hosId}/supply-order/inventory`)
+  revalidatePath(`/hospital/${hosId}/supply-order/stock-in-history`)
 }
 
 export async function recordUsage(
@@ -397,4 +403,72 @@ export async function bulkStockIn(hosId: string, rows: StockInRow[]): Promise<vo
 
   revalidatePath(`/hospital/${hosId}/supply-order/inventory`)
   revalidatePath(`/hospital/${hosId}/supply-order/settings`)
+}
+
+export type StockInLogItem = {
+  id: string
+  created_at: string
+  item_master_id: string
+  generic_name: string
+  item_product_id: string | null
+  brand_name: string | null
+  manufacturer: string | null
+  specification: string | null
+  ingredient: string | null
+  quantity: number
+  base_unit: string
+  unit_price: number | null
+  lot_number: string | null
+  expiry_date: string | null
+  vendor_id: string | null
+  vendor_name: string | null
+  memo: string | null
+  reference_type: string | null
+}
+
+export async function getStockInLogsByDateRange(
+  hosId: string,
+  startDate: string,
+  endDate: string,
+): Promise<StockInLogItem[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('inventory_logs')
+    .select(`
+      id, created_at, item_master_id, item_product_id,
+      quantity, base_unit, unit_price, lot_number, expiry_date,
+      vendor_id, memo, reference_type,
+      item_master:item_master_id(generic_name),
+      item_product:item_product_id(brand_name, manufacturer, specification, ingredient),
+      vendor:vendor_id(name)
+    `)
+    .eq('hos_id', hosId)
+    .eq('transaction_type', 'IN')
+    .gte('created_at', `${startDate}T00:00:00`)
+    .lte('created_at', `${endDate}T23:59:59.999`)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    created_at: row.created_at,
+    item_master_id: row.item_master_id,
+    generic_name: row.item_master?.generic_name ?? '',
+    item_product_id: row.item_product_id,
+    brand_name: row.item_product?.brand_name ?? null,
+    manufacturer: row.item_product?.manufacturer ?? null,
+    specification: row.item_product?.specification ?? null,
+    ingredient: row.item_product?.ingredient ?? null,
+    quantity: Number(row.quantity),
+    base_unit: row.base_unit,
+    unit_price: row.unit_price != null ? Number(row.unit_price) : null,
+    lot_number: row.lot_number,
+    expiry_date: row.expiry_date,
+    vendor_id: row.vendor_id,
+    vendor_name: row.vendor?.name ?? null,
+    memo: row.memo,
+    reference_type: row.reference_type,
+  }))
 }

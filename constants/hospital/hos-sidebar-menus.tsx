@@ -7,6 +7,7 @@ import {
   ListChecks,
   Microscope,
   NotebookPen,
+  Newspaper,
   PawPrint,
   Pill,
   Syringe,
@@ -128,6 +129,13 @@ export const HOS_SIDEBAR_MENUS = [
     isReady: true,
     isVetOnly: false,
     icon: <PackageOpen />,
+  },
+  {
+    name: '케이스',
+    path: 'blog',
+    isReady: true,
+    isVetOnly: false,
+    icon: <Newspaper />,
   },
   {
     name: '진료노트',
