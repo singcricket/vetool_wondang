@@ -1,0 +1,408 @@
+# 개·고양이 영양관리 프로그램 — 프로젝트 정리 문서
+
+> 작성일: 2026-06-26
+> 목적: 지금까지 논의한 프로그램 아이디어와, 실제로 구현·검증한 파일들의 구조·상호작용을 정리. 동료 공유 및 추후 개발 연속성을 위한 문서.
+
+---
+
+## 1. 프로그램 아이디어 — 전체 기획
+
+### 1.1 배경 및 목표
+
+개·고양이 보호자를 위한 **AI 기반 영양관리 프로그램**. 두 개의 큰 흐름으로 구성됨.
+
+#### 흐름 ① 건강검진 연계 체중·영양관리
+```
+동물병원 건강검진 실시 → 결과 검토(별도 프로그램에서 보유)
+    ↓
+현재 체중 기준 목표체중/칼로리 산정
+    ↓
+건강상태 맞춤 사료 + 영양제 추천
+    ↓
+체중관리/영양관리 목적에 따른 급여량 안내
+    ↓
+간식 영양정보(라벨) 입력 → 자동 칼로리 분석
+    ↓
+사료+간식+영양제 통합 관리 프로그램
+    ↓
+주차/월차별 체중·식이 목표 설정 및 추적
+```
+
+#### 흐름 ② 현재 식이의 영양 균형 분석
+```
+AAFCO/FEDIAF 등 공인 영양기준을 ref 데이터로 보유
+    ↓
+현재 먹고 있는 사료·간식 정보 입력
+    ↓
+체중 대비 칼로리·영양소 비교 (기준 대조)
+    ↓
+부족/과잉 영양소 식별 및 안내
+```
+
+### 1.2 핵심 논의 사항과 결론
+
+| 논의 주제 | 결론 |
+|---|---|
+| **영양기준 출처** | AAFCO 원문은 유료지만, **FEDIAF(무료, 동등한 권위)** + NRC + 수의영양 교과서 조합으로 충분히 대체 가능. 실제로 FEDIAF 2024 원문을 직접 확보해 코드화 완료 |
+| **라벨로 정밀 비교 가능한 항목** | 현실적으로 **조단백질, 조지방, 칼로리, (탄수화물은 추정치)** 정도. 개별 아미노산·비타민·미량무기질은 일반 사료 라벨에 거의 공개되지 않아 비교 불가 → "AAFCO/FEDIAF 인증 여부"로 대체 판정하는 하이브리드 방식 채택 |
+| **질병별 기준** | 신부전, 심부전, 당뇨 등은 **나중에 하나씩 추가**할 수 있는 구조로 미리 설계. 지금은 일반(생애주기) 기준만 완성하고, 질병 ref가 없어도 시스템이 정상 동작하도록 "override + fallback" 패턴 적용 |
+| **홈메이드 식재료(닭가슴살 등)** | 라벨이 없으므로 AI 추정이 아니라 **USDA FoodData Central 같은 공인 식품DB에서 검색**하는 방식 채택. 기존 사료 라벨 계산 함수와 필드명을 통일해 재사용 |
+| **독성 식재료(포도, 초콜릿 등)** | 영양 계산보다 **항상 우선순위가 높은 안전장치**로 별도 구축. 독성 재료가 매칭되면 영양 계산 결과를 절대 반환하지 않도록 타입 구조로 강제 |
+
+### 1.3 향후 계획 (논의되었으나 아직 미구현)
+
+- [ ] 질병별/계통별 영양 기준 ref (신부전, 심부전, 간질환, 당뇨, IBD, 피부질환 등) — 구조는 준비됨, 데이터만 비어있음
+- [ ] 사료/간식 라벨 AI Vision 파싱 (OCR + 신뢰도 플래그)
+- [ ] 여러 항목(사료+간식+영양제+홈메이드) 통합 일일 섭취 계산 함수
+- [ ] 보호자용 UI/대시보드
+- [ ] 영양제 라벨 처리 로직 (현재는 사료/간식과 동일하게 처리한다고 가정만 함)
+
+---
+
+## 2. 구현 완료 파일 — 전체 목록
+
+```
+nutrient-program/
+├── core/
+│   ├── dogLifeStageStandards.ts        ✅ FEDIAF 2024 Table III-3a 코드화
+│   └── catLifeStageStandards.ts        ✅ FEDIAF 2024 Table III-4a 코드화
+│
+├── conditions/
+│   ├── types.ts                         ✅ 질병 override 타입 정의
+│   └── index.ts                         ✅ 빈 레지스트리 (질병 0개, 추후 추가용)
+│
+├── resolver/
+│   └── resolveStandard.ts               ✅ 일반기준 + 질병override 병합 엔진
+│
+├── conversion/
+│   ├── macroCalculations.ts             ✅ as-fed↔%DM 환산, 매크로 칼로리 비율
+│   └── calorieCalc.ts                   ✅ RER/DER 계산, 일일 급여량 계산
+│
+├── comparison/
+│   └── compareLabelToStandard.ts        ✅ 라벨값 vs 기준값 비교 판정
+│
+└── ingredients/
+    ├── toxicIngredients.ts              ✅ 독성 식재료 경고 리스트 (안전 최우선)
+    ├── rawIngredientDictionary.ts       ✅ 홈메이드 식재료 영양DB (USDA 기반)
+    └── homemadeFeedingItem.ts           ✅ 검색+독성체크+영양계산 통합 함수
+```
+
+총 **9개 파일**, 모두 TypeScript strict 모드 컴파일 통과 + 실제 런타임 실행으로 동작 검증 완료.
+
+---
+
+## 3. 파일별 상세 설명
+
+### 3.1 `core/dogLifeStageStandards.ts`, `core/catLifeStageStandards.ts`
+
+**역할**: FEDIAF Nutritional Guidelines 2024 원문의 영양소 기준표를 그대로 TypeScript 데이터로 변환.
+
+**핵심 데이터 구조**
+```typescript
+interface NutrientRange {
+  min: number | null;
+  max: number | null;
+  maxType: "nutritional" | "legal" | null;  // (N) 영양학적 한도 vs (L) EU 법적 한도 구분
+  unit: "g/100gDM" | "mg/100gDM" | "ug/100gDM" | "IU/100gDM";
+  note?: string;   // 각주, 체중별 분기 조건 등
+}
+
+interface LifeStageStandard {
+  species: "dog" | "cat";
+  lifeStage: string;     // "adult_maintenance" | "early_growth_and_reproduction" | "late_growth" 등
+  nutrients: Record<string, NutrientRange>;  // 약 40개 영양소
+}
+```
+
+**포함된 생애주기**
+- 개: `adult_maintenance`(성견 유지기), `early_growth_and_reproduction`(이른 성장기+번식기), `late_growth`(늦은 성장기)
+- 고양이: `adult_maintenance`, `growth`, `reproduction`
+
+**다루는 영양소 범위**: 주요 영양소(단백질, 지방), 필수지방산(리놀레산, 아라키돈산 등), 필수아미노산 12종, 비타민유사물질(타우린, 콜린), 다량/미량 무기질, 지용성/수용성 비타민 — 종 약 40개.
+
+**종간 차이를 코드로 명시한 부분**
+- 타우린, 아라키돈산: 고양이만 필수 (개는 자체 합성 가능)
+- 비타민B7(비오틴): 개 기준표엔 수치 없음(`null`), 고양이만 수치 존재
+
+---
+
+### 3.2 `conditions/types.ts`, `conditions/index.ts`
+
+**역할**: 질병/계통별 영양 기준을 **나중에 하나씩 추가**할 수 있도록 만든 빈 구조.
+
+**핵심 설계 원칙(Override 패턴)**
+```
+질병 ref는 일반 기준을 "완전히 대체"하지 않고 "필요한 영양소 일부만 덮어씀"
+질병 ref가 아직 없는 질병을 선택해도 → 에러 없이 조용히 스킵, 일반기준 유지
+```
+
+```typescript
+interface ConditionOverride {
+  conditionId: string;
+  conditionLabel: string;
+  species: "dog" | "cat" | "both";
+  overrides: Record<string, {
+    min?: number | null;
+    max?: number | null;
+    direction: "restrict" | "increase" | "maintain" | "monitor";
+    rationale: string;
+    evidenceLevel: "A" | "B" | "C";
+    sourceRefs: string[];
+  }>;
+}
+```
+
+**현재 상태**: `conditionOverrides` 배열이 **비어있음**. 질병 ref를 추가하려면:
+1. `conditions/renalDisease.ts` 같은 파일을 새로 작성
+2. `conditions/index.ts`에 import 1줄 + 배열에 1줄만 추가
+
+→ 실제로 신부전 ref를 임시로 만들어 이 과정을 시뮬레이션했고, **인(phosphorus)만 정확히 override되고 칼슘·단백질 등 나머지 41개 영양소는 일반기준이 그대로 유지**되는 것을 런타임으로 확인함.
+
+---
+
+### 3.3 `resolver/resolveStandard.ts`
+
+**역할**: `core/`의 일반 기준과 `conditions/`의 질병 override를 병합해서 최종 비교 기준값을 만드는 핵심 엔진. **이 프로젝트의 "심장"에 해당하는 파일.**
+
+```typescript
+function resolveStandard(params: {
+  species: "dog" | "cat";
+  lifeStage: string;
+  activeConditionIds?: string[];
+}): ResolveStandardResult
+```
+
+**동작 순서**
+1. `core/`에서 종+생애주기에 맞는 일반 기준을 가져옴 (항상 존재 — 안전망)
+2. `activeConditionIds`로 전달된 질병들을 순회하며 override 적용
+3. 등록되지 않은 질병 ID는 `skippedConditions`에 담아 조용히 무시 (에러 없음)
+4. 종 불일치, 생애주기 불일치 등도 자동으로 필터링
+
+**검증된 4가지 케이스**
+
+| 입력 | 결과 |
+|---|---|
+| 질병 없음 | 일반기준 42개 전부 그대로 반환 |
+| 아직 만들지 않은 신부전 선택 | 에러 없이 스킵, 일반기준 유지 |
+| 고양이 성장기 | 타우린·아르기닌 등 종특이 항목 정상 반환 |
+| 존재하지 않는 lifeStage 입력 | 명확한 에러로 즉시 실패 (코드 버그를 숨기지 않음) |
+
+---
+
+### 3.4 `conversion/macroCalculations.ts`
+
+**역할**: 사료/간식 라벨의 **as-fed(원물 기준)** 값을 FEDIAF 기준과 동일한 **%DM(건물 기준)** 으로 환산하고, 칼로리 기준 매크로(단백질/지방/탄수화물) 비율을 계산.
+
+**왜 필요한가**: 라벨은 보통 as-fed로 표기되는데, FEDIAF 기준은 %DM이라 그대로 비교하면 틀린 결과가 나옴. 특히 **습식사료는 수분이 많아서 as-fed 숫자만 보면 단백질이 부족해 보이지만, %DM으로 환산하면 오히려 건식보다 높은 경우가 흔함.**
+
+```typescript
+function convertAsFedToDM(label: AsFedLabelData): DryMatterBasis
+function calculateMacroCalorieRatio(dm: DryMatterBasis, label?: AsFedLabelData): MacroCalorieRatio
+function analyzeLabelMacros(label: AsFedLabelData): LabelAnalysisResult  // 통합 함수
+```
+
+**실제 검증된 수치 (건식 vs 습식)**
+
+| | as-fed (라벨 그대로) | %DM (환산 후) |
+|---|---|---|
+| 건식사료 단백질 | 22% | 24.44% |
+| 습식사료 단백질 | 8% (낮아 보임) | **36.36%** (실제로는 더 높음) |
+
+**탄수화물(NFE) 추정 방식**: `100 - 단백질 - 지방 - 섬유 - 회분`. 조회분(crude ash)이 라벨에 없으면 업계 평균치(6%DM)로 보정하되, `carbEstimateConfidence: "without_ash"` 플래그로 정확도 저하를 명시.
+
+**칼로리 환산 계수**: 변형 Atwater 계수(단백질 3.5, 지방 8.5, 탄수화물 3.5 kcal/g) — AAFCO/FEDIAF 펫푸드 라벨링 표준.
+
+---
+
+### 3.5 `conversion/calorieCalc.ts`
+
+**역할**: 체중 기반 RER(안정시 에너지요구량)/DER(일일 에너지요구량) 계산, 그리고 사료 칼로리밀도를 이용한 실제 급여량(g) 산출.
+
+```typescript
+function calculateRER(bodyWeightKg: number): number          // 70 × 체중^0.75
+function calculateDER(params: CalculateDERParams): DERResult  // RER × 생활계수
+function calculateDailyFeedingAmount(params): DailyFeedingAmountResult
+function calculateFullFeedingPlan(params): FullFeedingPlanResult  // 통합 함수
+```
+
+**생활계수(activityFactor) 9종 프리셋**: 중성화/비중성화 성견, 비활동적/비만경향, 체중감량/증량, 활동량多, 성장기(2단계), 노령.
+
+**코드가 자동으로 막아주는 실수**
+- 체중감량 목표는 "현재체중" 기준 RER 사용 — 헷갈리면 경고 메시지 자동 표시
+- 체중증량 목표는 "목표체중" 기준 RER 사용 — 반대로 헷갈리면 경고
+- 체중이 1~80kg 신뢰구간을 벗어나면 추정치 오차 경고
+
+**검증된 통합 시나리오**: 8kg 중성화 성견 → RER 333kcal/day → DER 532.8kcal/day(계수 1.6) → 하루 급여량 148g(1회당 74g).
+
+---
+
+### 3.6 `comparison/compareLabelToStandard.ts`
+
+**역할**: `macroCalculations.ts`가 계산한 라벨값과 `resolveStandard()`가 반환한 기준값을 대조해서 **deficient(부족)/adequate(적정)/excessive(과잉)/not_comparable(비교불가)** 판정.
+
+```typescript
+function compareLabelToStandard(
+  labelNutrients: LabelNutrientInput[],
+  standardNutrients: Record<string, StandardNutrientInput>
+): ComparisonReport
+```
+
+**현재 비교 대상**: 조단백질, 조지방 2개 항목만. (개별 아미노산·비타민 등은 일반 라벨에 없어 비교 불가 — 이 한계를 `overallWarnings`에 항상 명시)
+
+**설계상 특징**: `resolver`나 `macroCalculations`를 직접 import하지 않고 **구조적 타입(duck typing)**으로 입력을 받음 → 두 모듈의 내부 구현이 바뀌어도 이 비교 함수는 영향받지 않음.
+
+**부가 기능 — 칼로리 가중평균 합산**
+```typescript
+function aggregateWeightedNutrient(contributions: FeedingItemContribution[], nutrientId: string): number | null
+```
+사료(칼로리 비중 90%)와 간식(칼로리 비중 10%)을 합칠 때, **단순 산술평균이 아니라 칼로리 가중평균**으로 계산. 실제 검증 결과:
+- 칼로리 가중평균: 31.7%DM (정확)
+- 단순 산술평균이었다면: 53.19%DM (간식이 비중 작아도 부풀려지는 오류)
+
+---
+
+### 3.7 `ingredients/toxicIngredients.ts`
+
+**역할**: 개·고양이에게 위험한 식재료 경고 리스트. **이 프로젝트에서 가장 우선순위가 높은 안전장치.**
+
+**출처**: FEDIAF Nutritional Guidelines 2024 ANNEX 7.7, ASPCA Animal Poison Control, Merck Veterinary Manual, WSAVA 2014 Congress.
+
+**포함된 8개 위험군**: 포도/건포도/커런트, 초콜릿/카카오, 양파/마늘/파류, 자일리톨(개 전용), 마카다미아너트, 알코올/발효반죽, 유제품 과다, 생반죽.
+
+```typescript
+interface ToxicIngredient {
+  severity: "lethal_risk" | "severe" | "moderate" | "mild_caution";
+  toxicAgent: string;
+  clinicalSigns: string[];
+  toxicDoseNote: string;
+  sourceRefs: string[];
+}
+
+function checkIngredientToxicity(searchTerm: string): ToxicityCheckResult
+function buildToxicityWarningMessage(ingredient, species): string | null
+```
+
+**종특이성 처리**: 자일리톨은 `affectedSpecies: "dog"`로 지정 — 고양이는 현재까지 이 독성기전이 보고되지 않았기 때문.
+
+---
+
+### 3.8 `ingredients/rawIngredientDictionary.ts`
+
+**역할**: 자주 쓰이는 홈메이드 식재료 25종의 영양정보 DB. 출처는 USDA FoodData Central(Public Domain, CC0).
+
+**포함 식재료**: 육류(닭가슴살, 소고기, 돼지고기, 소간 등), 어류(연어, 대구), 계란/유제품, 채소(브로콜리, 당근, 단호박, 고구마, 시금치 등), 과일(사과, 바나나, 블루베리, 수박), 곡류(백미밥, 오트밀, 파스타).
+
+**핵심 설계 결정**: 필드명을 `conversion/macroCalculations.ts`의 `AsFedLabelData`와 **의도적으로 통일**(`moisturePct`, `crudeProteinPct` 등). 그래서 새 계산 로직을 만들 필요 없이 기존 `convertAsFedToDM()`, `analyzeLabelMacros()`를 그대로 재사용 가능.
+
+```typescript
+interface RawIngredient {
+  id: string;
+  nameKo: string;
+  aliasesKo?: string[];        // 검색 매칭용
+  per100g: RawIngredientNutrition;  // AsFedLabelData와 동일 필드 구조
+  petFeedingNote?: string;      // 독성은 아니지만 주의할 점 (예: 뼈 제거, 씨 제거)
+}
+
+function searchIngredients(searchTerm: string): RawIngredient[]
+function getIngredientById(id: string): RawIngredient | undefined
+```
+
+---
+
+### 3.9 `ingredients/homemadeFeedingItem.ts`
+
+**역할**: 검색어와 무게를 받아 **"독성체크 → DB조회 → 영양계산"** 전체 흐름을 한 번에 처리하는 통합 함수. 이 프로젝트의 **안전 설계가 실제로 강제되는 지점.**
+
+```typescript
+type HomemadeFeedingItemResult = ToxicityBlockedResult | HomemadeFeedingCalculationResult;
+// 두 결과 타입이 서로 배타적인 유니온 — 독성 경고와 영양계산 결과가
+// 같은 응답에 동시에 담기는 것이 타입 레벨에서부터 불가능하게 설계됨
+
+function calculateHomemadeFeedingItem(searchTermOrId: string, gramsGiven: number, species: "dog" | "cat"): HomemadeFeedingItemResult
+```
+
+**검증된 안전 시나리오**
+
+| 입력 | 결과 |
+|---|---|
+| "닭가슴살" 100g | 정상 영양계산 (단백질 95.45%DM, 113kcal) |
+| "포도" 50g | **차단**, `analysis` 필드 자체가 존재하지 않음 (`'analysis' in result` → `false`) |
+| "자일리톨" (개) | 차단, 🚨치명적 위험 메시지 |
+| "자일리톨" (고양이) | DB에 없는 재료라 에러 (고양이는 이 독성기전 미해당이라 통과 로직은 있으나, DB 자체에 자일리톨이 식재료로 등록되어 있지 않음) |
+| "양파즙" (별칭 매칭) | 차단, 정확히 매칭됨 |
+
+---
+
+## 4. 파일 간 상호작용 다이어그램
+
+```
+                    core/dogLifeStageStandards.ts
+                    core/catLifeStageStandards.ts
+                    (일반 기준 — 항상 존재하는 안전망)
+                                │
+                                │ import (NutrientRange 타입 공유)
+                                ▼
+                    resolver/resolveStandard.ts  ◀──── conditions/types.ts
+                                │                       conditions/index.ts
+                                │                       (질병 override, 현재 비어있음)
+                                │
+                                │ 구조적 타입으로 출력 (직접 import 강제 안 함)
+                                ▼
+                    comparison/compareLabelToStandard.ts
+                                ▲
+                                │ 구조적 타입으로 입력
+                                │
+                    conversion/macroCalculations.ts
+                    conversion/calorieCalc.ts
+                    (as-fed↔DM 환산, RER/DER)
+                                │
+                                │ import (AsFedLabelData, analyzeLabelMacros 재사용)
+                                ▼
+                    ingredients/toxicIngredients.ts (최우선 체크)
+                    ingredients/rawIngredientDictionary.ts
+                    ingredients/homemadeFeedingItem.ts (통합)
+```
+
+**의존 관계 요약**
+- `core/` → 의존 없음 (최하단, 순수 데이터)
+- `conditions/` → 의존 없음 (독립적인 빈 구조)
+- `resolver/` → `core/` + `conditions/` 를 가져와 병합
+- `conversion/` → 독립적 계산 함수 (다른 모듈에 의존 안 함, 순수 함수형)
+- `comparison/` → `resolver`와 `conversion`의 **출력 타입**만 구조적으로 받음 (직접 import 안 함)
+- `ingredients/` → `conversion/macroCalculations.ts`를 재사용 (새 계산 로직 작성 안 함)
+
+**설계 철학**: 상위 모듈일수록 하위 모듈을 "느슨하게" 참조하도록(직접 import보다 구조적 타입 매칭 선호) 만들어서, 한 파일이 바뀌어도 연쇄적으로 깨지지 않도록 함.
+
+---
+
+## 5. 검증된 통합 시나리오 (End-to-End)
+
+실제로 9개 파일을 모두 연결해서 실행한 시나리오:
+
+```
+체중 8kg 중성화 성견
+  → calculateFullFeedingPlan(): RER 333kcal/day, DER 532.8kcal/day, 하루 급여량 148g
+  → analyzeLabelMacros(): 사료 라벨 단백질 26.37%DM
+  → resolveStandard(): FEDIAF 성견 기준 조회 (단백질 min 21%DM)
+  → compareLabelToStandard(): "조단백질: 권장 범위 내" 판정
+  → calculateHomemadeFeedingItem(): 닭가슴살 간식 50g 추가, 57kcal 기여
+  → aggregateWeightedNutrient(): 사료+간식 전체 칼로리 가중평균 단백질 31.7%DM
+```
+
+엣지케이스도 함께 검증:
+- 저품질 사료(단백질 부족) → `deficient` 정확히 판정
+- 라벨에 항목 누락 → `not_comparable`로 명확히 구분
+- 신부전 ref를 임시로 등록 → 인(phosphorus)만 override, 나머지 41개 영양소는 일반기준 유지
+- 포도/자일리톨/양파 검색 → 영양계산과 절대 함께 노출되지 않음
+
+---
+
+## 6. 다음 단계 후보 (우선순위 제안)
+
+| 순서 | 작업 | 비고 |
+|---|---|---|
+| 1 | 사료/간식 라벨 AI Vision 파싱 | 지금까지는 라벨값이 이미 숫자로 주어진다고 가정하고 계산 로직만 만든 상태 |
+| 2 | 다중 항목(사료+간식+영양제+홈메이드) 일일 통합 계산 함수 | `aggregateWeightedNutrient()`를 여러 영양소·여러 항목으로 확장 |
+| 3 | 질병 ref 1개씩 추가 (신부전 먼저 권장 — IRIS 가이드라인 자료가 가장 풍부) | 구조는 이미 준비됨, 데이터만 추가하면 됨 |
+| 4 | 영양제 라벨 처리 로직 명확화 | 현재는 사료/간식과 동일 취급으로 가정만 함 |
+| 5 | 보호자용 UI/대시보드 | 백엔드 계산 로직은 이번 작업으로 거의 완성 |
