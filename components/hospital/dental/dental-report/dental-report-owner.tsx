@@ -11,7 +11,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { DialogTitle, DialogDescription } from '@radix-ui/react-dialog'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/utils'
-import { DENTAL_CHART_COLORS, PRIORITY_LABELS } from '@/constants/hospital/dental/dental_svg_imgs/dental-svg-info'
+import { DENTAL_CHART_COLORS, PRIORITY_LABELS, CANINE_TOOTH_NAMES, FELINE_TOOTH_NAMES } from '@/constants/hospital/dental/dental_svg_imgs/dental-svg-info'
 
 const DentalImageWithMark = dynamic(() => import('../dental-image-with-mark'), { 
   ssr: false,
@@ -32,6 +32,32 @@ import CatOpenteethSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_ope
 import CatOpenmouthSvgA from '@/constants/hospital/dental/dental_svg_imgs/cat_openmouthA'
 import CatSkullLeftSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_skull_left'
 import CatSkullRightSvg from '@/constants/hospital/dental/dental_svg_imgs/cat_skull_right'
+
+const OWNER_EXT_CODES = ['X', 'XS', 'XSS', 'EXT']
+const OWNER_RESTORE_CODES: Record<string, string> = {
+  'R/C': '레진 수복', 'R/I': 'GI 수복', 'RCT': '신경치료 (근관치료)', 'VPT': '생활치수처치',
+  'ODY': '치아성형', 'CR/A': '치관절단', 'GBR': '잇몸뼈 재생술', 'GTR': '조직 재생술',
+  'GV': '잇몸 성형', 'OA': '교정장치 부착',
+}
+const OWNER_OTHER_CODES: Record<string, string> = {
+  'PRO': '스케일링 · 연마', 'RP/C': '잇몸 세척 (비외과)', 'RP/O': '잇몸 세척 (외과)',
+  'GC': '잇몸 소파술', 'PCI': '치수 보호 처치', 'AP/X': '치근단 절제',
+  'DTC/R': '낭종 제거', 'ALV': '치조골 성형', 'OC': '교합 조정',
+  'GF/B': '뼈 이식', 'GF/CT': '조직 이식', 'B/I': '조직 검사 (절개)',
+  'B/E': '조직 검사 (절제)', 'RAD': '구강 방사선 촬영',
+}
+const OWNER_SKIP = new Set([...OWNER_EXT_CODES, ...Object.keys(OWNER_RESTORE_CODES)])
+const OWNER_PERIO_LBL: Record<string, { label: string; cls: string }> = {
+  PD2: { label: '초기 치주염', cls: 'border-yellow-300 bg-yellow-50 text-yellow-700' },
+  PD3: { label: '중등도 치주염', cls: 'border-orange-300 bg-orange-50 text-orange-700' },
+  PD4: { label: '심한 치주염', cls: 'border-red-300 bg-red-50 text-red-700' },
+}
+const OWNER_MOBILITY_LBL: Record<string, string> = {
+  M1: '약한 동요', M2: '중간 동요', M3: '심한 동요',
+}
+const OWNER_FURCATION_LBL: Record<string, string> = {
+  F2: '치조골 손상 (중)', F3: '치조골 손상 (심)',
+}
 
 type Props = {
   chartDetail: DentalChartDetail
@@ -390,6 +416,7 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
   ].filter(Boolean) as string[]
 
   const [selectedToothId, setSelectedToothId] = useState<string | null>(null)
+  const [summaryDialogTid, setSummaryDialogTid] = useState<number | null>(null)
 
   const OpenteethSvg = species === 'feline' ? CatOpenteethSvg : DogOpenteethSvg
   const OpenmouthSvg = species === 'feline' ? CatOpenmouthSvgA : DogOpenmouthSvgA
@@ -784,6 +811,8 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
         </p>
       </div>
 
+     
+
       {/* ── 차트 전반 정보 (dental_charts) ── */}
       <section className="space-y-4 sm:space-y-6 border border-amber-200 rounded-xl p-3 sm:p-6 bg-amber-50/30">
         <h2 className="text-base font-bold text-amber-800 border-b border-amber-200 pb-2">
@@ -1041,6 +1070,199 @@ export default function DentalReportOwner({ chartDetail, teeth, images, species,
           </div>
         </div>
       </section>
+ {/* ── 처치 요약 ── */}
+      {(() => {
+        const ext = teeth.filter(t => t.treatment_done?.some(c => OWNER_EXT_CODES.includes(c.toUpperCase())))
+        const restored = teeth.map(t => ({
+          t, ls: (t.treatment_done ?? []).filter(c => c in OWNER_RESTORE_CODES).map(c => OWNER_RESTORE_CODES[c]),
+        })).filter(x => x.ls.length > 0)
+        const other = teeth.map(t => ({
+          t, ls: (t.treatment_done ?? []).filter(c => !OWNER_SKIP.has(c.toUpperCase()) && !OWNER_SKIP.has(c)).map(c => OWNER_OTHER_CODES[c] ?? c),
+        })).filter(x => x.ls.length > 0)
+        const perio = teeth.filter(t => t.periodontal_stage && ['PD2', 'PD3', 'PD4'].includes(t.periodontal_stage))
+        const resorb = teeth.filter(t => t.resorption_stage && ['TR2', 'TR3', 'TR4', 'TR5'].includes(t.resorption_stage))
+        const fract = teeth.filter(t => t.fracture && t.fracture !== 'none')
+        const mob = teeth.filter(t => t.mobility && ['M1', 'M2', 'M3'].includes(t.mobility))
+        const furc = teeth.filter(t => t.furcation && ['F2', 'F3'].includes(t.furcation))
+        const peri = teeth.filter(t => t.periapical && t.periapical !== 'none')
+        const wasExt = (t: DentalTooth) => t.treatment_done?.some(c => OWNER_EXT_CODES.includes(c.toUpperCase())) ?? false
+        if (!ext.length && !restored.length && !other.length && !procedureList.length &&
+            !perio.length && !resorb.length && !fract.length && !mob.length && !furc.length && !peri.length) return null
+
+        const nameMap = species === 'feline' ? FELINE_TOOTH_NAMES : CANINE_TOOTH_NAMES
+        const krName = (t: DentalTooth) => nameMap[String(t.tooth_id)] || toothNames_kr[String(t.tooth_id)] || String(t.tooth_id)
+        const chipClick = (t: DentalTooth) => setSummaryDialogTid(Number(t.tooth_id))
+        const chipEl = (tooth: DentalTooth, cls: string) => (
+          <span
+            key={tooth.tooth_id}
+            role="button"
+            tabIndex={0}
+            onClick={() => chipClick(tooth)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') chipClick(tooth) }}
+            className={`inline-flex flex-col items-center gap-0.5 rounded-lg border px-2.5 py-1.5 text-center max-w-[88px] cursor-pointer hover:brightness-95 active:scale-95 transition-transform ${cls}`}
+          >
+            <span className="text-[11px] font-bold leading-tight text-center break-keep">{krName(tooth)}</span>
+            <span className="text-[9px] opacity-50 leading-none">{tooth.tooth_id}</span>
+            {wasExt(tooth) && <span className="mt-0.5 rounded bg-pink-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">발치 완료</span>}
+          </span>
+        )
+        return (
+          <section className="space-y-4 rounded-xl border border-amber-200 bg-amber-50/20 p-4 sm:p-5">
+            <h2 className="border-b border-amber-200 pb-2 text-base font-bold text-amber-800">이번 방문 처치 요약</h2>
+
+            {/* 이번 내원 처치 */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-600">진행된 처치</h3>
+              {procedureList.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] text-amber-600">전체 구강 처치</p>
+                  <div className="flex flex-wrap gap-1.5">{procedureList.map((p, i) => <span key={i} className="rounded-full bg-amber-100 px-2.5 py-1 text-xs text-amber-700">{p}</span>)}</div>
+                </div>
+              )}
+              {ext.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] text-amber-600">발치한 치아</p>
+                  <div className="flex flex-wrap gap-2">
+                    {ext.map(t => chipEl(t, 'border-pink-300 bg-pink-50 text-pink-700'))}
+                  </div>
+                </div>
+              )}
+              {restored.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] text-amber-600">수복 · 신경 치료</p>
+                  <div className="flex flex-wrap gap-2">
+                    {restored.map(({ t, ls }) => (
+                      <div key={t.tooth_id} className="flex items-start gap-1.5">
+                        {chipEl(t, 'border-teal-300 bg-teal-50 text-teal-700')}
+                        <div className="flex flex-col gap-0.5 pt-0.5">{ls.map(l => <span key={l} className="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-medium text-teal-700">{l}</span>)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {other.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] text-amber-600">기타 처치</p>
+                  <div className="flex flex-wrap gap-2">
+                    {other.map(({ t, ls }) => (
+                      <div key={t.tooth_id} className="flex items-start gap-1.5">
+                        {chipEl(t, 'border-slate-300 bg-white text-slate-700')}
+                        <div className="flex flex-col gap-0.5 pt-0.5">{ls.map(l => <span key={l} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">{l}</span>)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 관리 필요 치아 */}
+            {!!(perio.length || resorb.length || fract.length || mob.length || furc.length || peri.length) && (
+              <div className="space-y-3 border-t border-amber-200 pt-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-700">추가 관리가 필요한 치아</h3>
+                {perio.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-amber-600">잇몸 질환</p>
+                    <div className="flex flex-wrap gap-2">
+                      {perio.map(t => {
+                        const s = OWNER_PERIO_LBL[t.periodontal_stage!] ?? { label: '치주 질환', cls: 'border-slate-300 bg-slate-50 text-slate-700' }
+                        return (
+                          <div key={t.tooth_id} className="flex items-start gap-1">
+                            {chipEl(t, s.cls)}
+                            <span className={`mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold ${s.cls}`}>{s.label}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                {resorb.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-amber-600">치아 흡수</p>
+                    <div className="flex flex-wrap gap-2">
+                      {resorb.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          {chipEl(t, 'border-purple-300 bg-purple-50 text-purple-700')}
+                          <span className="mt-0.5 rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700">
+                            치아 흡수 {t.resorption_stage?.replace('TR', '') ?? ''}단계
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {fract.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-amber-600">치아 파절</p>
+                    <div className="flex flex-wrap gap-2">
+                      {fract.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          {chipEl(t, 'border-orange-300 bg-orange-50 text-orange-700')}
+                          <span className="mt-0.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">치아 파절</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {mob.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-amber-600">치아 동요</p>
+                    <div className="flex flex-wrap gap-2">
+                      {mob.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          {chipEl(t, 'border-rose-300 bg-rose-50 text-rose-700')}
+                          <span className="mt-0.5 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">{OWNER_MOBILITY_LBL[t.mobility!] ?? t.mobility}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {furc.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-amber-600">치조골 손상</p>
+                    <div className="flex flex-wrap gap-2">
+                      {furc.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          {chipEl(t, 'border-sky-300 bg-sky-50 text-sky-700')}
+                          <span className="mt-0.5 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">{OWNER_FURCATION_LBL[t.furcation!] ?? t.furcation}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {peri.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-amber-600">치근단 염증</p>
+                    <div className="flex flex-wrap gap-2">
+                      {peri.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          {chipEl(t, 'border-red-300 bg-red-50 text-red-700')}
+                          <span className="mt-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">치근단 염증</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )
+      })()}
+      {/* ── 처치 요약 치아 상세 팝업 ── */}
+      <Dialog open={summaryDialogTid !== null} onOpenChange={(o) => { if (!o) setSummaryDialogTid(null) }}>
+        <DialogContent className={cn('max-w-4xl max-h-[90vh] flex flex-col overflow-hidden z-[200]', isShared && 'z-[150]')}>
+          <VisuallyHidden>
+            <DialogTitle>치아 상세 정보</DialogTitle>
+            <DialogDescription>선택된 치아의 상세 소견을 보여줍니다.</DialogDescription>
+          </VisuallyHidden>
+          {summaryDialogTid !== null && (
+            <div className="mt-4 overflow-y-auto pr-1">
+              {renderToothDetail(summaryDialogTid) || (
+                <div className="p-6 text-center text-slate-500">해당 치아에 특이 소견이나 치료 내역이 없습니다.</div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ── 주요 치료 소견 및 치아별 소견 ── */}
       {(() => {

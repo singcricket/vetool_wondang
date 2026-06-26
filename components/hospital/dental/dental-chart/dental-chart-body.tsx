@@ -11,7 +11,8 @@ import DentalImageUploadDialog from '../dental-image-uploader/dental-image-uploa
 import DentalReportDialog from '../dental-report/dental-report-dialog'
 import DentalChartTestPanel from './dental-chart-test-panel'
 import DentalChartRadioPanel from './dental-chart-radio-panel'
-import { LayoutDashboard, Activity, SquareGanttChart, MonitorPlay, ImageIcon, X, ScanLine } from 'lucide-react'
+import DentalChartSummaryPanel from './dental-chart-summary-panel'
+import { LayoutDashboard, Activity, SquareGanttChart, MonitorPlay, ImageIcon, X, ScanLine, ClipboardList } from 'lucide-react'
 import { getDentalImages } from '@/lib/actions/dental/get-dental-images'
 import type { DentalImage } from '@/types/dental/dental-type'
 import { Button } from '@/components/ui/button'
@@ -138,7 +139,7 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
       <Tabs defaultValue="detail" className="flex flex-1 flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-4 rounded-none border-b bg-slate-100/50 p-0 h-12 shrink-0">
+        <TabsList className="grid w-full grid-cols-5 rounded-none border-b bg-slate-100/50 p-0 h-12 shrink-0">
           <TabsTrigger 
             value="general"
             className="group relative rounded-none border-r data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-none h-full transition-all duration-200"
@@ -179,6 +180,16 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
             </div>
             <div className="absolute bottom-0 left-0 h-[3px] w-full scale-x-0 bg-yellow-400 transition-transform duration-200 group-data-[state=active]:scale-x-100" />
           </TabsTrigger>
+          <TabsTrigger
+            value="summary"
+            className="group relative rounded-none border-l data-[state=active]:bg-white data-[state=active]:text-teal-600 data-[state=active]:shadow-none h-full transition-all duration-200"
+          >
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 transition-colors group-data-[state=active]:text-teal-600 text-slate-400" />
+              <span className="font-semibold text-sm">처치요약</span>
+            </div>
+            <div className="absolute bottom-0 left-0 h-[3px] w-full scale-x-0 bg-teal-500 transition-transform duration-200 group-data-[state=active]:scale-x-100" />
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="m-0 flex-1 overflow-hidden focus-visible:ring-0">
@@ -214,6 +225,14 @@ export default function DentalChartBody({ chartDetail, teeth, hosId }: Props) {
             images={localImages.filter(img => img.is_radio)}
             chartDetail={localChartDetail}
             teeth={localTeeth}
+          />
+        </TabsContent>
+
+        <TabsContent value="summary" className="m-0 flex-1 overflow-hidden focus-visible:ring-0">
+          <DentalChartSummaryPanel
+            chartDetail={localChartDetail}
+            teeth={localTeeth}
+            images={localImages}
           />
         </TabsContent>
       </Tabs>

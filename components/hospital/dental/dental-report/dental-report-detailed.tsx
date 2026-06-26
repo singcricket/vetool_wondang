@@ -22,6 +22,21 @@ const DentalImageWithMark = dynamic(() => import('@/components/hospital/dental/d
 })
 
 
+const SUMMARY_EXT_CODES = ['X', 'XS', 'XSS', 'EXT']
+const SUMMARY_RESTORE_CODES: Record<string, string> = {
+  'R/C': '레진', 'R/I': 'GI 수복', 'RCT': '근관치료', 'VPT': '생활치수처치',
+  'ODY': '치아성형', 'CR/A': '치관절단', 'GBR': '골유도재생',
+  'GTR': '조직유도재생', 'GV': '치은성형', 'OA': '교정장치',
+}
+const SUMMARY_OTHER_CODES: Record<string, string> = {
+  'PRO': '스케일링/연마', 'RP/C': '치근활택(비외과)', 'RP/O': '치근활택(외과)',
+  'GC': '치은소파', 'PCI': '간접치수복조', 'AP/X': '치근단절제',
+  'DTC/R': '낭종적출', 'ALV': '치조골성형', 'OC': '교합조정',
+  'GF/B': '골이식', 'GF/CT': '결합조직이식', 'B/I': '절개생검',
+  'B/E': '절제생검', 'RAD': '방사선촬영',
+}
+const SUMMARY_SKIP = new Set([...SUMMARY_EXT_CODES, ...Object.keys(SUMMARY_RESTORE_CODES)])
+
 type Props = {
   chartDetail: DentalChartDetail
   teeth: DentalTooth[]
@@ -185,6 +200,8 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
         </p>
       </div>
 
+     
+
       {/* ── 차트 전반 정보 (dental_charts) ── */}
       <section className="space-y-6 border border-slate-200 rounded-xl p-6 bg-slate-50/50">
         <h2 className="text-base font-bold text-slate-700 border-b pb-2">전체 구강 검진 결과</h2>
@@ -331,7 +348,176 @@ export default function DentalReportDetailed({ chartDetail, teeth, images, speci
           </div>
         )}
       </section>
+ {/* ── 처치 요약 ── */}
+      {(() => {
+        const ext = teeth.filter(t => t.treatment_done?.some(c => SUMMARY_EXT_CODES.includes(c.toUpperCase())))
+        const restored = teeth.map(t => ({
+          t, ls: (t.treatment_done ?? []).filter(c => c in SUMMARY_RESTORE_CODES).map(c => SUMMARY_RESTORE_CODES[c]),
+        })).filter(x => x.ls.length > 0)
+        const other = teeth.map(t => ({
+          t, ls: (t.treatment_done ?? []).filter(c => !SUMMARY_SKIP.has(c.toUpperCase()) && !SUMMARY_SKIP.has(c)).map(c => SUMMARY_OTHER_CODES[c] ?? c),
+        })).filter(x => x.ls.length > 0)
+        const perio = teeth.filter(t => t.periodontal_stage && ['PD2', 'PD3', 'PD4'].includes(t.periodontal_stage))
+        const resorb = teeth.filter(t => t.resorption_stage && ['TR2', 'TR3', 'TR4', 'TR5'].includes(t.resorption_stage))
+        const fract = teeth.filter(t => t.fracture && t.fracture !== 'none')
+        const mob = teeth.filter(t => t.mobility && ['M1', 'M2', 'M3'].includes(t.mobility))
+        const furc = teeth.filter(t => t.furcation && ['F2', 'F3'].includes(t.furcation))
+        const peri = teeth.filter(t => t.periapical && t.periapical !== 'none')
+        const wasExt = (t: DentalTooth) => t.treatment_done?.some(c => SUMMARY_EXT_CODES.includes(c.toUpperCase())) ?? false
+        if (!ext.length && !restored.length && !other.length && !procedureList.length &&
+            !perio.length && !resorb.length && !fract.length && !mob.length && !furc.length && !peri.length) return null
 
+        const PERIO_CLS: Record<string, string> = {
+          PD2: 'border-yellow-300 bg-yellow-50 text-yellow-700',
+          PD3: 'border-orange-300 bg-orange-50 text-orange-700',
+          PD4: 'border-red-300 bg-red-50 text-red-700',
+        }
+        const PERIO_LBL: Record<string, string> = {
+          PD2: 'PD2 초기치주염', PD3: 'PD3 중등도치주염', PD4: 'PD4 진행성치주염',
+        }
+        const Chip = ({ tooth, cls }: { tooth: DentalTooth; cls: string }) => (
+          <span className={`inline-flex flex-col items-center gap-0.5 rounded-lg border px-2 py-1 ${cls}`}>
+            <span className="text-sm font-bold leading-none">{tooth.tooth_id}</span>
+            {wasExt(tooth) && <span className="mt-0.5 rounded bg-pink-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">발치</span>}
+          </span>
+        )
+        return (
+          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+            <h2 className="border-b pb-2 text-base font-bold text-slate-700">처치 요약</h2>
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-indigo-600">① 이번 내원 처치</h3>
+              {procedureList.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] text-slate-400">전체 처치</p>
+                  <div className="flex flex-wrap gap-1.5">{procedureList.map((p, i) => <span key={i} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{p}</span>)}</div>
+                </div>
+              )}
+              {ext.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] text-slate-400">발치</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ext.map(t => (
+                      <span key={t.tooth_id} className="inline-flex flex-col items-center gap-0.5 rounded-lg border border-pink-300 bg-pink-50 px-2 py-1 text-pink-700">
+                        <span className="text-sm font-bold leading-none">{t.tooth_id}</span>
+                        <span className="mt-0.5 rounded bg-pink-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">발치</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {restored.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] text-slate-400">수복 · 신경치료</p>
+                  <div className="flex flex-wrap gap-2">
+                    {restored.map(({ t, ls }) => (
+                      <div key={t.tooth_id} className="flex items-start gap-1">
+                        <Chip tooth={t} cls="border-teal-300 bg-teal-50 text-teal-700" />
+                        <div className="flex flex-col gap-0.5 pt-0.5">{ls.map(l => <span key={l} className="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-medium text-teal-700">{l}</span>)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {other.length > 0 && (
+                <div>
+                  <p className="mb-1 text-[11px] text-slate-400">기타 치료</p>
+                  <div className="flex flex-wrap gap-2">
+                    {other.map(({ t, ls }) => (
+                      <div key={t.tooth_id} className="flex items-start gap-1">
+                        <Chip tooth={t} cls="border-slate-300 bg-slate-50 text-slate-700" />
+                        <div className="flex flex-col gap-0.5 pt-0.5">{ls.map(l => <span key={l} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">{l}</span>)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {!!(perio.length || resorb.length || fract.length || mob.length || furc.length || peri.length) && (
+              <div className="space-y-3 border-t pt-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-600">② 관리 필요 치아</h3>
+                {perio.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-slate-400">치주 질환</p>
+                    <div className="flex flex-wrap gap-2">
+                      {perio.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          <Chip tooth={t} cls={PERIO_CLS[t.periodontal_stage!] ?? 'border-slate-300 bg-slate-50 text-slate-700'} />
+                          <span className={`mt-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold ${PERIO_CLS[t.periodontal_stage!] ?? 'bg-slate-100 text-slate-700'}`}>{PERIO_LBL[t.periodontal_stage!] ?? t.periodontal_stage}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {resorb.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-slate-400">치아 흡수</p>
+                    <div className="flex flex-wrap gap-2">
+                      {resorb.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          <Chip tooth={t} cls="border-purple-300 bg-purple-50 text-purple-700" />
+                          <span className="mt-0.5 rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700">{t.resorption_stage}{t.resorption_type ? ` ${t.resorption_type}` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {fract.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-slate-400">파절</p>
+                    <div className="flex flex-wrap gap-2">
+                      {fract.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          <Chip tooth={t} cls="border-orange-300 bg-orange-50 text-orange-700" />
+                          <span className="mt-0.5 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">{t.fracture}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {mob.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-slate-400">동요도</p>
+                    <div className="flex flex-wrap gap-2">
+                      {mob.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          <Chip tooth={t} cls="border-rose-300 bg-rose-50 text-rose-700" />
+                          <span className="mt-0.5 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">{t.mobility}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {furc.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-slate-400">분기부 병변</p>
+                    <div className="flex flex-wrap gap-2">
+                      {furc.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          <Chip tooth={t} cls="border-sky-300 bg-sky-50 text-sky-700" />
+                          <span className="mt-0.5 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">{t.furcation}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {peri.length > 0 && (
+                  <div>
+                    <p className="mb-1 text-[11px] text-slate-400">치근단 병소</p>
+                    <div className="flex flex-wrap gap-2">
+                      {peri.map(t => (
+                        <div key={t.tooth_id} className="flex items-start gap-1">
+                          <Chip tooth={t} cls="border-red-300 bg-red-50 text-red-700" />
+                          <span className="mt-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">{t.periapical}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )
+      })()}
       {/* ── 주요 치료 소견 및 치아별 상세 소견 ── */}
       {(() => {
         const toothIds = new Set(teeth.filter(t => t.tooth_id).map(t => Number(t.tooth_id)))
