@@ -1,15 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils/utils'
 import type { CheckupDetail, CheckupStatus } from '@/types/hospital/checkup-type'
-import Tab1Inquiry from './tab1-inquiry'
-import Tab2Physical from './tab2-physical'
-import Tab3Lab from './tab3-lab'
-import Tab4Imaging from './tab4-imaging'
-import Tab5Plan from './tab5-plan'
-import { CalendarDays, Cat, Dog, PawPrint, User, Share2, FileText, FileCode2 } from 'lucide-react'
+import Tab1Inquiry, { type Tab1Ref } from './tab1-inquiry'
+import Tab2Physical, { type Tab2Ref } from './tab2-physical'
+import Tab3Lab, { type Tab3Ref } from './tab3-lab'
+import Tab4Imaging, { type Tab4Ref } from './tab4-imaging'
+import Tab5Plan, { type Tab5Ref } from './tab5-plan'
+import { CalendarDays, Cat, Dog, PawPrint, User, Share2, FileText, FileCode2, Save, CheckCheck, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { updateCheckupStatus } from '@/lib/actions/checkup/checkup-actions'
 import { toast } from 'sonner'
@@ -74,6 +74,43 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
   const [subCharts, setSubCharts] = useState<Record<string, string | null>>(
     (record.sub_charts as Record<string, string | null>) ?? {},
   )
+
+  // ── 통합 저장 ─────────────────────────────────────────────────
+  const tab1Ref = useRef<Tab1Ref>(null)
+  const tab2Ref = useRef<Tab2Ref>(null)
+  const tab3Ref = useRef<Tab3Ref>(null)
+  const tab4Ref = useRef<Tab4Ref>(null)
+  const tab5Ref = useRef<Tab5Ref>(null)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleSaveAll = useCallback(async () => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    setSaveStatus('saving')
+    try {
+      await Promise.all([
+        tab1Ref.current?.save(),
+        tab2Ref.current?.save(),
+        tab3Ref.current?.save(),
+        tab4Ref.current?.save(),
+        tab5Ref.current?.save(),
+      ])
+      setLastSavedAt(new Date())
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('idle')
+      toast.error('저장에 실패했습니다.')
+    }
+  }, [])
+
+  const handleDirty = useCallback(() => {
+    setSaveStatus('idle')
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(() => {
+      handleSaveAll()
+    }, 3000)
+  }, [handleSaveAll])
 
   const handleSubChartChange = (chartType: string, chartId: string | null) => {
     setSubCharts((prev) => ({ ...prev, [chartType]: chartId }))
@@ -156,6 +193,27 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
           </div>
 
           <div className="flex items-center gap-3 sm:ml-auto">
+            {/* ── 통합 저장 버튼 ── */}
+            <button
+              type="button"
+              onClick={handleSaveAll}
+              disabled={saveStatus === 'saving'}
+              className="flex items-center gap-1.5 rounded-md border border-teal-300 bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+            >
+              {saveStatus === 'saving' ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : saveStatus === 'saved' ? (
+                <CheckCheck size={13} />
+              ) : (
+                <Save size={13} />
+              )}
+              {saveStatus === 'saving' ? '저장 중...' : '저장'}
+            </button>
+            {lastSavedAt && saveStatus === 'saved' && (
+              <span className="text-[11px] text-slate-400">
+                {lastSavedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 저장됨
+              </span>
+            )}
             <CheckupDeleteDialog
               checkupId={record.id}
               hosId={hosId}
@@ -243,15 +301,18 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <TabsContent value="inquiry" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab1Inquiry
+              ref={tab1Ref}
               checkupId={record.id}
               patient={p}
               section={getSection('inquiry')}
               extractedInquiry={pdfExtracted?.inquiry ?? null}
+              onDirty={handleDirty}
             />
           </TabsContent>
 
           <TabsContent value="physical" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab2Physical
+              ref={tab2Ref}
               checkupId={record.id}
               patientId={record.patient_id}
               hosId={hosId}
@@ -266,21 +327,25 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               subCharts={subCharts}
               onSubChartChange={handleSubChartChange}
               onSkinLesionsChange={setSkinLesionsJson}
+              onDirty={handleDirty}
             />
           </TabsContent>
 
           <TabsContent value="lab" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab3Lab
+              ref={tab3Ref}
               checkupId={record.id}
               patient={p}
               labSection={getSection('lab')}
               extractedLabItems={pdfExtracted?.lab_items ?? null}
               extractedUnmatchedItems={pdfExtracted?.unmatched_lab ?? null}
+              onDirty={handleDirty}
             />
           </TabsContent>
 
           <TabsContent value="imaging" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab4Imaging
+              ref={tab4Ref}
               checkupId={record.id}
               hosId={hosId}
               patientId={record.patient_id}
@@ -293,16 +358,19 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               extractedImaging={pdfExtracted?.imaging ?? null}
               subCharts={subCharts}
               onSubChartChange={handleSubChartChange}
+              onDirty={handleDirty}
             />
           </TabsContent>
 
           <TabsContent value="plan" className="m-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden" forceMount>
             <Tab5Plan
+              ref={tab5Ref}
               checkupId={record.id}
               patient={p}
               planSection={getSection('plan')}
               status={status}
               onStatusChange={handleStatusChange}
+              onDirty={handleDirty}
             />
           </TabsContent>
         </div>

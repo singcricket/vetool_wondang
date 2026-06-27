@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Sparkles, Loader2, Home, Activity, ClipboardList, Brain } from 'lucide-react'
@@ -142,16 +142,20 @@ function ToggleGroup<T extends string>({
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────
 
+export interface Tab1Ref {
+  save: () => Promise<void>
+}
+
 interface Props {
   checkupId: string
   patient: CheckupPatient
   section: CheckupSection | undefined
   extractedInquiry: ExtractedInquiry | null
+  onDirty?: () => void
 }
 
-export default function Tab1Inquiry({ checkupId, patient, section, extractedInquiry }: Props) {
+const Tab1Inquiry = forwardRef<Tab1Ref, Props>(function Tab1Inquiry({ checkupId, patient, section, extractedInquiry, onDirty }, ref) {
   const [form, setForm] = useState<InquiryData>(() => initData(section, extractedInquiry))
-  const [saving, setSaving] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
 
   useEffect(() => {
@@ -160,20 +164,20 @@ export default function Tab1Inquiry({ checkupId, patient, section, extractedInqu
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [extractedInquiry])
 
-  const set = <K extends keyof InquiryData>(key: K, value: InquiryData[K]) =>
+  const set = <K extends keyof InquiryData>(key: K, value: InquiryData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
+    onDirty?.()
+  }
 
   const handleSave = async () => {
     try {
-      setSaving(true)
       await upsertCheckupSection({ checkupId, sectionType: 'inquiry', data: form })
-      toast.success('저장되었습니다.')
     } catch {
       toast.error('저장에 실패했습니다.')
-    } finally {
-      setSaving(false)
     }
   }
+
+  useImperativeHandle(ref, () => ({ save: handleSave }))
 
   const handleAnalyze = async () => {
     try {
@@ -416,13 +420,9 @@ export default function Tab1Inquiry({ checkupId, patient, section, extractedInqu
 
         </div>
       </div>
-      {/* ── 저장 고정 바 ─────────────────────────── */}
-      <div className="shrink-0 flex justify-end border-t bg-white px-4 py-3">
-        <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
-          {saving ? '저장 중...' : '저장'}
-        </Button>
-      </div>
     </div>
   )
-}
+})
+
+export default Tab1Inquiry
 

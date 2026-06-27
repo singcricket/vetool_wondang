@@ -1,9 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { forwardRef, useImperativeHandle, useRef } from 'react'
 import { Activity, Stethoscope, Eye, Brain, Smile, Camera, Bone } from 'lucide-react'
 import { SectionBlock } from './tab-ui'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -61,6 +60,10 @@ const ophBasicSections = ophthalmicDomainSections.filter((s) =>
 
 // ── Props ────────────────────────────────────────────────────
 
+export interface Tab2Ref {
+  save: () => Promise<void>
+}
+
 interface Props {
   checkupId: string
   patientId: string
@@ -76,6 +79,7 @@ interface Props {
   subCharts: Record<string, string | null>
   onSubChartChange: (chartType: string, chartId: string | null) => void
   onSkinLesionsChange?: (json: string) => void
+  onDirty?: () => void
 }
 
 const EXTRACTED_PHYSICAL_MAP: Record<keyof ExtractedPhysical, string> = {
@@ -202,7 +206,7 @@ function renderOphPairs(
 
 // ── 컴포넌트 ──────────────────────────────────────────────────
 
-export default function Tab2Physical({
+const Tab2Physical = forwardRef<Tab2Ref, Props>(function Tab2Physical({
   checkupId,
   patientId,
   hosId,
@@ -217,7 +221,8 @@ export default function Tab2Physical({
   subCharts,
   onSubChartChange,
   onSkinLesionsChange,
-}: Props) {
+  onDirty,
+}, ref) {
   // ── 이미지 ───────────────────────────────────────────────────
   const { images: allCheckupImages, getByTags, reload: reloadImages } = useCheckupImages(checkupId)
 
@@ -273,7 +278,16 @@ export default function Tab2Physical({
   const [ophCharts, setOphCharts] = useState<OphthalmicChartListItem[]>([])
   const [dentalCharts, setDentalCharts] = useState<DentalChartListItem[]>([])
 
-  const [saving, setSaving] = useState(false)
+  const [, setSaving] = useState(false)
+
+  // dirty 트래킹 — 최초 마운트 이후 폼 변경 시 onDirty 호출
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    if (!mountedRef.current) return
+    onDirty?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [physical, dental, ophthalmic, skinEar, neuroNotes, neuroStructured])
+  useEffect(() => { mountedRef.current = true }, [])
 
   useEffect(() => {
     fetchPatientNeuroCharts(patientId).then(setNeuroCharts)
@@ -366,19 +380,19 @@ export default function Tab2Physical({
     try {
       setSaving(true)
       await Promise.all([
-        // skinEar 데이터를 physical 섹션에 병합 — DB CHECK constraint 우회 (derma는 허용 타입이 아님)
         upsertCheckupSection({ checkupId, sectionType: 'physical', data: { ...physical, ...skinEar } as unknown as Record<string, unknown> }),
         upsertCheckupSection({ checkupId, sectionType: 'dental_basic', data: dental }),
         upsertCheckupSection({ checkupId, sectionType: 'ophthalmic_basic', data: ophthalmic }),
         upsertCheckupSection({ checkupId, sectionType: 'neuro_basic', data: neuroStructured ?? { format: 'text', notes: neuroNotes } }),
       ])
-      toast.success('저장되었습니다.')
     } catch {
       toast.error('저장에 실패했습니다.')
     } finally {
       setSaving(false)
     }
   }
+
+  useImperativeHandle(ref, () => ({ save: handleSave }))
 
   // ── ChartListItem 변환 ────────────────────────────────────────
   const neuroChartItems: ChartListItem[] = neuroCharts.map((c) => ({
@@ -684,12 +698,8 @@ export default function Tab2Physical({
 
         </div>
       </div>
-      {/* ── 저장 고정 바 ────────────────────────────────── */}
-      <div className="shrink-0 flex justify-end border-t bg-white px-4 py-3">
-        <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
-          {saving ? '저장 중...' : '저장'}
-        </Button>
-      </div>
     </div>
   )
-}
+})
+
+export default Tab2Physical

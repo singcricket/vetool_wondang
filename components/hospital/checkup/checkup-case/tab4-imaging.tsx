@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -74,6 +74,10 @@ type EchoData = {
 
 // ── Props ───────────────────────────────────────────────────
 
+export interface Tab4Ref {
+  save: () => Promise<void>
+}
+
 interface Props {
   checkupId: string
   hosId: string
@@ -87,6 +91,7 @@ interface Props {
   extractedImaging: ExtractedImaging | null
   subCharts: Record<string, string | null>
   onSubChartChange: (chartType: string, chartId: string | null) => void
+  onDirty?: () => void
 }
 
 // ── 이미지 태그 매핑 ─────────────────────────────────────────
@@ -202,7 +207,7 @@ function buildOrganNotes(organsData: UltrasoundOrganData[]): {
 
 // ── 컴포넌트 ──────────────────────────────────────────────────
 
-export default function Tab4Imaging({
+const Tab4Imaging = forwardRef<Tab4Ref, Props>(function Tab4Imaging({
   checkupId,
   hosId,
   patientId,
@@ -215,7 +220,8 @@ export default function Tab4Imaging({
   extractedImaging,
   subCharts,
   onSubChartChange,
-}: Props) {
+  onDirty,
+}, ref) {
   const { getByTags, reload: reloadImages } = useCheckupImages(checkupId)
 
   const [xray, setXray] = useState<XrayData>(() => initXrayData(xraySection))
@@ -229,7 +235,15 @@ export default function Tab4Imaging({
   const [echoList, setEchoList] = useState<EchoChartListItem[]>([])
   const [loadingOrgan, setLoadingOrgan] = useState(false)
   const [loadingEcho, setLoadingEcho] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [, setSaving] = useState(false)
+
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    if (!mountedRef.current) return
+    onDirty?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [xray, ultrasound, echo, ctMri])
+  useEffect(() => { mountedRef.current = true }, [])
 
   useEffect(() => {
     fetchPatientUltrasoundCharts(patientId).then(setUsList)
@@ -419,13 +433,14 @@ export default function Tab4Imaging({
         upsertCheckupSection({ checkupId, sectionType: 'echo_basic', data: echo }),
         upsertCheckupSection({ checkupId, sectionType: 'ct_mri', data: ctMri }),
       ])
-      toast.success('저장되었습니다.')
     } catch {
       toast.error('저장에 실패했습니다.')
     } finally {
       setSaving(false)
     }
   }
+
+  useImperativeHandle(ref, () => ({ save: handleSave }))
 
   const usChartItems: ChartListItem[] = usList.map((c) => ({
     id: c.id,
@@ -871,11 +886,8 @@ export default function Tab4Imaging({
 
         </div>
       </div>
-      <div className="shrink-0 flex justify-end border-t bg-white px-4 py-3">
-        <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
-          {saving ? '저장 중...' : '저장'}
-        </Button>
-      </div>
     </div>
   )
-}
+})
+
+export default Tab4Imaging

@@ -1,10 +1,9 @@
 'use client'
 
-import React from 'react'
+import React, { forwardRef, useImperativeHandle, useRef } from 'react'
 import { FlaskConical, Microscope } from 'lucide-react'
 import { SectionBlock } from './tab-ui'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -34,12 +33,17 @@ import {
 import { evaluateLabValue, getAutoComment, getDefaultRefRange } from '@/lib/utils/lab-evaluate'
 import type { ExtractedLabRaw } from '@/lib/actions/checkup/pdf-extraction'
 
+export interface Tab3Ref {
+  save: () => Promise<void>
+}
+
 interface Props {
   checkupId: string
   patient: CheckupPatient
   labSection: CheckupSection | undefined
   extractedLabItems: LabResultItem[] | null
   extractedUnmatchedItems: ExtractedLabRaw[] | null
+  onDirty?: () => void
 }
 
 const SEVERITY_BADGE: Record<LabSeverity, string> = {
@@ -113,7 +117,7 @@ const UNMATCHED_SECTION_OPTIONS: { value: LabSection | 'none'; label: string }[]
   { value: 'special',     label: '특수검사' },
 ]
 
-export default function Tab3Lab({ checkupId, patient, labSection, extractedLabItems, extractedUnmatchedItems }: Props) {
+const Tab3Lab = forwardRef<Tab3Ref, Props>(function Tab3Lab({ checkupId, patient, labSection, extractedLabItems, extractedUnmatchedItems, onDirty }, ref) {
   const savedLabItems = ((labSection?.data as any)?.items ?? []) as LabResultItem[]
   // 저장된 항목 중 ref가 없는 항목은 미분류로 분리
   const savedLabMap: Record<string, LabResultItem> = Object.fromEntries(
@@ -129,7 +133,15 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
   )
   const savedUnmatched = savedLabItems.filter((item) => !labRefMap[item.id])
   const [unmatchedItems, setUnmatchedItems] = useState<LabResultItem[]>(savedUnmatched)
-  const [saving, setSaving] = useState(false)
+  const [, setSaving] = useState(false)
+
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    if (!mountedRef.current) return
+    onDirty?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labGroups, unmatchedItems])
+  useEffect(() => { mountedRef.current = true }, [])
 
   useEffect(() => {
     if (!extractedLabItems || extractedLabItems.length === 0) return
@@ -252,13 +264,14 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
         sectionType: 'lab',
         data: { items: [...matchedItems, ...unmatchedItems] },
       })
-      toast.success('저장되었습니다.')
     } catch {
       toast.error('저장에 실패했습니다.')
     } finally {
       setSaving(false)
     }
   }
+
+  useImperativeHandle(ref, () => ({ save: handleSave }))
 
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
@@ -512,11 +525,8 @@ export default function Tab3Lab({ checkupId, patient, labSection, extractedLabIt
 
         </div>
       </div>
-      <div className="shrink-0 flex justify-end border-t bg-white px-4 py-3">
-        <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
-          {saving ? '저장 중...' : '저장'}
-        </Button>
-      </div>
     </div>
   )
-}
+})
+
+export default Tab3Lab

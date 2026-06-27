@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, forwardRef, useImperativeHandle } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -91,12 +91,17 @@ function initForm(saved: Partial<Record<string, unknown>>): PlanData {
 
 // ── Props ─────────────────────────────────────────────────────
 
+export interface Tab5Ref {
+  save: () => Promise<void>
+}
+
 interface Props {
   checkupId: string
   patient: CheckupPatient
   planSection: CheckupSection | undefined
   status: CheckupStatus
   onStatusChange: (status: 'reviewing' | 'approved') => void
+  onDirty?: () => void
 }
 
 // ── 서브 컴포넌트 ─────────────────────────────────────────────
@@ -256,16 +261,18 @@ function DxFieldBlock({
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────
 
-export default function Tab5Plan({
-  checkupId, patient, planSection, status, onStatusChange,
-}: Props) {
+const Tab5Plan = forwardRef<Tab5Ref, Props>(function Tab5Plan({
+  checkupId, patient, planSection, status, onStatusChange, onDirty,
+}, ref) {
   const saved = (planSection?.data ?? {}) as Partial<Record<string, unknown>>
   const [form, setForm] = useState<PlanData>(() => initForm(saved))
-  const [saving, setSaving] = useState(false)
+  const [, setSaving] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
 
-  const set = <K extends keyof PlanData>(key: K, value: PlanData[K]) =>
+  const set = <K extends keyof PlanData>(key: K, value: PlanData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
+    onDirty?.()
+  }
 
   const handleAnalyze = async () => {
     try {
@@ -284,13 +291,14 @@ export default function Tab5Plan({
     try {
       setSaving(true)
       await upsertCheckupSection({ checkupId, sectionType: 'plan', data: form })
-      toast.success('저장되었습니다.')
     } catch {
       toast.error('저장에 실패했습니다.')
     } finally {
       setSaving(false)
     }
   }
+
+  useImperativeHandle(ref, () => ({ save: handleSave }))
 
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
@@ -445,7 +453,7 @@ export default function Tab5Plan({
 
         </div>
       </div>
-      {/* ── 저장 / 상태 고정 바 ──────────────────────── */}
+      {/* ── 상태 고정 바 (저장 버튼은 헤더로 통합) ──── */}
       <div className="shrink-0 flex items-center justify-between border-t bg-white px-4 py-3">
         <div className="flex items-center gap-2 text-xs text-slate-500">
           {status === 'draft' && <span>작성 중</span>}
@@ -459,9 +467,6 @@ export default function Tab5Plan({
           )}
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700">
-            {saving ? '저장 중...' : '저장'}
-          </Button>
           {status === 'draft' && (
             <Button size="sm" variant="outline" onClick={() => onStatusChange('reviewing')}>
               검토 요청
@@ -481,4 +486,6 @@ export default function Tab5Plan({
       </div>
     </div>
   )
-}
+})
+
+export default Tab5Plan
