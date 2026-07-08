@@ -84,18 +84,23 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // 변경된 탭만 추적 — 다른 사용자의 데이터를 덮어쓰지 않기 위해
+  const dirtyTabs = useRef<Set<'tab1' | 'tab2' | 'tab3' | 'tab4' | 'tab5'>>(new Set())
 
   const handleSaveAll = useCallback(async () => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    const tabsToSave = new Set(dirtyTabs.current)
+    if (tabsToSave.size === 0) return
     setSaveStatus('saving')
     try {
       await Promise.all([
-        tab1Ref.current?.save(),
-        tab2Ref.current?.save(),
-        tab3Ref.current?.save(),
-        tab4Ref.current?.save(),
-        tab5Ref.current?.save(),
+        tabsToSave.has('tab1') ? tab1Ref.current?.save() : null,
+        tabsToSave.has('tab2') ? tab2Ref.current?.save() : null,
+        tabsToSave.has('tab3') ? tab3Ref.current?.save() : null,
+        tabsToSave.has('tab4') ? tab4Ref.current?.save() : null,
+        tabsToSave.has('tab5') ? tab5Ref.current?.save() : null,
       ])
+      dirtyTabs.current.clear()
       setLastSavedAt(new Date())
       setSaveStatus('saved')
     } catch {
@@ -104,7 +109,8 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
     }
   }, [])
 
-  const handleDirty = useCallback(() => {
+  const makeDirtyHandler = useCallback((tabId: 'tab1' | 'tab2' | 'tab3' | 'tab4' | 'tab5') => () => {
+    dirtyTabs.current.add(tabId)
     setSaveStatus('idle')
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     autoSaveTimer.current = setTimeout(() => {
@@ -306,7 +312,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               patient={p}
               section={getSection('inquiry')}
               extractedInquiry={pdfExtracted?.inquiry ?? null}
-              onDirty={handleDirty}
+              onDirty={makeDirtyHandler('tab1')}
             />
           </TabsContent>
 
@@ -327,7 +333,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               subCharts={subCharts}
               onSubChartChange={handleSubChartChange}
               onSkinLesionsChange={setSkinLesionsJson}
-              onDirty={handleDirty}
+              onDirty={makeDirtyHandler('tab2')}
             />
           </TabsContent>
 
@@ -339,7 +345,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               labSection={getSection('lab')}
               extractedLabItems={pdfExtracted?.lab_items ?? null}
               extractedUnmatchedItems={pdfExtracted?.unmatched_lab ?? null}
-              onDirty={handleDirty}
+              onDirty={makeDirtyHandler('tab3')}
             />
           </TabsContent>
 
@@ -358,7 +364,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               extractedImaging={pdfExtracted?.imaging ?? null}
               subCharts={subCharts}
               onSubChartChange={handleSubChartChange}
-              onDirty={handleDirty}
+              onDirty={makeDirtyHandler('tab4')}
             />
           </TabsContent>
 
@@ -370,7 +376,7 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
               planSection={getSection('plan')}
               status={status}
               onStatusChange={handleStatusChange}
-              onDirty={handleDirty}
+              onDirty={makeDirtyHandler('tab5')}
             />
           </TabsContent>
         </div>
