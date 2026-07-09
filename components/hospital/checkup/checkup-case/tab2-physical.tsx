@@ -62,6 +62,7 @@ const ophBasicSections = ophthalmicDomainSections.filter((s) =>
 
 export interface Tab2Ref {
   save: () => Promise<void>
+  refresh: (sectionType: string, data: Record<string, unknown>) => void
 }
 
 interface Props {
@@ -280,10 +281,12 @@ const Tab2Physical = forwardRef<Tab2Ref, Props>(function Tab2Physical({
 
   const [, setSaving] = useState(false)
 
-  // dirty 트래킹 — 최초 마운트 이후 폼 변경 시 onDirty 호출
+  // dirty 트래킹 — 최초 마운트 및 realtime refresh 이후에는 onDirty 호출 건너뜀
   const mountedRef = useRef(false)
+  const refreshingRef = useRef(false)
   useEffect(() => {
     if (!mountedRef.current) return
+    if (refreshingRef.current) { refreshingRef.current = false; return }
     onDirty?.()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [physical, dental, ophthalmic, skinEar, neuroNotes, neuroStructured])
@@ -392,7 +395,46 @@ const Tab2Physical = forwardRef<Tab2Ref, Props>(function Tab2Physical({
     }
   }
 
-  useImperativeHandle(ref, () => ({ save: handleSave }))
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    refresh: (sectionType: string, data: Record<string, unknown>) => {
+      refreshingRef.current = true
+      if (sectionType === 'physical') {
+        const init: PhysicalValues = {}
+        physicalRefAll.forEach((r) => { init[r.id] = (data[r.id] as string) ?? '' })
+        PHYSICAL_SECTION_ORDER.forEach((sec) => {
+          const key = sectionStatusKey(sec)
+          if (data[key]) init[key] = data[key] as string
+        })
+        setPhysical(init)
+        setSkinEar({
+          skin_lesions_json:    (data.skin_lesions_json    as string) ?? '[]',
+          skin_lesions_summary: (data.skin_lesions_summary as string) ?? '',
+          skin_map_json:        (data.skin_map_json        as string) ?? '[]',
+          coat_condition:       (data.coat_condition       as string) ?? '',
+          parasite:             (data.parasite             as string) ?? '',
+          ear_od_findings:      (data.ear_od_findings      as string) ?? '[]',
+          ear_od_discharge:     (data.ear_od_discharge     as string) ?? '',
+          ear_os_findings:      (data.ear_os_findings      as string) ?? '[]',
+          ear_os_discharge:     (data.ear_os_discharge     as string) ?? '',
+          ear_notes:            (data.ear_notes            as string) ?? '',
+          ear_exam_summary:     (data.ear_exam_summary     as string) ?? '',
+        })
+      } else if (sectionType === 'dental_basic') {
+        setDental(data as Record<string, string>)
+      } else if (sectionType === 'ophthalmic_basic') {
+        setOphthalmic(data as Record<string, string>)
+      } else if (sectionType === 'neuro_basic') {
+        if (isNeuroStructured(data)) {
+          setNeuroStructured(data as NeuroSectionStructured)
+          setNeuroNotes('')
+        } else {
+          setNeuroStructured(null)
+          setNeuroNotes((data.notes as string) ?? '')
+        }
+      }
+    },
+  }))
 
   // ── ChartListItem 변환 ────────────────────────────────────────
   const neuroChartItems: ChartListItem[] = neuroCharts.map((c) => ({

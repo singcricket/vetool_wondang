@@ -35,6 +35,7 @@ import type { ExtractedLabRaw } from '@/lib/actions/checkup/pdf-extraction'
 
 export interface Tab3Ref {
   save: () => Promise<void>
+  refresh: (data: Record<string, unknown>) => void
 }
 
 interface Props {
@@ -136,8 +137,10 @@ const Tab3Lab = forwardRef<Tab3Ref, Props>(function Tab3Lab({ checkupId, patient
   const [, setSaving] = useState(false)
 
   const mountedRef = useRef(false)
+  const refreshingRef = useRef(false)
   useEffect(() => {
     if (!mountedRef.current) return
+    if (refreshingRef.current) { refreshingRef.current = false; return }
     onDirty?.()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [labGroups, unmatchedItems])
@@ -271,7 +274,23 @@ const Tab3Lab = forwardRef<Tab3Ref, Props>(function Tab3Lab({ checkupId, patient
     }
   }
 
-  useImperativeHandle(ref, () => ({ save: handleSave }))
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    refresh: (data: Record<string, unknown>) => {
+      const items = ((data.items ?? []) as LabResultItem[])
+      const newLabMap: Record<string, LabResultItem> = Object.fromEntries(
+        items.filter((item) => labRefMap[item.id]).map((item) => [item.id, item]),
+      )
+      refreshingRef.current = true
+      setLabGroups((prev) =>
+        prev.map((g) => ({
+          ...g,
+          results: initLabItems(g.items, newLabMap, species),
+        })),
+      )
+      setUnmatchedItems(items.filter((item) => !labRefMap[item.id]))
+    },
+  }))
 
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-hidden">

@@ -144,6 +144,7 @@ function ToggleGroup<T extends string>({
 
 export interface Tab1Ref {
   save: () => Promise<void>
+  refresh: (data: Record<string, unknown>) => void
 }
 
 interface Props {
@@ -177,7 +178,13 @@ const Tab1Inquiry = forwardRef<Tab1Ref, Props>(function Tab1Inquiry({ checkupId,
     }
   }
 
-  useImperativeHandle(ref, () => ({ save: handleSave }))
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    // onDirty를 호출하지 않고 form 상태만 갱신 (realtime 수신 시 사용)
+    refresh: (data: Record<string, unknown>) => {
+      setForm(initData({ data } as CheckupSection, null))
+    },
+  }))
 
   const handleAnalyze = async () => {
     try {

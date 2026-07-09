@@ -93,6 +93,7 @@ function initForm(saved: Partial<Record<string, unknown>>): PlanData {
 
 export interface Tab5Ref {
   save: () => Promise<void>
+  refresh: (data: Record<string, unknown>) => void
 }
 
 interface Props {
@@ -298,7 +299,12 @@ const Tab5Plan = forwardRef<Tab5Ref, Props>(function Tab5Plan({
     }
   }
 
-  useImperativeHandle(ref, () => ({ save: handleSave }))
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    refresh: (data: Record<string, unknown>) => {
+      setForm(initForm(data))
+    },
+  }))
 
   return (
     <div className="flex flex-1 flex-col min-h-0 overflow-hidden">

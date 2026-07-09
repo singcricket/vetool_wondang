@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils/utils'
 import type { CheckupDetail, CheckupStatus } from '@/types/hospital/checkup-type'
@@ -23,6 +23,7 @@ import ShareResourceDialog from '@/components/hospital/share/share-resource-dial
 import CheckupDeleteDialog from './checkup-delete-dialog'
 import CheckupTxtDialog from './checkup-txt-dialog'
 import CheckupVetSelector from './checkup-vet-selector'
+import { useCheckupCaseRealtime } from '@/hooks/use-checkup-case-realtime'
 
 const STATUS_LABEL: Record<CheckupStatus, string> = {
   draft: '작성중',
@@ -86,12 +87,15 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // 변경된 탭만 추적 — 다른 사용자의 데이터를 덮어쓰지 않기 위해
   const dirtyTabs = useRef<Set<'tab1' | 'tab2' | 'tab3' | 'tab4' | 'tab5'>>(new Set())
+  // 저장 직후 자기 자신이 트리거한 realtime 이벤트를 무시하기 위한 플래그
+  const isSavingRef = useRef(false)
 
   const handleSaveAll = useCallback(async () => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     const tabsToSave = new Set(dirtyTabs.current)
     if (tabsToSave.size === 0) return
     setSaveStatus('saving')
+    isSavingRef.current = true
     try {
       await Promise.all([
         tabsToSave.has('tab1') ? tab1Ref.current?.save() : null,
@@ -106,6 +110,9 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
     } catch {
       setSaveStatus('idle')
       toast.error('저장에 실패했습니다.')
+    } finally {
+      // 저장 후 realtime 이벤트가 도착할 시간(약 1~2초)을 주고 플래그 해제
+      setTimeout(() => { isSavingRef.current = false }, 2000)
     }
   }, [])
 
@@ -121,6 +128,49 @@ export default function CheckupCaseClient({ detail, hosId }: Props) {
   const handleSubChartChange = (chartType: string, chartId: string | null) => {
     setSubCharts((prev) => ({ ...prev, [chartType]: chartId }))
   }
+
+  // ── realtime: section_type → 탭 매핑 ──────────────────────────
+  const TAB_FOR_SECTION: Record<string, 'tab1' | 'tab2' | 'tab3' | 'tab4' | 'tab5'> = {
+    inquiry:           'tab1',
+    physical:          'tab2',
+    dental_basic:      'tab2',
+    ophthalmic_basic:  'tab2',
+    neuro_basic:       'tab2',
+    lab:               'tab3',
+    xray:              'tab4',
+    ultrasound_basic:  'tab4',
+    echo_basic:        'tab4',
+    ct_mri:            'tab4',
+    plan:              'tab5',
+  }
+
+  const handleSectionUpdate = useCallback((sectionType: string, data: Record<string, unknown>) => {
+    const tabId = TAB_FOR_SECTION[sectionType]
+    if (!tabId) return
+
+    // 해당 탭이 dirty(편집 중)이면 덮어쓰지 않고 알림만 표시
+    if (dirtyTabs.current.has(tabId)) {
+      toast.info('다른 사용자가 변경했습니다. 저장 후 최신 데이터가 반영됩니다.', {
+        id: `realtime-conflict-${tabId}`,
+        duration: 3000,
+      })
+      return
+    }
+
+    // 탭 refresh 호출
+    if (tabId === 'tab1') tab1Ref.current?.refresh(data)
+    else if (tabId === 'tab2') tab2Ref.current?.refresh(sectionType, data)
+    else if (tabId === 'tab3') tab3Ref.current?.refresh(data)
+    else if (tabId === 'tab4') tab4Ref.current?.refresh(sectionType, data)
+    else if (tabId === 'tab5') tab5Ref.current?.refresh(data)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useCheckupCaseRealtime({
+    checkupId: record.id,
+    isSaving: isSavingRef,
+    onSectionUpdate: handleSectionUpdate,
+  })
 
   const getSection = (type: string) => sections.find((s) => s.section_type === type)
 

@@ -76,6 +76,7 @@ type EchoData = {
 
 export interface Tab4Ref {
   save: () => Promise<void>
+  refresh: (sectionType: string, data: Record<string, unknown>) => void
 }
 
 interface Props {
@@ -238,8 +239,10 @@ const Tab4Imaging = forwardRef<Tab4Ref, Props>(function Tab4Imaging({
   const [, setSaving] = useState(false)
 
   const mountedRef = useRef(false)
+  const refreshingRef = useRef(false)
   useEffect(() => {
     if (!mountedRef.current) return
+    if (refreshingRef.current) { refreshingRef.current = false; return }
     onDirty?.()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [xray, ultrasound, echo, ctMri])
@@ -440,7 +443,21 @@ const Tab4Imaging = forwardRef<Tab4Ref, Props>(function Tab4Imaging({
     }
   }
 
-  useImperativeHandle(ref, () => ({ save: handleSave }))
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+    refresh: (sectionType: string, data: Record<string, unknown>) => {
+      refreshingRef.current = true
+      if (sectionType === 'xray') {
+        setXray(initXrayData({ data } as CheckupSection))
+      } else if (sectionType === 'ultrasound_basic') {
+        setUltrasound(initUltrasoundData({ data } as CheckupSection))
+      } else if (sectionType === 'echo_basic') {
+        setEcho(initEchoData({ data } as CheckupSection))
+      } else if (sectionType === 'ct_mri') {
+        setCtMri(initCtMriData({ data } as CheckupSection))
+      }
+    },
+  }))
 
   const usChartItems: ChartListItem[] = usList.map((c) => ({
     id: c.id,
