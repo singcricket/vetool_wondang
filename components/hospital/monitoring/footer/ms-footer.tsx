@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { useMonitoringRealtime } from '@/hooks/use-monitoring-realtime'
 import { cn } from '@/lib/utils/utils'
-import { BookmarkIcon, CheckIcon, SearchIcon } from 'lucide-react'
+import { BookmarkIcon, CalendarDays, CheckIcon, SearchIcon } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import MonitoringRealtimeStatus from './monitoring-realtime-status'
@@ -67,7 +67,6 @@ const FOOTER_MAIN_VIEW_MENUS = [
     icon: <CheckIcon />,
     hideInMobile: false,
   },
-
   {
     label: '검색',
     value: 'search',
@@ -78,6 +77,12 @@ const FOOTER_MAIN_VIEW_MENUS = [
     label: '템플릿',
     value: 'template',
     icon: <BookmarkIcon />,
+    hideInMobile: false,
+  },
+  {
+    label: '일정',
+    value: 'schedule',
+    icon: <CalendarDays />,
     hideInMobile: false,
   },
 ] as const
