@@ -3,10 +3,6 @@ import { fetchCytologyLayoutData } from '@/lib/services/cytology/fetch-cytology'
 import { redirect } from 'next/navigation'
 import CytologyChartClient from './cytology-chart-client'
 
-export const metadata = {
-  title: '세포학 검사 차트',
-}
-
 interface Props {
   params: Promise<{
     hos_id: string

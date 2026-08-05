@@ -2,10 +2,6 @@ import { getOphthalmicChart } from '@/lib/services/ophthalmic/ophthalmic-charts'
 import { redirect } from 'next/navigation'
 import OphthalmicChartClient from './ophthalmic-chart-client'
 
-export const metadata = {
-  title: '안과 검사 차트',
-}
-
 interface Props {
   params: Promise<{
     hos_id: string

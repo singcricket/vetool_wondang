@@ -5,8 +5,6 @@ import { getLesionGroups, getLesionVisits, getDermImages } from '@/lib/services/
 import DermSidebar from '@/components/hospital/derm/derm-sidebar/derm-sidebar'
 import DermChartClient from './derm-chart-client'
 
-export const metadata = { title: '피부과 차트' }
-
 interface Props {
   params: Promise<{ hos_id: string; target_date: string; chart_id: string }>
 }

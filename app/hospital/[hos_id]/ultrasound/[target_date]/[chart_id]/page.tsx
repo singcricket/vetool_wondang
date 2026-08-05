@@ -3,10 +3,6 @@ import { fetchUltrasoundLayoutData } from '@/lib/services/ultrasound/ultrasound-
 import { redirect } from 'next/navigation'
 import UltrasoundChartClient from './ultrasound-chart-client'
 
-export const metadata = {
-  title: '복부 초음파 차트',
-}
-
 interface Props {
   params: Promise<{
     hos_id: string

@@ -1,9 +1,5 @@
 import NeuroChartClient from '../[chart_id]/neuro-chart-client'
 
-export const metadata = {
-  title: '신경학적 검사 (미등록 모드)',
-}
-
 interface Props {
   params: Promise<{
     hos_id: string

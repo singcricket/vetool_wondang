@@ -2,10 +2,6 @@ import { getNeuroChart } from '@/lib/services/neuro/neuro-charts'
 import { redirect } from 'next/navigation'
 import NeuroChartClient from './neuro-chart-client'
 
-export const metadata = {
-  title: '신경학적 검사 차트',
-}
-
 interface Props {
   params: Promise<{
     hos_id: string
